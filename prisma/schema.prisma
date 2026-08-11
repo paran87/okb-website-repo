@@ -1,0 +1,1983 @@
+// =============================================================================
+// OKB Command Center — Production Database Schema
+// DPWH · Oplan Kontra Baha (Flood Control) — nationwide GIS operations platform
+//
+// Conventions
+// -----------
+// * Primary keys: UUID v4 (`@db.Uuid`, `@default(uuid())`).
+// * Timestamps: `createdAt`, `updatedAt` on every table; `deletedAt` (soft
+//   delete) on mutable domain entities. Append-only tables (readings, logs,
+//   history, junctions) omit `deletedAt`.
+// * `createdBy` / `updatedBy` are UUID audit stamps referencing `User.id`.
+//   Referential integrity for these stamps is enforced at the application layer
+//   to avoid ~160 back-relations on `User`. Semantically important actors
+//   (reporter, inspector, pilot, commander, recipient) use real relations.
+// * GIS: geometry columns use PostGIS `geometry(<Type>, 4326)` (WGS84) with GiST
+//   spatial indexes. Columns are nullable so rows can be created before geometry
+//   is populated by spatial pipelines.
+// * Extensible catalogs are lookup tables; fixed, code-level sets are enums.
+// =============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserAccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum FileKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  OTHER
+}
+
+enum StorageDriver {
+  LOCAL
+  MINIO
+  S3
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+  APPROVE
+  REJECT
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  CORRECTIVE
+  INSPECTION
+  CALIBRATION
+}
+
+enum InspectionResult {
+  PASSED
+  FAILED
+  NEEDS_ATTENTION
+}
+
+enum AlertSeverity {
+  INFO
+  ADVISORY
+  WATCH
+  WARNING
+  EMERGENCY
+}
+
+enum SensorType {
+  WATER_LEVEL
+  RAINFALL
+  RIVER_GAUGE
+  FLOW
+  WEATHER
+  SOIL_MOISTURE
+}
+
+enum SensorStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  FAULT
+  DECOMMISSIONED
+}
+
+enum CctvStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  DECOMMISSIONED
+}
+
+enum DispatchStatus {
+  REQUESTED
+  DISPATCHED
+  EN_ROUTE
+  ON_SITE
+  COMPLETED
+  CANCELLED
+}
+
+enum RoadClosureStatus {
+  OPEN
+  PARTIAL
+  CLOSED
+}
+
+enum DroneFlightStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  ABORTED
+}
+
+enum PredictionType {
+  FLOOD
+  RAINFALL
+  RIVER_LEVEL
+  LANDSLIDE
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATING
+  COMPLETED
+  PUBLISHED
+  ARCHIVED
+  FAILED
+}
+
+enum AssignmentStatus {
+  ACTIVE
+  RETURNED
+  OVERDUE
+  CANCELLED
+}
+
+// =============================================================================
+// AUTHENTICATION & RBAC
+// =============================================================================
+
+/// System users (operators, engineers, directors, administrators).
+model User {
+  id            String            @id @default(uuid()) @db.Uuid
+  email         String            @unique
+  emailVerified DateTime?
+  name          String
+  passwordHash  String?
+  phone         String?
+  avatarFileId  String?           @db.Uuid
+  status        UserAccountStatus @default(PENDING)
+  lastLoginAt   DateTime?
+
+  roleId           String  @db.Uuid
+  regionId         String? @db.Uuid
+  districtOfficeId String? @db.Uuid
+
+  role          Role                     @relation(fields: [roleId], references: [id])
+  region        Region?                  @relation(fields: [regionId], references: [id])
+  districtOffice DistrictEngineeringOffice? @relation(fields: [districtOfficeId], references: [id])
+  avatar        File?                    @relation(fields: [avatarFileId], references: [id])
+
+  accounts                Account[]
+  sessions                Session[]
+  reportedIncidents       FloodIncident[]
+  floodResponses          FloodResponse[]
+  criticalAreaInspections CriticalAreaInspection[]
+  equipmentAssignments    EquipmentAssignment[]
+  droneFlights            DroneFlight[]
+  dispatchesCommanded     EmergencyDispatch[]
+  notificationRecipients  NotificationRecipient[]
+  loginHistory            LoginHistory[]
+  activityLogs            ActivityLog[]
+  auditLogs               AuditLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([roleId])
+  @@index([regionId])
+  @@index([districtOfficeId])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+/// RBAC role (dynamic; mapped to permissions via RolePermission).
+model Role {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  isSystem    Boolean @default(false)
+
+  permissions RolePermission[]
+  users       User[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+}
+
+/// Fine-grained permission expressed as resource:action.
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  resource    String
+  action      String
+  description String?
+
+  roles RolePermission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([resource])
+}
+
+/// Junction: roles ↔ permissions (many-to-many).
+model RolePermission {
+  id           String @id @default(uuid()) @db.Uuid
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+}
+
+/// Auth.js OAuth / external account link.
+model Account {
+  id                String  @id @default(uuid()) @db.Uuid
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+/// Auth.js session.
+model Session {
+  id           String   @id @default(uuid()) @db.Uuid
+  sessionToken String   @unique
+  userId       String   @db.Uuid
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([userId])
+}
+
+/// Auth.js verification token (email verification / passwordless).
+model VerificationToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([identifier, token])
+}
+
+// =============================================================================
+// ORGANIZATION (DPWH administrative hierarchy + physical assets)
+// =============================================================================
+
+/// DPWH Region (top-level administrative unit).
+model Region {
+  id       String  @id @default(uuid()) @db.Uuid
+  code     String  @unique
+  name     String
+  geometry Unsupported("geometry(MultiPolygon, 4326)")?
+
+  districtOffices DistrictEngineeringOffice[]
+  cities          City[]
+  users           User[]
+  weatherAlerts   WeatherAlert[]
+  predictions     Prediction[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// District Engineering Office (operational unit within a region).
+model DistrictEngineeringOffice {
+  id        String  @id @default(uuid()) @db.Uuid
+  code      String  @unique
+  name      String
+  address   String?
+  regionId  String  @db.Uuid
+  latitude  Float?
+  longitude Float?
+  geometry  Unsupported("geometry(Point, 4326)")?
+
+  region         Region          @relation(fields: [regionId], references: [id])
+  users          User[]
+  projects       Project[]
+  equipment      Equipment[]
+  floodIncidents FloodIncident[]
+  roads          Road[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([regionId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// City / Municipality.
+model City {
+  id       String  @id @default(uuid()) @db.Uuid
+  code     String  @unique
+  name     String
+  regionId String  @db.Uuid
+  geometry Unsupported("geometry(MultiPolygon, 4326)")?
+
+  region          Region           @relation(fields: [regionId], references: [id])
+  barangays       Barangay[]
+  roads           Road[]
+  waterways       Waterway[]
+  drainageSystems DrainageSystem[]
+  pumpStations    PumpStation[]
+  criticalAreas   CriticalArea[]
+  floodProneAreas FloodProneArea[]
+  projects        Project[]
+  weatherStations WeatherStation[]
+  cctvs           Cctv[]
+  sensors         Sensor[]
+  droneFlights    DroneFlight[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([regionId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Barangay (smallest administrative unit).
+model Barangay {
+  id       String  @id @default(uuid()) @db.Uuid
+  code     String  @unique
+  name     String
+  cityId   String  @db.Uuid
+  geometry Unsupported("geometry(MultiPolygon, 4326)")?
+
+  city              City               @relation(fields: [cityId], references: [id])
+  floodIncidents    FloodIncident[]
+  evacuationCenters EvacuationCenter[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Road network segment (GIS LineString).
+model Road {
+  id             String  @id @default(uuid()) @db.Uuid
+  name           String
+  classification String?
+  lengthKm       Float?
+  cityId         String? @db.Uuid
+  districtOfficeId String? @db.Uuid
+  geometry       Unsupported("geometry(LineString, 4326)")?
+
+  city          City?                      @relation(fields: [cityId], references: [id])
+  districtOffice DistrictEngineeringOffice? @relation(fields: [districtOfficeId], references: [id])
+  closures      RoadClosure[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([districtOfficeId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Waterway / river / creek (GIS LineString).
+model Waterway {
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String
+  type     String?
+  cityId   String? @db.Uuid
+  geometry Unsupported("geometry(LineString, 4326)")?
+
+  city        City?        @relation(fields: [cityId], references: [id])
+  riverLevels RiverLevel[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Drainage system / canal (GIS LineString).
+model DrainageSystem {
+  id       String  @id @default(uuid()) @db.Uuid
+  name     String
+  type     String?
+  capacity Float?
+  cityId   String? @db.Uuid
+  geometry Unsupported("geometry(LineString, 4326)")?
+
+  city City? @relation(fields: [cityId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Flood-control pump station (GIS Point).
+model PumpStation {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  capacityLps Float?
+  pumpCount   Int?
+  isOperational Boolean @default(true)
+  cityId      String? @db.Uuid
+  latitude    Float?
+  longitude   Float?
+  geometry    Unsupported("geometry(Point, 4326)")?
+
+  city City? @relation(fields: [cityId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+// =============================================================================
+// FLOOD MONITORING
+// =============================================================================
+
+/// Lookup: operational status of a flood incident.
+model FloodStatus {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  color       String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  incidents FloodIncident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Lookup: severity classification of a flood incident.
+model FloodSeverity {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  color       String?
+  level       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  incidents FloodIncident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Lookup: root cause of flooding.
+model FloodCause {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  incidents FloodIncident[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// A reported/observed flood event (operational core; GIS Point).
+model FloodIncident {
+  id               String    @id @default(uuid()) @db.Uuid
+  referenceNo      String    @unique
+  title            String
+  description      String?
+  waterLevelM      Float?
+  affectedFamilies Int?
+  reportedAt       DateTime  @default(now())
+  resolvedAt       DateTime?
+  latitude         Float?
+  longitude        Float?
+  geometry         Unsupported("geometry(Point, 4326)")?
+
+  statusId         String  @db.Uuid
+  severityId       String  @db.Uuid
+  causeId          String? @db.Uuid
+  barangayId       String? @db.Uuid
+  districtOfficeId String? @db.Uuid
+  reportedById     String? @db.Uuid
+
+  status         FloodStatus                @relation(fields: [statusId], references: [id])
+  severity       FloodSeverity              @relation(fields: [severityId], references: [id])
+  cause          FloodCause?                @relation(fields: [causeId], references: [id])
+  barangay       Barangay?                  @relation(fields: [barangayId], references: [id])
+  districtOffice DistrictEngineeringOffice? @relation(fields: [districtOfficeId], references: [id])
+  reportedBy     User?                      @relation(fields: [reportedById], references: [id])
+
+  photos    FloodIncidentPhoto[]
+  videos    FloodIncidentVideo[]
+  history   FloodHistory[]
+  responses FloodResponse[]
+  dispatches EmergencyDispatch[]
+  aiAnalyses AiAnalysis[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([statusId])
+  @@index([severityId])
+  @@index([causeId])
+  @@index([barangayId])
+  @@index([districtOfficeId])
+  @@index([reportedById])
+  @@index([reportedAt])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Photo attached to a flood incident.
+model FloodIncidentPhoto {
+  id         String  @id @default(uuid()) @db.Uuid
+  incidentId String  @db.Uuid
+  fileId     String  @db.Uuid
+  caption    String?
+
+  incident FloodIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  file     File          @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([incidentId])
+  @@index([fileId])
+}
+
+/// Video attached to a flood incident.
+model FloodIncidentVideo {
+  id         String  @id @default(uuid()) @db.Uuid
+  incidentId String  @db.Uuid
+  fileId     String  @db.Uuid
+  caption    String?
+
+  incident FloodIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  file     File          @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([incidentId])
+  @@index([fileId])
+}
+
+/// Append-only state timeline for a flood incident.
+model FloodHistory {
+  id           String  @id @default(uuid()) @db.Uuid
+  incidentId   String  @db.Uuid
+  statusCode   String?
+  waterLevelM  Float?
+  note         String?
+  recordedAt   DateTime @default(now())
+
+  incident FloodIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([incidentId])
+  @@index([recordedAt])
+}
+
+/// Response action taken for a flood incident.
+model FloodResponse {
+  id          String    @id @default(uuid()) @db.Uuid
+  incidentId  String    @db.Uuid
+  responderId String?   @db.Uuid
+  action      String
+  details     String?
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  incident  FloodIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  responder User?         @relation(fields: [responderId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([incidentId])
+  @@index([responderId])
+}
+
+// =============================================================================
+// CRITICAL AREAS
+// =============================================================================
+
+/// A monitored high-risk critical area (GIS Polygon).
+model CriticalArea {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  riskLevelId String? @db.Uuid
+  cityId      String? @db.Uuid
+  geometry    Unsupported("geometry(Polygon, 4326)")?
+
+  riskLevel   FloodRiskLevel? @relation(fields: [riskLevelId], references: [id])
+  city        City?           @relation(fields: [cityId], references: [id])
+  inspections CriticalAreaInspection[]
+  photos      CriticalAreaPhoto[]
+  history     CriticalAreaHistory[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([riskLevelId])
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Inspection record for a critical area.
+model CriticalAreaInspection {
+  id            String           @id @default(uuid()) @db.Uuid
+  criticalAreaId String          @db.Uuid
+  inspectorId   String?          @db.Uuid
+  result        InspectionResult @default(NEEDS_ATTENTION)
+  findings      String?
+  inspectedAt   DateTime         @default(now())
+
+  criticalArea CriticalArea @relation(fields: [criticalAreaId], references: [id], onDelete: Cascade)
+  inspector    User?        @relation(fields: [inspectorId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([criticalAreaId])
+  @@index([inspectorId])
+  @@index([inspectedAt])
+}
+
+/// Photo attached to a critical area.
+model CriticalAreaPhoto {
+  id             String  @id @default(uuid()) @db.Uuid
+  criticalAreaId String  @db.Uuid
+  fileId         String  @db.Uuid
+  caption        String?
+
+  criticalArea CriticalArea @relation(fields: [criticalAreaId], references: [id], onDelete: Cascade)
+  file         File         @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([criticalAreaId])
+  @@index([fileId])
+}
+
+/// Append-only history for a critical area.
+model CriticalAreaHistory {
+  id             String   @id @default(uuid()) @db.Uuid
+  criticalAreaId String   @db.Uuid
+  change         String
+  note           String?
+  recordedAt     DateTime @default(now())
+
+  criticalArea CriticalArea @relation(fields: [criticalAreaId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([criticalAreaId])
+  @@index([recordedAt])
+}
+
+// =============================================================================
+// FLOOD-PRONE AREAS
+// =============================================================================
+
+/// Lookup: flood risk level (shared by critical + flood-prone areas).
+model FloodRiskLevel {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  color       String?
+  level       Int     @default(0)
+  isActive    Boolean @default(true)
+
+  criticalAreas   CriticalArea[]
+  floodProneAreas FloodProneArea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Lookup: historical flood frequency classification.
+model FloodFrequency {
+  id            String  @id @default(uuid()) @db.Uuid
+  code          String  @unique
+  name          String
+  description   String?
+  returnPeriodY Int?
+  isActive      Boolean @default(true)
+
+  floodProneAreas FloodProneArea[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// A delineated flood-prone / flood-susceptible area (GIS MultiPolygon).
+model FloodProneArea {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  riskLevelId String? @db.Uuid
+  frequencyId String? @db.Uuid
+  cityId      String? @db.Uuid
+  areaSqKm    Float?
+  geometry    Unsupported("geometry(MultiPolygon, 4326)")?
+
+  riskLevel   FloodRiskLevel? @relation(fields: [riskLevelId], references: [id])
+  frequency   FloodFrequency? @relation(fields: [frequencyId], references: [id])
+  city        City?           @relation(fields: [cityId], references: [id])
+  mitigations FloodProneAreaMitigation[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([riskLevelId])
+  @@index([frequencyId])
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Catalog of mitigation measures.
+model FloodMitigationMeasure {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  areaMitigations FloodProneAreaMitigation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Junction: flood-prone area ↔ mitigation measure (with status/cost).
+model FloodProneAreaMitigation {
+  id               String    @id @default(uuid()) @db.Uuid
+  floodProneAreaId String    @db.Uuid
+  measureId        String    @db.Uuid
+  status           String?
+  estimatedCost    Decimal?  @db.Decimal(14, 2)
+  implementedAt    DateTime?
+
+  floodProneArea FloodProneArea         @relation(fields: [floodProneAreaId], references: [id], onDelete: Cascade)
+  measure        FloodMitigationMeasure @relation(fields: [measureId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@unique([floodProneAreaId, measureId])
+  @@index([measureId])
+}
+
+// =============================================================================
+// PROJECTS
+// =============================================================================
+
+/// Lookup: project category.
+model ProjectCategory {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Lookup: project lifecycle status.
+model ProjectStatus {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  color       String?
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
+
+  projects Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Flood-control infrastructure project (GIS Point/area).
+model Project {
+  id               String    @id @default(uuid()) @db.Uuid
+  referenceNo      String    @unique
+  title            String
+  description      String?
+  contractor       String?
+  budget           Decimal?  @db.Decimal(16, 2)
+  progressPercent  Float     @default(0)
+  startDate        DateTime?
+  targetEndDate    DateTime?
+  actualEndDate    DateTime?
+  latitude         Float?
+  longitude        Float?
+  geometry         Unsupported("geometry(Point, 4326)")?
+
+  categoryId       String? @db.Uuid
+  statusId         String? @db.Uuid
+  districtOfficeId String? @db.Uuid
+  cityId           String? @db.Uuid
+
+  category       ProjectCategory?           @relation(fields: [categoryId], references: [id])
+  status         ProjectStatus?             @relation(fields: [statusId], references: [id])
+  districtOffice DistrictEngineeringOffice? @relation(fields: [districtOfficeId], references: [id])
+  city           City?                      @relation(fields: [cityId], references: [id])
+
+  photos       ProjectPhoto[]
+  progress     ProjectProgress[]
+  documents    ProjectDocument[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([categoryId])
+  @@index([statusId])
+  @@index([districtOfficeId])
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Photo attached to a project.
+model ProjectPhoto {
+  id        String  @id @default(uuid()) @db.Uuid
+  projectId String  @db.Uuid
+  fileId    String  @db.Uuid
+  caption   String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([projectId])
+  @@index([fileId])
+}
+
+/// Append-only progress update for a project.
+model ProjectProgress {
+  id              String   @id @default(uuid()) @db.Uuid
+  projectId       String   @db.Uuid
+  progressPercent Float
+  note            String?
+  recordedAt      DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([projectId])
+  @@index([recordedAt])
+}
+
+/// Document attached to a project.
+model ProjectDocument {
+  id        String  @id @default(uuid()) @db.Uuid
+  projectId String  @db.Uuid
+  fileId    String  @db.Uuid
+  title     String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([projectId])
+  @@index([fileId])
+}
+
+// =============================================================================
+// EQUIPMENT
+// =============================================================================
+
+/// Lookup: equipment category.
+model EquipmentCategory {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  equipment Equipment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Lookup: equipment operational status.
+model EquipmentStatus {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  description String?
+  color       String?
+  isActive    Boolean @default(true)
+
+  equipment Equipment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Named equipment location / depot (GIS Point).
+model EquipmentLocation {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  geometry  Unsupported("geometry(Point, 4326)")?
+
+  equipment Equipment[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// A piece of response equipment (pump, backhoe, truck, ...).
+model Equipment {
+  id               String  @id @default(uuid()) @db.Uuid
+  assetTag         String  @unique
+  name             String
+  model            String?
+  serialNo         String?
+  categoryId       String? @db.Uuid
+  statusId         String? @db.Uuid
+  currentLocationId String? @db.Uuid
+  districtOfficeId String? @db.Uuid
+
+  category        EquipmentCategory?         @relation(fields: [categoryId], references: [id])
+  status          EquipmentStatus?           @relation(fields: [statusId], references: [id])
+  currentLocation EquipmentLocation?         @relation(fields: [currentLocationId], references: [id])
+  districtOffice  DistrictEngineeringOffice? @relation(fields: [districtOfficeId], references: [id])
+
+  assignments  EquipmentAssignment[]
+  maintenance  EquipmentMaintenance[]
+  gpsHistory   GpsHistory[]
+  dispatches   EmergencyDispatch[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([categoryId])
+  @@index([statusId])
+  @@index([currentLocationId])
+  @@index([districtOfficeId])
+  @@index([deletedAt])
+}
+
+/// Assignment of equipment to a user / office for a period.
+model EquipmentAssignment {
+  id           String           @id @default(uuid()) @db.Uuid
+  equipmentId  String           @db.Uuid
+  assignedToId String?          @db.Uuid
+  status       AssignmentStatus @default(ACTIVE)
+  purpose      String?
+  assignedAt   DateTime         @default(now())
+  returnedAt   DateTime?
+
+  equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  assignedTo User?     @relation(fields: [assignedToId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([equipmentId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+/// Maintenance record for equipment.
+model EquipmentMaintenance {
+  id          String          @id @default(uuid()) @db.Uuid
+  equipmentId String          @db.Uuid
+  type        MaintenanceType @default(PREVENTIVE)
+  description String?
+  cost        Decimal?        @db.Decimal(12, 2)
+  performedAt DateTime        @default(now())
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([equipmentId])
+  @@index([performedAt])
+}
+
+/// Append-only GPS breadcrumb for equipment (GIS Point time-series).
+model GpsHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  equipmentId String   @db.Uuid
+  latitude    Float
+  longitude   Float
+  speedKph    Float?
+  heading     Float?
+  recordedAt  DateTime @default(now())
+  geometry    Unsupported("geometry(Point, 4326)")?
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([equipmentId, recordedAt])
+  @@index([geometry], type: Gist)
+}
+
+// =============================================================================
+// WEATHER
+// =============================================================================
+
+/// Weather station (GIS Point).
+model WeatherStation {
+  id        String  @id @default(uuid()) @db.Uuid
+  code      String  @unique
+  name      String
+  cityId    String? @db.Uuid
+  elevationM Float?
+  latitude  Float?
+  longitude Float?
+  geometry  Unsupported("geometry(Point, 4326)")?
+
+  city         City?          @relation(fields: [cityId], references: [id])
+  rainfallData RainfallData[]
+  forecasts    Forecast[]
+  sensors      Sensor[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Append-only rainfall reading from a weather station.
+model RainfallData {
+  id         String   @id @default(uuid()) @db.Uuid
+  stationId  String   @db.Uuid
+  amountMm   Float
+  intervalMin Int      @default(60)
+  recordedAt DateTime @default(now())
+
+  station WeatherStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([stationId, recordedAt])
+}
+
+/// Weather forecast entry for a station.
+model Forecast {
+  id             String   @id @default(uuid()) @db.Uuid
+  stationId      String?  @db.Uuid
+  forecastFor    DateTime
+  temperatureC   Float?
+  rainfallMm     Float?
+  humidityPct    Float?
+  windSpeedKph   Float?
+  summary        String?
+  source         String?
+
+  station WeatherStation? @relation(fields: [stationId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([stationId])
+  @@index([forecastFor])
+}
+
+/// Weather advisory / alert (optionally region-scoped, GIS area).
+model WeatherAlert {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  severity    AlertSeverity @default(ADVISORY)
+  regionId    String?       @db.Uuid
+  effectiveAt DateTime      @default(now())
+  expiresAt   DateTime?
+  geometry    Unsupported("geometry(MultiPolygon, 4326)")?
+
+  region Region? @relation(fields: [regionId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([regionId])
+  @@index([severity])
+  @@index([effectiveAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Weather radar coverage metadata (future radar integration; GIS area).
+model RadarMetadata {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String   @unique
+  name       String
+  provider   String?
+  rangeKm    Float?
+  latitude   Float?
+  longitude  Float?
+  coverage   Unsupported("geometry(Polygon, 4326)")?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([deletedAt])
+  @@index([coverage], type: Gist)
+}
+
+// =============================================================================
+// REPORTS
+// =============================================================================
+
+/// Registry of generated report files (links reports to stored files).
+model GeneratedFile {
+  id       String       @id @default(uuid()) @db.Uuid
+  fileId   String       @db.Uuid
+  format   String?
+  status   ReportStatus @default(COMPLETED)
+
+  file File @relation(fields: [fileId], references: [id])
+
+  dailyReport   DailyReport?
+  weeklyReport  WeeklyReport?
+  monthlyReport MonthlyReport?
+  annualReport  AnnualReport?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([fileId])
+}
+
+/// Daily operational report.
+model DailyReport {
+  id              String       @id @default(uuid()) @db.Uuid
+  title           String
+  reportDate      DateTime
+  status          ReportStatus @default(DRAFT)
+  summary         String?
+  generatedFileId String?      @unique @db.Uuid
+
+  generatedFile GeneratedFile? @relation(fields: [generatedFileId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([reportDate])
+  @@index([status])
+}
+
+/// Weekly operational report.
+model WeeklyReport {
+  id              String       @id @default(uuid()) @db.Uuid
+  title           String
+  year            Int
+  week            Int
+  status          ReportStatus @default(DRAFT)
+  summary         String?
+  generatedFileId String?      @unique @db.Uuid
+
+  generatedFile GeneratedFile? @relation(fields: [generatedFileId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@unique([year, week])
+  @@index([status])
+}
+
+/// Monthly operational report.
+model MonthlyReport {
+  id              String       @id @default(uuid()) @db.Uuid
+  title           String
+  year            Int
+  month           Int
+  status          ReportStatus @default(DRAFT)
+  summary         String?
+  generatedFileId String?      @unique @db.Uuid
+
+  generatedFile GeneratedFile? @relation(fields: [generatedFileId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@unique([year, month])
+  @@index([status])
+}
+
+/// Annual operational report.
+model AnnualReport {
+  id              String       @id @default(uuid()) @db.Uuid
+  title           String
+  year            Int          @unique
+  status          ReportStatus @default(DRAFT)
+  summary         String?
+  generatedFileId String?      @unique @db.Uuid
+
+  generatedFile GeneratedFile? @relation(fields: [generatedFileId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([status])
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+/// Reusable notification template.
+model NotificationTemplate {
+  id           String  @id @default(uuid()) @db.Uuid
+  code         String  @unique
+  name         String
+  subject      String?
+  bodyTemplate String
+  isActive     Boolean @default(true)
+
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// A dispatched notification (fan-out to recipients + delivery logs).
+model Notification {
+  id         String               @id @default(uuid()) @db.Uuid
+  templateId String?              @db.Uuid
+  title      String
+  body       String
+  priority   NotificationPriority @default(NORMAL)
+
+  template   NotificationTemplate? @relation(fields: [templateId], references: [id])
+  recipients NotificationRecipient[]
+  logs       NotificationLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([templateId])
+  @@index([priority])
+}
+
+/// Junction: notification ↔ recipient user (with per-user read state).
+model NotificationRecipient {
+  id             String    @id @default(uuid()) @db.Uuid
+  notificationId String    @db.Uuid
+  userId         String    @db.Uuid
+  readAt         DateTime?
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@unique([notificationId, userId])
+  @@index([userId])
+}
+
+/// Append-only per-channel delivery log for a notification.
+model NotificationLog {
+  id             String              @id @default(uuid()) @db.Uuid
+  notificationId String              @db.Uuid
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(PENDING)
+  detail         String?
+  sentAt         DateTime?
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([notificationId])
+  @@index([status])
+}
+
+// =============================================================================
+// ATTACHMENTS (single file registry + one-to-one type detail)
+// =============================================================================
+
+/// Canonical stored file. Media-specific metadata lives in Image/Video/Document.
+model File {
+  id           String        @id @default(uuid()) @db.Uuid
+  kind         FileKind      @default(OTHER)
+  storage      StorageDriver @default(LOCAL)
+  bucket       String?
+  path         String
+  originalName String
+  mimeType     String
+  sizeBytes    BigInt
+  checksum     String?
+
+  image    Image?
+  video    Video?
+  document Document?
+
+  users               User[]
+  floodIncidentPhotos FloodIncidentPhoto[]
+  floodIncidentVideos FloodIncidentVideo[]
+  criticalAreaPhotos  CriticalAreaPhoto[]
+  projectPhotos       ProjectPhoto[]
+  projectDocuments    ProjectDocument[]
+  generatedFiles      GeneratedFile[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([kind])
+  @@index([deletedAt])
+}
+
+/// Image-specific metadata (one-to-one with File).
+model Image {
+  id       String @id @default(uuid()) @db.Uuid
+  fileId   String @unique @db.Uuid
+  width    Int?
+  height   Int?
+  altText  String?
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Video-specific metadata (one-to-one with File).
+model Video {
+  id         String @id @default(uuid()) @db.Uuid
+  fileId     String @unique @db.Uuid
+  durationSec Int?
+  width      Int?
+  height     Int?
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+/// Document-specific metadata (one-to-one with File).
+model Document {
+  id        String @id @default(uuid()) @db.Uuid
+  fileId    String @unique @db.Uuid
+  pageCount Int?
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+}
+
+// =============================================================================
+// AUDIT & OBSERVABILITY (append-only)
+// =============================================================================
+
+/// Entity change audit trail.
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     String?     @db.Uuid
+  action     AuditAction
+  entityType String
+  entityId   String?
+  changes    Json?
+  ipAddress  String?
+  userAgent  String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+/// System / application log entry.
+model SystemLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  level     LogLevel @default(INFO)
+  source    String?
+  message   String
+  context   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([level])
+  @@index([createdAt])
+}
+
+/// User login attempt history.
+model LoginHistory {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @db.Uuid
+  email     String?
+  success   Boolean  @default(false)
+  ipAddress String?
+  userAgent String?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([email])
+  @@index([createdAt])
+}
+
+/// User activity feed (append-only).
+model ActivityLog {
+  id         String  @id @default(uuid()) @db.Uuid
+  userId     String? @db.Uuid
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+
+  user User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// =============================================================================
+// FUTURE EXPANSION (CCTV / IoT sensors / AI / emergency ops)
+// =============================================================================
+
+/// CCTV camera (GIS Point).
+model Cctv {
+  id        String     @id @default(uuid()) @db.Uuid
+  code      String     @unique
+  name      String
+  streamUrl String?
+  status    CctvStatus @default(OFFLINE)
+  cityId    String?    @db.Uuid
+  latitude  Float?
+  longitude Float?
+  geometry  Unsupported("geometry(Point, 4326)")?
+
+  city City? @relation(fields: [cityId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([cityId])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// IoT sensor (GIS Point).
+model Sensor {
+  id         String       @id @default(uuid()) @db.Uuid
+  code       String       @unique
+  name       String
+  type       SensorType
+  status     SensorStatus @default(OFFLINE)
+  unit       String?
+  cityId     String?      @db.Uuid
+  stationId  String?      @db.Uuid
+  latitude   Float?
+  longitude  Float?
+  geometry   Unsupported("geometry(Point, 4326)")?
+
+  city    City?           @relation(fields: [cityId], references: [id])
+  station WeatherStation? @relation(fields: [stationId], references: [id])
+
+  readings          SensorReading[]
+  waterLevelReadings WaterLevelReading[]
+  riverLevels       RiverLevel[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([type])
+  @@index([status])
+  @@index([cityId])
+  @@index([stationId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}
+
+/// Append-only generic sensor reading (time-series).
+model SensorReading {
+  id         String   @id @default(uuid()) @db.Uuid
+  sensorId   String   @db.Uuid
+  value      Float
+  unit       String?
+  quality    String?
+  recordedAt DateTime @default(now())
+
+  sensor Sensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sensorId, recordedAt])
+}
+
+/// Append-only river-level reading (time-series; tied to a waterway/sensor).
+model RiverLevel {
+  id         String   @id @default(uuid()) @db.Uuid
+  waterwayId String?  @db.Uuid
+  sensorId   String?  @db.Uuid
+  levelM     Float
+  trend      String?
+  recordedAt DateTime @default(now())
+
+  waterway Waterway? @relation(fields: [waterwayId], references: [id])
+  sensor   Sensor?   @relation(fields: [sensorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([waterwayId, recordedAt])
+  @@index([sensorId, recordedAt])
+}
+
+/// Append-only water-level reading (time-series; tied to a sensor).
+model WaterLevelReading {
+  id         String   @id @default(uuid()) @db.Uuid
+  sensorId   String   @db.Uuid
+  levelM     Float
+  alarmLevel Float?
+  recordedAt DateTime @default(now())
+
+  sensor Sensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sensorId, recordedAt])
+}
+
+/// Drone survey flight (GIS LineString path).
+model DroneFlight {
+  id         String            @id @default(uuid()) @db.Uuid
+  reference  String            @unique
+  pilotId    String?           @db.Uuid
+  cityId     String?           @db.Uuid
+  status     DroneFlightStatus @default(PLANNED)
+  startedAt  DateTime?
+  endedAt    DateTime?
+  path       Unsupported("geometry(LineString, 4326)")?
+
+  pilot User? @relation(fields: [pilotId], references: [id])
+  city  City? @relation(fields: [cityId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([pilotId])
+  @@index([cityId])
+  @@index([status])
+  @@index([path], type: Gist)
+}
+
+/// AI analysis output linked to a flood incident.
+model AiAnalysis {
+  id         String   @id @default(uuid()) @db.Uuid
+  incidentId String?  @db.Uuid
+  model      String
+  confidence Float?
+  result     Json?
+  analyzedAt DateTime @default(now())
+
+  incident FloodIncident? @relation(fields: [incidentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
+
+  @@index([incidentId])
+  @@index([analyzedAt])
+}
+
+/// AI / model prediction (flood, rainfall, river level, ...); optional GIS area.
+model Prediction {
+  id          String         @id @default(uuid()) @db.Uuid
+  type        PredictionType
+  regionId    String?        @db.Uuid
+  probability Float?
+  validFrom   DateTime
+  validTo     DateTime?
+  payload     Json?
+  geometry    Unsupported("geometry(MultiPolygon, 4326)")?
+
+  region Region? @relation(fields: [regionId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([type])
+  @@index([regionId])
+  @@index([validFrom])
+  @@index([geometry], type: Gist)
+}
+
+/// Emergency dispatch of equipment/personnel to a flood incident.
+model EmergencyDispatch {
+  id          String         @id @default(uuid()) @db.Uuid
+  reference   String         @unique
+  incidentId  String?        @db.Uuid
+  equipmentId String?        @db.Uuid
+  commanderId String?        @db.Uuid
+  status      DispatchStatus @default(REQUESTED)
+  notes       String?
+  dispatchedAt DateTime?
+  arrivedAt   DateTime?
+  completedAt DateTime?
+
+  incident  FloodIncident? @relation(fields: [incidentId], references: [id])
+  equipment Equipment?     @relation(fields: [equipmentId], references: [id])
+  commander User?          @relation(fields: [commanderId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([incidentId])
+  @@index([equipmentId])
+  @@index([commanderId])
+  @@index([status])
+}
+
+/// Road closure event (tied to a road; GIS LineString of the closed section).
+model RoadClosure {
+  id        String            @id @default(uuid()) @db.Uuid
+  roadId    String            @db.Uuid
+  status    RoadClosureStatus @default(CLOSED)
+  reason    String?
+  startedAt DateTime          @default(now())
+  clearedAt DateTime?
+  geometry  Unsupported("geometry(LineString, 4326)")?
+
+  road Road @relation(fields: [roadId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([roadId])
+  @@index([status])
+  @@index([geometry], type: Gist)
+}
+
+/// Evacuation center (GIS Point).
+model EvacuationCenter {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  name        String
+  capacity    Int?
+  contactInfo String?
+  isOperational Boolean @default(true)
+  barangayId  String? @db.Uuid
+  latitude    Float?
+  longitude   Float?
+  geometry    Unsupported("geometry(Point, 4326)")?
+
+  barangay Barangay? @relation(fields: [barangayId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  createdBy String?   @db.Uuid
+  updatedBy String?   @db.Uuid
+
+  @@index([barangayId])
+  @@index([deletedAt])
+  @@index([geometry], type: Gist)
+}

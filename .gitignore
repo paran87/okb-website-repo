@@ -1,0 +1,51 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Production
+/build
+/dist
+
+# Environment
+.env
+.env*.local
+!.env.example
+
+# Prisma
+/prisma/*.db
+/prisma/migrations/dev.db*
+
+# Testing
+/coverage
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+
+# Docker / local data
+/docker/data
+/.data
+
+# Local uploads (development storage)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+# TypeScript
+*.tsbuildinfo

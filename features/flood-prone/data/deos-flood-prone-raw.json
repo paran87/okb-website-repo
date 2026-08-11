@@ -1,0 +1,740 @@
+[
+  {
+    "id": "fpa-north-manila-1",
+    "deo": "North Manila",
+    "index": 1,
+    "description": "España blvd. (Antipolo st. to A. Maceda st.), Manila City"
+  },
+  {
+    "id": "fpa-north-manila-2",
+    "deo": "North Manila",
+    "index": 2,
+    "description": "España blvd. (M dela Fuente to AH Lacson Ave.), Manila City"
+  },
+  {
+    "id": "fpa-north-manila-3",
+    "deo": "North Manila",
+    "index": 3,
+    "description": "Ramon Magsaysay Blvd. (V. Mapa St. to SM Sta. Mesa), Manila City"
+  },
+  {
+    "id": "fpa-north-manila-4",
+    "deo": "North Manila",
+    "index": 4,
+    "description": "Blumentritt Road (corner Piy Margal St.), Manila City"
+  },
+  {
+    "id": "fpa-north-manila-5",
+    "deo": "North Manila",
+    "index": 5,
+    "description": "Jose Abad Santos Ave. (Corner Tayuman St.), Manila City"
+  },
+  {
+    "id": "fpa-north-manila-6",
+    "deo": "North Manila",
+    "index": 6,
+    "description": "Jose Abad Santos Ave. (Corner North Antipolo St.), Manila City"
+  },
+  {
+    "id": "fpa-north-manila-7",
+    "deo": "North Manila",
+    "index": 7,
+    "description": "Mel Lopez Blvd. (fronting Inland), Manila City"
+  },
+  {
+    "id": "fpa-south-manila-1",
+    "deo": "South Manila",
+    "index": 1,
+    "description": "T.M. Kalaw St. (from Taft Avenue to Roxas Boulevard), Manila"
+  },
+  {
+    "id": "fpa-south-manila-2",
+    "deo": "South Manila",
+    "index": 2,
+    "description": "T.M. Kalaw St. (from Roxas Boulevard - Taft Avenue), Manila"
+  },
+  {
+    "id": "fpa-south-manila-3",
+    "deo": "South Manila",
+    "index": 3,
+    "description": "Buendia Extension (S03216LZ) Chainage 000 - Chainage 210, Pasay"
+  },
+  {
+    "id": "fpa-south-manila-4",
+    "deo": "South Manila",
+    "index": 4,
+    "description": "EDSA (Roxas Blvd - Taft Avenue), Pasay"
+  },
+  {
+    "id": "fpa-south-manila-5",
+    "deo": "South Manila",
+    "index": 5,
+    "description": "Taft Avenue North Bound (S02958LZ), Manila"
+  },
+  {
+    "id": "fpa-south-manila-6",
+    "deo": "South Manila",
+    "index": 6,
+    "description": "Taft Avenue South Bound (S02953LZ), Manila"
+  },
+  {
+    "id": "fpa-south-manila-7",
+    "deo": "South Manila",
+    "index": 7,
+    "description": "P. Ocampo St. (corner Taft Avenue), Pasay City"
+  },
+  {
+    "id": "fpa-south-manila-8",
+    "deo": "South Manila",
+    "index": 8,
+    "description": "Roxas Blvd (from Pedro Gil St. to T.M. Kalaw st), Manila"
+  },
+  {
+    "id": "fpa-south-manila-9",
+    "deo": "South Manila",
+    "index": 9,
+    "description": "Roxas Blvd Service Road (P.Ocampo St. - Sen. Gil Puyat Ave), Pasay"
+  },
+  {
+    "id": "fpa-south-manila-10",
+    "deo": "South Manila",
+    "index": 10,
+    "description": "Roxas Blvd Service Road (T.M. Kalaw St. - P. Gil St), Manila"
+  },
+  {
+    "id": "fpa-quezon-city-1st-1",
+    "deo": "Quezon City 1st",
+    "index": 1,
+    "description": "FAIRVIEW AVENUE (S05451LZ), WINSTON STREET, K0021+(-190) - K0021+(-110), Brgy. Fairview, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-2",
+    "deo": "Quezon City 1st",
+    "index": 2,
+    "description": "REGALADO AVENUE (NORTH) (S05457LZ), CORNER BRISTOL, K0024+160 - K0024+465, Brgy. Lagro, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-3",
+    "deo": "Quezon City 1st",
+    "index": 3,
+    "description": "COMMONWEALTH AVENUE (S05641LZ), in front of Ever Gotesco/Mcdonalds/Shell Gas Station,K0017+(-026) - K0017+050, Brgy. Batasan Hills, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-4",
+    "deo": "Quezon City 1st",
+    "index": 4,
+    "description": "COMMONWEALTH AVENUE (S05646LZ), Near Sector 5,K0020 + (357) - K0020+-280, Brgy. Commonwealth, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-5",
+    "deo": "Quezon City 1st",
+    "index": 5,
+    "description": "CENTRAL AVENUE (S05178LZ), IN FRONT OF EAGLE BROADCAST, K0013+270 - K0013+600, Brgy. New Era, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-6",
+    "deo": "Quezon City 1st",
+    "index": 6,
+    "description": "G. ARANETA AVENUE (S05322LZ), P. Florentino Street to Corner Maria Clara Street, K0011+1000 - K0011+800, Brgy. Talayan, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-7",
+    "deo": "Quezon City 1st",
+    "index": 7,
+    "description": "STO. DOMINGO (S05321LZ) COR. CALAMBA STREET, K0007+500 - K0007+700, Brgy. Sto. Domingo, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-8",
+    "deo": "Quezon City 1st",
+    "index": 8,
+    "description": "MARIA CLARA STREET (S05345LZ), G ARANETA AVE. - STO DOMINGO, K0007+509 - K0007+789, Brgy. Sto. Domingo, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-9",
+    "deo": "Quezon City 1st",
+    "index": 9,
+    "description": "GENERAL LUIS STREET (S05488LZ) CORNER AMBROCIA STREET, K0019+(-500) - K0019+(-430), Brgy. Nagkaisang Nayon, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-10",
+    "deo": "Quezon City 1st",
+    "index": 10,
+    "description": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), BALINTWAK STATION, K0012+875 - K0011+150, Brgy. Unang Sigaw, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-11",
+    "deo": "Quezon City 1st",
+    "index": 11,
+    "description": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), DARIO BRIDGE TO LANDERS, K0013+100 - K0012+10, Brgy. Apolonio Samson, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-12",
+    "deo": "Quezon City 1st",
+    "index": 12,
+    "description": "VISAYAS AVENUE (S05467LZ), CENTRAL AVE TO ROAD 1 , K0012+490 - K0012+820, Brgy. Vasra, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-13",
+    "deo": "Quezon City 1st",
+    "index": 13,
+    "description": "PAYATAS ROAD (S05179LZ), PAYATAS BRIDGE , K0022+000 - K0021+(-990), Brgy. Commonwealth, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-14",
+    "deo": "Quezon City 1st",
+    "index": 14,
+    "description": "PAYATAS ROAD (S05179LZ), MAJAAS STREET TO FARMERS STREET , K0023+900 - K0024+000, Brgy. Payatas, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-15",
+    "deo": "Quezon City 1st",
+    "index": 15,
+    "description": "BATASAN ROAD (S05447LZ), IN FRONT OF EVERLASTING STREET , K0019+(-509) - K0019+(-600), Brgy. Commonwealth, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-16",
+    "deo": "Quezon City 1st",
+    "index": 16,
+    "description": "QUEZON AVENUE (S05193LZ) CORNER BIAK-NA-BATO, K0007+350 - K0007+450, Brgy. Sto. Domingo, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-17",
+    "deo": "Quezon City 1st",
+    "index": 17,
+    "description": "A. BONIFACIO AVENUE (S05160LZ) CORNER EDSA SB, K0009+(-390) - K0009+(-350), Brgy. Balingasa, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-18",
+    "deo": "Quezon City 1st",
+    "index": 18,
+    "description": "SGT. RIVERA AVENUE (S05145LZ) CORNER A. BONIFACIO AVENUE, K0012+070 - K0012+100, Brgy. Pagibig Sa Nayon, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-19",
+    "deo": "Quezon City 1st",
+    "index": 19,
+    "description": "LUZON AVENUE (S05626LZ) FRONTING PUREGOLD, Chainage 0 to 403, Brgy. Culiat, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-20",
+    "deo": "Quezon City 1st",
+    "index": 20,
+    "description": "LUZON AVENUE (S05624LZ) AFTER LUZON FLYOVER, Chainage 600 to 700, Brgy. Culiat, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-21",
+    "deo": "Quezon City 1st",
+    "index": 21,
+    "description": "QUEZON AVENUE (S05250LZ) G ARANETA UNDERPASS, Chainage , Brgy. Sto. Domingo, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-22",
+    "deo": "Quezon City 1st",
+    "index": 22,
+    "description": "FAIRVIEW AVENUE (S05451LZ) PEARL DRIVE, KM , Brgy. Fairview, Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-1st-23",
+    "deo": "Quezon City 1st",
+    "index": 23,
+    "description": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), SM NORTH EDSAKM , Brgy. Bagong Pag-asa Quezon City, NCR"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-1",
+    "deo": "Quezon City 2nd",
+    "index": 1,
+    "description": "Aurora Blvd Eastbound (fronting SM Sta. Mesa)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-2",
+    "deo": "Quezon City 2nd",
+    "index": 2,
+    "description": "Aurora Blvd Westbound (fronting SM Sta. Mesa)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-3",
+    "deo": "Quezon City 2nd",
+    "index": 3,
+    "description": "C-5 Road Northbound (Ateneo Gate 2 to Loyola Drive)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-4",
+    "deo": "Quezon City 2nd",
+    "index": 4,
+    "description": "C-5 Road Southbound (One Burgundy Plaza Bldg. to Rosa Alvero)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-5",
+    "deo": "Quezon City 2nd",
+    "index": 5,
+    "description": "E. Rodriguez Sr. (La Felonila st. to G. Araneta Ave.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-6",
+    "deo": "Quezon City 2nd",
+    "index": 6,
+    "description": "East Ave.Westbound (fronting NKTI)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-7",
+    "deo": "Quezon City 2nd",
+    "index": 7,
+    "description": "East Ave.Eastbound (fronting Quezon City Hall)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-8",
+    "deo": "Quezon City 2nd",
+    "index": 8,
+    "description": "EDSA Northbound (Centris to Quezon Avenue)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-9",
+    "deo": "Quezon City 2nd",
+    "index": 9,
+    "description": "EDSA Northbound (in front Camp Aguinaldo Gate 2)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-10",
+    "deo": "Quezon City 2nd",
+    "index": 10,
+    "description": "EDSA Northbound (in front of Camp Aguinaldo Gate 3)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-11",
+    "deo": "Quezon City 2nd",
+    "index": 11,
+    "description": "Elliptical Rd (Quezon Avenue to East Avenue)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-12",
+    "deo": "Quezon City 2nd",
+    "index": 12,
+    "description": "G. Araneta Ave. Southbound (Kaliraya st. to E. Rodriguez Sr.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-13",
+    "deo": "Quezon City 2nd",
+    "index": 13,
+    "description": "G. Araneta Ave. Northbound (E. Rodriguez Sr. to Kaliraya st.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-14",
+    "deo": "Quezon City 2nd",
+    "index": 14,
+    "description": "Kamias Rd. (Corner Kalayaan Ave.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-15",
+    "deo": "Quezon City 2nd",
+    "index": 15,
+    "description": "Mo. Ignacia St. (EDSA to Sgt. Esguerra)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-16",
+    "deo": "Quezon City 2nd",
+    "index": 16,
+    "description": "Mo. Ignacia St. (Timog Ave to Madriñan St.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-17",
+    "deo": "Quezon City 2nd",
+    "index": 17,
+    "description": "Quezon Ave. Eastbound (BMA Ave. to Tuayan Ave.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-18",
+    "deo": "Quezon City 2nd",
+    "index": 18,
+    "description": "Quezon Ave. Easbound (Corner BIR Road)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-19",
+    "deo": "Quezon City 2nd",
+    "index": 19,
+    "description": "South Ave./Timog Ave. (Sct. Tuason to Sct. Tobias)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-20",
+    "deo": "Quezon City 2nd",
+    "index": 20,
+    "description": "Tomas Morato Ave. (corner. Sct. Limbaga)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-21",
+    "deo": "Quezon City 2nd",
+    "index": 21,
+    "description": "V. Luna Road (East Ave. to Malakas St.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-22",
+    "deo": "Quezon City 2nd",
+    "index": 22,
+    "description": "V. Luna Road (Mapagbigay St. to Matimpiin St.)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-23",
+    "deo": "Quezon City 2nd",
+    "index": 23,
+    "description": "V. Luna Road (Corner Anonas)"
+  },
+  {
+    "id": "fpa-quezon-city-2nd-24",
+    "deo": "Quezon City 2nd",
+    "index": 24,
+    "description": "P. Tuazon Blvd. (Corner 18th Ave.)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-1",
+    "deo": "Metro Manila 1st",
+    "index": 1,
+    "description": "Boni Avenue (Maysilo Circle), Mandaluyong City"
+  },
+  {
+    "id": "fpa-metro-manila-1st-2",
+    "deo": "Metro Manila 1st",
+    "index": 2,
+    "description": "Boni Avenue corner F. Ortigas, Mandaluyong City"
+  },
+  {
+    "id": "fpa-metro-manila-1st-3",
+    "deo": "Metro Manila 1st",
+    "index": 3,
+    "description": "EDSA Shaw Underpass Northbound, Mandaluyong City (near submersible pump)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-4",
+    "deo": "Metro Manila 1st",
+    "index": 4,
+    "description": "Shaw Boulevard, Mandaluyong City (Along Welfare Ville to Pinagtipunan Street)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-5",
+    "deo": "Metro Manila 1st",
+    "index": 5,
+    "description": "Psychopathic Hospital Road, Mandaluyong City (From S. Laurel to Old Wack Wack)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-6",
+    "deo": "Metro Manila 1st",
+    "index": 6,
+    "description": "Imelda Avenue, Pasig City (Phoenix Gas Station to Metroville Subdivision and 2nd Rizal Boundary)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-7",
+    "deo": "Metro Manila 1st",
+    "index": 7,
+    "description": "Amang Rodriguez Road, Pasig City (St. Camillus Medical Center to Marcos Highway)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-8",
+    "deo": "Metro Manila 1st",
+    "index": 8,
+    "description": "Manila East Road Eastbound &amp; Westbound, Pasig City (Doña Juliana Village to Country Side and Riverside Drive to SM East Ortigas)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-9",
+    "deo": "Metro Manila 1st",
+    "index": 9,
+    "description": "C-5 Road Northbound, Pasig City (Corner Eagle Street and Fronting Tiendesitas)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-10",
+    "deo": "Metro Manila 1st",
+    "index": 10,
+    "description": "Fort Bonifacio Nichols Field Road, Taguig City (Fronting Southern Police District)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-11",
+    "deo": "Metro Manila 1st",
+    "index": 11,
+    "description": "Libingan ng mga Bayani Road, Taguig City (Along Philippine Golf Army)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-12",
+    "deo": "Metro Manila 1st",
+    "index": 12,
+    "description": "C-5 Road Southbound, Taguig City (Diego Silang &amp; Fronting Petron)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-13",
+    "deo": "Metro Manila 1st",
+    "index": 13,
+    "description": "C-5 Kalayaan Service Road Southbound, Taguig City (Corner Kalayaan Avenue)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-14",
+    "deo": "Metro Manila 1st",
+    "index": 14,
+    "description": "F. Manalo Street, San Juan City (From Valenzuela Street to Rua Pascual Street)"
+  },
+  {
+    "id": "fpa-metro-manila-1st-15",
+    "deo": "Metro Manila 1st",
+    "index": 15,
+    "description": "Sumulong Highway, Marikina City (From Katipunan Extension to Mayor Gil Fernando and Sumulong Bypass Road)"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-1",
+    "deo": "Metro Manila 2nd",
+    "index": 1,
+    "description": "Parañaque-Sucat Road in front of SM Sucat, Parañaque City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-2",
+    "deo": "Metro Manila 2nd",
+    "index": 2,
+    "description": "Pasong Tamo Magallanes Tunnel, Makati City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-3",
+    "deo": "Metro Manila 2nd",
+    "index": 3,
+    "description": "Parañaque-Sucat Road cor. Angelina Canaynay Ave., Parañaque City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-4",
+    "deo": "Metro Manila 2nd",
+    "index": 4,
+    "description": "Ninoy Aquino SB in front of Oyster Plaza, Parañaque City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-5",
+    "deo": "Metro Manila 2nd",
+    "index": 5,
+    "description": "Parañaque-Sucat Road cor. Fourth Estate Subd., Parañaque City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-6",
+    "deo": "Metro Manila 2nd",
+    "index": 6,
+    "description": "South Super Highway in front of SM Hypermarket, Makati City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-7",
+    "deo": "Metro Manila 2nd",
+    "index": 7,
+    "description": "South Super Highway cor. Buendia Ave., Makati City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-8",
+    "deo": "Metro Manila 2nd",
+    "index": 8,
+    "description": "Gil Puyat Ave cor. Washington St., Makati City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-9",
+    "deo": "Metro Manila 2nd",
+    "index": 9,
+    "description": "Pasong Tamo cor. Urban Ave., Makati City"
+  },
+  {
+    "id": "fpa-metro-manila-2nd-10",
+    "deo": "Metro Manila 2nd",
+    "index": 10,
+    "description": "Vito Cruz Extension cor. Pasong Tamo, Makati City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-1",
+    "deo": "Metro Manila 3rd",
+    "index": 1,
+    "description": "G. Lazaro St. (corner Mac Arthur Highway), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-2",
+    "deo": "Metro Manila 3rd",
+    "index": 2,
+    "description": "Gov. T. Santiago St. (Mac Arthur Highway to Creek), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-3",
+    "deo": "Metro Manila 3rd",
+    "index": 3,
+    "description": "C-3 Road (NLEX Connector / PNR Crossing), Caloocan City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-4",
+    "deo": "Metro Manila 3rd",
+    "index": 4,
+    "description": "Mac Arthur Highway (C. Santiago St. to Gov. T. Santiago St.), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-5",
+    "deo": "Metro Manila 3rd",
+    "index": 5,
+    "description": "Mac Arthur Highway (Pio Valenzuela St. to A. Fernando St.), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-6",
+    "deo": "Metro Manila 3rd",
+    "index": 6,
+    "description": "Mac Arthur Highway (Infront of Fatima), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-7",
+    "deo": "Metro Manila 3rd",
+    "index": 7,
+    "description": "Mac Arthur Highway (Infront of Valtrade), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-8",
+    "deo": "Metro Manila 3rd",
+    "index": 8,
+    "description": "East Service Road (De Castro St. to Creek), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-9",
+    "deo": "Metro Manila 3rd",
+    "index": 9,
+    "description": "Polo-Novaliches Road (P. Santiago St. to Paso De Blas Bridge), Valenzuela City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-10",
+    "deo": "Metro Manila 3rd",
+    "index": 10,
+    "description": "10th Avenue (3rd St. to 8th St.), Caloocan City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-11",
+    "deo": "Metro Manila 3rd",
+    "index": 11,
+    "description": "Mac Arthur Highway (corner Calle Uno), Caloocan City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-12",
+    "deo": "Metro Manila 3rd",
+    "index": 12,
+    "description": "Deparo-Camarin Road (Phase 6), Caloocan City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-13",
+    "deo": "Metro Manila 3rd",
+    "index": 13,
+    "description": "Deparo-Bagumbong Road (near Alagar St.), Caloocan City"
+  },
+  {
+    "id": "fpa-metro-manila-3rd-14",
+    "deo": "Metro Manila 3rd",
+    "index": 14,
+    "description": "Congressional Road (Infront of McDonald's), Caloocan City"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-1",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 1,
+    "description": "MSR - Quirino Avenue, Las Piñas City (Alido Bridge to Zapote Flyover)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-2",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 2,
+    "description": "CAA Int'l. Receiver Road, Las Piñas City (in front of BF Homes Martin Village)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-3",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 3,
+    "description": "Marcos Alvarez Road, Las Piñas City (in front of Savemore Market)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-4",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 4,
+    "description": "Marcos Alvarez Road, Las Piñas City (in front of Wonderland Homes)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-5",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 5,
+    "description": "Zapote-Alabang Road, Las Piñas City (near Pamplona Hospital)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-6",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 6,
+    "description": "Maharlika Highway, Muntinlupa City (in front of Muntinlupa City Hall)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-7",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 7,
+    "description": "Maharlika Highway, Muntinlupa City (in front of LTO Tunasan)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-8",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 8,
+    "description": "West Service Road, Muntinlupa City (in front of Alabang Hills)"
+  },
+  {
+    "id": "fpa-las-pias---muntinlupa-9",
+    "deo": "Las Piñas - Muntinlupa",
+    "index": 9,
+    "description": "PPTA Road, Muntinlupa City (in front of Liana's Central Mall)"
+  },
+  {
+    "id": "fpa-malabon---navotas-1",
+    "deo": "Malabon - Navotas",
+    "index": 1,
+    "description": "Gov. W. Pascual Ave. (Cor. Maria Clara)"
+  },
+  {
+    "id": "fpa-malabon---navotas-2",
+    "deo": "Malabon - Navotas",
+    "index": 2,
+    "description": "Gov. W. Pascual Ave. (Sitio 6 to Sanciangco St.)"
+  },
+  {
+    "id": "fpa-malabon---navotas-3",
+    "deo": "Malabon - Navotas",
+    "index": 3,
+    "description": "C. Arellano St. (Paez St. to Sacristia St.)"
+  },
+  {
+    "id": "fpa-malabon---navotas-4",
+    "deo": "Malabon - Navotas",
+    "index": 4,
+    "description": "M.H. del Pilar St. (Yanga St. to San Vicente Village)"
+  },
+  {
+    "id": "fpa-malabon---navotas-5",
+    "deo": "Malabon - Navotas",
+    "index": 5,
+    "description": "M.H. del Pilar St. (Corner E. Rodriguez St.)"
+  },
+  {
+    "id": "fpa-malabon---navotas-6",
+    "deo": "Malabon - Navotas",
+    "index": 6,
+    "description": "M.H. del Pilar St. (Buenaventura St. to Arkong Bato)"
+  },
+  {
+    "id": "fpa-malabon---navotas-7",
+    "deo": "Malabon - Navotas",
+    "index": 7,
+    "description": "Don Basilio Bautista St. (Dampalit Bridge to JCT Womens Club)"
+  },
+  {
+    "id": "fpa-malabon---navotas-8",
+    "deo": "Malabon - Navotas",
+    "index": 8,
+    "description": "P. Aquino St. (Sanciangco St. to Everlasting Peace Memorial Park)"
+  },
+  {
+    "id": "fpa-malabon---navotas-9",
+    "deo": "Malabon - Navotas",
+    "index": 9,
+    "description": "P. Aquino St. (Gen. Luna St. Intersection)"
+  },
+  {
+    "id": "fpa-malabon---navotas-10",
+    "deo": "Malabon - Navotas",
+    "index": 10,
+    "description": "Sevilla Blvd. (Sacristia St. to Estrella St.)"
+  },
+  {
+    "id": "fpa-malabon---navotas-11",
+    "deo": "Malabon - Navotas",
+    "index": 11,
+    "description": "JCT Women's Club ( Flores St. to Naval St.)"
+  }
+]

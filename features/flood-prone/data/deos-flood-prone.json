@@ -1,0 +1,2342 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-1",
+        "title": "España blvd. (Antipolo st. to A. Maceda st.), Manila City",
+        "description": "España blvd. (Antipolo st. to A. Maceda st.), Manila City",
+        "deo": "North Manila",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98939999999999,
+          14.60566
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-2",
+        "title": "España blvd. (M dela Fuente to AH Lacson Ave.), Manila City",
+        "description": "España blvd. (M dela Fuente to AH Lacson Ave.), Manila City",
+        "deo": "North Manila",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9906,
+          14.606440000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-3",
+        "title": "Ramon Magsaysay Blvd. (V. Mapa St. to SM Sta. Mesa), Manila City",
+        "description": "Ramon Magsaysay Blvd. (V. Mapa St. to SM Sta. Mesa), Manila City",
+        "deo": "North Manila",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.00280000000001,
+          14.59522
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-4",
+        "title": "Blumentritt Road (corner Piy Margal St.), Manila City",
+        "description": "Blumentritt Road (corner Piy Margal St.), Manila City",
+        "deo": "North Manila",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.982,
+          14.615
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-5",
+        "title": "Jose Abad Santos Ave. (Corner Tayuman St.), Manila City",
+        "description": "Jose Abad Santos Ave. (Corner Tayuman St.), Manila City",
+        "deo": "North Manila",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.97919999999999,
+          14.618780000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-6",
+        "title": "Jose Abad Santos Ave. (Corner North Antipolo St.), Manila City",
+        "description": "Jose Abad Santos Ave. (Corner North Antipolo St.), Manila City",
+        "deo": "North Manila",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98039999999999,
+          14.61956
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-north-manila-7",
+        "title": "Mel Lopez Blvd. (fronting Inland), Manila City",
+        "description": "Mel Lopez Blvd. (fronting Inland), Manila City",
+        "deo": "North Manila",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9696,
+          14.63034
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-1",
+        "title": "T.M. Kalaw St. (from Taft Avenue to Roxas Boulevard), Manila",
+        "description": "T.M. Kalaw St. (from Taft Avenue to Roxas Boulevard), Manila",
+        "deo": "South Manila",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98339999999999,
+          14.57666
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-2",
+        "title": "T.M. Kalaw St. (from Roxas Boulevard - Taft Avenue), Manila",
+        "description": "T.M. Kalaw St. (from Roxas Boulevard - Taft Avenue), Manila",
+        "deo": "South Manila",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9846,
+          14.577440000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-3",
+        "title": "Buendia Extension (S03216LZ) Chainage 000 - Chainage 210, Pasay",
+        "description": "Buendia Extension (S03216LZ) Chainage 000 - Chainage 210, Pasay",
+        "deo": "South Manila",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.99680000000001,
+          14.55322
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-4",
+        "title": "EDSA (Roxas Blvd - Taft Avenue), Pasay",
+        "description": "EDSA (Roxas Blvd - Taft Avenue), Pasay",
+        "deo": "South Manila",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.979,
+          14.576
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-5",
+        "title": "Taft Avenue North Bound (S02958LZ), Manila",
+        "description": "Taft Avenue North Bound (S02958LZ), Manila",
+        "deo": "South Manila",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9902,
+          14.55878
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-6",
+        "title": "Taft Avenue South Bound (S02953LZ), Manila",
+        "description": "Taft Avenue South Bound (S02953LZ), Manila",
+        "deo": "South Manila",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9914,
+          14.55956
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-7",
+        "title": "P. Ocampo St. (corner Taft Avenue), Pasay City",
+        "description": "P. Ocampo St. (corner Taft Avenue), Pasay City",
+        "deo": "South Manila",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.99860000000001,
+          14.56434
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-8",
+        "title": "Roxas Blvd (from Pedro Gil St. to T.M. Kalaw st), Manila",
+        "description": "Roxas Blvd (from Pedro Gil St. to T.M. Kalaw st), Manila",
+        "deo": "South Manila",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9918,
+          14.58212
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-9",
+        "title": "Roxas Blvd Service Road (P.Ocampo St. - Sen. Gil Puyat Ave), Pasay",
+        "description": "Roxas Blvd Service Road (P.Ocampo St. - Sen. Gil Puyat Ave), Pasay",
+        "deo": "South Manila",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9742,
+          14.572880000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-south-manila-10",
+        "title": "Roxas Blvd Service Road (T.M. Kalaw St. - P. Gil St), Manila",
+        "description": "Roxas Blvd Service Road (T.M. Kalaw St. - P. Gil St), Manila",
+        "deo": "South Manila",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98339999999999,
+          14.57666
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-1",
+        "title": "FAIRVIEW AVENUE (S05451LZ), WINSTON STREET, K0021+(-190) - K0021+(-11…",
+        "description": "FAIRVIEW AVENUE (S05451LZ), WINSTON STREET, K0021+(-190) - K0021+(-110), Brgy. Fairview, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.05239999999999,
+          14.69566
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-2",
+        "title": "REGALADO AVENUE (NORTH) (S05457LZ), CORNER BRISTOL, K0024+160 - K0024…",
+        "description": "REGALADO AVENUE (NORTH) (S05457LZ), CORNER BRISTOL, K0024+160 - K0024+465, Brgy. Lagro, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0616,
+          14.73244
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-3",
+        "title": "COMMONWEALTH AVENUE (S05641LZ), in front of Ever Gotesco/Mcdonalds/Sh…",
+        "description": "COMMONWEALTH AVENUE (S05641LZ), in front of Ever Gotesco/Mcdonalds/Shell Gas Station,K0017+(-026) - K0017+050, Brgy. Batasan Hills, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0868,
+          14.67522
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-4",
+        "title": "COMMONWEALTH AVENUE (S05646LZ), Near Sector 5,K0020 + (357) - K0020+-…",
+        "description": "COMMONWEALTH AVENUE (S05646LZ), Near Sector 5,K0020 + (357) - K0020+-280, Brgy. Commonwealth, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.088,
+          14.676
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-5",
+        "title": "CENTRAL AVENUE (S05178LZ), IN FRONT OF EAGLE BROADCAST, K0013+270 - K…",
+        "description": "CENTRAL AVENUE (S05178LZ), IN FRONT OF EAGLE BROADCAST, K0013+270 - K0013+600, Brgy. New Era, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0432,
+          14.653780000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-6",
+        "title": "G. ARANETA AVENUE (S05322LZ), P. Florentino Street to Corner Maria Cl…",
+        "description": "G. ARANETA AVENUE (S05322LZ), P. Florentino Street to Corner Maria Clara Street, K0011+1000 - K0011+800, Brgy. Talayan, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0114,
+          14.62056
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-7",
+        "title": "STO. DOMINGO (S05321LZ) COR. CALAMBA STREET, K0007+500 - K0007+700, B…",
+        "description": "STO. DOMINGO (S05321LZ) COR. CALAMBA STREET, K0007+500 - K0007+700, Brgy. Sto. Domingo, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.01060000000001,
+          14.62634
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-8",
+        "title": "MARIA CLARA STREET (S05345LZ), G ARANETA AVE. - STO DOMINGO, K0007+50…",
+        "description": "MARIA CLARA STREET (S05345LZ), G ARANETA AVE. - STO DOMINGO, K0007+509 - K0007+789, Brgy. Sto. Domingo, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0138,
+          14.622119999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-9",
+        "title": "GENERAL LUIS STREET (S05488LZ) CORNER AMBROCIA STREET, K0019+(-500) -…",
+        "description": "GENERAL LUIS STREET (S05488LZ) CORNER AMBROCIA STREET, K0019+(-500) - K0019+(-430), Brgy. Nagkaisang Nayon, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0132,
+          14.72888
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-10",
+        "title": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), BALINTWAK STATION, K0012+875…",
+        "description": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), BALINTWAK STATION, K0012+875 - K0011+150, Brgy. Unang Sigaw, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "centroid"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0505,
+          14.6835
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-11",
+        "title": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), DARIO BRIDGE TO LANDERS, K00…",
+        "description": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), DARIO BRIDGE TO LANDERS, K0013+100 - K0012+10, Brgy. Apolonio Samson, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 11,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.02560000000001,
+          14.65544
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-12",
+        "title": "VISAYAS AVENUE (S05467LZ), CENTRAL AVE TO ROAD 1 , K0012+490 - K0012+…",
+        "description": "VISAYAS AVENUE (S05467LZ), CENTRAL AVE TO ROAD 1 , K0012+490 - K0012+820, Brgy. Vasra, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 12,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0378,
+          14.65022
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-13",
+        "title": "PAYATAS ROAD (S05179LZ), PAYATAS BRIDGE , K0022+000 - K0021+(-990), B…",
+        "description": "PAYATAS ROAD (S05179LZ), PAYATAS BRIDGE , K0022+000 - K0021+(-990), Brgy. Commonwealth, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 13,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.103,
+          14.71
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-14",
+        "title": "PAYATAS ROAD (S05179LZ), MAJAAS STREET TO FARMERS STREET , K0023+900 …",
+        "description": "PAYATAS ROAD (S05179LZ), MAJAAS STREET TO FARMERS STREET , K0023+900 - K0024+000, Brgy. Payatas, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 14,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.10419999999999,
+          14.710780000000002
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-15",
+        "title": "BATASAN ROAD (S05447LZ), IN FRONT OF EVERLASTING STREET , K0019+(-509…",
+        "description": "BATASAN ROAD (S05447LZ), IN FRONT OF EVERLASTING STREET , K0019+(-509) - K0019+(-600), Brgy. Commonwealth, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 15,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0974,
+          14.68956
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-16",
+        "title": "QUEZON AVENUE (S05193LZ) CORNER BIAK-NA-BATO, K0007+350 - K0007+450, …",
+        "description": "QUEZON AVENUE (S05193LZ) CORNER BIAK-NA-BATO, K0007+350 - K0007+450, Brgy. Sto. Domingo, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 16,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.01060000000001,
+          14.62634
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-17",
+        "title": "A. BONIFACIO AVENUE (S05160LZ) CORNER EDSA SB, K0009+(-390) - K0009+(…",
+        "description": "A. BONIFACIO AVENUE (S05160LZ) CORNER EDSA SB, K0009+(-390) - K0009+(-350), Brgy. Balingasa, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 17,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0068,
+          14.64412
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-18",
+        "title": "SGT. RIVERA AVENUE (S05145LZ) CORNER A. BONIFACIO AVENUE, K0012+070 -…",
+        "description": "SGT. RIVERA AVENUE (S05145LZ) CORNER A. BONIFACIO AVENUE, K0012+070 - K0012+100, Brgy. Pagibig Sa Nayon, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 18,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.99719999999999,
+          14.637880000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-19",
+        "title": "LUZON AVENUE (S05626LZ) FRONTING PUREGOLD, Chainage 0 to 403, Brgy. C…",
+        "description": "LUZON AVENUE (S05626LZ) FRONTING PUREGOLD, Chainage 0 to 403, Brgy. Culiat, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 19,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0574,
+          14.665659999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-20",
+        "title": "LUZON AVENUE (S05624LZ) AFTER LUZON FLYOVER, Chainage 600 to 700, Brg…",
+        "description": "LUZON AVENUE (S05624LZ) AFTER LUZON FLYOVER, Chainage 600 to 700, Brgy. Culiat, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 20,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.05860000000001,
+          14.66644
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-21",
+        "title": "QUEZON AVENUE (S05250LZ) G ARANETA UNDERPASS, Chainage , Brgy. Sto. D…",
+        "description": "QUEZON AVENUE (S05250LZ) G ARANETA UNDERPASS, Chainage , Brgy. Sto. Domingo, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 21,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0078,
+          14.618219999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-22",
+        "title": "FAIRVIEW AVENUE (S05451LZ) PEARL DRIVE, KM , Brgy. Fairview, Quezon C…",
+        "description": "FAIRVIEW AVENUE (S05451LZ) PEARL DRIVE, KM , Brgy. Fairview, Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 22,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.056,
+          14.698
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-1st-23",
+        "title": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), SM NORTH EDSAKM , Brgy. Bago…",
+        "description": "EPIFANIO DELOS SANTOS AVENUE (S05154LZ), SM NORTH EDSAKM , Brgy. Bagong Pag-asa Quezon City, NCR",
+        "deo": "Quezon City 1st",
+        "index": 23,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0292,
+          14.65778
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-1",
+        "title": "Aurora Blvd Eastbound (fronting SM Sta. Mesa)",
+        "description": "Aurora Blvd Eastbound (fronting SM Sta. Mesa)",
+        "deo": "Quezon City 2nd",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9974,
+          14.59266
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-2",
+        "title": "Aurora Blvd Westbound (fronting SM Sta. Mesa)",
+        "description": "Aurora Blvd Westbound (fronting SM Sta. Mesa)",
+        "deo": "Quezon City 2nd",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.99860000000001,
+          14.593440000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-3",
+        "title": "C-5 Road Northbound (Ateneo Gate 2 to Loyola Drive)",
+        "description": "C-5 Road Northbound (Ateneo Gate 2 to Loyola Drive)",
+        "deo": "Quezon City 2nd",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0678,
+          14.58522
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-4",
+        "title": "C-5 Road Southbound (One Burgundy Plaza Bldg. to Rosa Alvero)",
+        "description": "C-5 Road Southbound (One Burgundy Plaza Bldg. to Rosa Alvero)",
+        "deo": "Quezon City 2nd",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.069,
+          14.586
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-5",
+        "title": "E. Rodriguez Sr. (La Felonila st. to G. Araneta Ave.)",
+        "description": "E. Rodriguez Sr. (La Felonila st. to G. Araneta Ave.)",
+        "deo": "Quezon City 2nd",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0102,
+          14.61978
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-6",
+        "title": "East Ave.Westbound (fronting NKTI)",
+        "description": "East Ave.Westbound (fronting NKTI)",
+        "deo": "Quezon City 2nd",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0514,
+          14.63656
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-7",
+        "title": "East Ave.Eastbound (fronting Quezon City Hall)",
+        "description": "East Ave.Eastbound (fronting Quezon City Hall)",
+        "deo": "Quezon City 2nd",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.05260000000001,
+          14.63734
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-8",
+        "title": "EDSA Northbound (Centris to Quezon Avenue)",
+        "description": "EDSA Northbound (Centris to Quezon Avenue)",
+        "deo": "Quezon City 2nd",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.03880000000001,
+          14.63112
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-9",
+        "title": "EDSA Northbound (in front Camp Aguinaldo Gate 2)",
+        "description": "EDSA Northbound (in front Camp Aguinaldo Gate 2)",
+        "deo": "Quezon City 2nd",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0382,
+          14.607880000000002
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-10",
+        "title": "EDSA Northbound (in front of Camp Aguinaldo Gate 3)",
+        "description": "EDSA Northbound (in front of Camp Aguinaldo Gate 3)",
+        "deo": "Quezon City 2nd",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0394,
+          14.60866
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-11",
+        "title": "Elliptical Rd (Quezon Avenue to East Avenue)",
+        "description": "Elliptical Rd (Quezon Avenue to East Avenue)",
+        "deo": "Quezon City 2nd",
+        "index": 11,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.03160000000001,
+          14.62644
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-12",
+        "title": "G. Araneta Ave. Southbound (Kaliraya st. to E. Rodriguez Sr.)",
+        "description": "G. Araneta Ave. Southbound (Kaliraya st. to E. Rodriguez Sr.)",
+        "deo": "Quezon City 2nd",
+        "index": 12,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0078,
+          14.618219999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-13",
+        "title": "G. Araneta Ave. Northbound (E. Rodriguez Sr. to Kaliraya st.)",
+        "description": "G. Araneta Ave. Northbound (E. Rodriguez Sr. to Kaliraya st.)",
+        "deo": "Quezon City 2nd",
+        "index": 13,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.009,
+          14.619
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-14",
+        "title": "Kamias Rd. (Corner Kalayaan Ave.)",
+        "description": "Kamias Rd. (Corner Kalayaan Ave.)",
+        "deo": "Quezon City 2nd",
+        "index": 14,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0532,
+          14.62878
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-15",
+        "title": "Mo. Ignacia St. (EDSA to Sgt. Esguerra)",
+        "description": "Mo. Ignacia St. (EDSA to Sgt. Esguerra)",
+        "deo": "Quezon City 2nd",
+        "index": 15,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0474,
+          14.634559999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-16",
+        "title": "Mo. Ignacia St. (Timog Ave to Madriñan St.)",
+        "description": "Mo. Ignacia St. (Timog Ave to Madriñan St.)",
+        "deo": "Quezon City 2nd",
+        "index": 16,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.04860000000001,
+          14.63534
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-17",
+        "title": "Quezon Ave. Eastbound (BMA Ave. to Tuayan Ave.)",
+        "description": "Quezon Ave. Eastbound (BMA Ave. to Tuayan Ave.)",
+        "deo": "Quezon City 2nd",
+        "index": 17,
+        "category": "flood-prone",
+        "geocodeMethod": "centroid"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0525,
+          14.6365
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-18",
+        "title": "Quezon Ave. Easbound (Corner BIR Road)",
+        "description": "Quezon Ave. Easbound (Corner BIR Road)",
+        "deo": "Quezon City 2nd",
+        "index": 18,
+        "category": "flood-prone",
+        "geocodeMethod": "centroid"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.05499999999999,
+          14.638
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-19",
+        "title": "South Ave./Timog Ave. (Sct. Tuason to Sct. Tobias)",
+        "description": "South Ave./Timog Ave. (Sct. Tuason to Sct. Tobias)",
+        "deo": "Quezon City 2nd",
+        "index": 19,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0324,
+          14.633659999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-20",
+        "title": "Tomas Morato Ave. (corner. Sct. Limbaga)",
+        "description": "Tomas Morato Ave. (corner. Sct. Limbaga)",
+        "deo": "Quezon City 2nd",
+        "index": 20,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0326,
+          14.63344
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-21",
+        "title": "V. Luna Road (East Ave. to Malakas St.)",
+        "description": "V. Luna Road (East Ave. to Malakas St.)",
+        "deo": "Quezon City 2nd",
+        "index": 21,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.04780000000001,
+          14.63422
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-22",
+        "title": "V. Luna Road (Mapagbigay St. to Matimpiin St.)",
+        "description": "V. Luna Road (Mapagbigay St. to Matimpiin St.)",
+        "deo": "Quezon City 2nd",
+        "index": 22,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.047,
+          14.642
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-23",
+        "title": "V. Luna Road (Corner Anonas)",
+        "description": "V. Luna Road (Corner Anonas)",
+        "deo": "Quezon City 2nd",
+        "index": 23,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0482,
+          14.64278
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-quezon-city-2nd-24",
+        "title": "P. Tuazon Blvd. (Corner 18th Ave.)",
+        "description": "P. Tuazon Blvd. (Corner 18th Ave.)",
+        "deo": "Quezon City 2nd",
+        "index": 24,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.04039999999999,
+          14.621559999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-1",
+        "title": "Boni Avenue (Maysilo Circle), Mandaluyong City",
+        "description": "Boni Avenue (Maysilo Circle), Mandaluyong City",
+        "deo": "Metro Manila 1st",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0274,
+          14.57466
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-2",
+        "title": "Boni Avenue corner F. Ortigas, Mandaluyong City",
+        "description": "Boni Avenue corner F. Ortigas, Mandaluyong City",
+        "deo": "Metro Manila 1st",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.02860000000001,
+          14.57544
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-3",
+        "title": "EDSA Shaw Underpass Northbound, Mandaluyong City (near submersible pump)",
+        "description": "EDSA Shaw Underpass Northbound, Mandaluyong City (near submersible pump)",
+        "deo": "Metro Manila 1st",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0528,
+          14.58522
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-4",
+        "title": "Shaw Boulevard, Mandaluyong City (Along Welfare Ville to Pinagtipunan…",
+        "description": "Shaw Boulevard, Mandaluyong City (Along Welfare Ville to Pinagtipunan Street)",
+        "deo": "Metro Manila 1st",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.054,
+          14.586
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-5",
+        "title": "Psychopathic Hospital Road, Mandaluyong City (From S. Laurel to Old W…",
+        "description": "Psychopathic Hospital Road, Mandaluyong City (From S. Laurel to Old Wack Wack)",
+        "deo": "Metro Manila 1st",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0392,
+          14.582780000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-6",
+        "title": "Imelda Avenue, Pasig City (Phoenix Gas Station to Metroville Subdivis…",
+        "description": "Imelda Avenue, Pasig City (Phoenix Gas Station to Metroville Subdivision and 2nd Rizal Boundary)",
+        "deo": "Metro Manila 1st",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.1004,
+          14.58756
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-7",
+        "title": "Amang Rodriguez Road, Pasig City (St. Camillus Medical Center to Marc…",
+        "description": "Amang Rodriguez Road, Pasig City (St. Camillus Medical Center to Marcos Highway)",
+        "deo": "Metro Manila 1st",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.10560000000001,
+          14.59934
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-8",
+        "title": "Manila East Road Eastbound &amp; Westbound, Pasig City (Doña Juliana …",
+        "description": "Manila East Road Eastbound &amp; Westbound, Pasig City (Doña Juliana Village to Country Side and Riverside Drive to SM East Ortigas)",
+        "deo": "Metro Manila 1st",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0928,
+          14.59512
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-9",
+        "title": "C-5 Road Northbound, Pasig City (Corner Eagle Street and Fronting Tie…",
+        "description": "C-5 Road Northbound, Pasig City (Corner Eagle Street and Fronting Tiendesitas)",
+        "deo": "Metro Manila 1st",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0642,
+          14.582880000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-10",
+        "title": "Fort Bonifacio Nichols Field Road, Taguig City (Fronting Southern Pol…",
+        "description": "Fort Bonifacio Nichols Field Road, Taguig City (Fronting Southern Police District)",
+        "deo": "Metro Manila 1st",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0394,
+          14.52566
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-11",
+        "title": "Libingan ng mga Bayani Road, Taguig City (Along Philippine Golf Army)",
+        "description": "Libingan ng mga Bayani Road, Taguig City (Along Philippine Golf Army)",
+        "deo": "Metro Manila 1st",
+        "index": 11,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.03960000000001,
+          14.54044
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-12",
+        "title": "C-5 Road Southbound, Taguig City (Diego Silang &amp; Fronting Petron)",
+        "description": "C-5 Road Southbound, Taguig City (Diego Silang &amp; Fronting Petron)",
+        "deo": "Metro Manila 1st",
+        "index": 12,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0678,
+          14.58522
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-13",
+        "title": "C-5 Kalayaan Service Road Southbound, Taguig City (Corner Kalayaan Av…",
+        "description": "C-5 Kalayaan Service Road Southbound, Taguig City (Corner Kalayaan Avenue)",
+        "deo": "Metro Manila 1st",
+        "index": 13,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.069,
+          14.586
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-14",
+        "title": "F. Manalo Street, San Juan City (From Valenzuela Street to Rua Pascua…",
+        "description": "F. Manalo Street, San Juan City (From Valenzuela Street to Rua Pascual Street)",
+        "deo": "Metro Manila 1st",
+        "index": 14,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0362,
+          14.59978
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-1st-15",
+        "title": "Sumulong Highway, Marikina City (From Katipunan Extension to Mayor Gi…",
+        "description": "Sumulong Highway, Marikina City (From Katipunan Extension to Mayor Gil Fernando and Sumulong Bypass Road)",
+        "deo": "Metro Manila 1st",
+        "index": 15,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.11739999999999,
+          14.63356
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-1",
+        "title": "Parañaque-Sucat Road in front of SM Sucat, Parañaque City",
+        "description": "Parañaque-Sucat Road in front of SM Sucat, Parañaque City",
+        "deo": "Metro Manila 2nd",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0144,
+          14.45866
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-2",
+        "title": "Pasong Tamo Magallanes Tunnel, Makati City",
+        "description": "Pasong Tamo Magallanes Tunnel, Makati City",
+        "deo": "Metro Manila 2nd",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0116,
+          14.55244
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-3",
+        "title": "Parañaque-Sucat Road cor. Angelina Canaynay Ave., Parañaque City",
+        "description": "Parañaque-Sucat Road cor. Angelina Canaynay Ave., Parañaque City",
+        "deo": "Metro Manila 2nd",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0168,
+          14.46022
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-4",
+        "title": "Ninoy Aquino SB in front of Oyster Plaza, Parañaque City",
+        "description": "Ninoy Aquino SB in front of Oyster Plaza, Parañaque City",
+        "deo": "Metro Manila 2nd",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.012,
+          14.508
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-5",
+        "title": "Parañaque-Sucat Road cor. Fourth Estate Subd., Parañaque City",
+        "description": "Parañaque-Sucat Road cor. Fourth Estate Subd., Parañaque City",
+        "deo": "Metro Manila 2nd",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0192,
+          14.461780000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-6",
+        "title": "South Super Highway in front of SM Hypermarket, Makati City",
+        "description": "South Super Highway in front of SM Hypermarket, Makati City",
+        "deo": "Metro Manila 2nd",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0234,
+          14.55456
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-7",
+        "title": "South Super Highway cor. Buendia Ave., Makati City",
+        "description": "South Super Highway cor. Buendia Ave., Makati City",
+        "deo": "Metro Manila 2nd",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0246,
+          14.555340000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-8",
+        "title": "Gil Puyat Ave cor. Washington St., Makati City",
+        "description": "Gil Puyat Ave cor. Washington St., Makati City",
+        "deo": "Metro Manila 2nd",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0228,
+          14.561119999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-9",
+        "title": "Pasong Tamo cor. Urban Ave., Makati City",
+        "description": "Pasong Tamo cor. Urban Ave., Makati City",
+        "deo": "Metro Manila 2nd",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.00919999999999,
+          14.550880000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-2nd-10",
+        "title": "Vito Cruz Extension cor. Pasong Tamo, Makati City",
+        "description": "Vito Cruz Extension cor. Pasong Tamo, Makati City",
+        "deo": "Metro Manila 2nd",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.01039999999999,
+          14.55166
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-1",
+        "title": "G. Lazaro St. (corner Mac Arthur Highway), Valenzuela City",
+        "description": "G. Lazaro St. (corner Mac Arthur Highway), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9764,
+          14.69566
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-2",
+        "title": "Gov. T. Santiago St. (Mac Arthur Highway to Creek), Valenzuela City",
+        "description": "Gov. T. Santiago St. (Mac Arthur Highway to Creek), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.97760000000001,
+          14.69644
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-3",
+        "title": "C-3 Road (NLEX Connector / PNR Crossing), Caloocan City",
+        "description": "C-3 Road (NLEX Connector / PNR Crossing), Caloocan City",
+        "deo": "Metro Manila 3rd",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9798,
+          14.651219999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-4",
+        "title": "Mac Arthur Highway (C. Santiago St. to Gov. T. Santiago St.), Valenzu…",
+        "description": "Mac Arthur Highway (C. Santiago St. to Gov. T. Santiago St.), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98,
+          14.698
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-5",
+        "title": "Mac Arthur Highway (Pio Valenzuela St. to A. Fernando St.), Valenzuel…",
+        "description": "Mac Arthur Highway (Pio Valenzuela St. to A. Fernando St.), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9812,
+          14.698780000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-6",
+        "title": "Mac Arthur Highway (Infront of Fatima), Valenzuela City",
+        "description": "Mac Arthur Highway (Infront of Fatima), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9824,
+          14.69956
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-7",
+        "title": "Mac Arthur Highway (Infront of Valtrade), Valenzuela City",
+        "description": "Mac Arthur Highway (Infront of Valtrade), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98360000000001,
+          14.70034
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-8",
+        "title": "East Service Road (De Castro St. to Creek), Valenzuela City",
+        "description": "East Service Road (De Castro St. to Creek), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9898,
+          14.69512
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-9",
+        "title": "Polo-Novaliches Road (P. Santiago St. to Paso De Blas Bridge), Valenz…",
+        "description": "Polo-Novaliches Road (P. Santiago St. to Paso De Blas Bridge), Valenzuela City",
+        "deo": "Metro Manila 3rd",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9872,
+          14.704880000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-10",
+        "title": "10th Avenue (3rd St. to 8th St.), Caloocan City",
+        "description": "10th Avenue (3rd St. to 8th St.), Caloocan City",
+        "deo": "Metro Manila 3rd",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9914,
+          14.65466
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-11",
+        "title": "Mac Arthur Highway (corner Calle Uno), Caloocan City",
+        "description": "Mac Arthur Highway (corner Calle Uno), Caloocan City",
+        "deo": "Metro Manila 3rd",
+        "index": 11,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.97760000000001,
+          14.69644
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-12",
+        "title": "Deparo-Camarin Road (Phase 6), Caloocan City",
+        "description": "Deparo-Camarin Road (Phase 6), Caloocan City",
+        "deo": "Metro Manila 3rd",
+        "index": 12,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0018,
+          14.74122
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-13",
+        "title": "Deparo-Bagumbong Road (near Alagar St.), Caloocan City",
+        "description": "Deparo-Bagumbong Road (near Alagar St.), Caloocan City",
+        "deo": "Metro Manila 3rd",
+        "index": 13,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.003,
+          14.742
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-metro-manila-3rd-14",
+        "title": "Congressional Road (Infront of McDonald's), Caloocan City",
+        "description": "Congressional Road (Infront of McDonald's), Caloocan City",
+        "deo": "Metro Manila 3rd",
+        "index": 14,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0132,
+          14.74878
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-1",
+        "title": "MSR - Quirino Avenue, Las Piñas City (Alido Bridge to Zapote Flyover)",
+        "description": "MSR - Quirino Avenue, Las Piñas City (Alido Bridge to Zapote Flyover)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9784,
+          14.46466
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-2",
+        "title": "CAA Int'l. Receiver Road, Las Piñas City (in front of BF Homes Martin…",
+        "description": "CAA Int'l. Receiver Road, Las Piñas City (in front of BF Homes Martin Village)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9856,
+          14.45044
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-3",
+        "title": "Marcos Alvarez Road, Las Piñas City (in front of Savemore Market)",
+        "description": "Marcos Alvarez Road, Las Piñas City (in front of Savemore Market)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.98780000000001,
+          14.44422
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-4",
+        "title": "Marcos Alvarez Road, Las Piñas City (in front of Wonderland Homes)",
+        "description": "Marcos Alvarez Road, Las Piñas City (in front of Wonderland Homes)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.989,
+          14.445
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-5",
+        "title": "Zapote-Alabang Road, Las Piñas City (near Pamplona Hospital)",
+        "description": "Zapote-Alabang Road, Las Piñas City (near Pamplona Hospital)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9772,
+          14.44278
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-6",
+        "title": "Maharlika Highway, Muntinlupa City (in front of Muntinlupa City Hall)",
+        "description": "Maharlika Highway, Muntinlupa City (in front of Muntinlupa City Hall)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.04639999999999,
+          14.409559999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-7",
+        "title": "Maharlika Highway, Muntinlupa City (in front of LTO Tunasan)",
+        "description": "Maharlika Highway, Muntinlupa City (in front of LTO Tunasan)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0476,
+          14.41034
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-8",
+        "title": "West Service Road, Muntinlupa City (in front of Alabang Hills)",
+        "description": "West Service Road, Muntinlupa City (in front of Alabang Hills)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0398,
+          14.424119999999998
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-las-pias---muntinlupa-9",
+        "title": "PPTA Road, Muntinlupa City (in front of Liana's Central Mall)",
+        "description": "PPTA Road, Muntinlupa City (in front of Liana's Central Mall)",
+        "deo": "Las Piñas - Muntinlupa",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0332,
+          14.41188
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-1",
+        "title": "Gov. W. Pascual Ave. (Cor. Maria Clara)",
+        "description": "Gov. W. Pascual Ave. (Cor. Maria Clara)",
+        "deo": "Malabon - Navotas",
+        "index": 1,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.96239999999999,
+          14.65966
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-2",
+        "title": "Gov. W. Pascual Ave. (Sitio 6 to Sanciangco St.)",
+        "description": "Gov. W. Pascual Ave. (Sitio 6 to Sanciangco St.)",
+        "deo": "Malabon - Navotas",
+        "index": 2,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9636,
+          14.660440000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-3",
+        "title": "C. Arellano St. (Paez St. to Sacristia St.)",
+        "description": "C. Arellano St. (Paez St. to Sacristia St.)",
+        "deo": "Malabon - Navotas",
+        "index": 3,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9608,
+          14.664219999999998
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-4",
+        "title": "M.H. del Pilar St. (Yanga St. to San Vicente Village)",
+        "description": "M.H. del Pilar St. (Yanga St. to San Vicente Village)",
+        "deo": "Malabon - Navotas",
+        "index": 4,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.958,
+          14.658
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-5",
+        "title": "M.H. del Pilar St. (Corner E. Rodriguez St.)",
+        "description": "M.H. del Pilar St. (Corner E. Rodriguez St.)",
+        "deo": "Malabon - Navotas",
+        "index": 5,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          121.0192,
+          14.618780000000001
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-6",
+        "title": "M.H. del Pilar St. (Buenaventura St. to Arkong Bato)",
+        "description": "M.H. del Pilar St. (Buenaventura St. to Arkong Bato)",
+        "deo": "Malabon - Navotas",
+        "index": 6,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.96039999999999,
+          14.659559999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-7",
+        "title": "Don Basilio Bautista St. (Dampalit Bridge to JCT Womens Club)",
+        "description": "Don Basilio Bautista St. (Dampalit Bridge to JCT Womens Club)",
+        "deo": "Malabon - Navotas",
+        "index": 7,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9586,
+          14.67434
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-8",
+        "title": "P. Aquino St. (Sanciangco St. to Everlasting Peace Memorial Park)",
+        "description": "P. Aquino St. (Sanciangco St. to Everlasting Peace Memorial Park)",
+        "deo": "Malabon - Navotas",
+        "index": 8,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9578,
+          14.651119999999999
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-9",
+        "title": "P. Aquino St. (Gen. Luna St. Intersection)",
+        "description": "P. Aquino St. (Gen. Luna St. Intersection)",
+        "deo": "Malabon - Navotas",
+        "index": 9,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9482,
+          14.64488
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-10",
+        "title": "Sevilla Blvd. (Sacristia St. to Estrella St.)",
+        "description": "Sevilla Blvd. (Sacristia St. to Estrella St.)",
+        "deo": "Malabon - Navotas",
+        "index": 10,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.95639999999999,
+          14.65266
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fpa-malabon---navotas-11",
+        "title": "JCT Women's Club ( Flores St. to Naval St.)",
+        "description": "JCT Women's Club ( Flores St. to Naval St.)",
+        "deo": "Malabon - Navotas",
+        "index": 11,
+        "category": "flood-prone",
+        "geocodeMethod": "road-lookup"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          120.9546,
+          14.65044
+        ]
+      }
+    }
+  ]
+}
