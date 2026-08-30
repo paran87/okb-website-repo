@@ -15,6 +15,7 @@ import { LayerPanel } from "@/features/map/components/layer-panel";
 import { GisMapSearch } from "@/features/map/components/map-search";
 import { MapPopupOverlay } from "@/features/map/components/map-popup-overlay";
 import { useMapStore } from "@/features/map/store/map.store";
+import { INITIAL_SELECTION } from "@/features/map/types/event.types";
 import type { LayerConfig, MapEngineOptions, MapStyleId } from "@/features/map/types";
 import type { MapViewport } from "@/types/geo";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
@@ -59,6 +60,19 @@ function MapLayerBootstrap({
   return null;
 }
 
+/** Clears feature popup/selection when leaving a map view so stale panels do not carry over. */
+function MapInteractionReset() {
+  useLayoutEffect(() => {
+    return () => {
+      const store = useMapStore.getState();
+      store.closePopup();
+      store.setSelection(INITIAL_SELECTION);
+    };
+  }, []);
+
+  return null;
+}
+
 /** Composed GIS engine — map canvas, controls, layers, search, legend, popup. */
 export function MapEngine({
   className,
@@ -72,6 +86,7 @@ export function MapEngine({
   showLegend = true,
   showBasemapSwitcher = false,
   lockBasemap = false,
+  showNorthInControls = true,
   resetViewPreset,
   maxBounds,
   basemapStyles,
@@ -89,6 +104,7 @@ export function MapEngine({
         showLegend,
         showBasemapSwitcher,
         lockBasemap,
+        showNorthInControls,
         resetViewPreset,
         maxBounds,
         basemapStyles,
@@ -98,6 +114,7 @@ export function MapEngine({
     >
       <div className={cn("relative h-full w-full overflow-hidden", className)}>
         <MapLayerBootstrap initialLayers={initialLayers} />
+        <MapInteractionReset />
         <MapContainer className="h-full w-full" />
         <MapEngineOverlays />
       </div>
@@ -143,24 +160,22 @@ function MapEngineOverlays() {
       ) : null}
 
       {options.showControls ? (
-        <div
-          className={cn(
-            "pointer-events-none absolute bottom-3 z-20",
-            options.showBasemapSwitcher ? "right-3" : "right-3",
-          )}
-        >
+        <div className="pointer-events-none absolute bottom-3 right-3 z-20">
           <GisMapControls />
         </div>
       ) : null}
 
-      {options.showLegend && !options.showBasemapSwitcher ? (
-        <div className="pointer-events-auto absolute bottom-3 left-3">
-          <GisLegend />
-        </div>
-      ) : null}
-
-      {options.showLegend && options.showBasemapSwitcher ? (
-        <div className="pointer-events-auto absolute bottom-3 left-44 z-10 max-w-[220px]">
+      {options.showLegend ? (
+        <div
+          className={cn(
+            "pointer-events-auto absolute z-30 max-w-[220px]",
+            options.showBasemapSwitcher
+              ? "bottom-3 left-44"
+              : options.showLayerPanel && isLayerPanelOpen
+                ? "bottom-3 left-3"
+                : "right-3 top-14",
+          )}
+        >
           <GisLegend />
         </div>
       ) : null}

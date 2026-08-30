@@ -14,7 +14,8 @@ import { useMapStore } from "@/features/map/store/map.store";
 export interface MapContextValue {
   options: MapEngineOptions;
   initialView: MapViewport;
-  initialStyleId: MapStyleId;
+  /** Undefined means "follow the active theme" rather than "use dark". */
+  initialStyleId?: MapStyleId;
 }
 
 const MapContext = createContext<MapContextValue | null>(null);
@@ -33,8 +34,7 @@ export function MapProvider({
   initialStyleId,
   options = {},
 }: MapProviderProps) {
-  const resolvedStyleId =
-    initialStyleId ?? options.styleId ?? "dark";
+  const resolvedStyleId = initialStyleId ?? options.styleId;
 
   const value = useMemo<MapContextValue>(
     () => ({

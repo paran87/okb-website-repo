@@ -14,9 +14,11 @@ const exploreLinks = [
 
   { href: PUBLIC_ROUTES.activity, label: "Activity" },
 
+  { href: PUBLIC_ROUTES.accomplishment, label: "Accomplishment" },
+
   { href: PUBLIC_ROUTES.advisories, label: "Advisories" },
 
-  { href: PUBLIC_ROUTES.profile, label: "Profile" },
+  { href: PUBLIC_ROUTES.profile, label: "Portfolio" },
 
   { href: PUBLIC_ROUTES.contact, label: "Contact" },
 
@@ -36,33 +38,21 @@ export function SiteFooter() {
 
       <div className="okb-public-shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr] lg:py-14">
 
-        <div>
+        <div className="sm:col-span-2 lg:col-span-1">
 
           <div className="flex items-start gap-4">
-
             <OkbLogo size={56} className="shrink-0" />
-
-            <div>
-
-              <p className="text-xl font-bold text-white sm:text-2xl">
-
+            <div className="okb-public-footer-brand-copy">
+              <p className="okb-public-footer-title text-xl font-bold text-white sm:text-2xl">
                 {APP.program}
-
               </p>
-
+              <p className="okb-public-footer-about text-sm leading-relaxed text-[#a8b4c4]">
+                The national flood-control program of the {APP.organization},
+                coordinating infrastructure, monitoring, and emergency response
+                across the country.
+              </p>
             </div>
-
           </div>
-
-          <p className="okb-public-prose mt-4 text-sm leading-relaxed text-[#a8b4c4]">
-
-            The national flood-control program of the {APP.organization},
-
-            coordinating infrastructure, monitoring, and emergency response
-
-            across the country.
-
-          </p>
 
         </div>
 

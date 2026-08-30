@@ -26,7 +26,7 @@ export function ModulePage({ title, description, icon }: ModulePageProps) {
         <CardContent>
           <EmptyState
             icon={icon}
-            title="coming soon.."
+            title="Coming soon..."
             titleClassName="text-3xl font-semibold tracking-tight sm:text-4xl"
           />
         </CardContent>

@@ -628,6 +628,11 @@
   box-shadow: 0 1px 3px rgba(0, 40, 85, 0.08);
 }
 
+.okb-accomplishment-frame {
+  height: min(85vh, 1100px);
+  min-height: 720px;
+}
+
 .okb-public-card-blue {
   border-left: 4px solid var(--dpwh-blue);
   border-top: 1px solid var(--dpwh-border);
@@ -981,10 +986,45 @@
   );
 }
 
+.okb-public-slide-caption {
+  width: 100%;
+  max-width: 100%;
+  text-wrap: pretty;
+}
+
 .okb-public-footer {
   border-top: 4px solid var(--dpwh-orange);
   background-color: var(--dpwh-blue-dark);
   color: #c8d0dc;
+}
+
+.okb-public-footer-brand-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: calc(100% - 4.5rem);
+}
+
+.okb-public-footer-title {
+  white-space: nowrap;
+}
+
+.okb-public-footer-about {
+  width: 0;
+  min-width: 100%;
+  margin-top: 1rem;
+  text-wrap: pretty;
+}
+
+@media (max-width: 639px) {
+  .okb-public-footer-title {
+    white-space: normal;
+  }
+
+  .okb-public-footer-about {
+    width: auto;
+    min-width: 0;
+  }
 }
 
 .okb-public-footer-link-accent {

@@ -13,8 +13,9 @@ export const PUBLIC_NAV_ITEMS: readonly PublicNavItem[] = [
   { label: "About", href: PUBLIC_ROUTES.about },
   { label: "Initiatives", href: PUBLIC_ROUTES.initiatives },
   { label: "Activity", href: PUBLIC_ROUTES.activity },
+  { label: "Accomplishment", href: PUBLIC_ROUTES.accomplishment },
   { label: "Advisories", href: PUBLIC_ROUTES.advisories },
-  { label: "Profile", href: PUBLIC_ROUTES.profile },
+  { label: "Portfolio", href: PUBLIC_ROUTES.profile },
   { label: "Contact", href: PUBLIC_ROUTES.contact },
   {
     label: "OKB Command Center",

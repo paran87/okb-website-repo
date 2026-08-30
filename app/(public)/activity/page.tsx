@@ -80,6 +80,28 @@ export default function ActivityPage() {
         }}
       />
 
+      <PublicPageSection className="py-10 sm:py-12" containerClassName="space-y-5">
+        <div>
+          <h2 className="okb-public-heading text-2xl sm:text-3xl">
+            NCR Waterways — Cleaning Status
+          </h2>
+          <p className="okb-public-body okb-public-prose mt-3">
+            Interactive map of Metro Manila rivers, creeks, and esteros with
+            current clearing and cleaning status across the National Capital
+            Region.
+          </p>
+        </div>
+
+        <div className="okb-public-card overflow-hidden rounded-sm border shadow-sm">
+          <iframe
+            src="/activity/ncr-waterways.html"
+            title="NCR Waterways cleaning status map"
+            className="block h-[min(80vh,900px)] w-full border-0 bg-[#0E1A24]"
+            loading="lazy"
+          />
+        </div>
+      </PublicPageSection>
+
       <PublicPageSection containerClassName="space-y-14">
         <div>
           <h2 className="okb-public-heading text-2xl sm:text-3xl">

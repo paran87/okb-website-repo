@@ -111,9 +111,9 @@ export function ProfileGallery() {
             </button>
           </div>
 
-          <div className="mx-auto mt-5 max-w-xl text-center">
+          <div className="okb-public-slide-caption mx-auto mt-5 text-center">
             <p className="okb-public-heading text-base sm:text-lg">{slide.title}</p>
-            <p className="okb-public-body mt-1 text-sm">{slide.caption}</p>
+            <p className="okb-public-body mt-1 text-sm sm:text-base">{slide.caption}</p>
           </div>
         </div>
 

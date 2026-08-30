@@ -174,7 +174,7 @@ export function Sidebar() {
               </nav>
               <div className="border-t border-border p-3">
                 <Link
-                  href="/settings"
+                  href={ROUTES.settings}
                   onClick={closeMobile}
                   className="text-caption text-muted-foreground hover:text-foreground"
                 >

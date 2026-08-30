@@ -2,7 +2,7 @@ import { ProfileGallery, PublicPageHero } from "@/components/public";
 import { APP } from "@/lib/constants";
 
 export const metadata = {
-  title: "Profile",
+  title: "Portfolio",
   description: `Program portfolio and briefing materials for ${APP.program} — Office of Undersecretary for Special Concerns.`,
 };
 
@@ -11,7 +11,7 @@ export default function ProfilePage() {
     <>
       <PublicPageHero
         eyebrow="DPWH · Office of Undersecretary for Special Concerns"
-        title="Program Profile"
+        title="Program Portfolio"
         description="Official Oplan Kontra Baha portfolio — program overview, launches, field operations, inter-agency coordination, and nationwide waterway rehabilitation."
       />
       <ProfileGallery />

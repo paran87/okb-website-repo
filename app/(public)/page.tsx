@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowUpRight, Shield, Siren, Waves } from "lucide-react";
+import { Shield, Siren, Waves } from "lucide-react";
 import { HomeHero, PublicPageSection } from "@/components/public";
-import { APP, PUBLIC_ROUTES } from "@/lib/constants";
+import { APP } from "@/lib/constants";
 
 const pillars = [
   {
@@ -80,7 +79,7 @@ export default function HomePage() {
 
       <PublicPageSection alternate className="border-t-0">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl">
+          <div className="max-w-full">
             <p className="okb-public-eyebrow">Operations desk</p>
             <h2 className="okb-public-heading mt-2 text-2xl sm:text-3xl lg:text-4xl">
               OKB Command Center
@@ -91,15 +90,7 @@ export default function HomePage() {
               coordination.
             </p>
           </div>
-          <Link
-            href={PUBLIC_ROUTES.commandCenter}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="okb-public-btn okb-public-btn-accent shrink-0 self-start lg:self-center"
-          >
-            Open Command Center
-            <ArrowUpRight className="size-4" aria-hidden />
-          </Link>
+         
         </div>
       </PublicPageSection>
     </>

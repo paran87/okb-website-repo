@@ -13,14 +13,16 @@ export function DashboardMapPanel({ className }: DashboardMapPanelProps) {
   return (
     <div
       className={cn(
-        "h-full min-h-[280px] overflow-hidden rounded-card border border-border",
+        "relative isolate h-full min-h-[280px] overflow-hidden rounded-card border border-border",
         className,
       )}
     >
       <MapEngine
         initialView={NCR_MAP_VIEW}
+        initialStyleId="light"
+        lockBasemap
         showSearch={false}
-        className="h-full min-h-[280px] lg:min-h-[400px]"
+        className="h-full min-h-[280px] w-full lg:min-h-[360px] xl:min-h-0"
       />
     </div>
   );

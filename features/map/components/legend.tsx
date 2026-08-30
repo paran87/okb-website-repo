@@ -19,6 +19,8 @@ export function GisLegend({ className }: { className?: string }) {
         color: item.color,
         shape: item.shape,
       }))}
+      collapsible
+      defaultOpen
       className={cn("pointer-events-auto", className)}
     />
   );

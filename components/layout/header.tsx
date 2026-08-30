@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CloudSun, Menu } from "lucide-react";
+import { useWeatherSummary } from "@/features/weather/hooks/use-weather-summary";
 import { AppLogo } from "@/components/layout/app-logo";
 import { ConnectionIndicator } from "@/components/layout/connection-indicator";
 import { NotificationBell } from "@/components/layout/notification-bell";
@@ -52,12 +53,20 @@ function LiveClock() {
 }
 
 function WeatherPlaceholder() {
+  const { data } = useWeatherSummary();
+
   return (
     <div className="hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 lg:flex">
       <CloudSun className="size-4 text-warning" aria-hidden />
       <div className="leading-tight">
-        <p className="text-caption font-medium text-foreground">Metro Manila</p>
-        <p className="text-label text-muted-foreground">Weather · —</p>
+        <p className="text-caption font-medium text-foreground">
+          {data?.region ?? "Metro Manila"}
+        </p>
+        <p className="text-label text-muted-foreground">
+          {data
+            ? `${data.temperature}${data.temperatureUnit} · ${data.condition}`
+            : "Weather · —"}
+        </p>
       </div>
     </div>
   );

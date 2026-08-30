@@ -7,18 +7,15 @@ import {
 } from "@/features/dashboard/components/widgets/alert-card";
 import { EquipmentCard } from "@/features/dashboard/components/widgets/equipment-card";
 import { SystemHealthPanel } from "@/features/dashboard/components/widgets/system-health-panel";
-import { WeatherCard } from "@/features/dashboard/components/widgets/weather-card";
 import { WidgetContainer } from "@/features/dashboard/components/widgets/widget-container";
 import type {
   DashboardAlert,
   EquipmentSummary,
   SystemHealthItem,
-  WeatherSummary,
 } from "@/features/dashboard/types";
 import { cn } from "@/utils/cn";
 
 interface RightOperationsPanelProps {
-  weather: WeatherSummary;
   equipment: EquipmentSummary;
   systemHealth: readonly SystemHealthItem[];
   notifications: readonly DashboardAlert[];
@@ -29,15 +26,18 @@ interface RightOperationsPanelProps {
 
 /** Right-side situational awareness widgets. */
 export function RightOperationsPanel({
-  weather,
   equipment,
   systemHealth,
   notifications,
   className,
 }: RightOperationsPanelProps) {
   return (
-    <div className={cn("flex min-h-0 flex-col gap-2 overflow-y-auto", className)}>
-      <WeatherCard weather={weather} />
+    <div
+      className={cn(
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain",
+        className,
+      )}
+    >
       <EquipmentCard equipment={equipment} />
       <SystemHealthPanel items={systemHealth} />
       <WidgetContainer
@@ -52,4 +52,4 @@ export function RightOperationsPanel({
   );
 }
 
-export { AlertCard, WeatherCard, EquipmentCard, SystemHealthPanel };
+export { AlertCard, EquipmentCard, SystemHealthPanel };

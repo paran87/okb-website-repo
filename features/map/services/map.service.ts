@@ -109,7 +109,9 @@ export const mapService = {
 
   setStyle(map: MapLibreMap, styleId: MapStyleId): void {
     map.once("style.load", () => {
-      void reloadOperationalLayers(map);
+      void reloadOperationalLayers(map).catch((error) => {
+        console.error("Failed to re-apply layers after basemap change:", error);
+      });
     });
     map.setStyle(getMapStyle(styleId), { diff: false });
   },

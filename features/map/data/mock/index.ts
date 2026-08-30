@@ -1,5 +1,9 @@
 import type { FeatureCollection } from "geojson";
 import { DEOS_FLOOD_PRONE_AREAS } from "@/features/flood-prone/data";
+import {
+  MOCK_WEATHER_ADVISORY_ZONES,
+  MOCK_WEATHER_STATIONS,
+} from "@/features/weather/data/mock-weather-geojson";
 
 /** Mock flood incident points across Metro Manila. */
 export const MOCK_INCIDENTS: FeatureCollection = {
@@ -357,6 +361,8 @@ export const MOCK_GEOJSON_REGISTRY = {
   roads: MOCK_ROADS,
   sensors: MOCK_SENSORS,
   equipment: MOCK_EQUIPMENT,
+  "weather-advisory-zones": MOCK_WEATHER_ADVISORY_ZONES,
+  "weather-stations": MOCK_WEATHER_STATIONS,
 } as const;
 
 export type MockGeoJsonRegistryKey = keyof typeof MOCK_GEOJSON_REGISTRY;

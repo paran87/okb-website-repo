@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { ChevronDown, List } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 export interface MapLegendItem {
@@ -15,6 +16,9 @@ interface MapLegendProps {
   items: MapLegendItem[];
   className?: string;
   footer?: ReactNode;
+  /** When true, the legend can be collapsed to a Show/Hide control. */
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }
 
 const SHAPE_CLASSES = {
@@ -23,22 +27,58 @@ const SHAPE_CLASSES = {
   line: "h-0.5 w-5 rounded-full",
 } as const;
 
-/** Map symbology legend overlay. */
+/** Map symbology legend overlay with optional hide/show. */
 export function MapLegend({
   title = "Legend",
   items,
   className,
   footer,
+  collapsible = true,
+  defaultOpen = true,
 }: MapLegendProps) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  if (collapsible && !open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={cn(
+          "glass pointer-events-auto flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium shadow-panel transition-colors hover:bg-muted/70",
+          className,
+        )}
+        aria-expanded={false}
+        aria-label="Show legend"
+      >
+        <List className="size-4 shrink-0" aria-hidden />
+        Show legend
+      </button>
+    );
+  }
+
   return (
     <div
       className={cn(
-        "glass w-48 rounded-card shadow-panel",
+        "glass pointer-events-auto w-48 rounded-card shadow-panel",
         className,
       )}
+      role="region"
+      aria-label={title}
     >
-      <div className="border-b border-border/60 px-3 py-2 text-label text-muted-foreground">
-        {title}
+      <div className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+        <p className="text-label text-muted-foreground">{title}</p>
+        {collapsible ? (
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="pointer-events-auto inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+            aria-expanded={true}
+            aria-label="Hide legend"
+          >
+            Hide
+            <ChevronDown className="size-3" aria-hidden />
+          </button>
+        ) : null}
       </div>
       <ul className="space-y-1.5 p-3">
         {items.map((item) => (

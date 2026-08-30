@@ -18,6 +18,24 @@ const securityHeaders = [
   },
 ];
 
+const legacyCommandPaths = [
+  "dashboard",
+  "flood-monitoring",
+  "incidents",
+  "critical-areas",
+  "flood-prone",
+  "drainages",
+  "roads",
+  "waterways",
+  "projects",
+  "equipment",
+  "weather",
+  "reports",
+  "analytics",
+  "users",
+  "settings",
+] as const;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -31,6 +49,13 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.basemaps.cartocdn.com" },
       { protocol: "https", hostname: "tile.openstreetmap.org" },
     ],
+  },
+  async redirects() {
+    return legacyCommandPaths.map((path) => ({
+      source: `/${path}`,
+      destination: path === "dashboard" ? "/command" : `/command/${path}`,
+      permanent: false,
+    }));
   },
   async headers() {
     return [

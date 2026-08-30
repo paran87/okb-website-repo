@@ -1,33 +1,25 @@
 "use client";
 
-import {
-  Compass,
-  Copy,
-  Maximize,
-  Minimize,
-  RotateCcw,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
+import { RotateCcw, Maximize, Minimize, ZoomIn, ZoomOut, Copy } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
+import { MapNorthIndicator } from "@/features/map/components/map-north-indicator";
 import { useMapContext } from "@/features/map/context/map-context";
 import { useMap } from "@/features/map/hooks/use-map";
 import { useCoordinates } from "@/features/map/hooks/use-coordinates";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { cn } from "@/utils/cn";
 
-/** MapLibre control cluster: zoom, bearing, pitch, reset, fullscreen. */
+/** Map control cluster: zoom, north, reset view, fullscreen, scale, coordinates. */
 export function GisMapControls({ className }: { className?: string }) {
   const { options } = useMapContext();
-  const { map, viewport, scaleLabel, resetView } = useMap();
+  const showNorthInControls = options.showNorthInControls ?? true;
+  const { map, scaleLabel, resetView } = useMap();
   const resetPreset = options.resetViewPreset ?? "ncr";
   const { formatted, copyCoordinates } = useCoordinates({ precision: 5 });
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   const zoomIn = () => map?.zoomIn({ duration: 250 });
   const zoomOut = () => map?.zoomOut({ duration: 250 });
-  const resetBearing = () =>
-    map?.easeTo({ bearing: 0, pitch: 0, duration: 400 });
 
   return (
     <div className={cn("pointer-events-none flex flex-col gap-2", className)}>
@@ -51,31 +43,9 @@ export function GisMapControls({ className }: { className?: string }) {
           />
         </div>
 
-        <div className="glass rounded-lg px-2.5 py-1.5 text-center shadow-panel">
-          <p className="text-label text-muted-foreground">Zoom</p>
-          <p className="font-mono text-caption font-medium text-foreground">
-            {viewport.zoom.toFixed(1)}
-          </p>
-        </div>
-
-        <div className="glass flex size-12 items-center justify-center rounded-full shadow-panel">
-          <div
-            className="relative size-8"
-            style={{ transform: `rotate(${-(viewport.bearing ?? 0)}deg)` }}
-          >
-            <span className="absolute left-1/2 top-0 -translate-x-1/2 text-map-label font-bold text-danger">
-              N
-            </span>
-            <Compass className="absolute left-1/2 top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 text-primary" />
-          </div>
-        </div>
-
-        <div className="glass rounded-lg px-2.5 py-1.5 text-center shadow-panel">
-          <p className="text-label text-muted-foreground">Pitch</p>
-          <p className="font-mono text-caption font-medium text-foreground">
-            {Math.round(viewport.pitch ?? 0)}°
-          </p>
-        </div>
+        {showNorthInControls ? (
+          <MapNorthIndicator />
+        ) : null}
 
         <IconButton
           icon={RotateCcw}
@@ -84,15 +54,6 @@ export function GisMapControls({ className }: { className?: string }) {
           size="sm"
           className="glass shadow-panel"
           onClick={() => resetView(resetPreset)}
-        />
-
-        <IconButton
-          icon={RotateCcw}
-          label="Reset bearing"
-          variant="outline"
-          size="sm"
-          className="glass shadow-panel"
-          onClick={resetBearing}
         />
 
         <IconButton

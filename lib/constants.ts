@@ -16,11 +16,16 @@ export const PUBLIC_ROUTES = {
   about: "/about",
   initiatives: "/initiatives",
   activity: "/activity",
+  accomplishment: "/accomplishment",
   advisories: "/advisories",
   profile: "/profile",
   contact: "/contact",
   commandCenter: "/command",
 } as const;
+
+/** Live Oplan Kontra Baha accomplishments dashboard (Google Apps Script). */
+export const ACCOMPLISHMENT_DASHBOARD_URL =
+  "https://script.google.com/macros/s/AKfycbzX6AKleN8DhDTU5Re8kOwQk4lF71YRUgl9ZjgUJv4marmOFWbTw-uweiSK5tr1kl3A/exec";
 
 /** Command Center route paths (single source of truth for navigation + links). */
 export const ROUTES = {
@@ -30,6 +35,7 @@ export const ROUTES = {
   incidents: "/command/incidents",
   criticalAreas: "/command/critical-areas",
   floodProne: "/command/flood-prone",
+  drainages: "/command/drainages",
   roads: "/command/roads",
   waterways: "/command/waterways",
   projects: "/command/projects",

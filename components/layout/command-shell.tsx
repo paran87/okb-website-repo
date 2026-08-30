@@ -19,7 +19,9 @@ export function CommandShell({ children }: { children: ReactNode }) {
       fullBleed={isFullBleed}
       hideUtilityPanel={isFullBleed}
       mainClassName={
-        isFullBleed ? "flex min-h-0 flex-col overflow-hidden" : undefined
+        isFullBleed
+          ? "flex min-h-0 flex-col overflow-y-auto xl:overflow-hidden"
+          : undefined
       }
     >
       {children}

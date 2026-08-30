@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Compass } from "lucide-react";
+import { PUBLIC_ROUTES, ROUTES } from "@/lib/constants";
 
 /** Global 404 page. */
 export default function NotFound() {
@@ -14,12 +15,20 @@ export default function NotFound() {
         <p className="mt-2 text-body text-muted-foreground">
           The page you are looking for doesn’t exist or has been moved.
         </p>
-        <Link
-          href="/"
-          className="mt-6 inline-flex h-10 items-center rounded-lg bg-primary px-5 text-body font-medium text-primary-foreground hover:opacity-90"
-        >
-          Back to home
-        </Link>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={PUBLIC_ROUTES.home}
+            className="inline-flex h-10 items-center rounded-lg bg-primary px-5 text-body font-medium text-primary-foreground hover:opacity-90"
+          >
+            Back to home
+          </Link>
+          <Link
+            href={ROUTES.dashboard}
+            className="inline-flex h-10 items-center rounded-lg border border-border bg-card px-5 text-body font-medium text-foreground hover:bg-muted"
+          >
+            Command Center
+          </Link>
+        </div>
       </div>
     </div>
   );

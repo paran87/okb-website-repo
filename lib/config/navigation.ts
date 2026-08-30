@@ -71,6 +71,13 @@ export const NAV_ITEMS: readonly NavEntry[] = [
         icon: AppIcons.floodProne,
         permission: Permission.FLOOD_PRONE_VIEW,
       },
+      {
+        type: "link",
+        label: "Drainages",
+        href: ROUTES.drainages,
+        icon: AppIcons.drainages,
+        permission: Permission.MAP_VIEW,
+      },
     ],
   },
   {

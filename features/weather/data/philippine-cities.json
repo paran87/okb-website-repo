@@ -1,0 +1,1343 @@
+[
+  {
+    "psgcCode": "0401005000",
+    "name": "Batangas City",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.710126,
+    "longitude": 121.102615
+  },
+  {
+    "psgcCode": "0105503000",
+    "name": "City of Alaminos",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 16.151851,
+    "longitude": 119.97794
+  },
+  {
+    "psgcCode": "0330100000",
+    "name": "City of Angeles",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.165208,
+    "longitude": 120.549662
+  },
+  {
+    "psgcCode": "0405802000",
+    "name": "City of Antipolo",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.655875,
+    "longitude": 121.236303
+  },
+  {
+    "psgcCode": "1830200000",
+    "name": "City of Bacolod",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.647053,
+    "longitude": 122.992989
+  },
+  {
+    "psgcCode": "0402103000",
+    "name": "City of Bacoor",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.409535,
+    "longitude": 120.975378
+  },
+  {
+    "psgcCode": "1804502000",
+    "name": "City of Bago",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.500284,
+    "longitude": 122.986873
+  },
+  {
+    "psgcCode": "1430300000",
+    "name": "City of Baguio",
+    "region": "Cordillera Administrative Region (CAR)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 16.399947,
+    "longitude": 120.596172
+  },
+  {
+    "psgcCode": "1804604000",
+    "name": "City of Bais",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.591445,
+    "longitude": 123.026137
+  },
+  {
+    "psgcCode": "0300803000",
+    "name": "City of Balanga",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.667696,
+    "longitude": 120.48626
+  },
+  {
+    "psgcCode": "0301403000",
+    "name": "City of Baliwag",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.961454,
+    "longitude": 120.882551
+  },
+  {
+    "psgcCode": "0102805000",
+    "name": "City of Batac",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 18.037731,
+    "longitude": 120.584223
+  },
+  {
+    "psgcCode": "1804606000",
+    "name": "City of Bayawan",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.508916,
+    "longitude": 122.810941
+  },
+  {
+    "psgcCode": "0803708000",
+    "name": "City of Baybay",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.67543,
+    "longitude": 124.835046
+  },
+  {
+    "psgcCode": "1600301000",
+    "name": "City of Bayugan",
+    "region": "Region XIII (Caraga)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.75895,
+    "longitude": 125.797411
+  },
+  {
+    "psgcCode": "0403403000",
+    "name": "City of Biñan",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.307113,
+    "longitude": 121.069197
+  },
+  {
+    "psgcCode": "1606803000",
+    "name": "City of Bislig",
+    "region": "Region XIII (Caraga)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.182793,
+    "longitude": 126.285343
+  },
+  {
+    "psgcCode": "0702211000",
+    "name": "City of Bogo",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.018729,
+    "longitude": 123.992182
+  },
+  {
+    "psgcCode": "0802604000",
+    "name": "City of Borongan",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.587941,
+    "longitude": 125.335191
+  },
+  {
+    "psgcCode": "1630400000",
+    "name": "City of Butuan",
+    "region": "Region XIII (Caraga)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.903146,
+    "longitude": 125.577028
+  },
+  {
+    "psgcCode": "1600203000",
+    "name": "City of Cabadbaran",
+    "region": "Region XIII (Caraga)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 9.143948,
+    "longitude": 125.653666
+  },
+  {
+    "psgcCode": "0304903000",
+    "name": "City of Cabanatuan",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.492486,
+    "longitude": 120.990157
+  },
+  {
+    "psgcCode": "0403404000",
+    "name": "City of Cabuyao",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.239054,
+    "longitude": 121.111406
+  },
+  {
+    "psgcCode": "1804504000",
+    "name": "City of Cadiz",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.851639,
+    "longitude": 123.254825
+  },
+  {
+    "psgcCode": "1030500000",
+    "name": "City of Cagayan De Oro",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.37276,
+    "longitude": 124.601992
+  },
+  {
+    "psgcCode": "0401007000",
+    "name": "City of Calaca",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.977267,
+    "longitude": 120.822844
+  },
+  {
+    "psgcCode": "0403405000",
+    "name": "City of Calamba",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.187203,
+    "longitude": 121.120316
+  },
+  {
+    "psgcCode": "1705205000",
+    "name": "City of Calapan",
+    "region": "MIMAROPA Region",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.354354,
+    "longitude": 121.187022
+  },
+  {
+    "psgcCode": "0806003000",
+    "name": "City of Calbayog",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 12.190922,
+    "longitude": 124.586435
+  },
+  {
+    "psgcCode": "1380100000",
+    "name": "City of Caloocan",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.718407,
+    "longitude": 121.006361
+  },
+  {
+    "psgcCode": "0102906000",
+    "name": "City of Candon",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 17.193262,
+    "longitude": 120.464709
+  },
+  {
+    "psgcCode": "1804608000",
+    "name": "City of Canlaon",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.376585,
+    "longitude": 123.20783
+  },
+  {
+    "psgcCode": "0702214000",
+    "name": "City of Carcar",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.119306,
+    "longitude": 123.630505
+  },
+  {
+    "psgcCode": "0402104000",
+    "name": "City of Carmona",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.302107,
+    "longitude": 121.037535
+  },
+  {
+    "psgcCode": "0806005000",
+    "name": "City of Catbalogan",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.838253,
+    "longitude": 124.886931
+  },
+  {
+    "psgcCode": "0203108000",
+    "name": "City of Cauayan",
+    "region": "Region II (Cagayan Valley)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 16.8784,
+    "longitude": 121.820616
+  },
+  {
+    "psgcCode": "0402105000",
+    "name": "City of Cavite",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.434027,
+    "longitude": 120.746487
+  },
+  {
+    "psgcCode": "0730600000",
+    "name": "City of Cebu",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.379221,
+    "longitude": 123.859997
+  },
+  {
+    "psgcCode": "1908703000",
+    "name": "City of Cotabato",
+    "region": "Bangsamoro Autonomous Region In Muslim Mindanao (BARMM)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.208618,
+    "longitude": 124.23145
+  },
+  {
+    "psgcCode": "0105518000",
+    "name": "City of Dagupan",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 16.054136,
+    "longitude": 120.344928
+  },
+  {
+    "psgcCode": "0907201000",
+    "name": "City of Dapitan",
+    "region": "Region IX (Zamboanga Peninsula)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.592625,
+    "longitude": 123.443064
+  },
+  {
+    "psgcCode": "0402106000",
+    "name": "City of Dasmariñas",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.313346,
+    "longitude": 120.964628
+  },
+  {
+    "psgcCode": "1130700000",
+    "name": "City of Davao",
+    "region": "Region XI (Davao Region)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.283301,
+    "longitude": 125.430422
+  },
+  {
+    "psgcCode": "1102403000",
+    "name": "City of Digos",
+    "region": "Region XI (Davao Region)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.839438,
+    "longitude": 125.316652
+  },
+  {
+    "psgcCode": "0907202000",
+    "name": "City of Dipolog",
+    "region": "Region IX (Zamboanga Peninsula)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.504846,
+    "longitude": 123.347564
+  },
+  {
+    "psgcCode": "1804610000",
+    "name": "City of Dumaguete",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.303103,
+    "longitude": 123.284038
+  },
+  {
+    "psgcCode": "1004307000",
+    "name": "City of El Salvador",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.513619,
+    "longitude": 124.499146
+  },
+  {
+    "psgcCode": "1804509000",
+    "name": "City of Escalante",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.802191,
+    "longitude": 123.47702
+  },
+  {
+    "psgcCode": "0304908000",
+    "name": "City of Gapan",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.285325,
+    "longitude": 121.007495
+  },
+  {
+    "psgcCode": "1230800000",
+    "name": "City of General Santos",
+    "region": "Region XII (SOCCSKSARGEN)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.131281,
+    "longitude": 125.130598
+  },
+  {
+    "psgcCode": "0402108000",
+    "name": "City of General Trias",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.322362,
+    "longitude": 120.900799
+  },
+  {
+    "psgcCode": "1004308000",
+    "name": "City of Gingoog",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.775919,
+    "longitude": 125.103449
+  },
+  {
+    "psgcCode": "1804611000",
+    "name": "City of Guihulngan",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.193635,
+    "longitude": 123.222726
+  },
+  {
+    "psgcCode": "1804510000",
+    "name": "City of Himamaylan",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.059984,
+    "longitude": 122.925535
+  },
+  {
+    "psgcCode": "0203114000",
+    "name": "City of Ilagan",
+    "region": "Region II (Cagayan Valley)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 17.150213,
+    "longitude": 122.029087
+  },
+  {
+    "psgcCode": "1030900000",
+    "name": "City of Iligan",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.231104,
+    "longitude": 124.372797
+  },
+  {
+    "psgcCode": "0631000000",
+    "name": "City of Iloilo",
+    "region": "Region VI (Western Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.723482,
+    "longitude": 122.555189
+  },
+  {
+    "psgcCode": "0402109000",
+    "name": "City of Imus",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.39649,
+    "longitude": 120.935141
+  },
+  {
+    "psgcCode": "0501716000",
+    "name": "City of Iriga",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.451253,
+    "longitude": 123.437297
+  },
+  {
+    "psgcCode": "0990101000",
+    "name": "City of Isabela",
+    "region": "Region IX (Zamboanga Peninsula)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.650577,
+    "longitude": 121.986853
+  },
+  {
+    "psgcCode": "1804515000",
+    "name": "City of Kabankalan",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.856438,
+    "longitude": 122.826047
+  },
+  {
+    "psgcCode": "1204704000",
+    "name": "City of Kidapawan",
+    "region": "Region XII (SOCCSKSARGEN)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.038547,
+    "longitude": 125.059552
+  },
+  {
+    "psgcCode": "1206306000",
+    "name": "City of Koronadal",
+    "region": "Region XII (SOCCSKSARGEN)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.478883,
+    "longitude": 124.884515
+  },
+  {
+    "psgcCode": "1804516000",
+    "name": "City of La Carlota",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.414487,
+    "longitude": 122.98772
+  },
+  {
+    "psgcCode": "1900702000",
+    "name": "City of Lamitan",
+    "region": "Bangsamoro Autonomous Region In Muslim Mindanao (BARMM)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.641482,
+    "longitude": 122.098604
+  },
+  {
+    "psgcCode": "0102812000",
+    "name": "City of Laoag",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 18.19527,
+    "longitude": 120.577307
+  },
+  {
+    "psgcCode": "0731100000",
+    "name": "City of Lapu-Lapu",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.286808,
+    "longitude": 123.992444
+  },
+  {
+    "psgcCode": "1380200000",
+    "name": "City of Las Piñas",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.441388,
+    "longitude": 120.995207
+  },
+  {
+    "psgcCode": "0500506000",
+    "name": "City of Legazpi",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.099318,
+    "longitude": 123.753181
+  },
+  {
+    "psgcCode": "0500508000",
+    "name": "City of Ligao",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.183696,
+    "longitude": 123.497176
+  },
+  {
+    "psgcCode": "0401014000",
+    "name": "City of Lipa",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.93965,
+    "longitude": 121.170674
+  },
+  {
+    "psgcCode": "0431200000",
+    "name": "City of Lucena",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.93675,
+    "longitude": 121.615488
+  },
+  {
+    "psgcCode": "0806407000",
+    "name": "City of Maasin",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.183459,
+    "longitude": 124.861738
+  },
+  {
+    "psgcCode": "1380300000",
+    "name": "City of Makati",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.554391,
+    "longitude": 121.023938
+  },
+  {
+    "psgcCode": "1380400000",
+    "name": "City of Malabon",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.674117,
+    "longitude": 120.958555
+  },
+  {
+    "psgcCode": "1001312000",
+    "name": "City of Malaybalay",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.159732,
+    "longitude": 125.183116
+  },
+  {
+    "psgcCode": "0301410000",
+    "name": "City of Malolos",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.832803,
+    "longitude": 120.824102
+  },
+  {
+    "psgcCode": "1380500000",
+    "name": "City of Mandaluyong",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.583095,
+    "longitude": 121.041394
+  },
+  {
+    "psgcCode": "0731300000",
+    "name": "City of Mandaue",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.345402,
+    "longitude": 123.940873
+  },
+  {
+    "psgcCode": "1380600000",
+    "name": "City of Manila",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.59775,
+    "longitude": 120.985861
+  },
+  {
+    "psgcCode": "1903617000",
+    "name": "City of Marawi",
+    "region": "Bangsamoro Autonomous Region In Muslim Mindanao (BARMM)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.021218,
+    "longitude": 124.29664
+  },
+  {
+    "psgcCode": "1380700000",
+    "name": "City of Marikina",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.647317,
+    "longitude": 121.10498
+  },
+  {
+    "psgcCode": "0504111000",
+    "name": "City of Masbate",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 12.336906,
+    "longitude": 123.564128
+  },
+  {
+    "psgcCode": "1102509000",
+    "name": "City of Mati",
+    "region": "Region XI (Davao Region)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.831242,
+    "longitude": 126.222689
+  },
+  {
+    "psgcCode": "0301412000",
+    "name": "City of Meycauayan",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.752391,
+    "longitude": 120.96794
+  },
+  {
+    "psgcCode": "1380800000",
+    "name": "City of Muntinlupa",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.402287,
+    "longitude": 121.033599
+  },
+  {
+    "psgcCode": "0501724000",
+    "name": "City of Naga",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.64303,
+    "longitude": 123.25867
+  },
+  {
+    "psgcCode": "0702234000",
+    "name": "City of Naga",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.2432,
+    "longitude": 123.722519
+  },
+  {
+    "psgcCode": "1380900000",
+    "name": "City of Navotas",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.675092,
+    "longitude": 120.935879
+  },
+  {
+    "psgcCode": "0331400000",
+    "name": "City of Olongapo",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.826777,
+    "longitude": 120.306471
+  },
+  {
+    "psgcCode": "1004209000",
+    "name": "City of Oroquieta",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.451074,
+    "longitude": 123.733151
+  },
+  {
+    "psgcCode": "1004210000",
+    "name": "City of Ozamiz",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.155979,
+    "longitude": 123.776569
+  },
+  {
+    "psgcCode": "0907322000",
+    "name": "City of Pagadian",
+    "region": "Region IX (Zamboanga Peninsula)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.884604,
+    "longitude": 123.34704
+  },
+  {
+    "psgcCode": "0304919000",
+    "name": "City of Palayan",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.493416,
+    "longitude": 121.110307
+  },
+  {
+    "psgcCode": "1102315000",
+    "name": "City of Panabo",
+    "region": "Region XI (Davao Region)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.330366,
+    "longitude": 125.606074
+  },
+  {
+    "psgcCode": "1381000000",
+    "name": "City of Parañaque",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.483532,
+    "longitude": 121.015004
+  },
+  {
+    "psgcCode": "1381200000",
+    "name": "City of Pasig",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.57886,
+    "longitude": 121.085477
+  },
+  {
+    "psgcCode": "0603035000",
+    "name": "City of Passi",
+    "region": "Region VI (Western Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.166502,
+    "longitude": 122.667764
+  },
+  {
+    "psgcCode": "1731500000",
+    "name": "City of Puerto Princesa",
+    "region": "MIMAROPA Region",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 9.914158,
+    "longitude": 118.78029
+  },
+  {
+    "psgcCode": "0601914000",
+    "name": "City of Roxas",
+    "region": "Region VI (Western Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.556171,
+    "longitude": 122.744719
+  },
+  {
+    "psgcCode": "1804523000",
+    "name": "City of Sagay",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.850731,
+    "longitude": 123.395678
+  },
+  {
+    "psgcCode": "0105532000",
+    "name": "City of San Carlos",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.907968,
+    "longitude": 120.327917
+  },
+  {
+    "psgcCode": "1804524000",
+    "name": "City of San Carlos",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.489143,
+    "longitude": 123.307373
+  },
+  {
+    "psgcCode": "0103314000",
+    "name": "City of San Fernando",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 16.608487,
+    "longitude": 120.358151
+  },
+  {
+    "psgcCode": "0305416000",
+    "name": "City of San Fernando",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.067676,
+    "longitude": 120.658317
+  },
+  {
+    "psgcCode": "0301420000",
+    "name": "City of San Jose Del Monte",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.815958,
+    "longitude": 121.08358
+  },
+  {
+    "psgcCode": "1381400000",
+    "name": "City of San Juan",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.60248,
+    "longitude": 121.03669
+  },
+  {
+    "psgcCode": "0403424000",
+    "name": "City of San Pablo",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.049966,
+    "longitude": 121.330202
+  },
+  {
+    "psgcCode": "0403425000",
+    "name": "City of San Pedro",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.349181,
+    "longitude": 121.040349
+  },
+  {
+    "psgcCode": "0403428000",
+    "name": "City of Santa Rosa",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.271965,
+    "longitude": 121.091713
+  },
+  {
+    "psgcCode": "0203135000",
+    "name": "City of Santiago",
+    "region": "Region II (Cagayan Valley)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 16.678459,
+    "longitude": 121.556778
+  },
+  {
+    "psgcCode": "1804526000",
+    "name": "City of Silay",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.766627,
+    "longitude": 123.079636
+  },
+  {
+    "psgcCode": "1804527000",
+    "name": "City of Sipalay",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.749441,
+    "longitude": 122.477012
+  },
+  {
+    "psgcCode": "0506216000",
+    "name": "City of Sorsogon",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.018037,
+    "longitude": 123.98978
+  },
+  {
+    "psgcCode": "0401028000",
+    "name": "City of Sto. Tomas",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.075649,
+    "longitude": 121.183442
+  },
+  {
+    "psgcCode": "1606724000",
+    "name": "City of Surigao",
+    "region": "Region XIII (Caraga)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 9.776333,
+    "longitude": 125.541788
+  },
+  {
+    "psgcCode": "0500517000",
+    "name": "City of Tabaco",
+    "region": "Region V (Bicol Region)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 13.332914,
+    "longitude": 123.695554
+  },
+  {
+    "psgcCode": "1403213000",
+    "name": "City of Tabuk",
+    "region": "Cordillera Administrative Region (CAR)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 17.410071,
+    "longitude": 121.429774
+  },
+  {
+    "psgcCode": "0831600000",
+    "name": "City of Tacloban",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.271343,
+    "longitude": 124.955364
+  },
+  {
+    "psgcCode": "1206511000",
+    "name": "City of Tacurong",
+    "region": "Region XII (SOCCSKSARGEN)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 6.655901,
+    "longitude": 124.672924
+  },
+  {
+    "psgcCode": "0402119000",
+    "name": "City of Tagaytay",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.116111,
+    "longitude": 120.954962
+  },
+  {
+    "psgcCode": "0701242000",
+    "name": "City of Tagbilaran",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.665696,
+    "longitude": 123.871132
+  },
+  {
+    "psgcCode": "1381500000",
+    "name": "City of Taguig",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.522014,
+    "longitude": 121.061213
+  },
+  {
+    "psgcCode": "1102319000",
+    "name": "City of Tagum",
+    "region": "Region XI (Davao Region)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.431254,
+    "longitude": 125.795793
+  },
+  {
+    "psgcCode": "0702250000",
+    "name": "City of Talisay",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.283525,
+    "longitude": 123.821206
+  },
+  {
+    "psgcCode": "1804528000",
+    "name": "City of Talisay",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.701275,
+    "longitude": 123.083525
+  },
+  {
+    "psgcCode": "0401031000",
+    "name": "City of Tanauan",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.094419,
+    "longitude": 121.098776
+  },
+  {
+    "psgcCode": "1606819000",
+    "name": "City of Tandag",
+    "region": "Region XIII (Caraga)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 9.074338,
+    "longitude": 126.128361
+  },
+  {
+    "psgcCode": "1004215000",
+    "name": "City of Tangub",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 8.094456,
+    "longitude": 123.697059
+  },
+  {
+    "psgcCode": "1804621000",
+    "name": "City of Tanjay",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 9.504697,
+    "longitude": 123.047636
+  },
+  {
+    "psgcCode": "0306916000",
+    "name": "City of Tarlac",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.48145,
+    "longitude": 120.596148
+  },
+  {
+    "psgcCode": "0405647000",
+    "name": "City of Tayabas",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.037052,
+    "longitude": 121.615356
+  },
+  {
+    "psgcCode": "0702251000",
+    "name": "City of Toledo",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.358789,
+    "longitude": 123.696132
+  },
+  {
+    "psgcCode": "0402122000",
+    "name": "City of Trece Martires",
+    "region": "Region IV-A (CALABARZON)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 14.276312,
+    "longitude": 120.86944
+  },
+  {
+    "psgcCode": "0105546000",
+    "name": "City of Urdaneta",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.970446,
+    "longitude": 120.559754
+  },
+  {
+    "psgcCode": "1001321000",
+    "name": "City of Valencia",
+    "region": "Region X (Northern Mindanao)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.912191,
+    "longitude": 125.080481
+  },
+  {
+    "psgcCode": "1381600000",
+    "name": "City of Valenzuela",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.709992,
+    "longitude": 120.979162
+  },
+  {
+    "psgcCode": "1804531000",
+    "name": "City of Victorias",
+    "region": "Negros Island Region (NIR)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.850399,
+    "longitude": 123.111601
+  },
+  {
+    "psgcCode": "0102934000",
+    "name": "City of Vigan",
+    "region": "Region I (Ilocos Region)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 17.56306,
+    "longitude": 120.388005
+  },
+  {
+    "psgcCode": "0931700000",
+    "name": "City of Zamboanga",
+    "region": "Region IX (Zamboanga Peninsula)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.162964,
+    "longitude": 122.164677
+  },
+  {
+    "psgcCode": "0702223000",
+    "name": "Danao City",
+    "region": "Region VII (Central Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 10.540055,
+    "longitude": 123.940346
+  },
+  {
+    "psgcCode": "1102317000",
+    "name": "Island Garden City of Samal",
+    "region": "Region XI (Davao Region)",
+    "pagasaRegion": "mindanao",
+    "islandGroup": "mindanao",
+    "latitude": 7.050492,
+    "longitude": 125.736053
+  },
+  {
+    "psgcCode": "0305409000",
+    "name": "Mabalacat City",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.21703,
+    "longitude": 120.555109
+  },
+  {
+    "psgcCode": "0803738000",
+    "name": "Ormoc City",
+    "region": "Region VIII (Eastern Visayas)",
+    "pagasaRegion": "visayas",
+    "islandGroup": "visayas",
+    "latitude": 11.054191,
+    "longitude": 124.653866
+  },
+  {
+    "psgcCode": "1381100000",
+    "name": "Pasay City",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.531417,
+    "longitude": 121.003997
+  },
+  {
+    "psgcCode": "1381300000",
+    "name": "Quezon City",
+    "region": "National Capital Region (NCR)",
+    "pagasaRegion": "ncr",
+    "islandGroup": "luzon",
+    "latitude": 14.680493,
+    "longitude": 121.060469
+  },
+  {
+    "psgcCode": "0304926000",
+    "name": "San Jose City",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.785708,
+    "longitude": 120.999566
+  },
+  {
+    "psgcCode": "0304917000",
+    "name": "Science City of Muñoz",
+    "region": "Region III (Central Luzon)",
+    "pagasaRegion": "southern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 15.73348,
+    "longitude": 120.896806
+  },
+  {
+    "psgcCode": "0201529000",
+    "name": "Tuguegarao City",
+    "region": "Region II (Cagayan Valley)",
+    "pagasaRegion": "northern-luzon",
+    "islandGroup": "luzon",
+    "latitude": 17.610334,
+    "longitude": 121.749291
+  }
+]

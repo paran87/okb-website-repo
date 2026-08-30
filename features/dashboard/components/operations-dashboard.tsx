@@ -29,7 +29,7 @@ const DashboardMapPanel = dynamic(
     ),
   {
     loading: () => (
-      <div className="min-h-[320px] flex-1 animate-pulse rounded-card bg-muted/30" />
+      <div className="min-h-[280px] flex-1 animate-pulse rounded-card bg-muted/30 xl:min-h-0" />
     ),
   },
 );
@@ -54,7 +54,7 @@ export function OperationsDashboard() {
   }
 
   return (
-    <FadeIn className="flex h-[calc(100dvh-4rem-2rem)] min-h-0 flex-col gap-2 p-2 sm:gap-3 sm:p-3">
+    <FadeIn className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3">
       {/* Situation banner */}
       <div className="flex shrink-0 items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2">
         <div className="flex items-center gap-2">
@@ -66,28 +66,34 @@ export function OperationsDashboard() {
         <div className="hidden items-center gap-3 sm:flex">
           <ConnectionStatus quality="good" />
           <span className="font-mono text-label text-muted-foreground">
-            Updated {new Date(data.lastUpdated).toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Manila" })} PHT
+            Updated{" "}
+            {new Date(data.lastUpdated).toLocaleTimeString("en-PH", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone: "Asia/Manila",
+            })}{" "}
+            PHT
           </span>
         </div>
       </div>
 
       {/* KPI row */}
-      <Stagger className="shrink-0">
+      <Stagger className="shrink-0 overflow-x-auto">
         <StaggerItem>
           <KpiGrid metrics={data.kpis} />
         </StaggerItem>
       </Stagger>
 
       {/* Main operations grid */}
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 sm:gap-3 xl:grid-cols-12">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 overflow-y-auto sm:gap-3 xl:grid-cols-12 xl:overflow-hidden">
         {/* Left column */}
         <div
           className={cn(
-            "flex min-h-0 flex-col gap-2 xl:col-span-2",
+            "flex min-h-0 flex-col gap-2 xl:col-span-2 xl:overflow-hidden",
             leftCollapsed && "xl:col-span-1",
           )}
         >
-          <div className="flex items-center justify-between xl:hidden">
+          <div className="flex shrink-0 items-center justify-between xl:hidden">
             <span className="text-caption font-medium text-foreground">
               Operations Feed
             </span>
@@ -102,7 +108,7 @@ export function OperationsDashboard() {
           {!leftCollapsed ? (
             <>
               <LeftOperationsPanel
-                className="min-h-[240px] flex-1 xl:min-h-0"
+                className="min-h-[220px] flex-1 xl:min-h-0"
                 incidents={data.incidents}
                 criticalAreas={data.criticalAreas}
                 fieldReports={data.fieldReports}
@@ -112,7 +118,8 @@ export function OperationsDashboard() {
                 title="Alerts"
                 subtitle={`${data.alerts.filter((a) => a.severity === "critical").length} critical`}
                 icon={<TriangleAlert className="size-4" aria-hidden />}
-                bodyClassName="p-2"
+                className="max-h-48 shrink-0 xl:max-h-[32%]"
+                bodyClassName="max-h-32 overflow-y-auto p-2 xl:max-h-none"
               >
                 <AlertsPanel alerts={data.alerts} />
               </WidgetContainer>
@@ -121,18 +128,18 @@ export function OperationsDashboard() {
         </div>
 
         {/* Center map — ~67% width on xl */}
-        <div className="flex min-h-0 flex-col xl:col-span-8">
-          <DashboardMapPanel className="h-full flex-1" />
+        <div className="relative flex min-h-[320px] min-w-0 flex-col overflow-hidden xl:col-span-8 xl:min-h-0">
+          <DashboardMapPanel className="h-full min-h-[320px] flex-1 xl:min-h-0" />
         </div>
 
         {/* Right column */}
         <div
           className={cn(
-            "min-h-0 xl:col-span-2",
-            rightCollapsed && "hidden xl:block xl:col-span-1",
+            "flex min-h-0 flex-col xl:col-span-2 xl:overflow-hidden",
+            rightCollapsed && "hidden xl:flex xl:col-span-1",
           )}
         >
-          <div className="mb-1 flex items-center justify-between xl:hidden">
+          <div className="mb-1 flex shrink-0 items-center justify-between xl:hidden">
             <span className="text-caption font-medium text-foreground">
               Situational Data
             </span>
@@ -146,11 +153,10 @@ export function OperationsDashboard() {
           </div>
           {!rightCollapsed ? (
             <RightOperationsPanel
-              weather={data.weather}
               equipment={data.equipment}
               systemHealth={data.systemHealth}
               notifications={data.notifications}
-              className="max-h-[600px] xl:max-h-none xl:h-full"
+              className="min-h-0 flex-1 xl:h-full"
             />
           ) : null}
         </div>

@@ -26,7 +26,11 @@ export function MapLayerRenderer() {
       layerService.reorder(map!, layers);
     }
 
-    void sync();
+    void sync().catch((err) => {
+      if (cancelled) return;
+      console.error("Map layer sync failed:", err);
+    });
+
     return () => {
       cancelled = true;
     };

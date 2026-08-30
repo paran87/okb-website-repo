@@ -93,7 +93,7 @@ export function LeftOperationsPanel({
 
 function ScrollList({ children }: { children: ReactNode }) {
   return (
-    <div className="max-h-[220px] space-y-0.5 overflow-y-auto lg:max-h-none lg:min-h-[200px] lg:flex-1">
+    <div className="min-h-0 max-h-[220px] flex-1 space-y-0.5 overflow-y-auto xl:max-h-none">
       {children}
     </div>
   );

@@ -36,7 +36,8 @@ export type LayerCategory =
 export interface MapStyleDefinition {
   id: MapStyleId;
   label: string;
-  style: StyleSpecification;
+  /** Inline style spec or remote MapLibre style.json URL (Carto GL, etc.). */
+  style: StyleSpecification | string;
   /** When true, style slot is reserved but not yet wired to tiles. */
   placeholder?: boolean;
 }
@@ -92,6 +93,8 @@ export interface MapEngineOptions {
   maxBounds?: [[number, number], [number, number]];
   /** Subset of basemap styles shown in the switcher. */
   basemapStyles?: readonly MapStyleId[];
+  /** When false, hides the north indicator from the bottom control stack. */
+  showNorthInControls?: boolean;
   className?: string;
 }
 
