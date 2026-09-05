@@ -5,11 +5,12 @@
   "description": "OKB Command Center - Real-time GIS emergency operations platform for DPWH Oplan Kontra Baha",
   "type": "module",
   "engines": {
-    "node": ">=20.9.0"
+    "node": "20.x || 22.x"
   },
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/build.mjs",
+    "preinstall": "node scripts/ensure-prisma-env.mjs",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint .",

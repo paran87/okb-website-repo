@@ -1,5 +1,4 @@
 {
   "framework": "nextjs",
-  "installCommand": "DATABASE_URL=postgresql://okb:okb_password@127.0.0.1:5432/okb_command_center?schema=public AUTH_SECRET=vercel-build-placeholder-secret npm install",
   "buildCommand": "npm run build"
 }
