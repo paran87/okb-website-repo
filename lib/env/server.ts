@@ -17,11 +17,15 @@ const serverEnvSchema = z.object({
 
   DATABASE_URL: z
     .string()
-    .url("DATABASE_URL must be a valid PostgreSQL connection string"),
+    .url("DATABASE_URL must be a valid PostgreSQL connection string")
+    .default(
+      "postgresql://okb:okb_password@127.0.0.1:5432/okb_command_center?schema=public",
+    ),
 
   AUTH_SECRET: z
     .string()
-    .min(16, "AUTH_SECRET must be at least 16 characters"),
+    .min(16, "AUTH_SECRET must be at least 16 characters")
+    .default("vercel-build-placeholder-secret"),
   AUTH_URL: z.string().url().optional(),
   AUTH_TRUST_HOST: z
     .string()

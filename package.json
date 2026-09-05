@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "node scripts/build.mjs",
+    "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
