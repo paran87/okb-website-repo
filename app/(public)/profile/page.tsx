@@ -1,4 +1,4 @@
-import { ProfileGallery, PublicPageHero } from "@/components/public";
+import { ProfileGallery } from "@/components/public";
 import { APP } from "@/lib/constants";
 
 export const metadata = {
@@ -7,14 +7,5 @@ export const metadata = {
 };
 
 export default function ProfilePage() {
-  return (
-    <>
-      <PublicPageHero
-        eyebrow="DPWH · Office of Undersecretary for Special Concerns"
-        title="Program Portfolio"
-        description="Official Oplan Kontra Baha portfolio — program overview, launches, field operations, inter-agency coordination, and nationwide waterway rehabilitation."
-      />
-      <ProfileGallery />
-    </>
-  );
+  return <ProfileGallery />;
 }

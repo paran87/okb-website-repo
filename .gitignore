@@ -47,5 +47,8 @@ Thumbs.db
 /public/uploads/*
 !/public/uploads/.gitkeep
 
+# Temporary PDF extraction workspace
+/tmp-framework-pdf
+
 # TypeScript
 *.tsbuildinfo

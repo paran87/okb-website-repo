@@ -15,6 +15,7 @@ export const PUBLIC_ROUTES = {
   home: "/",
   about: "/about",
   initiatives: "/initiatives",
+  framework: "/framework",
   activity: "/activity",
   accomplishment: "/accomplishment",
   advisories: "/advisories",
@@ -22,6 +23,10 @@ export const PUBLIC_ROUTES = {
   contact: "/contact",
   commandCenter: "/command",
 } as const;
+
+/** Official memorandum PDF presented on the OKB Framework page. */
+export const FRAMEWORK_DOCUMENT_HREF =
+  "/framework/operational-framework.pdf" as const;
 
 /** Live Oplan Kontra Baha accomplishments dashboard (Google Apps Script). */
 export const ACCOMPLISHMENT_DASHBOARD_URL =

@@ -8,19 +8,13 @@ import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 
 const exploreLinks = [
 
-  { href: PUBLIC_ROUTES.about, label: "About the Program" },
+  { href: PUBLIC_ROUTES.framework, label: "OKB Framework" },
 
-  { href: PUBLIC_ROUTES.initiatives, label: "Initiatives" },
-
-  { href: PUBLIC_ROUTES.activity, label: "Activity" },
+  { href: PUBLIC_ROUTES.activity, label: "Activities" },
 
   { href: PUBLIC_ROUTES.accomplishment, label: "Accomplishment" },
 
-  { href: PUBLIC_ROUTES.advisories, label: "Advisories" },
-
   { href: PUBLIC_ROUTES.profile, label: "Portfolio" },
-
-  { href: PUBLIC_ROUTES.contact, label: "Contact" },
 
 ] as const;
 
