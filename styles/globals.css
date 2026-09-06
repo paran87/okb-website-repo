@@ -1198,14 +1198,120 @@
 
 /* ---------------------- OKB Framework presentation ---------------------- */
 .okb-fw-hero {
+  isolation: isolate;
+  background-color: #001428;
+}
+
+.okb-fw-hero-photo {
+  background-size: cover;
+  background-position: center 42%;
+  opacity: 0.92;
+  filter: saturate(1.05) contrast(1.06);
+  transform: scale(1.08);
+  animation: okb-fw-hero-drift 32s ease-in-out infinite alternate;
+}
+
+.okb-fw-hero-veil {
   background:
-    radial-gradient(80% 70% at 12% 0%, rgba(245, 126, 32, 0.28) 0%, transparent 55%),
-    radial-gradient(70% 80% at 100% 20%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
-    linear-gradient(180deg, var(--dpwh-blue-dark) 0%, var(--dpwh-blue) 62%, #0e4a8c 100%);
+    linear-gradient(
+      92deg,
+      rgba(0, 8, 24, 0.86) 0%,
+      rgba(0, 12, 32, 0.64) 30%,
+      rgba(0, 14, 38, 0.28) 58%,
+      rgba(0, 10, 28, 0.2) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(0, 8, 24, 0.22) 0%,
+      transparent 32%,
+      transparent 68%,
+      rgba(0, 8, 24, 0.3) 100%
+    ),
+    radial-gradient(62% 48% at 4% 0%, rgba(245, 126, 32, 0.2) 0%, transparent 52%);
+}
+
+.okb-fw-hero-panel {
+  max-width: 46rem;
+  padding: 1.35rem 1.5rem 1.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.35rem;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 10, 26, 0.52) 0%,
+    rgba(0, 10, 26, 0.34) 100%
+  );
+  box-shadow: 0 18px 48px rgba(0, 6, 18, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 640px) {
+  .okb-fw-hero-panel {
+    padding: 1.75rem 1.85rem 1.9rem;
+  }
+}
+
+.okb-fw-hero-art {
+  opacity: 0.32;
+}
+
+.okb-fw-hero-flow {
+  stroke-dasharray: 14 18;
+  animation: okb-fw-flow 9s linear infinite;
+}
+
+.okb-fw-hero-topo {
+  opacity: 0.7;
+}
+
+.okb-fw-hero-sheen {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 28%, rgba(0, 14, 38, 0.28) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 255, 255, 0.018) 3px,
+      rgba(255, 255, 255, 0.018) 4px
+    );
+}
+
+.okb-fw-hero .okb-public-eyebrow {
+  color: #ffc27a;
+}
+
+.okb-fw-hero .okb-public-heading {
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0, 8, 24, 0.55),
+    0 14px 36px rgba(0, 10, 28, 0.38);
+}
+
+.okb-fw-hero .okb-public-body {
+  color: rgba(255, 255, 255, 0.94);
+  text-shadow: 0 1px 16px rgba(0, 10, 28, 0.42);
+}
+
+.okb-fw-hero-rule {
+  height: 3px;
+  width: 4.75rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--dpwh-orange) 0%, #fcd116 100%);
+  box-shadow: 0 0 18px rgba(245, 126, 32, 0.45);
 }
 
 .okb-fw-scene-frame {
-  box-shadow: 0 -12px 40px rgba(0, 20, 60, 0.25);
+  border-top: 3px solid color-mix(in srgb, var(--dpwh-orange) 78%, #ffffff);
+  box-shadow: 0 -16px 48px rgba(0, 12, 40, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+@keyframes okb-fw-hero-drift {
+  from {
+    transform: scale(1.08) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.16) translate3d(-2.2%, -1.4%, 0);
+  }
 }
 
 .okb-fw-icon-chip {
@@ -1312,8 +1418,14 @@
   .okb-fw-cloud,
   .okb-fw-reef,
   .okb-fw-orbit,
-  .okb-fw-objective {
+  .okb-fw-objective,
+  .okb-fw-hero-photo,
+  .okb-fw-hero-flow {
     animation: none;
     transform: none;
+  }
+
+  .okb-fw-hero-photo {
+    transform: scale(1.08);
   }
 }

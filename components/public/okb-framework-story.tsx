@@ -47,6 +47,124 @@ const PRINCIPLE_ICONS = [
   Scale,
 ] as const;
 
+const FRAMEWORK_HERO_BANNER = {
+  src: "/framework/framework-hero-ridge-to-reef.png",
+  alt: "Aerial ridge-to-reef landscape — a river winding from forested mountains through a floodplain to a coastal reef at dusk.",
+} as const;
+
+function FrameworkHeroBackdrop() {
+  return (
+    <>
+      <div
+        aria-hidden
+        className="okb-fw-hero-photo pointer-events-none absolute inset-0"
+        style={{ backgroundImage: `url(${FRAMEWORK_HERO_BANNER.src})` }}
+      />
+      <div
+        aria-hidden
+        className="okb-fw-hero-veil pointer-events-none absolute inset-0"
+      />
+      <svg
+        aria-hidden
+        className="okb-fw-hero-art pointer-events-none absolute inset-0 h-full w-full"
+        viewBox="0 0 1440 820"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <defs>
+          <linearGradient id="okbFwHeroRiver" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#7ec8ff" stopOpacity="0.15" />
+            <stop offset="45%" stopColor="#ffffff" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="#f57e20" stopOpacity="0.35" />
+          </linearGradient>
+        </defs>
+        <g fill="none" stroke="url(#okbFwHeroRiver)" strokeLinecap="round">
+          <path
+            className="okb-fw-hero-flow"
+            d="M-40 210 C180 140 320 280 520 220 C720 160 860 300 1100 210 C1260 150 1380 240 1500 180"
+            strokeWidth="1.4"
+          />
+          <path
+            className="okb-fw-hero-flow"
+            d="M-40 310 C200 250 380 390 620 300 C860 210 980 400 1240 310 C1360 270 1460 330 1520 300"
+            strokeWidth="2.2"
+          />
+          <path
+            className="okb-fw-hero-flow"
+            d="M-20 430 C220 360 400 520 680 430 C920 350 1080 540 1360 430"
+            strokeWidth="1.1"
+          />
+        </g>
+        <g
+          fill="none"
+          stroke="rgba(255,255,255,0.18)"
+          strokeWidth="1"
+          className="okb-fw-hero-topo"
+        >
+          <ellipse cx="1180" cy="150" rx="210" ry="78" />
+          <ellipse cx="1180" cy="150" rx="150" ry="52" />
+          <ellipse cx="1180" cy="150" rx="88" ry="28" />
+          <ellipse cx="180" cy="620" rx="260" ry="90" />
+          <ellipse cx="180" cy="620" rx="180" ry="58" />
+        </g>
+        <g fill="rgba(255,255,255,0.22)">
+          <circle cx="210" cy="248" r="2.2" />
+          <circle cx="540" cy="198" r="1.6" />
+          <circle cx="890" cy="268" r="2" />
+          <circle cx="1210" cy="188" r="1.8" />
+          <circle cx="1040" cy="420" r="1.4" />
+        </g>
+      </svg>
+      <div
+        aria-hidden
+        className="okb-fw-hero-sheen pointer-events-none absolute inset-0"
+      />
+      <span className="sr-only">{FRAMEWORK_HERO_BANNER.alt}</span>
+    </>
+  );
+}
+
+function FrameworkHeroCopy() {
+  const reduce = useReducedMotion();
+
+  return (
+    <motion.div
+      className="okb-fw-hero-panel"
+      initial={reduce ? false : { opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <p className="okb-public-eyebrow">{FRAMEWORK_META.authority}</p>
+      <h1 className="okb-public-heading mt-3 max-w-4xl text-3xl sm:text-5xl lg:text-6xl">
+        Operational Framework of Oplan Kontra Baha
+      </h1>
+      <span className="okb-fw-hero-rule mt-5 block" aria-hidden />
+      <p className="okb-public-body mt-5 max-w-[46rem] text-base sm:text-lg">
+        A regular, sustained flood-mitigation and maintenance program —
+        restoring the carrying capacity of waterways, drainage, and flood
+        facilities from ridge to reef.
+      </p>
+      <div className="mt-8 flex flex-wrap gap-3">
+        <a
+          href={FRAMEWORK_DOCUMENT_HREF}
+          download
+          className="okb-public-btn okb-public-btn-accent"
+        >
+          <ArrowDownToLine className="size-4" aria-hidden />
+          Download official memorandum
+        </a>
+        <Link
+          href={PUBLIC_ROUTES.commandCenter}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="okb-public-btn okb-public-btn-light"
+        >
+          Open Command Center
+        </Link>
+      </div>
+    </motion.div>
+  );
+}
+
 function Reveal({
   children,
   className,
@@ -74,39 +192,11 @@ function Reveal({
 export function OkbFrameworkStory() {
   return (
     <>
-      <section className="okb-fw-hero relative overflow-hidden">
-        <div className="okb-public-shell relative z-10 pt-10 sm:pt-14">
-          <Reveal>
-            <p className="okb-public-eyebrow text-white/80">
-              {FRAMEWORK_META.authority}
-            </p>
-            <h1 className="okb-public-heading mt-3 max-w-4xl text-3xl text-white sm:text-5xl lg:text-6xl">
-              Operational Framework of Oplan Kontra Baha
-            </h1>
-            <p className="okb-public-body mt-5 max-w-[72rem] text-base text-white/85 sm:text-lg">
-              A regular, sustained flood-mitigation and maintenance program —
-              restoring the carrying capacity of waterways, drainage, and flood
-              facilities from ridge to reef.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a
-                href={FRAMEWORK_DOCUMENT_HREF}
-                download
-                className="okb-public-btn okb-public-btn-accent"
-              >
-                <ArrowDownToLine className="size-4" aria-hidden />
-                Download official memorandum
-              </a>
-              <Link
-                href={PUBLIC_ROUTES.commandCenter}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="okb-public-btn okb-public-btn-light"
-              >
-                Open Command Center
-              </Link>
-            </div>
-          </Reveal>
+      <section className="okb-fw-hero relative isolate overflow-hidden">
+        <FrameworkHeroBackdrop />
+
+        <div className="okb-public-shell okb-fw-hero-copy relative z-10 pt-12 sm:pt-16">
+          <FrameworkHeroCopy />
         </div>
 
         <div className="okb-public-shell relative z-10 mt-8 pb-0 sm:mt-10">
