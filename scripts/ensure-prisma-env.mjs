@@ -10,7 +10,7 @@ const fallbackUrl =
 const fallbackSecret = "vercel-build-placeholder-secret";
 
 /** Prisma generate reads DATABASE_URL from `.env` during npm install on Vercel. */
-if (!process.env.DATABASE_URL && !fs.existsSync(envPath)) {
+if (!process.env.DATABASE_URL?.trim() && !fs.existsSync(envPath)) {
   fs.writeFileSync(
     envPath,
     [

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { omitBlankValue } from "@/lib/env/omit-blank";
 
 /**
  * Client-safe environment schema.
@@ -27,12 +28,12 @@ const clientEnvSchema = z.object({
 export type ClientEnv = z.infer<typeof clientEnvSchema>;
 
 const parsed = clientEnvSchema.safeParse({
-  NEXT_PUBLIC_APP_NAME: process.env.NEXT_PUBLIC_APP_NAME,
-  NEXT_PUBLIC_APP_ENV: process.env.NEXT_PUBLIC_APP_ENV,
-  NEXT_PUBLIC_MAP_STYLE_URL: process.env.NEXT_PUBLIC_MAP_STYLE_URL,
-  NEXT_PUBLIC_MAP_DEFAULT_LNG: process.env.NEXT_PUBLIC_MAP_DEFAULT_LNG,
-  NEXT_PUBLIC_MAP_DEFAULT_LAT: process.env.NEXT_PUBLIC_MAP_DEFAULT_LAT,
-  NEXT_PUBLIC_MAP_DEFAULT_ZOOM: process.env.NEXT_PUBLIC_MAP_DEFAULT_ZOOM,
+  NEXT_PUBLIC_APP_NAME: omitBlankValue(process.env.NEXT_PUBLIC_APP_NAME),
+  NEXT_PUBLIC_APP_ENV: omitBlankValue(process.env.NEXT_PUBLIC_APP_ENV),
+  NEXT_PUBLIC_MAP_STYLE_URL: omitBlankValue(process.env.NEXT_PUBLIC_MAP_STYLE_URL),
+  NEXT_PUBLIC_MAP_DEFAULT_LNG: omitBlankValue(process.env.NEXT_PUBLIC_MAP_DEFAULT_LNG),
+  NEXT_PUBLIC_MAP_DEFAULT_LAT: omitBlankValue(process.env.NEXT_PUBLIC_MAP_DEFAULT_LAT),
+  NEXT_PUBLIC_MAP_DEFAULT_ZOOM: omitBlankValue(process.env.NEXT_PUBLIC_MAP_DEFAULT_ZOOM),
 });
 
 if (!parsed.success) {

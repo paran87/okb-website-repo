@@ -21,10 +21,10 @@ const bin = (name) =>
 const env = {
   ...process.env,
   DATABASE_URL:
-    process.env.DATABASE_URL ||
+    process.env.DATABASE_URL?.trim() ||
     "postgresql://okb:okb_password@127.0.0.1:5432/okb_command_center?schema=public",
   AUTH_SECRET:
-    process.env.AUTH_SECRET || "vercel-build-placeholder-secret",
+    process.env.AUTH_SECRET?.trim() || "vercel-build-placeholder-secret",
 };
 
 function run(command, args) {

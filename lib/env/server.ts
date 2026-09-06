@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { omitBlankEnv } from "@/lib/env/omit-blank";
 
 /**
  * Server-side environment schema.
@@ -46,7 +47,7 @@ const serverEnvSchema = z.object({
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 function loadServerEnv(): ServerEnv {
-  const parsed = serverEnvSchema.safeParse(process.env);
+  const parsed = serverEnvSchema.safeParse(omitBlankEnv(process.env));
 
   if (!parsed.success) {
     const issues = parsed.error.issues
