@@ -3,6 +3,7 @@ import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
 import { AppProviders } from "@/providers/app-providers";
 import { APP } from "@/lib/constants";
 import "@/styles/globals.css";
+import "@/styles/okb-folio.css";
 
 const okbDisplay = Barlow_Condensed({
   subsets: ["latin"],

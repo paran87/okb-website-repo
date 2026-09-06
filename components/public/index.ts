@@ -2,6 +2,7 @@ export * from "./gov-top-bar";
 export * from "./site-header";
 export * from "./site-header-accent";
 export * from "./site-footer";
+export * from "./site-footer-accent";
 export * from "./home-hero";
 export * from "./public-page-hero";
 export * from "./public-page-container";

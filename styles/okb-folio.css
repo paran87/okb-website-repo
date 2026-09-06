@@ -1,0 +1,606 @@
+﻿/* ---------------------- Portfolio stage --------------------------------- */
+.okb-folio {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding-top: clamp(2.4rem, 5vw, 3.6rem);
+  padding-bottom: clamp(2.4rem, 5vw, 3.6rem);
+  color: #dce6f4;
+  background:
+    radial-gradient(
+      90% 70% at 8% 0%,
+      rgba(86, 152, 255, 0.2) 0%,
+      transparent 52%
+    ),
+    linear-gradient(168deg, #063888 0%, #001433 48%, #000c1c 100%);
+}
+
+.okb-folio-art,
+.okb-folio-glow {
+  pointer-events: none;
+  position: absolute;
+}
+
+.okb-folio-art {
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.okb-folio-art > * {
+  position: absolute;
+}
+
+.okb-folio-art__aurora {
+  top: -45%;
+  left: -18%;
+  width: 55%;
+  height: 130%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(126, 200, 255, 0.26) 0%,
+    rgba(86, 152, 255, 0.1) 48%,
+    transparent 72%
+  );
+  filter: blur(42px);
+  animation: okb-folio-aurora 22s ease-in-out infinite alternate;
+}
+
+.okb-folio-art__aurora--warm {
+  top: auto;
+  bottom: -40%;
+  left: auto;
+  right: -16%;
+  width: 48%;
+  height: 110%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 176, 92, 0.2) 0%,
+    rgba(255, 140, 40, 0.08) 46%,
+    transparent 72%
+  );
+  animation-delay: -7s;
+}
+
+.okb-folio-art__grid {
+  inset: -20%;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.6) 1px,
+    transparent 1.4px
+  );
+  background-size: 26px 26px;
+  opacity: 0.09;
+  animation: okb-folio-drift 48s linear infinite;
+}
+
+.okb-folio-art__grain {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+.okb-folio-art__vignette {
+  inset: 0;
+  background: radial-gradient(
+    90% 70% at 50% 42%,
+    transparent 0%,
+    transparent 52%,
+    rgba(0, 8, 24, 0.55) 100%
+  );
+}
+
+.okb-folio-glow {
+  z-index: 2;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    #ff8a1e 0%,
+    #ffc14d 42%,
+    #ffe08a 68%,
+    #ff8a1e 100%
+  );
+  box-shadow: 0 0 18px 2px rgba(255, 154, 46, 0.4);
+}
+
+.okb-folio > .okb-public-container,
+.okb-folio > .okb-public-container-narrow {
+  position: relative;
+  z-index: 2;
+}
+
+.okb-folio-intro {
+  max-width: 42rem;
+  margin-inline: auto;
+  margin-bottom: clamp(1.4rem, 3vw, 2.1rem);
+  text-align: center;
+}
+
+.okb-folio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  padding: 0.28rem 0.75rem 0.28rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  background: rgba(0, 16, 48, 0.32);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.okb-folio-chip__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: var(--dpwh-orange);
+  box-shadow: 0 0 0 0 rgba(255, 138, 30, 0.55);
+  animation: okb-folio-pulse 2.4s ease-out infinite;
+}
+
+.okb-folio-title {
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1.85rem, 4.2vw, 3.15rem);
+  font-weight: 700;
+  line-height: 0.94;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  background-image: linear-gradient(
+    108deg,
+    #ffffff 0%,
+    #ffffff 62%,
+    #ffe7b0 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.okb-folio-lead {
+  margin-top: 0.7rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(220, 230, 244, 0.78);
+  text-wrap: pretty;
+}
+
+.okb-folio-stage {
+  position: relative;
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.okb-folio-frame {
+  position: relative;
+  padding: 0.7rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(255, 193, 77, 0.28);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.025) 100%
+  );
+  box-shadow:
+    0 28px 70px rgba(0, 6, 22, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.okb-folio-crop {
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-color: rgba(255, 193, 77, 0.85);
+  border-style: solid;
+  z-index: 2;
+}
+
+.okb-folio-crop--tl {
+  top: 0.35rem;
+  left: 0.35rem;
+  border-width: 1.5px 0 0 1.5px;
+}
+
+.okb-folio-crop--tr {
+  top: 0.35rem;
+  right: 0.35rem;
+  border-width: 1.5px 1.5px 0 0;
+}
+
+.okb-folio-crop--bl {
+  bottom: 0.35rem;
+  left: 0.35rem;
+  border-width: 0 0 1.5px 1.5px;
+}
+
+.okb-folio-crop--br {
+  bottom: 0.35rem;
+  right: 0.35rem;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.okb-folio-shot {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 0.55rem;
+  background: #071018;
+  cursor: zoom-in;
+}
+
+.okb-folio-shot__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: min(75vh, 800px);
+  margin-inline: auto;
+  object-fit: contain;
+  animation: okb-folio-in 0.45s ease;
+}
+
+.okb-folio-shot__hint {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  background: rgba(0, 10, 28, 0.62);
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.okb-folio-shot__hint svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.okb-folio-shot:hover .okb-folio-shot__hint,
+.okb-folio-shot:focus-visible .okb-folio-shot__hint {
+  opacity: 1;
+  transform: none;
+}
+
+.okb-folio-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 28, 68, 0.78) 0%,
+    rgba(0, 14, 40, 0.72) 100%
+  );
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 6, 22, 0.4);
+  backdrop-filter: blur(10px);
+  transform: translateY(-50%);
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.okb-folio-nav svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.okb-folio-nav--prev {
+  left: 0.65rem;
+}
+
+.okb-folio-nav--next {
+  right: 0.65rem;
+}
+
+.okb-folio-nav:hover:not(:disabled) {
+  border-color: rgba(255, 193, 77, 0.7);
+  color: #ffe7b0;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.okb-folio-nav:disabled {
+  cursor: not-allowed;
+  opacity: 0.28;
+}
+
+.okb-folio-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  max-width: 42rem;
+  margin: 1.15rem auto 0;
+}
+
+.okb-folio-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(220, 230, 244, 0.55);
+}
+
+.okb-folio-count span:first-child {
+  color: #ffe7b0;
+}
+
+.okb-folio-count__rule {
+  width: 1.6rem;
+  height: 1px;
+  background: linear-gradient(90deg, #ff8a1e, #ffc14d);
+}
+
+.okb-folio-ticks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.28rem;
+  width: 100%;
+}
+
+.okb-folio-tick {
+  display: block;
+  width: 0.7rem;
+  height: 0.28rem;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.22);
+  cursor: pointer;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.okb-folio-tick--on {
+  width: 1.55rem;
+  background: linear-gradient(90deg, #ff8a1e, #ffc14d);
+}
+
+.okb-folio-tick:hover:not(.okb-folio-tick--on) {
+  background: rgba(255, 231, 176, 0.55);
+}
+
+.okb-folio-contact {
+  display: grid;
+  gap: 0.7rem;
+  max-width: 42rem;
+  margin: 1.6rem auto 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.025) 100%
+  );
+}
+
+@media (min-width: 640px) {
+  .okb-folio-contact {
+    grid-template-columns: 1fr 1fr;
+    padding: 0.95rem 1.1rem;
+  }
+
+  .okb-folio-nav {
+    width: 3.05rem;
+    height: 3.05rem;
+  }
+
+  .okb-folio-nav--prev {
+    left: -0.35rem;
+  }
+
+  .okb-folio-nav--next {
+    right: -0.35rem;
+  }
+}
+
+.okb-folio-contact__item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.7rem;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.18s ease;
+}
+
+.okb-folio-contact__item:hover {
+  background: rgba(255, 176, 92, 0.08);
+}
+
+.okb-folio-contact__item svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+  color: rgba(255, 176, 92, 0.9);
+}
+
+.okb-folio-contact__item span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.okb-folio-contact__item em {
+  font-style: normal;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 224, 168, 0.7);
+}
+
+.okb-folio-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+  background:
+    radial-gradient(
+      80% 70% at 50% 40%,
+      rgba(0, 28, 72, 0.35) 0%,
+      rgba(0, 0, 0, 0.92) 100%
+    );
+}
+
+.okb-folio-lightbox__stage {
+  position: relative;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.okb-folio-lightbox__img {
+  display: block;
+  max-height: 88vh;
+  width: auto;
+  max-width: min(96vw, 1400px);
+  object-fit: contain;
+  border-radius: 0.4rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.okb-folio-lightbox__close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  background: rgba(0, 10, 28, 0.72);
+  color: #ffffff;
+}
+
+.okb-folio-lightbox__close svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.okb-folio-lightbox__close:hover {
+  border-color: rgba(255, 193, 77, 0.7);
+  color: #ffe7b0;
+}
+
+.okb-folio-lightbox .okb-folio-nav--prev {
+  left: 0.5rem;
+}
+
+.okb-folio-lightbox .okb-folio-nav--next {
+  right: 0.5rem;
+}
+
+.okb-folio-lightbox__cap {
+  position: absolute;
+  left: 50%;
+  bottom: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: calc(100% - 7rem);
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  background: rgba(0, 10, 28, 0.7);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transform: translateX(-50%);
+  text-wrap: pretty;
+}
+
+.okb-folio-lightbox__cap span {
+  color: #ffe7b0;
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+@keyframes okb-folio-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes okb-folio-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(36%, 6%, 0) scale(1.14);
+  }
+}
+
+@keyframes okb-folio-drift {
+  to {
+    background-position: 260px 130px;
+  }
+}
+
+@keyframes okb-folio-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 138, 30, 0.55);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 8px rgba(255, 138, 30, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .okb-folio-art__aurora,
+  .okb-folio-art__grid,
+  .okb-folio-chip__dot,
+  .okb-folio-shot__img {
+    animation: none;
+  }
+
+  .okb-folio-nav:hover:not(:disabled) {
+    transform: translateY(-50%);
+  }
+}
+
+@media (max-width: 639px) {
+  .okb-folio-shot__hint {
+    opacity: 1;
+    transform: none;
+  }
+}
