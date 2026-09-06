@@ -8,7 +8,11 @@ const LOGO_WIDTH = 224;
 const LOGO_HEIGHT = 254;
 
 interface OkbLogoProps {
-  /** Display height in pixels (width scales with the hexagon aspect). */
+  /**
+   * Display height in pixels (width scales with the hexagon aspect). Acts as a
+   * fallback — a stylesheet may override it per breakpoint by setting
+   * `--okb-logo-size` on the element.
+   */
   size?: number;
   className?: string;
   priority?: boolean;
@@ -16,8 +20,6 @@ interface OkbLogoProps {
 
 /** Official Oplan Kontra Baha hexagonal emblem. */
 export function OkbLogo({ size = 44, className, priority = false }: OkbLogoProps) {
-  const width = Math.round(size * (LOGO_WIDTH / LOGO_HEIGHT));
-
   return (
     // Plain img preserves PNG transparency; Next/Image optimization can flatten alpha.
     // eslint-disable-next-line @next/next/no-img-element
@@ -29,7 +31,11 @@ export function OkbLogo({ size = 44, className, priority = false }: OkbLogoProps
       decoding={priority ? "sync" : "async"}
       fetchPriority={priority ? "high" : undefined}
       className={cn("h-auto w-auto shrink-0 object-contain", className)}
-      style={{ height: size, width: "auto", maxWidth: width }}
+      style={{
+        height: `var(--okb-logo-size, ${size}px)`,
+        width: "auto",
+        maxWidth: "100%",
+      }}
     />
   );
 }

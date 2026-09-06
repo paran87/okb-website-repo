@@ -2,10 +2,11 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import {
   Activity,
   ArrowDownToLine,
+  ArrowUpRight,
   Camera,
   Droplets,
   FileCheck2,
@@ -50,6 +51,11 @@ const PRINCIPLE_ICONS = [
 const FRAMEWORK_HERO_BANNER = {
   src: "/framework/framework-hero-ridge-to-reef.png",
   alt: "Aerial ridge-to-reef landscape — a river winding from forested mountains through a floodplain to a coastal reef at dusk.",
+} as const;
+
+const SECRETARY_PORTRAIT = {
+  src: "/framework/sec-vivencio-dizon.jpg",
+  alt: "Secretary Vivencio B. Dizon of the Department of Public Works and Highways, photographed during a Senate Blue Ribbon Committee hearing. Public-domain photograph by the Philippine government, via Wikimedia Commons.",
 } as const;
 
 function FrameworkHeroBackdrop() {
@@ -116,12 +122,46 @@ function FrameworkHeroBackdrop() {
       </svg>
       <div
         aria-hidden
+        className="okb-fw-hero-emblem pointer-events-none absolute"
+      />
+      <div
+        aria-hidden
         className="okb-fw-hero-sheen pointer-events-none absolute inset-0"
+      />
+      <div
+        aria-hidden
+        className="okb-fw-hero-vignette pointer-events-none absolute inset-0"
       />
       <span className="sr-only">{FRAMEWORK_HERO_BANNER.alt}</span>
     </>
   );
 }
+
+const heroPanelVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+      ease: [0.22, 1, 0.36, 1],
+      staggerChildren: 0.08,
+      delayChildren: 0.12,
+    },
+  },
+};
+
+const heroItemVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+};
+
+/** Document facts shown as a spec strip under the lead paragraph. */
+const HERO_META_FIELDS = [
+  { label: "Issued", value: FRAMEWORK_META.dateIssued },
+  { label: "Special Order", value: "No. 06, s. 2026" },
+  { label: "Reference", value: FRAMEWORK_META.tracking },
+] as const;
 
 function FrameworkHeroCopy() {
   const reduce = useReducedMotion();
@@ -129,38 +169,69 @@ function FrameworkHeroCopy() {
   return (
     <motion.div
       className="okb-fw-hero-panel"
-      initial={reduce ? false : { opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+      variants={heroPanelVariants}
+      initial={reduce ? false : "hidden"}
+      animate="show"
     >
-      <p className="okb-public-eyebrow">{FRAMEWORK_META.authority}</p>
-      <h1 className="okb-public-heading mt-3 max-w-4xl text-3xl sm:text-5xl lg:text-6xl">
-        Operational Framework of Oplan Kontra Baha
+      <span className="okb-fw-hero-tick okb-fw-hero-tick--tl" aria-hidden />
+      <span className="okb-fw-hero-tick okb-fw-hero-tick--tr" aria-hidden />
+      <span className="okb-fw-hero-tick okb-fw-hero-tick--bl" aria-hidden />
+      <span className="okb-fw-hero-tick okb-fw-hero-tick--br" aria-hidden />
+
+      <motion.p className="okb-fw-hero-badge" variants={heroItemVariants}>
+        <Landmark className="size-3.5 shrink-0" aria-hidden />
+        <span>{FRAMEWORK_META.authority}</span>
+      </motion.p>
+
+      <h1 className="okb-fw-hero-title">
+        <motion.span className="okb-fw-hero-title__line" variants={heroItemVariants}>
+          Operational Framework
+        </motion.span>{" "}
+        <motion.span
+          className="okb-fw-hero-title__line okb-fw-hero-title__accent"
+          variants={heroItemVariants}
+        >
+          of Oplan Kontra Baha
+        </motion.span>
       </h1>
-      <span className="okb-fw-hero-rule mt-5 block" aria-hidden />
-      <p className="okb-public-body mt-5 max-w-[46rem] text-base sm:text-lg">
+
+      <motion.span className="okb-fw-hero-rule" variants={heroItemVariants} aria-hidden />
+
+      <motion.p className="okb-fw-hero-lead" variants={heroItemVariants}>
         A regular, sustained flood-mitigation and maintenance program —
         restoring the carrying capacity of waterways, drainage, and flood
-        facilities from ridge to reef.
-      </p>
-      <div className="mt-8 flex flex-wrap gap-3">
+        facilities <em>from ridge to reef</em>.
+      </motion.p>
+
+      <motion.div className="okb-fw-hero-actions" variants={heroItemVariants}>
         <a
           href={FRAMEWORK_DOCUMENT_HREF}
           download
-          className="okb-public-btn okb-public-btn-accent"
+          className="okb-fw-btn okb-fw-btn--solid"
         >
-          <ArrowDownToLine className="size-4" aria-hidden />
-          Download official memorandum
+          <ArrowDownToLine className="okb-fw-btn__icon size-4 shrink-0" aria-hidden />
+          <span>Download official memorandum</span>
+          <span className="okb-fw-btn__shine" aria-hidden />
         </a>
         <Link
           href={PUBLIC_ROUTES.commandCenter}
           target="_blank"
           rel="noopener noreferrer"
-          className="okb-public-btn okb-public-btn-light"
+          className="okb-fw-btn okb-fw-btn--ghost"
         >
-          Open Command Center
+          <span>Open Command Center</span>
+          <ArrowUpRight className="okb-fw-btn__icon size-4 shrink-0" aria-hidden />
         </Link>
-      </div>
+      </motion.div>
+
+      <motion.dl className="okb-fw-hero-meta" variants={heroItemVariants}>
+        {HERO_META_FIELDS.map((field) => (
+          <div key={field.label}>
+            <dt>{field.label}</dt>
+            <dd>{field.value}</dd>
+          </div>
+        ))}
+      </motion.dl>
     </motion.div>
   );
 }
@@ -485,25 +556,52 @@ export function OkbFrameworkStory() {
         </Reveal>
 
         <Reveal delay={0.08}>
-          <div className="okb-fw-signoff rounded-sm p-6 sm:p-8">
-            <p className="okb-public-body text-sm uppercase tracking-[0.16em] text-white/70">
-              For information and strict implementation
-            </p>
-            <p className="okb-public-heading mt-4 text-2xl text-white sm:text-3xl">
-              {FRAMEWORK_META.signedBy}
-            </p>
-            <p className="mt-1 text-white/85">{FRAMEWORK_META.signedTitle}</p>
-            <p className="mt-4 text-sm text-white/65">
-              {FRAMEWORK_META.dateIssued} · {FRAMEWORK_META.tracking}
-            </p>
-            <a
-              href={FRAMEWORK_DOCUMENT_HREF}
-              download
-              className="okb-public-btn okb-public-btn-accent mt-6"
-            >
-              <ArrowDownToLine className="size-4" aria-hidden />
-              Download the signed memorandum
-            </a>
+          <div
+            id="framework-signoff"
+            className="okb-fw-signoff relative isolate overflow-hidden rounded-sm p-6 sm:p-8"
+          >
+            <div
+              aria-hidden
+              className="okb-fw-signoff-wash pointer-events-none absolute inset-0"
+              style={{ backgroundImage: `url(${SECRETARY_PORTRAIT.src})` }}
+            />
+            <div
+              aria-hidden
+              className="okb-fw-signoff-veil pointer-events-none absolute inset-0"
+            />
+
+            <div className="okb-fw-signoff-grid relative z-10">
+              <p className="okb-fw-signoff-kicker">
+                For information and strict implementation
+              </p>
+              <div className="okb-fw-signoff-identity">
+                <p className="okb-fw-signoff-name">
+                  {FRAMEWORK_META.signedBy}
+                </p>
+                <p className="okb-fw-signoff-title mt-1">
+                  {FRAMEWORK_META.signedTitle}
+                </p>
+              </div>
+              <figure className="okb-fw-signoff-portrait">
+                <img
+                  src={SECRETARY_PORTRAIT.src}
+                  alt={SECRETARY_PORTRAIT.alt}
+                  width={2048}
+                  height={1536}
+                />
+              </figure>
+              <p className="okb-fw-signoff-meta">
+                {FRAMEWORK_META.dateIssued} · {FRAMEWORK_META.tracking}
+              </p>
+              <a
+                href={FRAMEWORK_DOCUMENT_HREF}
+                download
+                className="okb-fw-signoff-cta okb-public-btn okb-public-btn-accent"
+              >
+                <ArrowDownToLine className="size-4" aria-hidden />
+                Download the signed memorandum
+              </a>
+            </div>
           </div>
         </Reveal>
       </PublicPageSection>

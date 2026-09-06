@@ -12,6 +12,39 @@ export const FRAMEWORK_META = {
   wasteLaw: "Republic Act No. 9003",
 } as const;
 
+export const RIDGE_TO_REEF_ZONES = [
+  {
+    id: "ridge",
+    label: "Ridge",
+    lead: "Uplands and watersheds",
+    body: "Rainfall, runoff, and eroded soil begin here. Upstream conditions are assessed first so silt and debris are not simply moved to the next community downstream.",
+  },
+  {
+    id: "river",
+    label: "Rivers and creeks",
+    lead: "Conveyance channels",
+    body: "Dredging, desilting, and the removal of solid waste, vegetation, and obstructions restore the carrying capacity of rivers, creeks, and esteros.",
+  },
+  {
+    id: "floodplain",
+    label: "Floodplain",
+    lead: "Cities and drainage",
+    body: "Drainage lines, manholes, catch basins, culverts, and outfalls are declogged, while pumping stations are maintained and mobile pumps are staged where flooding is worst.",
+  },
+  {
+    id: "estuary",
+    label: "Estuary",
+    lead: "Tidal outlets",
+    body: "Discharge points are kept clear and recurring solid-waste accumulation is controlled at source with LGUs, DENR, and MMDA.",
+  },
+  {
+    id: "reef",
+    label: "Coast and reef",
+    lead: "Receiving waters",
+    body: "Dredged material and debris are disposed of under environmental safeguards so coastal waters and reefs are protected at the end of the system.",
+  },
+] as const;
+
 export const FRAMEWORK_MECHANISM = [
   "Identification",
   "Assessment",

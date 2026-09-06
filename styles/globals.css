@@ -462,62 +462,202 @@
   position: relative;
 }
 
-.okb-public-header-accent {
+/* ---------------------------------------------------------------- *
+ * Masthead artwork — layered "ridge to reef" illustration
+ * ---------------------------------------------------------------- */
+.okb-mast-art {
   pointer-events: none;
   position: absolute;
   inset: 0;
   overflow: hidden;
 }
 
-.okb-public-header-accent__corner {
+.okb-mast-art > * {
   position: absolute;
+}
+
+/* Slow warm bloom that keeps the orange field from reading as flat. */
+.okb-mast-art__aurora {
+  top: -70%;
+  left: -12%;
+  width: 46%;
+  height: 240%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 205, 140, 0.42) 0%,
+    rgba(255, 176, 92, 0.16) 45%,
+    transparent 72%
+  );
+  filter: blur(34px);
+  animation: okb-mast-aurora 18s ease-in-out infinite alternate;
+}
+
+/* Survey dot grid — reads as a technical plan sheet under the brand. */
+.okb-mast-art__grid {
+  inset: -20%;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.55) 1px,
+    transparent 1.4px
+  );
+  background-size: 26px 26px;
+  opacity: 0.13;
+  animation: okb-mast-drift 40s linear infinite;
+}
+
+/* OKB emblem watermark, bled large behind the lockup. */
+.okb-mast-art__emblem {
+  display: none;
+  top: 50%;
+  right: 12%;
+  aspect-ratio: 224 / 254;
+  height: 250%;
+  transform: translateY(-50%) rotate(-8deg);
+  background-image: url("/brand/oplan-kontra-baha-logo.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.07;
+}
+
+@media (min-width: 768px) {
+  .okb-mast-art__emblem {
+    display: block;
+  }
+}
+
+.okb-mast-art__topo,
+.okb-mast-art__flow {
+  inset-inline: 0;
+  width: 100%;
+}
+
+.okb-mast-art__topo {
   top: 0;
-  width: 2.75rem;
   height: 100%;
-  background-color: var(--dpwh-orange);
+  opacity: 0.3;
 }
 
-.okb-public-header-accent__corner--left {
-  left: 0;
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-  opacity: 0.35;
+/* Waterlines are kept in the lower band so they never cross the wordmark. */
+.okb-mast-art__flow {
+  bottom: -0.35rem;
+  height: 40%;
+  opacity: 0.6;
 }
 
-.okb-public-header-accent__corner--right {
-  right: 0;
-  clip-path: polygon(100% 0, 100% 100%, 0 0);
-  opacity: 0.45;
+.okb-mast-flowline {
+  stroke-dasharray: 16 22;
+  animation: okb-mast-flow 13s linear infinite;
 }
 
-.okb-public-header-accent__slash {
-  position: absolute;
-  top: 0;
-  width: 0.625rem;
-  height: 130%;
-  background-color: #ffffff;
-  opacity: 0.22;
+/* Fine diagonal hatch bands at both shoulders. */
+.okb-mast-art__hatch {
+  top: -30%;
+  width: 9rem;
+  height: 160%;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9) 0 2px,
+    transparent 2px 11px
+  );
+  opacity: 0.14;
   transform: skewX(-18deg);
 }
 
-.okb-public-header-accent__slash--left {
-  left: 2.5rem;
+.okb-mast-art__hatch--left {
+  left: -3rem;
+  -webkit-mask-image: linear-gradient(90deg, #000 0%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 0%, transparent 100%);
 }
 
-.okb-public-header-accent__slash--right {
-  right: 2.5rem;
+.okb-mast-art__hatch--right {
+  right: -3rem;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 100%);
+}
+
+/* Solid orange chevrons anchoring the DPWH graphic identity. */
+.okb-mast-art__chevron {
+  top: 0;
+  width: 3.25rem;
+  height: 100%;
+  background-color: #ffb066;
+}
+
+.okb-mast-art__chevron--left {
+  left: 0;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  opacity: 0.3;
+}
+
+.okb-mast-art__chevron--right {
+  right: 0;
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  opacity: 0.38;
+}
+
+/* Film grain keeps large flat gradients from banding. */
+.okb-mast-art__grain {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+}
+
+.okb-mast-art__sheen {
+  top: -20%;
+  left: 0;
+  width: 14%;
+  height: 140%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.32) 50%,
+    transparent 100%
+  );
+  transform: translateX(-160%) skewX(-18deg);
+  animation: okb-masthead-sheen 11s ease-in-out infinite;
+}
+
+@keyframes okb-masthead-sheen {
+  0% {
+    transform: translateX(-160%) skewX(-18deg);
+  }
+  55%,
+  100% {
+    transform: translateX(760%) skewX(-18deg);
+  }
+}
+
+@keyframes okb-mast-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(46%, 4%, 0) scale(1.18);
+  }
+}
+
+@keyframes okb-mast-drift {
+  to {
+    background-position: 260px 130px;
+  }
+}
+
+@keyframes okb-mast-flow {
+  to {
+    stroke-dashoffset: -76;
+  }
 }
 
 @media (min-width: 1024px) {
-  .okb-public-header-accent__corner {
-    width: 4rem;
+  .okb-mast-art__chevron {
+    width: 4.5rem;
   }
 
-  .okb-public-header-accent__slash--left {
-    left: 4.5rem;
-  }
-
-  .okb-public-header-accent__slash--right {
-    right: 4.5rem;
+  .okb-mast-art__hatch {
+    width: 12rem;
   }
 }
 
@@ -629,8 +769,15 @@
 }
 
 .okb-accomplishment-frame {
-  height: min(85vh, 1100px);
-  min-height: 720px;
+  height: min(82vh, 1100px);
+  min-height: 540px;
+}
+
+@media (min-width: 640px) {
+  .okb-accomplishment-frame {
+    height: min(85vh, 1100px);
+    min-height: 720px;
+  }
 }
 
 .okb-public-card-blue {
@@ -767,61 +914,340 @@
   color: #e5e7eb;
 }
 
+/* `position` is left to the sticky utility on the element itself. */
+.okb-public-header {
+  transition: box-shadow 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 40, 85, 0.12);
+}
+
+.okb-public-header--condensed {
+  box-shadow: 0 14px 34px -18px rgba(60, 20, 0, 0.65),
+    0 2px 8px rgba(0, 40, 85, 0.18);
+}
+
+/* Whole-page reading progress, pinned to the header's lower edge. */
+.okb-public-header-progress {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 3;
+  height: 2px;
+  transform-origin: 0 50%;
+  background-image: linear-gradient(
+    90deg,
+    var(--dpwh-gold) 0%,
+    var(--dpwh-orange) 55%,
+    #ff9a3c 100%
+  );
+  box-shadow: 0 0 10px rgba(252, 209, 22, 0.7);
+}
+
 .okb-public-masthead {
   position: relative;
+  /* Sits above the mobile menu scrim so the brand bar stays legible. */
+  z-index: 2;
   overflow: hidden;
-  border-bottom: 3px solid var(--dpwh-header-orange-dark);
   background-color: var(--dpwh-header-orange);
+  background-image: radial-gradient(
+      130% 190% at 4% -30%,
+      rgba(255, 190, 118, 0.5) 0%,
+      transparent 52%
+    ),
+    radial-gradient(
+      95% 160% at 98% 130%,
+      rgba(96, 22, 4, 0.55) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      100deg,
+      var(--dpwh-header-orange-dark) 0%,
+      var(--dpwh-header-orange) 34%,
+      #dd5f11 64%,
+      #a63a08 100%
+    );
   color: #ffffff;
+}
+
+/* Glowing tri-tone edge instead of a flat border. */
+.okb-public-masthead::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 2;
+  height: 3px;
+  background-image: linear-gradient(
+    90deg,
+    var(--dpwh-header-orange-dark) 0%,
+    var(--dpwh-orange) 28%,
+    var(--dpwh-gold) 50%,
+    var(--dpwh-orange) 72%,
+    var(--dpwh-header-orange-dark) 100%
+  );
 }
 
 .okb-public-masthead-inner {
   position: relative;
   z-index: 1;
   display: flex;
-  min-height: 6rem;
+  min-height: 5rem;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
+  gap: 0.75rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  transition: min-height 0.3s ease, padding 0.3s ease;
 }
 
 @media (min-width: 640px) {
   .okb-public-masthead-inner {
-    min-height: 7.25rem;
+    min-height: 7.5rem;
+    gap: 1rem;
     padding-top: 1rem;
     padding-bottom: 1rem;
   }
 }
 
+/* --- Condensed (scrolled) masthead -------------------------------------- */
+.okb-public-header--condensed .okb-public-masthead-inner {
+  min-height: 4rem;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+@media (min-width: 640px) {
+  .okb-public-header--condensed .okb-public-masthead-inner {
+    min-height: 5.25rem;
+  }
+}
+
+.okb-public-header--condensed .okb-mast-eyebrow {
+  max-height: 0;
+  margin-bottom: 0;
+  opacity: 0;
+}
+
+.okb-public-header--condensed .okb-public-masthead-subtitle {
+  max-height: 0;
+  margin-top: 0;
+  opacity: 0;
+}
+
+@media (min-width: 1024px) {
+  .okb-public-header--condensed .okb-public-masthead-subtitle {
+    max-height: 1.4rem;
+    margin-top: 0.15rem;
+    opacity: 0.85;
+  }
+}
+
+/* Compact brand lockup shown only where the full department name will not fit. */
+.okb-public-masthead-wordmark-title {
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 8px rgba(96, 32, 0, 0.45);
+}
+
+.okb-public-masthead-wordmark-sub {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 420px) {
+  .okb-public-masthead-wordmark-title {
+    font-size: 1.6rem;
+  }
+
+  .okb-public-masthead-wordmark-sub {
+    font-size: 0.6875rem;
+  }
+}
+
+/* Soft halo so the emblem lifts off the orange field. */
+.okb-masthead-logo-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.okb-masthead-logo-wrap::before {
+  content: "";
+  position: absolute;
+  inset: -18%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.08) 52%,
+    transparent 72%
+  );
+}
+
+.okb-masthead-logo {
+  --okb-logo-size: 3.4rem;
+  position: relative;
+  filter: drop-shadow(0 6px 14px rgba(74, 22, 0, 0.5));
+  transition: height 0.3s ease, transform 0.35s ease;
+  animation: okb-logo-float 8s ease-in-out infinite;
+}
+
+.okb-public-masthead-primary:hover .okb-masthead-logo {
+  transform: scale(1.04);
+}
+
+@keyframes okb-logo-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+
+@media (min-width: 420px) {
+  .okb-masthead-logo {
+    --okb-logo-size: 3.9rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .okb-masthead-logo {
+    --okb-logo-size: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .okb-masthead-logo {
+    --okb-logo-size: 5.75rem;
+  }
+}
+
+.okb-public-header--condensed .okb-masthead-logo {
+  --okb-logo-size: 2.9rem;
+}
+
+@media (min-width: 640px) {
+  .okb-public-header--condensed .okb-masthead-logo {
+    --okb-logo-size: 3.9rem;
+  }
+}
+
+/* Eyebrow: hairline rule + tracked-out republic line. */
+.okb-mast-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  margin-bottom: 0.3rem;
+  max-height: 1.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin-bottom 0.3s ease;
+}
+
+.okb-mast-eyebrow::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  max-width: 4.5rem;
+  background-image: linear-gradient(
+    90deg,
+    rgba(252, 209, 22, 0.85),
+    transparent
+  );
+}
+
 .okb-public-masthead-title {
-  font-size: 0.9375rem;
-  line-height: 1.35;
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: 0.012em;
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(88, 28, 0, 0.5);
+  text-wrap: balance;
 }
 
 @media (min-width: 640px) {
   .okb-public-masthead-title {
-    font-size: 1.0625rem;
+    font-size: 1.55rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .okb-public-masthead-title {
+    font-size: 1.7rem;
   }
 }
 
 @media (min-width: 1024px) {
   .okb-public-masthead-title {
-    font-size: 1.25rem;
+    font-size: 2.3rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .okb-public-masthead-title {
+    font-size: 2.6rem;
   }
 }
 
 .okb-public-masthead-subtitle {
-  margin-top: 0.25rem;
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  overflow: hidden;
+  margin-top: 0.35rem;
+  max-height: 3rem;
+  font-size: 0.7rem;
   line-height: 1.4;
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+}
+
+.okb-mast-subtitle-tail {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.okb-public-masthead-subtitle em {
+  font-style: normal;
+  font-weight: 700;
+  color: #ffe7c4;
+}
+
+.okb-mast-dot {
+  display: inline-block;
+  height: 0.3rem;
+  width: 0.3rem;
+  flex-shrink: 0;
+  margin-inline: 0.55rem;
+  border-radius: 9999px;
+  background-color: var(--dpwh-gold);
+  box-shadow: 0 0 8px rgba(252, 209, 22, 0.8);
 }
 
 @media (min-width: 640px) {
   .okb-public-masthead-subtitle {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 }
 
@@ -834,11 +1260,30 @@
 }
 
 .okb-public-masthead-menu-btn {
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 0.75rem;
+  background-color: rgba(0, 12, 32, 0.2);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 6px 16px -8px rgba(40, 10, 0, 0.8);
   color: #ffffff;
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+    transform 0.18s ease;
 }
 
 .okb-public-masthead-menu-btn:hover {
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: rgba(0, 12, 32, 0.34);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.okb-public-masthead-menu-btn:active {
+  transform: scale(0.94);
+}
+
+.okb-public-masthead-menu-btn[aria-expanded="true"] {
+  background-color: var(--dpwh-blue);
+  border-color: #ffffff;
 }
 
 .okb-public-masthead-branding,
@@ -854,12 +1299,29 @@
   line-height: 0;
 }
 
+.okb-public-masthead-divider {
+  height: 3.25rem;
+  width: 1px;
+  background-image: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.55) 45%,
+    transparent
+  );
+}
+
 .okb-public-gov-logo {
   display: block;
   height: auto;
   width: auto;
   max-width: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(70, 20, 0, 0.45));
+  transition: height 0.3s ease, transform 0.3s ease;
+}
+
+.okb-public-gov-logo-link:hover .okb-public-gov-logo {
+  transform: scale(1.05);
 }
 
 .okb-public-gov-logo--bp {
@@ -867,70 +1329,643 @@
 }
 
 .okb-public-gov-logo--dpwh {
-  height: 3.75rem;
+  height: 2.6rem;
+}
+
+@media (min-width: 420px) {
+  .okb-public-gov-logo--dpwh {
+    height: 3rem;
+  }
 }
 
 @media (min-width: 640px) {
   .okb-public-gov-logo--bp {
-    height: 4.25rem;
+    height: 4.4rem;
   }
 
   .okb-public-gov-logo--dpwh {
-    height: 4.75rem;
+    height: 4.9rem;
   }
 }
 
 @media (min-width: 1024px) {
   .okb-public-gov-logo--bp {
-    height: 4.75rem;
+    height: 5rem;
   }
 
   .okb-public-gov-logo--dpwh {
-    height: 5.25rem;
+    height: 5.5rem;
   }
 }
 
+.okb-public-header--condensed .okb-public-gov-logo--bp {
+  height: 2.5rem;
+}
+
+.okb-public-header--condensed .okb-public-gov-logo--dpwh {
+  height: 2.4rem;
+}
+
+@media (min-width: 640px) {
+  .okb-public-header--condensed .okb-public-gov-logo--bp {
+    height: 3.4rem;
+  }
+
+  .okb-public-header--condensed .okb-public-gov-logo--dpwh {
+    height: 3.7rem;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Primary navigation — glass rail with a sliding active pill
+ * ---------------------------------------------------------------- */
 .okb-public-nav-bar {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
   background-color: var(--dpwh-blue);
+  background-image: radial-gradient(
+      120% 260% at 0% 0%,
+      rgba(86, 152, 255, 0.34) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      90% 220% at 100% 100%,
+      rgba(0, 14, 56, 0.62) 0%,
+      transparent 62%
+    ),
+    linear-gradient(180deg, #0b47bd 0%, var(--dpwh-blue) 52%, #002a84 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.okb-public-nav-link {
-  border-radius: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.92);
-  transition: background-color 0.15s ease, color 0.15s ease;
+/* Faint survey grid, echoing the masthead artwork. */
+.okb-public-nav-bar::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -50%;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.6) 0 1px,
+    transparent 1px 13px
+  );
+  opacity: 0.05;
+  transform: skewX(-18deg);
 }
 
-.okb-public-nav-link:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+.okb-public-nav-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
 }
 
-.okb-public-nav-link-active {
-  background-color: var(--dpwh-orange);
-  color: #ffffff;
-}
-
-.okb-public-nav-link-active:hover {
-  background-color: var(--dpwh-orange-dark);
-  color: #ffffff;
-}
-
-.okb-public-nav-cta {
-  margin-left: auto;
-  border-radius: 0.25rem;
-  background-color: var(--dpwh-orange);
-  padding: 0.5rem 0.875rem;
-  font-size: 0.875rem;
+.okb-tab {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 9999px;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #ffffff;
-  transition: background-color 0.15s ease;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.76);
+  transition: color 0.2s ease, transform 0.2s ease;
 }
 
-.okb-public-nav-cta:hover {
-  background-color: var(--dpwh-orange-dark);
+/* Hover wash. */
+.okb-tab::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  border-radius: inherit;
+  background-color: rgba(255, 255, 255, 0.12);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+/* Gold underline that grows from the centre on hover. */
+.okb-tab::after {
+  content: "";
+  position: absolute;
+  bottom: 0.1rem;
+  left: 50%;
+  right: 50%;
+  height: 2px;
+  border-radius: 9999px;
+  background-color: var(--dpwh-gold);
+  transition: left 0.25s ease, right 0.25s ease, opacity 0.2s ease;
+}
+
+.okb-tab:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.okb-tab:hover::before {
+  opacity: 1;
+}
+
+.okb-tab:hover::after {
+  left: 0.95rem;
+  right: 0.95rem;
+}
+
+.okb-tab--on,
+.okb-tab--on:hover {
+  color: #ffffff;
+  transform: none;
+}
+
+.okb-tab--on::before,
+.okb-tab--on::after {
+  opacity: 0;
+}
+
+.okb-tab__pill {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: 9999px;
+  background-image: linear-gradient(
+    135deg,
+    #ffa957 0%,
+    var(--dpwh-orange) 46%,
+    #dd6410 100%
+  );
+  box-shadow: 0 10px 22px -8px rgba(245, 126, 32, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.okb-tab__icon {
+  opacity: 0.75;
+  transition: opacity 0.2s ease, transform 0.25s ease;
+}
+
+.okb-tab:hover .okb-tab__icon {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+.okb-tab--on .okb-tab__icon {
+  opacity: 1;
+}
+
+/* Fills the gap between the tab rail and the CTA so the bar reads composed. */
+.okb-nav-rule {
+  flex: 1 1 auto;
+  min-width: 1.5rem;
+  height: 2px;
+  margin-inline: 1.25rem;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.55) 0 5px,
+    transparent 5px 12px
+  );
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 40%,
+    #000 75%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 40%,
+    #000 75%,
+    transparent
+  );
+}
+
+.okb-nav-cta {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  background-image: linear-gradient(
+    135deg,
+    #ffa957 0%,
+    var(--dpwh-orange) 45%,
+    #d9600d 100%
+  );
+  padding: 0.5rem 1.1rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
+  box-shadow: 0 10px 26px -10px rgba(245, 126, 32, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.okb-nav-cta:hover {
+  transform: translateY(-1px);
+  filter: saturate(1.08) brightness(1.05);
+  box-shadow: 0 16px 32px -10px rgba(245, 126, 32, 1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.okb-nav-cta:active {
+  transform: translateY(0) scale(0.985);
+}
+
+/* Live-feed pulse. */
+.okb-nav-cta__dot {
+  position: relative;
+  height: 0.45rem;
+  width: 0.45rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: #ffffff;
+}
+
+.okb-nav-cta__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: #ffffff;
+  animation: okb-nav-pulse 2.2s ease-out infinite;
+}
+
+.okb-nav-cta__arrow {
+  transition: transform 0.25s ease;
+}
+
+.okb-nav-cta:hover .okb-nav-cta__arrow {
+  transform: translate(2px, -2px);
+}
+
+.okb-nav-cta__shine {
+  pointer-events: none;
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 26%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  transform: translateX(-200%) skewX(-20deg);
+  animation: okb-nav-shine 5.5s ease-in-out infinite;
+}
+
+@keyframes okb-nav-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(2.9);
+    opacity: 0;
+  }
+}
+
+@keyframes okb-nav-shine {
+  0% {
+    transform: translateX(-200%) skewX(-20deg);
+  }
+  55%,
+  100% {
+    transform: translateX(500%) skewX(-20deg);
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Mobile navigation panel
+ * ---------------------------------------------------------------- */
+
+.okb-mobilenav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background-color: rgba(0, 8, 22, 0.58);
+  backdrop-filter: blur(2px);
+}
+
+.okb-mobilenav {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  border-bottom: 3px solid var(--dpwh-orange);
+  background-image: radial-gradient(
+      120% 90% at 0% 0%,
+      rgba(245, 126, 32, 0.26) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      100% 85% at 100% 8%,
+      rgba(56, 150, 220, 0.3) 0%,
+      transparent 62%
+    ),
+    linear-gradient(180deg, #00306f 0%, #001c46 55%, #00112b 100%);
+  box-shadow: 0 26px 52px rgba(0, 8, 24, 0.45);
+}
+
+.okb-mobilenav-art {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.okb-mobilenav-art svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.16;
+}
+
+.okb-mobilenav-aurora {
+  position: absolute;
+  top: -35%;
+  left: -20%;
+  width: 75%;
+  height: 150%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 168, 78, 0.34) 0%,
+    rgba(255, 168, 78, 0) 68%
+  );
+  filter: blur(26px);
+  animation: okb-mobilenav-aurora 15s ease-in-out infinite alternate;
+}
+
+.okb-mobilenav-wave {
+  stroke-dasharray: 14 18;
+  animation: okb-mobilenav-flow 9s linear infinite;
+}
+
+@keyframes okb-mobilenav-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(48%, 6%, 0) scale(1.16);
+  }
+}
+
+@keyframes okb-mobilenav-flow {
+  to {
+    stroke-dashoffset: -64;
+  }
+}
+
+.okb-mobilenav-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.9rem;
+  padding-bottom: 1.1rem;
+}
+
+.okb-mobilenav-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.okb-mobilenav-kicker::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
+}
+
+.okb-mobilenav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 0.7rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 0.6rem 0.7rem;
+  color: #ffffff;
+  transition: background-color 0.18s ease, border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.okb-mobilenav-item::before {
+  content: "";
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 0;
+  width: 3px;
+  border-radius: 9999px;
+  background-color: var(--dpwh-orange);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.okb-mobilenav-item:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.okb-mobilenav-item:active {
+  transform: scale(0.985);
+}
+
+.okb-mobilenav-item--on {
+  border-color: rgba(245, 126, 32, 0.72);
+  background-image: linear-gradient(
+    90deg,
+    rgba(245, 126, 32, 0.3) 0%,
+    rgba(245, 126, 32, 0.06) 100%
+  );
+}
+
+.okb-mobilenav-item--on::before {
+  opacity: 1;
+}
+
+.okb-mobilenav-icon {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.6rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffc27a;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.okb-mobilenav-item--on .okb-mobilenav-icon {
+  background-color: var(--dpwh-orange);
+  color: #ffffff;
+}
+
+.okb-mobilenav-label {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.okb-mobilenav-desc {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.okb-mobilenav-chev {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.okb-mobilenav-item--on .okb-mobilenav-chev {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.okb-mobilenav-cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  margin-top: 0.35rem;
+  border-radius: 9999px;
+  background-image: linear-gradient(
+    135deg,
+    var(--dpwh-orange) 0%,
+    #ff9f4f 100%
+  );
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  box-shadow: 0 14px 30px rgba(245, 126, 32, 0.34);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.okb-mobilenav-cta:active {
+  transform: scale(0.985);
+  box-shadow: 0 8px 18px rgba(245, 126, 32, 0.3);
+}
+
+.okb-mobilenav-cta::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 28%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 100%
+  );
+  transform: translateX(-180%) skewX(-20deg);
+  animation: okb-mobilenav-shine 4.5s ease-in-out infinite;
+}
+
+@keyframes okb-mobilenav-shine {
+  0% {
+    transform: translateX(-180%) skewX(-20deg);
+  }
+  60%,
+  100% {
+    transform: translateX(440%) skewX(-20deg);
+  }
+}
+
+.okb-mobilenav-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding-top: 0.85rem;
+}
+
+.okb-mobilenav-foot img {
+  height: 2.5rem;
+  width: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.okb-mobilenav-foot p {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .okb-mast-art__sheen,
+  .okb-nav-cta__shine,
+  .okb-mobilenav-cta::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .okb-nav-cta__dot::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .okb-mast-art__aurora,
+  .okb-mast-art__grid,
+  .okb-mast-flowline,
+  .okb-masthead-logo,
+  .okb-mobilenav-aurora,
+  .okb-mobilenav-wave {
+    animation: none;
+    transform: none;
+  }
+
+  .okb-mast-art__emblem {
+    transform: translateY(-50%);
+  }
+
+  .okb-public-masthead-inner,
+  .okb-masthead-logo,
+  .okb-public-gov-logo,
+  .okb-mast-eyebrow,
+  .okb-public-masthead-subtitle {
+    transition: none;
+  }
 }
 
 .okb-public-hero-band {
@@ -947,16 +1982,19 @@
 .okb-public-hero-band::after {
   content: "";
   position: absolute;
+  z-index: 3;
   inset-inline: 0;
   bottom: 0;
   height: 4px;
-  background: linear-gradient(
+  background-image: linear-gradient(
     90deg,
-    var(--dpwh-orange) 0%,
-    var(--dpwh-orange) 70%,
-    #ffffff 70%,
-    #ffffff 100%
+    var(--dpwh-orange-dark) 0%,
+    var(--dpwh-orange) 26%,
+    var(--dpwh-gold) 50%,
+    var(--dpwh-orange) 74%,
+    var(--dpwh-orange-dark) 100%
   );
+  box-shadow: 0 -10px 26px -8px rgba(245, 126, 32, 0.55);
 }
 
 .okb-public-hero-band .okb-public-hero-content .okb-public-eyebrow {
@@ -971,19 +2009,664 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
+/* The photograph is masked to the right so the copy column stays clean —
+   several banners carry baked-in captions that would otherwise show through. */
 .okb-public-hero-band--with-image .okb-public-hero-bg-image {
   background-size: cover;
-  background-position: center;
-  opacity: 0.45;
+  background-position: center 62%;
+  opacity: 0.55;
+  filter: saturate(1.06) contrast(1.04);
+  -webkit-mask-image: linear-gradient(
+    102deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.28) 32%,
+    rgba(0, 0, 0, 0.8) 62%,
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    102deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.28) 32%,
+    rgba(0, 0, 0, 0.8) 62%,
+    #000 100%
+  );
+}
+
+/* Narrow viewports crop the banner so tightly that its printed captions become
+   legible, so the photograph drops back to a soft corner glow. */
+@media (max-width: 47.99rem) {
+  .okb-public-hero-band--with-image .okb-public-hero-bg-image {
+    opacity: 0.32;
+    background-position: center 55%;
+    -webkit-mask-image: radial-gradient(
+      125% 105% at 100% 100%,
+      #000 0%,
+      rgba(0, 0, 0, 0.4) 44%,
+      transparent 78%
+    );
+    mask-image: radial-gradient(
+      125% 105% at 100% 100%,
+      #000 0%,
+      rgba(0, 0, 0, 0.4) 44%,
+      transparent 78%
+    );
+  }
 }
 
 .okb-public-hero-band--with-image .okb-public-hero-bg-overlay {
-  background: linear-gradient(
-    135deg,
-    rgba(0, 56, 168, 0.78) 0%,
-    rgba(0, 40, 85, 0.84) 55%,
-    rgba(0, 61, 122, 0.8) 100%
+  background: /* Buries the captions printed into the edges of several banners. */
+    linear-gradient(
+      180deg,
+      rgba(0, 24, 68, 0.96) 0%,
+      rgba(0, 26, 74, 0.5) 16%,
+      transparent 32%
+    ),
+    linear-gradient(
+      0deg,
+      rgba(0, 22, 62, 0.92) 0%,
+      rgba(0, 24, 70, 0.42) 12%,
+      transparent 26%
+    ),
+    radial-gradient(
+      90% 120% at 0% 40%,
+      rgba(0, 26, 74, 0.92) 0%,
+      rgba(0, 30, 82, 0.6) 45%,
+      transparent 72%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(0, 42, 130, 0.7) 0%,
+      rgba(0, 32, 74, 0.7) 55%,
+      rgba(0, 48, 100, 0.62) 100%
+    );
+}
+
+/* ---------------------------------------------------------------- *
+ * Public page hero — poster band with layered survey artwork
+ * ---------------------------------------------------------------- */
+.okb-page-hero {
+  display: flex;
+  align-items: center;
+  min-height: clamp(19rem, 32vw, 25rem);
+  padding-top: clamp(2.75rem, 6vw, 4.5rem);
+  padding-bottom: clamp(2.75rem, 5vw, 4rem);
+  background-image: radial-gradient(
+      120% 150% at 4% -20%,
+      rgba(86, 152, 255, 0.32) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      100% 140% at 100% 120%,
+      rgba(0, 14, 48, 0.6) 0%,
+      transparent 60%
+    ),
+    linear-gradient(
+      132deg,
+      #0b47bd 0%,
+      var(--dpwh-blue) 34%,
+      var(--dpwh-blue-dark) 72%,
+      #002a6b 100%
+    );
+}
+
+.okb-page-hero-inner {
+  position: relative;
+  z-index: 2;
+}
+
+.okb-hero-art {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.okb-hero-art > * {
+  position: absolute;
+}
+
+.okb-hero-art__aurora {
+  top: -60%;
+  left: -14%;
+  width: 52%;
+  height: 220%;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(126, 200, 255, 0.32) 0%,
+    rgba(86, 152, 255, 0.12) 46%,
+    transparent 72%
   );
+  filter: blur(40px);
+  animation: okb-hero-aurora 20s ease-in-out infinite alternate;
+}
+
+.okb-hero-art__grid {
+  inset: -20%;
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.6) 1px,
+    transparent 1.4px
+  );
+  background-size: 26px 26px;
+  opacity: 0.11;
+  animation: okb-mast-drift 44s linear infinite;
+}
+
+.okb-hero-art__topo,
+.okb-hero-art__flow {
+  inset-inline: 0;
+  width: 100%;
+}
+
+.okb-hero-art__topo {
+  top: 0;
+  height: 100%;
+  opacity: 0.16;
+}
+
+.okb-hero-art__flow {
+  bottom: 0;
+  height: 32%;
+  opacity: 0.5;
+}
+
+.okb-hero-flowline {
+  stroke-dasharray: 16 22;
+  animation: okb-mast-flow 15s linear infinite;
+}
+
+.okb-hero-art__hatch {
+  top: -30%;
+  right: -3rem;
+  width: 10rem;
+  height: 160%;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9) 0 2px,
+    transparent 2px 11px
+  );
+  opacity: 0.1;
+  transform: skewX(-18deg);
+}
+
+.okb-hero-art__grain {
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+}
+
+.okb-hero-art__vignette {
+  inset: 0;
+  background: radial-gradient(
+    120% 85% at 45% 45%,
+    transparent 0%,
+    transparent 54%,
+    rgba(0, 10, 34, 0.42) 100%
+  );
+}
+
+/* Outlined wordmark bleeding off the right edge. */
+.okb-hero-watermark {
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+  /* Bleeds off the bottom edge only, so the wordmark still reads. */
+  right: 1.5rem;
+  bottom: -0.1em;
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(5rem, 13vw, 11.5rem);
+  font-weight: 700;
+  line-height: 0.78;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.22);
+  opacity: 0.5;
+}
+
+@media (min-width: 640px) {
+  .okb-hero-watermark {
+    -webkit-text-stroke-width: 2px;
+    opacity: 0.75;
+  }
+}
+
+/* Eyebrow chip with a live-status dot. */
+.okb-hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0.38rem 0.9rem 0.38rem 0.8rem;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+@media (min-width: 640px) {
+  .okb-hero-chip {
+    font-size: 0.6875rem;
+  }
+}
+
+.okb-hero-chip__dot {
+  position: relative;
+  height: 0.4rem;
+  width: 0.4rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: var(--dpwh-orange);
+  box-shadow: 0 0 8px rgba(245, 126, 32, 0.9);
+}
+
+.okb-hero-chip__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: var(--dpwh-orange);
+  animation: okb-nav-pulse 2.4s ease-out infinite;
+}
+
+/* Poster headline with a warm gradient tail. */
+.okb-hero-title {
+  margin-top: 1.15rem;
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.65rem, 8.5vw, 5.75rem);
+  font-weight: 700;
+  line-height: 0.94;
+  letter-spacing: 0.008em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  background-image: linear-gradient(
+    98deg,
+    #ffffff 0%,
+    #ffffff 40%,
+    #ffdcae 74%,
+    #ffb066 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 6px 24px rgba(0, 12, 40, 0.8));
+}
+
+.okb-hero-rule {
+  display: block;
+  position: relative;
+  margin-top: 1.3rem;
+  height: 3px;
+  width: 6rem;
+  border-radius: 999px;
+  background-image: linear-gradient(
+    90deg,
+    var(--dpwh-orange) 0%,
+    var(--dpwh-gold) 100%
+  );
+  box-shadow: 0 0 18px rgba(245, 126, 32, 0.6);
+}
+
+.okb-hero-rule::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -0.85rem;
+  height: 0.45rem;
+  width: 0.45rem;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  background-color: var(--dpwh-gold);
+  box-shadow: 0 0 12px rgba(252, 209, 22, 0.9);
+}
+
+.okb-hero-lead {
+  margin-top: 1.4rem;
+  max-width: 40rem;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 16px rgba(0, 12, 40, 0.55);
+  text-wrap: pretty;
+}
+
+@media (min-width: 640px) {
+  .okb-hero-lead {
+    font-size: 1.1875rem;
+  }
+}
+
+.okb-hero-extra {
+  margin-top: 1.75rem;
+}
+
+@keyframes okb-hero-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(52%, -4%, 0) scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .okb-hero-art__aurora,
+  .okb-hero-art__grid,
+  .okb-hero-flowline,
+  .okb-hero-chip__dot::after {
+    animation: none;
+  }
+
+  .okb-hero-chip__dot::after {
+    opacity: 0;
+  }
+}
+
+/* ---------------------------------------------------------------- *
+ * Accomplishment page — hero art, chips, and dashboard loading state
+ * ---------------------------------------------------------------- */
+
+.okb-acc-art {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* max-height keeps the motif inside the band; the intrinsic ratio does the rest. */
+.okb-acc-art svg {
+  width: 122%;
+  height: auto;
+  max-width: none;
+  max-height: 100%;
+  opacity: 0.24;
+}
+
+@media (min-width: 640px) {
+  .okb-acc-art {
+    justify-content: flex-end;
+    padding-right: 1rem;
+  }
+
+  .okb-acc-art svg {
+    width: 62%;
+    opacity: 0.55;
+  }
+}
+
+@media (min-width: 1024px) {
+  .okb-acc-art {
+    padding-right: 2.5rem;
+  }
+
+  .okb-acc-art svg {
+    width: 46%;
+    opacity: 0.9;
+  }
+}
+
+.okb-acc-bar {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: okb-acc-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes okb-acc-grow {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.okb-acc-trend {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: okb-acc-draw 2s cubic-bezier(0.5, 0, 0.2, 1) 0.85s forwards;
+}
+
+@keyframes okb-acc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.okb-acc-node {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: okb-acc-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes okb-acc-pop {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.okb-acc-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: okb-acc-pulse 2.6s ease-out 2.4s infinite;
+}
+
+@keyframes okb-acc-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  70%,
+  100% {
+    transform: scale(3.6);
+    opacity: 0;
+  }
+}
+
+/* Dial circumference is 2πr with r = 24 (see accomplishment-hero-art.tsx). */
+.okb-acc-ring {
+  stroke-dashoffset: 151;
+  animation: okb-acc-ring 2.2s cubic-bezier(0.22, 1, 0.36, 1) 0.5s forwards;
+}
+
+@keyframes okb-acc-ring {
+  to {
+    stroke-dashoffset: 33;
+  }
+}
+
+.okb-acc-spark {
+  animation: okb-acc-spark 6s ease-in-out infinite;
+}
+
+@keyframes okb-acc-spark {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-7px);
+  }
+}
+
+.okb-acc-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.okb-acc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 9999px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ffffff;
+  backdrop-filter: blur(6px);
+}
+
+@media (min-width: 640px) {
+  .okb-acc-chip {
+    font-size: 0.8125rem;
+  }
+}
+
+.okb-acc-frame-shell {
+  position: relative;
+}
+
+.okb-acc-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  text-align: center;
+  background-color: #ffffff;
+  transition: opacity 0.4s ease, visibility 0.4s;
+}
+
+.okb-acc-loading--done {
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.okb-acc-loading-art {
+  position: relative;
+  overflow: hidden;
+  width: min(22rem, 100%);
+  height: 6.5rem;
+  border-radius: 0.35rem;
+  background-color: #eef2f7;
+}
+
+.okb-acc-loading-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  height: 100%;
+  padding: 0.75rem;
+}
+
+.okb-acc-loading-bars span {
+  flex: 1;
+  border-radius: 0.2rem;
+  background-image: linear-gradient(
+    180deg,
+    var(--dpwh-blue) 0%,
+    rgba(0, 56, 168, 0.35) 100%
+  );
+  transform-origin: bottom;
+  animation: okb-acc-loading-bar 1.5s ease-in-out infinite;
+}
+
+@keyframes okb-acc-loading-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.okb-acc-loading-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.75) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: okb-acc-loading-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes okb-acc-loading-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.okb-acc-loading-title {
+  font-family: var(--font-heading, inherit);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--dpwh-blue-dark);
+}
+
+.okb-acc-loading-note {
+  max-width: 34rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #4a5567;
+}
+
+.okb-acc-loading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .okb-acc-bar,
+  .okb-acc-node,
+  .okb-acc-pulse,
+  .okb-acc-ring,
+  .okb-acc-spark,
+  .okb-acc-trend,
+  .okb-acc-loading-bars span {
+    animation: none;
+    transform: none;
+  }
+
+  .okb-acc-trend {
+    stroke-dashoffset: 0;
+  }
+
+  .okb-acc-ring {
+    stroke-dashoffset: 33;
+  }
+
+  .okb-acc-loading-sweep {
+    animation: none;
+    opacity: 0;
+  }
 }
 
 .okb-public-slide-caption {
@@ -1230,23 +2913,317 @@
     radial-gradient(62% 48% at 4% 0%, rgba(245, 126, 32, 0.2) 0%, transparent 52%);
 }
 
+/* Editorial glass panel: gradient hairline border + blueprint crop marks. */
 .okb-fw-hero-panel {
-  max-width: 46rem;
-  padding: 1.35rem 1.5rem 1.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 0.35rem;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 10, 26, 0.52) 0%,
-    rgba(0, 10, 26, 0.34) 100%
-  );
-  box-shadow: 0 18px 48px rgba(0, 6, 18, 0.28);
-  backdrop-filter: blur(12px);
+  position: relative;
+  max-width: 54rem;
+  padding: 1.6rem 1.4rem 1.7rem;
+  border: 1px solid transparent;
+  border-radius: 1.35rem;
+  background-image: radial-gradient(
+      120% 90% at 0% 0%,
+      rgba(245, 126, 32, 0.16) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      162deg,
+      rgba(3, 14, 36, 0.68) 0%,
+      rgba(1, 9, 24, 0.46) 52%,
+      rgba(5, 17, 42, 0.56) 100%
+    ),
+    linear-gradient(
+      138deg,
+      rgba(255, 255, 255, 0.38) 0%,
+      rgba(245, 126, 32, 0.55) 34%,
+      rgba(255, 255, 255, 0.06) 66%,
+      rgba(252, 209, 22, 0.42) 100%
+    );
+  background-origin: padding-box, padding-box, border-box;
+  background-clip: padding-box, padding-box, border-box;
+  box-shadow: 0 34px 72px -30px rgba(0, 6, 18, 0.92),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px) saturate(1.08);
+  -webkit-backdrop-filter: blur(16px) saturate(1.08);
 }
 
 @media (min-width: 640px) {
   .okb-fw-hero-panel {
-    padding: 1.75rem 1.85rem 1.9rem;
+    padding: 2rem 2.1rem 2.1rem;
+  }
+}
+
+.okb-fw-hero-tick {
+  position: absolute;
+  height: 1.15rem;
+  width: 1.15rem;
+  border-color: rgba(252, 209, 22, 0.8);
+  border-style: solid;
+  border-width: 0;
+}
+
+.okb-fw-hero-tick--tl {
+  top: 0.65rem;
+  left: 0.65rem;
+  border-top-width: 2px;
+  border-left-width: 2px;
+  border-top-left-radius: 0.6rem;
+}
+
+.okb-fw-hero-tick--tr {
+  top: 0.65rem;
+  right: 0.65rem;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  border-top-right-radius: 0.6rem;
+}
+
+.okb-fw-hero-tick--bl {
+  bottom: 0.65rem;
+  left: 0.65rem;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  border-bottom-left-radius: 0.6rem;
+}
+
+.okb-fw-hero-tick--br {
+  bottom: 0.65rem;
+  right: 0.65rem;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+  border-bottom-right-radius: 0.6rem;
+}
+
+/* Authority chip. */
+.okb-fw-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(255, 194, 122, 0.42);
+  /* Rounded rect while the label wraps; a true pill once it fits one line. */
+  border-radius: 0.9rem;
+  background-color: rgba(245, 126, 32, 0.14);
+  padding: 0.4rem 0.85rem 0.4rem 0.75rem;
+  font-size: 0.5875rem;
+  font-weight: 800;
+  letter-spacing: 0.17em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: #ffd6a8;
+}
+
+@media (min-width: 640px) {
+  .okb-fw-hero-badge {
+    border-radius: 9999px;
+    font-size: 0.6875rem;
+    letter-spacing: 0.2em;
+  }
+}
+
+/* Poster headline in the condensed display face. */
+.okb-fw-hero-title {
+  margin-top: 1.1rem;
+  font-family: var(--font-okb-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.1rem, 6.4vw, 4.35rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.008em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-wrap: balance;
+}
+
+.okb-fw-hero-title__line {
+  display: block;
+  text-shadow: 0 2px 4px rgba(0, 8, 24, 0.6), 0 16px 40px rgba(0, 10, 28, 0.45);
+}
+
+/* Gradient fill needs drop-shadow instead of text-shadow to stay visible. */
+.okb-fw-hero-title__accent {
+  background-image: linear-gradient(
+    100deg,
+    #ffb166 0%,
+    #fcd116 40%,
+    #ffffff 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 6px 22px rgba(0, 10, 28, 0.75));
+}
+
+.okb-fw-hero-rule {
+  display: block;
+  margin-top: 1.35rem;
+  height: 3px;
+  width: 5.5rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--dpwh-orange) 0%, #fcd116 100%);
+  box-shadow: 0 0 18px rgba(245, 126, 32, 0.55);
+}
+
+.okb-fw-hero-lead {
+  margin-top: 1.35rem;
+  max-width: 38rem;
+  font-size: 1rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 14px rgba(0, 10, 28, 0.5);
+  text-wrap: pretty;
+}
+
+.okb-fw-hero-lead em {
+  font-style: normal;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #ffd6a8;
+}
+
+@media (min-width: 640px) {
+  .okb-fw-hero-lead {
+    font-size: 1.0625rem;
+  }
+}
+
+.okb-fw-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.85rem;
+}
+
+/* Document spec strip. */
+.okb-fw-hero-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.9rem 1.5rem;
+  margin-top: 1.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 1.2rem;
+}
+
+.okb-fw-hero-meta dt {
+  font-size: 0.5875rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.okb-fw-hero-meta dd {
+  margin-top: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #ffffff;
+}
+
+/* ---- Hero action buttons ---- */
+.okb-fw-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 9999px;
+  padding: 0.8rem 1.4rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .okb-fw-btn {
+    font-size: 0.8125rem;
+  }
+}
+
+.okb-fw-btn:hover {
+  transform: translateY(-2px);
+}
+
+.okb-fw-btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.okb-fw-btn--solid {
+  background-image: linear-gradient(
+    135deg,
+    #ffa957 0%,
+    var(--dpwh-orange) 48%,
+    #d9600d 100%
+  );
+  color: #ffffff;
+  box-shadow: 0 16px 34px -14px rgba(245, 126, 32, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.okb-fw-btn--solid:hover {
+  filter: saturate(1.08) brightness(1.05);
+  box-shadow: 0 22px 42px -14px rgba(245, 126, 32, 1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.okb-fw-btn--ghost {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: #ffffff;
+}
+
+.okb-fw-btn--ghost:hover {
+  border-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.okb-fw-btn__icon {
+  transition: transform 0.25s ease;
+}
+
+.okb-fw-btn--solid:hover .okb-fw-btn__icon {
+  transform: translateY(2px);
+}
+
+.okb-fw-btn--ghost:hover .okb-fw-btn__icon {
+  transform: translate(2px, -2px);
+}
+
+.okb-fw-btn__shine {
+  pointer-events: none;
+  position: absolute;
+  top: -50%;
+  left: 0;
+  width: 24%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 100%
+  );
+  transform: translateX(-220%) skewX(-20deg);
+  animation: okb-fw-btn-shine 6s ease-in-out infinite;
+}
+
+@keyframes okb-fw-btn-shine {
+  0% {
+    transform: translateX(-220%) skewX(-20deg);
+  }
+  55%,
+  100% {
+    transform: translateX(560%) skewX(-20deg);
+  }
+}
+
+@media (max-width: 29.99rem) {
+  .okb-fw-btn {
+    width: 100%;
   }
 }
 
@@ -1261,6 +3238,47 @@
 
 .okb-fw-hero-topo {
   opacity: 0.7;
+}
+
+/* OKB emblem watermark floating over the reef side of the photograph. */
+.okb-fw-hero-emblem {
+  top: 3.5rem;
+  right: -3rem;
+  aspect-ratio: 224 / 254;
+  width: min(34rem, 46vw);
+  background-image: url("/brand/oplan-kontra-baha-logo.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.06;
+  animation: okb-fw-hero-emblem 22s ease-in-out infinite alternate;
+}
+
+@media (max-width: 63.99rem) {
+  .okb-fw-hero-emblem {
+    display: none;
+  }
+}
+
+@keyframes okb-fw-hero-emblem {
+  from {
+    transform: translate3d(0, 0, 0) rotate(-4deg);
+  }
+  to {
+    transform: translate3d(-2.5%, 3%, 0) rotate(2deg);
+  }
+}
+
+/* Corner darkening so the panel and the scene frame both sit forward. */
+.okb-fw-hero-vignette {
+  background: radial-gradient(
+      120% 80% at 50% 45%,
+      transparent 0%,
+      transparent 52%,
+      rgba(0, 6, 20, 0.45) 100%
+    ),
+    linear-gradient(180deg, rgba(0, 6, 20, 0.3) 0%, transparent 22%);
 }
 
 .okb-fw-hero-sheen {
@@ -1289,14 +3307,6 @@
 .okb-fw-hero .okb-public-body {
   color: rgba(255, 255, 255, 0.94);
   text-shadow: 0 1px 16px rgba(0, 10, 28, 0.42);
-}
-
-.okb-fw-hero-rule {
-  height: 3px;
-  width: 4.75rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--dpwh-orange) 0%, #fcd116 100%);
-  box-shadow: 0 0 18px rgba(245, 126, 32, 0.45);
 }
 
 .okb-fw-scene-frame {
@@ -1352,27 +3362,381 @@
 }
 
 .okb-fw-signoff {
+  background-color: #001428;
+}
+
+.okb-fw-signoff-wash {
+  background-size: cover;
+  background-position: 48% 18%;
+  opacity: 0.28;
+  filter: saturate(0.75) contrast(1.08) brightness(0.7);
+}
+
+.okb-fw-signoff-veil {
   background:
-    radial-gradient(60% 80% at 100% 0%, rgba(245, 126, 32, 0.35) 0%, transparent 55%),
-    linear-gradient(135deg, var(--dpwh-blue-dark), var(--dpwh-blue));
+    linear-gradient(
+      100deg,
+      rgba(0, 10, 28, 0.92) 0%,
+      rgba(0, 16, 44, 0.78) 42%,
+      rgba(0, 18, 50, 0.45) 72%,
+      rgba(0, 12, 36, 0.55) 100%
+    ),
+    radial-gradient(55% 70% at 100% 0%, rgba(245, 126, 32, 0.28) 0%, transparent 58%);
 }
 
-.okb-fw-river {
-  stroke-dasharray: 18 10;
-  animation: okb-fw-flow 4.5s linear infinite;
+.okb-fw-signoff-grid {
+  display: grid;
+  gap: 0.85rem 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "kicker kicker"
+    "identity portrait"
+    "meta meta"
+    "cta cta";
 }
 
-.okb-fw-current {
-  animation: okb-fw-flow 2.8s linear infinite;
+.okb-fw-signoff-kicker {
+  grid-area: kicker;
 }
 
-.okb-fw-cloud {
-  animation: okb-fw-drift 18s ease-in-out infinite;
+.okb-fw-signoff-identity {
+  grid-area: identity;
+  align-self: center;
 }
 
-.okb-fw-reef {
-  transform-origin: center;
-  animation: okb-fw-sway 5s ease-in-out infinite;
+.okb-fw-signoff-portrait {
+  grid-area: portrait;
+  align-self: start;
+  margin: 0;
+}
+
+.okb-fw-signoff-meta {
+  grid-area: meta;
+}
+
+.okb-fw-signoff-cta {
+  grid-area: cta;
+  justify-self: start;
+}
+
+@media (min-width: 640px) {
+  .okb-fw-signoff-grid {
+    gap: 1rem 1.75rem;
+    grid-template-areas:
+      "kicker portrait"
+      "identity portrait"
+      "meta portrait"
+      "cta portrait";
+  }
+
+  .okb-fw-signoff-portrait {
+    grid-row: 1 / -1;
+    align-self: center;
+  }
+}
+
+.okb-fw-signoff-kicker {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffc27a;
+}
+
+.okb-fw-signoff-name {
+  font-family: var(--font-okb-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 8, 24, 0.45);
+}
+
+@media (min-width: 640px) {
+  .okb-fw-signoff-name {
+    font-size: 2rem;
+  }
+}
+
+.okb-fw-signoff-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.okb-fw-signoff-meta {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.okb-fw-signoff-portrait img {
+  display: block;
+  width: 6.75rem;
+  height: 8.75rem;
+  object-fit: cover;
+  object-position: 68% 12%;
+  border: 3px solid rgba(255, 194, 122, 0.9);
+  border-radius: 0.35rem;
+  box-shadow: 0 16px 40px rgba(0, 6, 18, 0.4);
+  background-color: #12243d;
+}
+
+@media (min-width: 640px) {
+  .okb-fw-signoff-portrait img {
+    width: 13rem;
+    height: 16.75rem;
+  }
+}
+
+/* ---- Ridge-to-reef scene ---- */
+.okb-r2r {
+  margin: 0;
+}
+
+.okb-r2r-stage {
+  position: relative;
+}
+
+.okb-r2r-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.okb-r2r-dim {
+  transition: opacity 0.4s ease;
+}
+
+.okb-r2r-spot {
+  transition: cx 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.okb-r2r-pin {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 20, 43, 0.78);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  box-shadow: 0 6px 16px rgba(0, 10, 30, 0.45);
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+@media (min-width: 640px) {
+  .okb-r2r-pin {
+    width: 2rem;
+    height: 2rem;
+    font-size: 0.8125rem;
+  }
+}
+
+.okb-r2r-pin:hover {
+  transform: translate(-50%, -50%) scale(1.08);
+}
+
+.okb-r2r-pin--on {
+  background-color: var(--dpwh-orange);
+  box-shadow: 0 0 0 6px rgba(245, 126, 32, 0.28);
+}
+
+.okb-r2r-panel {
+  background-color: rgba(0, 12, 30, 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.okb-r2r-legend {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (min-width: 640px) {
+  .okb-r2r-legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0.9rem 0.9rem 0.6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .okb-r2r-legend {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.okb-r2r-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.55rem 0.6rem;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.3rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.okb-r2r-chip:hover {
+  border-color: rgba(245, 126, 32, 0.65);
+}
+
+.okb-r2r-chip--on {
+  border-color: var(--dpwh-orange);
+  background-color: rgba(245, 126, 32, 0.18);
+}
+
+.okb-r2r-chip-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: var(--dpwh-orange);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.okb-r2r-chip-label {
+  display: block;
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.okb-r2r-chip-lead {
+  display: block;
+  margin-top: 0.1rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.okb-r2r-caption {
+  padding: 0 0.9rem 0.95rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.okb-r2r-flow {
+  stroke-dasharray: 14 20;
+  animation: okb-r2r-flow 3.2s linear infinite;
+}
+
+.okb-r2r-shimmer {
+  stroke-dasharray: 10 18;
+  animation: okb-r2r-flow 6s linear infinite;
+}
+
+.okb-r2r-cloud-a {
+  animation: okb-r2r-drift 26s ease-in-out infinite alternate;
+}
+
+.okb-r2r-cloud-b {
+  animation: okb-r2r-drift 34s ease-in-out infinite alternate-reverse;
+}
+
+.okb-r2r-rain {
+  animation: okb-r2r-rain 1.2s linear infinite;
+}
+
+.okb-r2r-barge {
+  animation: okb-r2r-bob 4.2s ease-in-out infinite;
+}
+
+.okb-r2r-pump {
+  animation: okb-r2r-pump 2.4s ease-in-out infinite;
+}
+
+.okb-r2r-bird {
+  animation: okb-r2r-bird 26s linear infinite;
+}
+
+.okb-r2r-sun {
+  animation: okb-r2r-sun 7s ease-in-out infinite;
+}
+
+@keyframes okb-r2r-flow {
+  to {
+    stroke-dashoffset: -136;
+  }
+}
+
+@keyframes okb-r2r-drift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(46px);
+  }
+}
+
+@keyframes okb-r2r-rain {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  35% {
+    opacity: 0.8;
+  }
+  to {
+    transform: translateY(26px);
+    opacity: 0;
+  }
+}
+
+@keyframes okb-r2r-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes okb-r2r-pump {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.9;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes okb-r2r-bird {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(260px, -30px);
+  }
+}
+
+@keyframes okb-r2r-sun {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.95;
+  }
 }
 
 .okb-fw-orbit {
@@ -1386,26 +3750,6 @@
   }
 }
 
-@keyframes okb-fw-drift {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(18px);
-  }
-}
-
-@keyframes okb-fw-sway {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
 @keyframes okb-fw-spin {
   to {
     transform: rotate(360deg);
@@ -1413,19 +3757,34 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .okb-fw-river,
-  .okb-fw-current,
-  .okb-fw-cloud,
-  .okb-fw-reef,
   .okb-fw-orbit,
   .okb-fw-objective,
   .okb-fw-hero-photo,
-  .okb-fw-hero-flow {
+  .okb-fw-hero-flow,
+  .okb-fw-hero-emblem,
+  .okb-r2r-flow,
+  .okb-r2r-shimmer,
+  .okb-r2r-cloud-a,
+  .okb-r2r-cloud-b,
+  .okb-r2r-rain,
+  .okb-r2r-barge,
+  .okb-r2r-pump,
+  .okb-r2r-bird,
+  .okb-r2r-sun {
     animation: none;
     transform: none;
   }
 
   .okb-fw-hero-photo {
     transform: scale(1.08);
+  }
+
+  .okb-fw-btn__shine {
+    animation: none;
+    opacity: 0;
+  }
+
+  .okb-fw-btn:hover {
+    transform: none;
   }
 }

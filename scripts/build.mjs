@@ -28,11 +28,15 @@ const env = {
 };
 
 function run(command, args) {
-  const result = spawnSync(command, args, {
+  // Windows needs a shell to run the .cmd shims, and Node passes the command
+  // through verbatim in that mode, so a root path containing spaces has to be
+  // quoted here or cmd splits it into separate arguments.
+  const shell = process.platform === "win32";
+  const result = spawnSync(shell ? `"${command}"` : command, args, {
     cwd: root,
     stdio: "inherit",
     env,
-    shell: process.platform === "win32",
+    shell,
   });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
