@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  Activity,
+  Ship,
   ArrowUpRight,
   BarChart3,
   BookOpen,
@@ -29,9 +29,9 @@ const PROGRAM_EMAIL = "okb@dpwh.gov.ph";
 const PROGRAM_HOTLINE = "(02) 165-02";
 const PROGRAM_ADDRESS = "Bonifacio Drive, Port Area, Manila";
 
-/** Official launch cities listed on the Activity page. */
+/** Official launch cities listed on the program portfolio. */
 const LAUNCH_CITIES = 5;
-/** Soft-launch areas listed on the Activity page. */
+/** Soft-launch areas listed on the program portfolio. */
 const SOFT_LAUNCH_AREAS = 11;
 
 const EXPLORE_LINKS: readonly {
@@ -41,7 +41,11 @@ const EXPLORE_LINKS: readonly {
 }[] = [
   { href: PUBLIC_ROUTES.about, label: "About", icon: Info },
   { href: PUBLIC_ROUTES.framework, label: "OKB Framework", icon: FileText },
-  { href: PUBLIC_ROUTES.activity, label: "Activities", icon: Activity },
+  {
+    href: PUBLIC_ROUTES.dredgerStatus,
+    label: "Dredger Status",
+    icon: Ship,
+  },
   {
     href: PUBLIC_ROUTES.accomplishment,
     label: "Accomplishment",
@@ -57,12 +61,12 @@ const FOOTER_FACTS = [
   {
     value: String(LAUNCH_CITIES),
     label: "Official launch cities",
-    href: PUBLIC_ROUTES.activity,
+    href: PUBLIC_ROUTES.profile,
   },
   {
     value: String(SOFT_LAUNCH_AREAS),
     label: "Soft-launch areas",
-    href: PUBLIC_ROUTES.activity,
+    href: PUBLIC_ROUTES.profile,
   },
   {
     value: String(RIDGE_TO_REEF_ZONES.length),

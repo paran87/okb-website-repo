@@ -51,11 +51,18 @@ const nextConfig: NextConfig = {
     ],
   },
   async redirects() {
-    return legacyCommandPaths.map((path) => ({
-      source: `/${path}`,
-      destination: path === "dashboard" ? "/command" : `/command/${path}`,
-      permanent: false,
-    }));
+    return [
+      {
+        source: "/activity",
+        destination: "/dredger-status",
+        permanent: true,
+      },
+      ...legacyCommandPaths.map((path) => ({
+        source: `/${path}`,
+        destination: path === "dashboard" ? "/command" : `/command/${path}`,
+        permanent: false,
+      })),
+    ];
   },
   async headers() {
     return [

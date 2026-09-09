@@ -11,7 +11,7 @@ import {
   type Variants,
 } from "framer-motion";
 import {
-  Activity,
+  Ship,
   ArrowUpRight,
   BarChart3,
   ChevronRight,
@@ -36,7 +36,7 @@ const CONDENSE_AT = 28;
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   [PUBLIC_ROUTES.framework]: FileText,
-  [PUBLIC_ROUTES.activity]: Activity,
+  [PUBLIC_ROUTES.dredgerStatus]: Ship,
   [PUBLIC_ROUTES.accomplishment]: BarChart3,
   [PUBLIC_ROUTES.profile]: Images,
   [PUBLIC_ROUTES.commandCenter]: Radio,
