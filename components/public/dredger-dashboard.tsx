@@ -20,6 +20,8 @@ const PAINT_GRACE_MS = 1200;
 
 const SKELETON_BARS = [64, 88, 52, 96, 74, 40];
 
+const DREDGER_EMBED_PATH = "/dredger-status/embed";
+
 /** Live dredger status dashboard hosted on Google Apps Script. */
 export function DredgerDashboard() {
   for (const origin of DASHBOARD_ORIGINS) {
@@ -59,7 +61,7 @@ export function DredgerDashboard() {
       <div className="okb-acc-frame-shell okb-public-card overflow-hidden rounded-sm border shadow-sm">
         <iframe
           key={attempt}
-          src={DREDGER_STATUS_DASHBOARD_URL}
+          src={DREDGER_EMBED_PATH}
           title="Oplan Kontra Baha Dredger Status dashboard"
           className="okb-accomplishment-frame block w-full border-0 bg-white"
           loading="eager"
