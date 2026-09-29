@@ -1,6 +1,7 @@
 import { MapPin, Ship, Table2, TrendingUp } from "lucide-react";
 import { DredgerDashboard, PublicPageHero } from "@/components/public";
-import { APP } from "@/lib/constants";
+import { isDashboardFrameable } from "@/lib/config/dashboard-frameable";
+import { APP, DREDGER_STATUS_DASHBOARD_URL } from "@/lib/constants";
 
 export const metadata = {
   title: "Dredger Status",
@@ -14,7 +15,9 @@ const HERO_CHIPS = [
   { icon: Table2, label: "Source tables" },
 ] as const;
 
-export default function DredgerStatusPage() {
+export default async function DredgerStatusPage() {
+  const embeddable = await isDashboardFrameable(DREDGER_STATUS_DASHBOARD_URL);
+
   return (
     <>
       <PublicPageHero
@@ -34,7 +37,7 @@ export default function DredgerStatusPage() {
 
       <section className="okb-public-section border-t py-6 sm:py-8">
         <div className="okb-public-shell max-w-[90rem]">
-          <DredgerDashboard />
+          <DredgerDashboard embeddable={embeddable} />
         </div>
       </section>
     </>
