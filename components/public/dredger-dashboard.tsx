@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { preconnect, prefetchDNS } from "react-dom";
-import { ExternalLink, RotateCw } from "lucide-react";
+import { ExternalLink, RotateCw, Ship } from "lucide-react";
 import { DASHBOARD_ORIGINS } from "@/lib/config/dashboard-origins";
 import { DREDGER_STATUS_DASHBOARD_URL } from "@/lib/constants";
 import { cn } from "@/utils/cn";
@@ -20,10 +20,22 @@ const PAINT_GRACE_MS = 1200;
 
 const SKELETON_BARS = [64, 88, 52, 96, 74, 40];
 
-const DREDGER_EMBED_PATH = "/dredger-status/embed";
+interface DredgerDashboardProps {
+  /**
+   * Whether Google currently allows the Apps Script page to be framed. When it
+   * does not, an iframe would only show the browser's "refused to connect"
+   * page, so we link out to the live monitor instead.
+   */
+  embeddable: boolean;
+}
 
 /** Live dredger status dashboard hosted on Google Apps Script. */
-export function DredgerDashboard() {
+export function DredgerDashboard({ embeddable }: DredgerDashboardProps) {
+  if (!embeddable) return <DredgerDashboardLink />;
+  return <DredgerDashboardFrame />;
+}
+
+function DredgerDashboardFrame() {
   for (const origin of DASHBOARD_ORIGINS) {
     prefetchDNS(origin);
     preconnect(origin);
@@ -61,7 +73,7 @@ export function DredgerDashboard() {
       <div className="okb-acc-frame-shell okb-public-card overflow-hidden rounded-sm border shadow-sm">
         <iframe
           key={attempt}
-          src={DREDGER_EMBED_PATH}
+          src={DREDGER_STATUS_DASHBOARD_URL}
           title="Oplan Kontra Baha Dredger Status dashboard"
           className="okb-accomplishment-frame block w-full border-0 bg-white"
           loading="eager"
@@ -122,18 +134,62 @@ export function DredgerDashboard() {
         </div>
       </div>
 
-      <p className="okb-public-body text-sm">
-        Live dashboard from the official{" "}
-        <a
-          href={DREDGER_STATUS_DASHBOARD_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="okb-public-link"
-        >
-          Oplan Kontra Baha Dredger Status
-        </a>{" "}
-        monitor.
-      </p>
+      <DashboardSourceNote />
     </div>
+  );
+}
+
+function DredgerDashboardLink() {
+  return (
+    <div className="space-y-3">
+      <div className="okb-acc-frame-shell okb-public-card min-h-[24rem] overflow-hidden rounded-sm border shadow-sm">
+        <div className="okb-acc-loading">
+          <div
+            className="okb-acc-loading-art flex items-center justify-center"
+            aria-hidden
+          >
+            <Ship className="size-12 text-[var(--dpwh-blue)]" />
+          </div>
+
+          <p className="okb-acc-loading-title">Open the live dredger dashboard</p>
+          <p className="okb-acc-loading-note">
+            The official dredger status monitor is hosted on Google Apps Script
+            and currently cannot be displayed inside this page. Open it in a new
+            tab to view the latest deployment and status records.
+          </p>
+
+          <div className="okb-acc-loading-actions">
+            <a
+              href={DREDGER_STATUS_DASHBOARD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="okb-public-btn okb-public-btn-primary"
+            >
+              <ExternalLink className="size-4" aria-hidden />
+              Open dredger status dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <DashboardSourceNote />
+    </div>
+  );
+}
+
+function DashboardSourceNote() {
+  return (
+    <p className="okb-public-body text-sm">
+      Live dashboard from the official{" "}
+      <a
+        href={DREDGER_STATUS_DASHBOARD_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="okb-public-link"
+      >
+        Oplan Kontra Baha Dredger Status
+      </a>{" "}
+      monitor.
+    </p>
   );
 }
