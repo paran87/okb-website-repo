@@ -36,6 +36,7 @@ export function FloodwatchFrame() {
     const container = containerRef.current;
     const observer = container
       ? new ResizeObserver(([entry]) => {
+          if (!entry) return;
           const { width, height } = entry.contentRect;
           if (width < 50 || height < 50) {
             wasCollapsed = true;
