@@ -126,9 +126,9 @@ export const NAV_ITEMS: readonly NavEntry[] = [
   },
   {
     type: "link",
-    label: "Operations",
-    href: ROUTES.operations,
-    icon: AppIcons.operations,
+    label: "Pumping Stations",
+    href: ROUTES.pumpingStations,
+    icon: AppIcons.pumpingStations,
     permission: Permission.PROJECT_VIEW,
   },
   {

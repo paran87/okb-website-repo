@@ -29,7 +29,7 @@ const legacyCommandPaths = [
   "river-basin",
   "waterways",
   "projects",
-  "operations",
+  "pumping-stations",
   "equipment",
   "weather",
   "reports",
@@ -67,6 +67,16 @@ const nextConfig: NextConfig = {
       {
         source: "/dredger-status/:path*",
         destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/operations",
+        destination: "/command/pumping-stations",
+        permanent: false,
+      },
+      {
+        source: "/command/operations",
+        destination: "/command/pumping-stations",
         permanent: false,
       },
       ...legacyCommandPaths.map((path) => ({
