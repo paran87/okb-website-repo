@@ -107,7 +107,7 @@ export function OperationsDashboard() {
   }
 
   return (
-    <FadeIn className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3">
+    <FadeIn className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto p-2 sm:gap-3 sm:p-3 xl:overflow-hidden">
       <div className="flex shrink-0 items-center justify-between gap-3 rounded-md border border-warning/30 bg-warning/5 px-2.5 py-1">
         <div className="flex min-w-0 items-center gap-2">
           <Radio className="size-3.5 shrink-0 animate-pulse text-danger" aria-hidden />
@@ -122,18 +122,18 @@ export function OperationsDashboard() {
 
       <NcrStatGrid stats={stats} />
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 content-start gap-1.5 overflow-y-auto sm:gap-2 xl:grid-cols-12 xl:overflow-hidden">
-        <div className="relative col-span-2 flex min-h-[300px] min-w-0 flex-col overflow-hidden xl:order-2 xl:col-span-8 xl:min-h-0">
-          <DashboardMapPanel className="h-full min-h-[300px] flex-1 xl:min-h-0" />
+      <div className="grid shrink-0 grid-cols-1 content-start gap-2 sm:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-12 xl:overflow-hidden">
+        <div className="relative flex h-[56dvh] min-h-[320px] min-w-0 flex-col overflow-hidden sm:col-span-2 xl:order-2 xl:col-span-8 xl:h-auto xl:min-h-0">
+          <DashboardMapPanel className="h-full min-h-0 flex-1" />
         </div>
 
-        <div className="flex min-h-0 flex-col gap-1.5 xl:order-1 xl:col-span-2 xl:gap-2 xl:overflow-hidden">
+        <div className="contents xl:order-1 xl:col-span-2 xl:flex xl:min-h-0 xl:flex-col xl:gap-2 xl:overflow-hidden">
           <NcrBreakdownPanel
             title="By District Office"
             subtitle="Active incidents per DEO"
             icon={<Building2 className="size-4" aria-hidden />}
             rows={summary.byDeo}
-            className="max-h-44 min-h-0 flex-1 xl:max-h-none"
+            className="max-h-60 xl:min-h-0 xl:max-h-none xl:flex-1"
           />
           <NcrBreakdownPanel
             title="Flood-Prone Areas"
@@ -141,18 +141,18 @@ export function OperationsDashboard() {
             icon={<Layers className="size-4" aria-hidden />}
             rows={fw?.byRegion.slice(0, 8) ?? []}
             barColor="#7c3aed"
-            className="hidden max-h-48 min-h-0 flex-1 xl:flex"
+            className="hidden xl:flex xl:max-h-48 xl:min-h-0 xl:flex-1"
           />
         </div>
 
-        <div className="flex min-h-0 flex-col gap-1.5 xl:order-3 xl:col-span-2 xl:gap-2 xl:overflow-hidden">
+        <div className="contents xl:order-3 xl:col-span-2 xl:flex xl:min-h-0 xl:flex-col xl:gap-2 xl:overflow-hidden">
           <WeatherCard weather={data.weather} className="shrink-0" />
           <NcrBreakdownPanel
             title="Top Cities"
             subtitle="Most active incidents"
             icon={<MapPinned className="size-4" aria-hidden />}
             rows={summary.byMunicipality.slice(0, 8)}
-            className="max-h-44 min-h-0 flex-1 xl:max-h-none"
+            className="max-h-60 xl:min-h-0 xl:max-h-none xl:flex-1"
           />
         </div>
 
@@ -162,7 +162,7 @@ export function OperationsDashboard() {
           icon={<Layers className="size-4" aria-hidden />}
           rows={fw?.byRegion.slice(0, 8) ?? []}
           barColor="#7c3aed"
-          className="col-span-2 max-h-44 xl:hidden"
+          className="max-h-60 sm:col-span-2 xl:hidden"
         />
       </div>
     </FadeIn>
