@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { Download, FileText, Search } from "lucide-react";
 import { MapEngine } from "@/features/map/components/map-engine";
@@ -10,6 +10,10 @@ import {
   PHILIPPINES_MAX_BOUNDS,
 } from "@/features/map/config/default-view";
 import { createFloodProneLayerRegistry } from "@/features/flood-prone/config/layer-registry";
+import {
+  BottomSheet,
+  type SheetSnap,
+} from "@/features/flood-prone/components/bottom-sheet";
 import { FloodProneMapFit } from "@/features/flood-prone/components/flood-prone-map-fit";
 import { useFloodProneAreas } from "@/features/flood-prone/hooks/use-flood-prone-areas";
 import {
@@ -27,7 +31,7 @@ const LAYERS = createFloodProneLayerRegistry();
 const SELECTED_LAYER = "deos-flood-prone-areas-selected";
 
 const selectClass =
-  "w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none ring-ring focus:ring-2";
+  "w-full min-w-0 rounded-md border border-border bg-background px-2 py-1.5 text-xs outline-none ring-ring focus:ring-2 lg:px-3 lg:py-2 lg:text-sm";
 
 function setSelectedMarker(map: MapLibreMap, id: string | null) {
   if (!map.getLayer(SELECTED_LAYER)) return;
@@ -55,10 +59,17 @@ export function NcrCriticalAreasView() {
   } = useFloodProneAreas();
   const rowRefs = useRef(new Map<string, HTMLTableRowElement>());
   const filtersMounted = useRef(false);
+  const [sheetHeight, setSheetHeight] = useState(0);
+  const [snapRequest, setSnapRequest] = useState<{ snap: SheetSnap; nonce: number }>({
+    snap: "half",
+    nonce: 0,
+  });
 
   const handleSelect = useCallback(
     (record: NcrCriticalAreaRecord) => {
       setSelectedId(record.id);
+      // On phones, lower the sheet so it doesn't cover the pin.
+      setSnapRequest((r) => ({ snap: "half", nonce: r.nonce + 1 }));
       const map = useMapStore.getState().map;
       if (!map) return;
       setSelectedMarker(map, record.id);
@@ -69,15 +80,23 @@ export function NcrCriticalAreasView() {
       if (!feature || feature.geometry.type !== "Point") return;
 
       const [lng, lat] = feature.geometry.coordinates as [number, number];
-      mapService.flyTo(map, { longitude: lng, latitude: lat, zoom: 16 });
+      // While the sheet overlays the map, centre the pin in the part still visible.
+      const inset = sheetHeight;
+      map.flyTo({
+        center: [lng, lat],
+        zoom: 16,
+        padding: { top: 0, left: 0, right: 0, bottom: inset },
+        duration: 1200,
+        essential: true,
+      });
       useMapStore.getState().setPopup(
         popupService.createState(feature, [lng, lat], {
           x: map.getContainer().clientWidth / 2,
-          y: map.getContainer().clientHeight / 2,
+          y: (map.getContainer().clientHeight - inset) / 2,
         }),
       );
     },
-    [setSelectedId],
+    [setSelectedId, sheetHeight],
   );
 
   // Refit the map to the filtered records whenever the filters change.
@@ -110,9 +129,9 @@ export function NcrCriticalAreasView() {
   const needsReview = filtered.filter((r) => r.status === "review").length;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto p-3 md:p-4 lg:overflow-hidden">
-      <section className="grid shrink-0 gap-2 rounded-lg border border-border bg-surface p-3 shadow-panel md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
-        <label className="relative block">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden p-2 lg:gap-3 lg:p-4">
+      <section className="grid shrink-0 grid-cols-3 gap-1.5 rounded-lg border border-border bg-surface p-2 shadow-panel lg:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] lg:gap-2 lg:p-3">
+        <label className="relative col-span-3 block lg:col-span-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
@@ -163,14 +182,36 @@ export function NcrCriticalAreasView() {
         </select>
       </section>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-        <section className="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-panel lg:min-h-0">
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-primary">
-              {filtered.length.toLocaleString()} of {records.length.toLocaleString()}{" "}
-              records
+      <div className="relative min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-3">
+        <section className="absolute inset-0 isolate min-w-0 overflow-hidden rounded-lg border border-border bg-surface shadow-panel lg:relative lg:order-2 lg:inset-auto">
+          <MapEngine
+            initialView={{ ...NCR_MAP_VIEW, zoom: 11 }}
+            initialStyleId="light"
+            initialLayers={LAYERS}
+            maxBounds={PHILIPPINES_MAX_BOUNDS}
+            lockBasemap
+            resetViewPreset="ncr"
+            basemapStyles={PUBLIC_BASEMAP_STYLES}
+            showBasemapSwitcher
+            showSearch={false}
+            showLayerPanel={false}
+            showLegend
+            className="absolute inset-0 h-full w-full"
+          />
+          <FloodProneMapFit />
+        </section>
+
+        <BottomSheet
+          className="lg:min-w-0"
+          onHeightChange={setSheetHeight}
+          snapRequest={snapRequest}
+          title={
+            <>
+              {filtered.length.toLocaleString()} of {records.length.toLocaleString()} records
               {needsReview > 0 ? ` · ${needsReview} need review` : ""}
-            </p>
+            </>
+          }
+          actions={
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -191,10 +232,9 @@ export function NcrCriticalAreasView() {
                 PDF
               </button>
             </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-auto">
-            <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+          }
+        >
+            <table className="w-full min-w-[480px] border-collapse text-left text-xs lg:min-w-[560px] lg:text-sm">
               <thead className="sticky top-0 z-10 bg-primary text-primary-foreground">
                 <tr className="text-[11px] uppercase tracking-wide">
                   <th className="px-3 py-2.5 font-semibold">Province</th>
@@ -242,26 +282,7 @@ export function NcrCriticalAreasView() {
                 )}
               </tbody>
             </table>
-          </div>
-        </section>
-
-        <section className="relative min-h-[360px] min-w-0 overflow-hidden rounded-lg border border-border bg-surface shadow-panel lg:min-h-0">
-          <MapEngine
-            initialView={{ ...NCR_MAP_VIEW, zoom: 11 }}
-            initialStyleId="light"
-            initialLayers={LAYERS}
-            maxBounds={PHILIPPINES_MAX_BOUNDS}
-            lockBasemap
-            resetViewPreset="ncr"
-            basemapStyles={PUBLIC_BASEMAP_STYLES}
-            showBasemapSwitcher
-            showSearch={false}
-            showLayerPanel={false}
-            showLegend
-            className="absolute inset-0 h-full w-full"
-          />
-          <FloodProneMapFit />
-        </section>
+        </BottomSheet>
       </div>
     </div>
   );
