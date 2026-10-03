@@ -64,7 +64,7 @@ export function MapPopupOverlay({ className }: { className?: string }) {
         ref={cardRef}
         role="dialog"
         aria-modal="false"
-        className="glass pointer-events-auto absolute flex max-h-[calc(100%-1rem)] w-72 max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-card shadow-xl"
+        className="glass pointer-events-auto absolute flex max-h-[calc(100%-1rem)] w-48 max-w-[calc(100%-1rem)] flex-col overflow-hidden rounded-lg shadow-xl sm:w-72 sm:rounded-card"
         style={{
           left: placement?.left ?? 0,
           top: placement?.top ?? 0,
@@ -72,13 +72,13 @@ export function MapPopupOverlay({ className }: { className?: string }) {
           visibility: placement ? "visible" : "hidden",
         }}
       >
-        <div className="flex shrink-0 items-start justify-between gap-2 border-b border-border/60 px-3 py-2">
+        <div className="flex shrink-0 items-start justify-between gap-1 border-b border-border/60 px-2 py-1 sm:gap-2 sm:px-3 sm:py-2">
           <div className="min-w-0">
-            <h3 className="break-words text-body font-semibold text-foreground">
+            <h3 className="break-words text-[10px] font-semibold leading-tight text-foreground sm:text-body">
               {content.title}
             </h3>
             {content.status ? (
-              <p className="text-label text-muted-foreground">{content.status}</p>
+              <p className="text-[9px] leading-tight text-muted-foreground sm:text-label">{content.status}</p>
             ) : null}
           </div>
           <IconButton
@@ -86,26 +86,27 @@ export function MapPopupOverlay({ className }: { className?: string }) {
             label="Close popup"
             variant="ghost"
             size="sm"
+            className="size-5 shrink-0 sm:size-8"
             onClick={closePopup}
           />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {content.description ? (
-            <p className="px-3 py-2 text-caption text-muted-foreground">
+            <p className="px-2 py-1 text-[9px] leading-tight text-muted-foreground sm:px-3 sm:py-2 sm:text-caption">
               {content.description}
             </p>
           ) : null}
 
           {content.coordinates ? (
-            <p className="px-3 font-mono text-label text-muted-foreground">
+            <p className="px-2 font-mono text-[9px] text-muted-foreground sm:px-3 sm:text-label">
               {content.coordinates[1].toFixed(5)}°N{" "}
               {content.coordinates[0].toFixed(5)}°E
             </p>
           ) : null}
 
           {content.metadata && Object.keys(content.metadata).length > 0 ? (
-            <dl className="space-y-1 px-3 py-2 text-label">
+            <dl className="space-y-0 px-2 py-1 text-[9px] leading-tight sm:space-y-1 sm:px-3 sm:py-2 sm:text-label">
               {Object.entries(content.metadata).map(([key, value]) => (
                 <div key={key} className="flex justify-between gap-2">
                   <dt className="shrink-0 text-muted-foreground">{key}</dt>
@@ -119,7 +120,7 @@ export function MapPopupOverlay({ className }: { className?: string }) {
         </div>
 
         {content.actions && content.actions.length > 0 ? (
-          <div className="flex shrink-0 gap-2 border-t border-border/60 px-3 py-2">
+          <div className="flex shrink-0 gap-2 border-t border-border/60 px-2 py-1 sm:px-3 sm:py-2">
             {content.actions.map((action) => (
               <Button
                 key={action.id}
