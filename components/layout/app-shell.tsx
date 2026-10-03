@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Header } from "@/components/layout/header";
 import { ContentArea } from "@/components/layout/content-area";
@@ -53,8 +53,30 @@ export function AppShell({
   className,
   mainClassName,
 }: AppShellProps) {
+  useEffect(() => {
+    const html = document.documentElement;
+    const { body } = document;
+    const previous = {
+      htmlOverflow: html.style.overflow,
+      bodyOverflow: body.style.overflow,
+    };
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = previous.htmlOverflow;
+      body.style.overflow = previous.bodyOverflow;
+    };
+  }, []);
+
   return (
-    <div className={cn("flex h-screen w-full flex-col overflow-hidden", className)}>
+    // 100vh extends under mobile browser chrome and hides bottom tab bars.
+    <div
+      className={cn(
+        "flex h-screen max-h-screen w-full flex-col overflow-hidden",
+        className,
+      )}
+      style={{ height: "100dvh", maxHeight: "100dvh" }}
+    >
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {sidebar ?? <Sidebar />}
         <div className="flex min-w-0 flex-1 flex-col">

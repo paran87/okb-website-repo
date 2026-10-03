@@ -17,6 +17,7 @@ export function CommandShell({ children }: { children: ReactNode }) {
     pathname === ROUTES.drainages ||
     pathname === ROUTES.waterways ||
     pathname === ROUTES.equipment ||
+    pathname === ROUTES.pumpingStations ||
     pathname.startsWith(`${ROUTES.riverBasin}/`);
 
   return (
@@ -25,7 +26,9 @@ export function CommandShell({ children }: { children: ReactNode }) {
       hideUtilityPanel={isFullBleed}
       mainClassName={
         isFullBleed
-          ? "flex min-h-0 flex-col overflow-y-auto xl:overflow-hidden"
+          ? pathname === ROUTES.drainages
+            ? "flex min-h-0 flex-col overflow-hidden"
+            : "flex min-h-0 flex-col overflow-y-auto xl:overflow-hidden"
           : undefined
       }
     >

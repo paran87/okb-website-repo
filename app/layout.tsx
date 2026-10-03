@@ -52,7 +52,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${okbDisplay.variable} ${okbSans.variable}`}
     >
-      <body className="min-h-screen antialiased">
+      <body className="min-h-dvh antialiased">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
