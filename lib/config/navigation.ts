@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { AppIcons } from "@/lib/config/icons";
+import { MAJOR_RIVER_BASINS } from "@/lib/config/river-basins";
 import { ROUTES } from "@/lib/constants";
 import { Permission } from "@/lib/rbac/permissions";
 
@@ -96,11 +97,18 @@ export const NAV_ITEMS: readonly NavEntry[] = [
     permission: Permission.ROAD_VIEW,
   },
   {
-    type: "link",
+    type: "group",
     label: "River Basin",
     href: ROUTES.riverBasin,
     icon: AppIcons.riverBasin,
     permission: Permission.WATERWAY_VIEW,
+    children: MAJOR_RIVER_BASINS.map((basin) => ({
+      type: "link" as const,
+      label: basin.label,
+      href: `${ROUTES.riverBasin}/${basin.slug}`,
+      icon: AppIcons.riverBasin,
+      permission: Permission.WATERWAY_VIEW,
+    })),
   },
   {
     type: "link",
