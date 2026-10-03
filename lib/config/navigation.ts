@@ -24,6 +24,8 @@ export interface NavGroupItem extends NavItemBase {
   type: "group";
   /** Primary route when the group label is clicked. */
   href?: string;
+  /** Omit the expand chevron. Children still open while a child route is active. */
+  hideChevron?: boolean;
   children: readonly NavLinkItem[];
 }
 
@@ -102,6 +104,7 @@ export const NAV_ITEMS: readonly NavEntry[] = [
     href: ROUTES.riverBasin,
     icon: AppIcons.riverBasin,
     permission: Permission.WATERWAY_VIEW,
+    hideChevron: true,
     children: MAJOR_RIVER_BASINS.map((basin) => ({
       type: "link" as const,
       label: basin.label,
