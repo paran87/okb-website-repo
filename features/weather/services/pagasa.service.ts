@@ -93,11 +93,14 @@ export async function getPagasaWeatherBulletin(): Promise<PagasaWeatherBulletinR
     }
     return bulletin;
   } catch (error) {
-    console.error("PAGASA weather fetch failed, using fallback:", error);
+    console.error("PAGASA weather fetch failed:", error);
+    // Prefer the last live bulletin over the static snapshot.
+    if (cachedBulletin) return cachedBulletin;
     return {
       ...PAGASA_WEATHER_BULLETIN,
       fetchedAt: new Date().toISOString(),
       source: "fallback",
+      fallbackReason: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -142,7 +145,9 @@ async function fetchPagasaHomePayload(): Promise<PagasaHomePayload> {
   const response = await pagasaFetchText(PAGASA_HOME_URL);
 
   if (!response.ok) {
-    throw new Error(`PAGASA homepage responded with ${response.status}`);
+    throw new Error(
+      `PAGASA homepage unreachable (${response.error ?? response.status})`,
+    );
   }
 
   const html = response.text;

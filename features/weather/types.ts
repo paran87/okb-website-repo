@@ -50,6 +50,8 @@ export interface PagasaWeatherBulletin {
 export interface PagasaWeatherBulletinResponse extends PagasaWeatherBulletin {
   fetchedAt: string;
   source: "pagasa-live" | "fallback";
+  /** Why the live PAGASA fetch was not used, when `source` is "fallback". */
+  fallbackReason?: string;
   ncrObservation?: PagasaNcrSummary;
 }
 
