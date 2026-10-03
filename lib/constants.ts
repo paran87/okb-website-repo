@@ -36,6 +36,9 @@ export const ACCOMPLISHMENT_DASHBOARD_URL =
 export const DREDGER_STATUS_DASHBOARD_URL =
   "https://script.google.com/macros/s/AKfycbwNtjYcdf7oLwfE0miNFwesRGLndcZmOF12XTNKubEUN37vOsytQB3czx-3faXQUnD3/exec";
 
+/** Floodwatch drainage and flood monitoring dashboard. */
+export const FLOODWATCH_URL = "https://floodwatch-ten.vercel.app/";
+
 /** Command Center route paths (single source of truth for navigation + links). */
 export const ROUTES = {
   dashboard: "/command",

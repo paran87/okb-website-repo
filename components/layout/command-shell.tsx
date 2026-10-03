@@ -12,7 +12,8 @@ export function CommandShell({ children }: { children: ReactNode }) {
     pathname === ROUTES.dashboard ||
     pathname === ROUTES.dashboardAlt ||
     pathname === ROUTES.floodMonitoring ||
-    pathname === ROUTES.floodProne;
+    pathname === ROUTES.floodProne ||
+    pathname === ROUTES.drainages;
 
   return (
     <AppShell
