@@ -1,0 +1,711 @@
+{
+ "apayao-abulug": {
+  "areaKm2": 4095.3,
+  "regions": [],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   120.9025,
+   17.7934,
+   121.6249,
+   18.6011
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Abulog River Watershed",
+    "hectares": 207700
+   },
+   {
+    "name": "Manucotae River Watershed",
+    "hectares": 2029
+   }
+  ]
+ },
+ "cagayan": {
+  "areaKm2": 27670.3,
+  "regions": [],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   120.8362,
+   15.9372,
+   122.2875,
+   18.3632
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Magat Watershed",
+    "hectares": 440684
+   },
+   {
+    "name": "Casecnan Watershed Forest Reserve",
+    "hectares": 86686
+   },
+   {
+    "name": "Upper & Lower Chico River Watershed",
+    "hectares": 217204
+   },
+   {
+    "name": "Mallig River Watershed",
+    "hectares": 49706
+   },
+   {
+    "name": "Dummun River Watershed",
+    "hectares": 17772
+   },
+   {
+    "name": "Pared River Watershed",
+    "hectares": 18268
+   },
+   {
+    "name": "Pinacanauan de Tuguegarao Watershed",
+    "hectares": 46346
+   },
+   {
+    "name": "Pinacanauan de San Pablo Watershed",
+    "hectares": 13934
+   },
+   {
+    "name": "Zinundangan River Watershed",
+    "hectares": 21519
+   },
+   {
+    "name": "Tumauini River Watershed",
+    "hectares": 16436
+   }
+  ]
+ },
+ "abra": {
+  "areaKm2": 4937.07,
+  "regions": [
+   "CAR",
+   "I"
+  ],
+  "provinces": [
+   "Apayao",
+   "Kalinga",
+   "Benguet",
+   "Abra",
+   "Mountai"
+  ],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   120.3476,
+   16.7221,
+   121.1222,
+   17.9662
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Sta. Maria River Watershed",
+    "hectares": 12707
+   }
+  ]
+ },
+ "agno": {
+  "areaKm2": 6189.52,
+  "regions": [
+   "CA"
+  ],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   120.1045,
+   15.1432,
+   120.9376,
+   16.8546
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Agno Watershed",
+    "hectares": 124041
+   },
+   {
+    "name": "Camiling watershed",
+    "hectares": 24379
+   },
+   {
+    "name": "Tarlac River Watershed",
+    "hectares": 86363
+   },
+   {
+    "name": "Dipalo",
+    "hectares": 3832
+   },
+   {
+    "name": "Dumuloc River Watershed",
+    "hectares": 8277
+   }
+  ]
+ },
+ "pampanga": {
+  "areaKm2": 11233.63,
+  "regions": [
+   "I",
+   "II",
+   "III",
+   "IV-A"
+  ],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   120.3411,
+   14.6888,
+   121.4353,
+   16.1463
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Caulaman watershed",
+    "hectares": 8662
+   },
+   {
+    "name": "Maasim watershed",
+    "hectares": 17585
+   },
+   {
+    "name": "Angat watershed",
+    "hectares": 54354
+   },
+   {
+    "name": "Angat-Ipo watershed",
+    "hectares": 7238
+   },
+   {
+    "name": "Pantabangan watershed",
+    "hectares": 96844
+   },
+   {
+    "name": "Peñarada watershed",
+    "hectares": 51266
+   },
+   {
+    "name": "Coronel watershed",
+    "hectares": 70364
+   },
+   {
+    "name": "Gumain watershed",
+    "hectares": 14170
+   },
+   {
+    "name": "Porac watershed",
+    "hectares": 11811
+   }
+  ]
+ },
+ "pasig-marikina": {
+  "areaKm2": 4820.95,
+  "regions": [
+   "III",
+   "VI-A",
+   "NCR"
+  ],
+  "provinces": [
+   "Bulacan Rizal"
+  ],
+  "municipalities": 17,
+  "barangays": 197,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   120.8983,
+   13.9752,
+   121.6294,
+   14.837
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Marikina River Watershed",
+    "hectares": 27952
+   },
+   {
+    "name": "San Antonio River Watershed",
+    "hectares": 1527
+   },
+   {
+    "name": "NPC Tailrace & Lewin Watershed",
+    "hectares": 1461
+   },
+   {
+    "name": "Laguna FLIS Watershed",
+    "hectares": 30563
+   },
+   {
+    "name": "Sta. Cruz River Watershed",
+    "hectares": 8075
+   },
+   {
+    "name": "Balanac River Watershed",
+    "hectares": 6575
+   },
+   {
+    "name": "Mabacan River Watershed",
+    "hectares": 5243
+   }
+  ]
+ },
+ "bicol": {
+  "areaKm2": 3187.06,
+  "regions": [],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   122.7656,
+   13.1243,
+   123.6845,
+   14.0164
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Bublusan Watershed",
+    "hectares": 1623
+   },
+   {
+    "name": "Basay Watershed",
+    "hectares": 707
+   },
+   {
+    "name": "Ponso Watershed",
+    "hectares": 260
+   },
+   {
+    "name": "Nasisi River Watershed",
+    "hectares": 3800
+   },
+   {
+    "name": "Buhi - Iriga River Watershed",
+    "hectares": 11941
+   },
+   {
+    "name": "Sipocot-Pulantuna Watershed",
+    "hectares": 53376
+   },
+   {
+    "name": "Nabua Watershed",
+    "hectares": 6832
+   },
+   {
+    "name": "Tigman River Watershewd",
+    "hectares": 3388
+   },
+   {
+    "name": "Hinagyanan River Watershed",
+    "hectares": 1867
+   },
+   {
+    "name": "Inarihan River Watershed",
+    "hectares": 3394
+   }
+  ]
+ },
+ "panay": {
+  "areaKm2": 2211.82,
+  "regions": [],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   122.316,
+   11.1508,
+   123.0614,
+   11.6135
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Mambusao River Watershed",
+    "hectares": 31881
+   }
+  ]
+ },
+ "jalaur": {
+  "areaKm2": 1773.5,
+  "regions": [
+   "VI"
+  ],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   122.2528,
+   10.7392,
+   122.8929,
+   11.2436
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Barotac Viejo river watershed",
+    "hectares": 8843
+   },
+   {
+    "name": "Jalaur",
+    "hectares": 127911
+   },
+   {
+    "name": "Jalaur-1",
+    "hectares": 16954
+   },
+   {
+    "name": "Jalaur-2",
+    "hectares": 3070
+   }
+  ]
+ },
+ "ilog-hilabangan": {
+  "areaKm2": 2162.67,
+  "regions": [
+   "VI",
+   "VII"
+  ],
+  "provinces": [
+   "Negr"
+  ],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   122.5241,
+   9.5,
+   123.1148,
+   10.0708
+  ],
+  "criticalWatersheds": []
+ },
+ "agusan": {
+  "areaKm2": 11966.9,
+  "regions": [
+   "XIII",
+   "XI",
+   "X"
+  ],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   125.1285,
+   7.2201,
+   126.3163,
+   9.1266
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Taguibo River Watershed",
+    "hectares": 5536
+   },
+   {
+    "name": "Cabadbaran River Watershed",
+    "hectares": 20916
+   },
+   {
+    "name": "Andanan River Watershed",
+    "hectares": 21374
+   },
+   {
+    "name": "Caracan River Watershed",
+    "hectares": 47024
+   },
+   {
+    "name": "Simulao River Watershed",
+    "hectares": 43351
+   },
+   {
+    "name": "Batutu River Watershed",
+    "hectares": 10021
+   }
+  ]
+ },
+ "mindanao": {
+  "areaKm2": 20857.41,
+  "regions": [
+   "ARMM",
+   "XIII",
+   "X"
+  ],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   124.1043,
+   6.0559,
+   125.4496,
+   8.5643
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Roxas-Kuya river watershed",
+    "hectares": 7233
+   },
+   {
+    "name": "Muleta river watershed",
+    "hectares": 21531
+   },
+   {
+    "name": "Manupali river watershed",
+    "hectares": 38035
+   },
+   {
+    "name": "Libungan river watershed",
+    "hectares": 53177
+   },
+   {
+    "name": "M'lang river watershed",
+    "hectares": 15508
+   },
+   {
+    "name": "Malasila river watershed",
+    "hectares": 26141
+   },
+   {
+    "name": "Padada watershed",
+    "hectares": 60208
+   },
+   {
+    "name": "Silway sub-watershed",
+    "hectares": 19153
+   },
+   {
+    "name": "Pailan watershed",
+    "hectares": 32919
+   },
+   {
+    "name": "Padada Watershed",
+    "hectares": 60208
+   },
+   {
+    "name": "Allah River Watershed",
+    "hectares": 87394
+   },
+   {
+    "name": "Banga River Wtershed",
+    "hectares": 32644
+   },
+   {
+    "name": "Kabacan River Watershed",
+    "hectares": 72030
+   },
+   {
+    "name": "Alip River Watershed",
+    "hectares": 37423
+   },
+   {
+    "name": "Libuganon River Watershed",
+    "hectares": 75962
+   }
+  ]
+ },
+ "ranao-agus": {
+  "areaKm2": 1996.08,
+  "regions": [
+   "ARMM",
+   "XII",
+   "X"
+  ],
+  "provinces": [
+   "Lan"
+  ],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   124.0495,
+   7.6318,
+   124.6133,
+   8.211
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Rugnan River Watershed",
+    "hectares": 10324
+   }
+  ]
+ },
+ "cagayan-de-oro": {
+  "areaKm2": 1380.09,
+  "regions": [
+   "X",
+   "XII"
+  ],
+  "provinces": [
+   "Misamis Orienta"
+  ],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   124.5189,
+   7.9401,
+   124.8543,
+   8.5161
+  ],
+  "criticalWatersheds": []
+ },
+ "buayan-malungon": {
+  "areaKm2": 1440.65,
+  "regions": [
+   "XI"
+  ],
+  "provinces": [
+   "Davao del Sur",
+   "S"
+  ],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   125.0745,
+   6.0964,
+   125.5664,
+   6.549
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Buayan watershed",
+    "hectares": 94296
+   },
+   {
+    "name": "Silway watershed",
+    "hectares": 34879
+   }
+  ]
+ },
+ "davao": {
+  "areaKm2": 1765.41,
+  "regions": [],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   125.1871,
+   7.0434,
+   125.6471,
+   7.8174
+  ],
+  "criticalWatersheds": []
+ },
+ "tagoloan": {
+  "areaKm2": 1807.78,
+  "regions": [
+   "X"
+  ],
+  "provinces": [
+   "Misamis O"
+  ],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   124.7402,
+   8.1123,
+   125.2436,
+   8.6477
+  ],
+  "criticalWatersheds": []
+ },
+ "tagum-libuganon": {
+  "areaKm2": 3215.46,
+  "regions": [],
+  "provinces": [],
+  "municipalities": null,
+  "barangays": null,
+  "rivers": [],
+  "classification": [],
+  "hydropower": [],
+  "geothermal": [],
+  "landClassification": [],
+  "bounds": [
+   125.3804,
+   7.3182,
+   126.014,
+   8.0515
+  ],
+  "criticalWatersheds": [
+   {
+    "name": "Saug Watershed",
+    "hectares": 64829
+   }
+  ]
+ }
+}

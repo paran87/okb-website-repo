@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { ChevronLeft } from "lucide-react";
@@ -13,23 +14,41 @@ import { cn } from "@/utils/cn";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StudyPages } from "@/features/river-basin/components/study-pages";
 
-type TabId = "feasibility" | "master-plan";
+type DocTab = "feasibility" | "master-plan";
+type TabId = DocTab | "map";
+
+const BasinMap = dynamic(
+  () =>
+    import("@/features/river-basin/components/basin-map").then((m) => ({
+      default: m.BasinMap,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full min-h-[520px] items-center justify-center">
+        <div className="border-primary size-8 animate-spin rounded-full border-2 border-t-transparent" />
+      </div>
+    ),
+  },
+);
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "feasibility", label: "Feasibility Study" },
   { id: "master-plan", label: "Master Plan" },
+  { id: "map", label: "Show Map" },
 ];
 
 export function BasinStudy({
   basin,
   studies,
 }: {
-  basin: { number: number; label: string };
+  basin: { number: number; label: string; slug: string };
   studies: BasinStudies;
 }) {
   const [tab, setTab] = useState<TabId>("feasibility");
+  const [docTab, setDocTab] = useState<DocTab>("feasibility");
   const documents =
-    tab === "feasibility" ? studies.feasibility : studies.masterPlan;
+    docTab === "feasibility" ? studies.feasibility : studies.masterPlan;
   const editions = groupByEdition(documents);
   const [editionName, setEditionName] = useState(editions[0]?.name ?? "");
   const [documentId, setDocumentId] = useState(
@@ -43,6 +62,11 @@ export function BasinStudy({
     activeEdition?.documents[0];
 
   const selectTab = (next: TabId) => {
+    if (next === "map") {
+      setTab("map");
+      return;
+    }
+    setDocTab(next);
     const nextDocuments =
       next === "feasibility" ? studies.feasibility : studies.masterPlan;
     const nextEditions = groupByEdition(nextDocuments);
@@ -96,7 +120,7 @@ export function BasinStudy({
             );
           })}
         </div>
-        {activeDocument ? (
+        {tab !== "map" && activeDocument ? (
           <StudyPicker
             editions={editions}
             editionName={activeEdition?.name ?? ""}
@@ -110,9 +134,14 @@ export function BasinStudy({
 
       <div
         role="tabpanel"
-        className="bg-muted/30 min-h-0 flex-1 overflow-y-auto"
+        className={cn(
+          "bg-muted/30 min-h-0 flex-1",
+          tab === "map" ? "overflow-hidden" : "overflow-y-auto",
+        )}
       >
-        {activeDocument ? (
+        {tab === "map" ? (
+          <BasinMap slug={basin.slug} label={basin.label} />
+        ) : activeDocument ? (
           <StudyPages
             key={activeDocument.id}
             fileId={activeDocument.id}
@@ -120,7 +149,7 @@ export function BasinStudy({
           />
         ) : (
           <EmptyState
-            title={`No ${tab === "feasibility" ? "feasibility study" : "master plan"} on file`}
+            title={`No ${docTab === "feasibility" ? "feasibility study" : "master plan"} on file`}
             description={`The ${basin.label} river basin does not have this document in the collection yet.`}
             className="min-h-full"
           />
