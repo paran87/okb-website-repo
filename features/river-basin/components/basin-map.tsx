@@ -558,6 +558,19 @@ function BasinMapOverlay({ slug, label }: BasinMapProps) {
           aria-label="Layers and basin information"
           className="glass divide-border/60 border-border/60 shadow-panel !bg-background/95 pointer-events-auto absolute bottom-3 left-3 flex max-h-[58%] w-[min(20rem,calc(100%-1.5rem))] flex-col divide-y overflow-hidden rounded-xl border sm:top-12 sm:bottom-3 sm:left-32 sm:max-h-none"
         >
+          <header className="flex shrink-0 items-center justify-between gap-2 px-3 py-2">
+            <h2 className="text-foreground text-xs font-semibold">
+              Layers &amp; info
+            </h2>
+            <button
+              type="button"
+              onClick={() => setPanelOpen(false)}
+              aria-label="Close layers and info"
+              className="text-muted-foreground hover:bg-muted/60 hover:text-foreground -mr-1 rounded-md p-1 transition-colors"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          </header>
           <div className="min-h-0 flex-1 overflow-y-auto">
             <section className="space-y-2 p-3">
               <h3 className="text-foreground flex items-center gap-1.5 text-xs font-semibold">
