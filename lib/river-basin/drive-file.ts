@@ -1,4 +1,5 @@
 import https from "node:https";
+import { Readable } from "node:stream";
 import tls from "node:tls";
 
 const USER_AGENT =
@@ -11,35 +12,35 @@ type Downloaded = {
   body: Buffer;
 };
 
+export type DriveStream = {
+  body: ReadableStream<Uint8Array>;
+  contentLength: number | null;
+};
+
+type Opened = {
+  cookies: string;
+  stream?: DriveStream;
+  html?: string;
+};
+
 /**
- * Download a public Google Drive file.
+ * Open a public Google Drive file as a stream.
  *
- * Vercel trusts the public certificate store through fetch. Windows dev
- * machines sometimes need the OS store instead. Google also wraps some
- * downloads in an HTML confirmation page, which this follows.
+ * The PDF is forwarded as Google sends it, instead of waiting for the whole
+ * file to land on the server first. Vercel uses the public certificate store.
+ * Windows dev machines fall back to the OS store.
  */
-export async function downloadDriveFile(fileId: string): Promise<Buffer> {
+export async function openDriveFile(fileId: string): Promise<DriveStream> {
   const start = `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}`;
-  const first = await download(start);
-  if (!isHtml(first)) return requireOk(first);
+  const first = await openUrl(start);
+  if (first.stream) return first.stream;
 
-  const next = confirmUrl(first.body.toString("utf8"), fileId);
-  const second = await download(next, first.cookies);
-  return requireOk(second);
-}
-
-function requireOk(file: Downloaded): Buffer {
-  if (file.status !== 200 || isHtml(file)) {
+  const next = confirmUrl(first.html ?? "", fileId);
+  const second = await openUrl(next, first.cookies);
+  if (!second.stream) {
     throw new Error("Google Drive did not return the study file.");
   }
-  return file.body;
-}
-
-function isHtml(file: Downloaded): boolean {
-  return (
-    file.contentType.includes("text/html") ||
-    file.body.subarray(0, 15).toString("utf8").includes("<!DOCTYPE")
-  );
+  return second.stream;
 }
 
 function confirmUrl(html: string, fileId: string): string {
@@ -62,13 +63,33 @@ function confirmUrl(html: string, fileId: string): string {
   return url.toString();
 }
 
-async function download(url: string, cookies = ""): Promise<Downloaded> {
+async function openUrl(url: string, cookies = ""): Promise<Opened> {
   try {
-    return await downloadWithFetch(url, cookies);
+    return await openWithFetch(url, cookies);
   } catch (error) {
     if (!isCertificateError(error)) throw error;
-    return downloadWithSystemCertificates(url, cookies);
+    const file = await downloadWithSystemCertificates(url, cookies);
+    return openedFromBuffer(file);
   }
+}
+
+function openedFromBuffer(file: Downloaded): Opened {
+  const html =
+    file.contentType.includes("text/html") ||
+    file.body.subarray(0, 15).toString("utf8").includes("<!DOCTYPE");
+  if (html) return { cookies: file.cookies, html: file.body.toString("utf8") };
+  if (file.status !== 200) {
+    throw new Error("Google Drive did not return the study file.");
+  }
+  return {
+    cookies: file.cookies,
+    stream: {
+      body: Readable.toWeb(
+        Readable.from(file.body),
+      ) as ReadableStream<Uint8Array>,
+      contentLength: file.body.byteLength,
+    },
+  };
 }
 
 function isCertificateError(error: unknown): boolean {
@@ -87,10 +108,11 @@ function isCertificateError(error: unknown): boolean {
   );
 }
 
-async function downloadWithFetch(
+async function openWithFetch(
   url: string,
   cookies: string,
-): Promise<Downloaded> {
+  redirects = 0,
+): Promise<Opened> {
   const response = await fetch(url, {
     redirect: "manual",
     headers: {
@@ -99,31 +121,37 @@ async function downloadWithFetch(
       ...(cookies ? { Cookie: cookies } : {}),
     },
   });
-  return readWebResponse(response, url, cookies, 0);
-}
-
-async function readWebResponse(
-  response: Response,
-  url: string,
-  cookies: string,
-  redirects: number,
-): Promise<Downloaded> {
   const nextCookies = mergeCookies(cookies, response.headers);
   const location = response.headers.get("location");
   if (response.status >= 300 && response.status < 400 && location) {
-    if (redirects > 5)
+    if (redirects > 5) {
       throw new Error(
         "Too many redirects while downloading a river basin file.",
       );
-    return downloadWithFetch(new URL(location, url).toString(), nextCookies);
+    }
+    return openWithFetch(
+      new URL(location, url).toString(),
+      nextCookies,
+      redirects + 1,
+    );
   }
 
-  const body = Buffer.from(await response.arrayBuffer());
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("text/html")) {
+    return { cookies: nextCookies, html: await response.text() };
+  }
+  if (!response.ok || !response.body) {
+    throw new Error("Google Drive did not return the study file.");
+  }
+
+  const lengthHeader = response.headers.get("content-length");
+  const contentLength = lengthHeader ? Number(lengthHeader) : null;
   return {
-    status: response.status,
-    contentType: response.headers.get("content-type") ?? "",
     cookies: nextCookies,
-    body,
+    stream: {
+      body: response.body,
+      contentLength: Number.isFinite(contentLength) ? contentLength : null,
+    },
   };
 }
 

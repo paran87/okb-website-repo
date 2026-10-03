@@ -5,10 +5,8 @@ import { useEffect, useRef, useState } from "react";
 type PdfPage = {
   getViewport: (params: { scale: number }) => { width: number; height: number };
   render: (params: {
-    canvas: null;
-    canvasContext: CanvasRenderingContext2D;
+    canvas: HTMLCanvasElement;
     viewport: { width: number; height: number };
-    transform: number[];
   }) => { promise: Promise<void>; cancel: () => void };
   cleanup: () => void;
 };
@@ -24,72 +22,127 @@ type PdfjsModule = {
   getDocument: (params: {
     url: string;
     disableRange: boolean;
-    disableStream: boolean;
+    wasmUrl: string;
   }) => {
     promise: Promise<PdfDocument>;
-    destroy: () => void;
     onProgress: ((progress: { loaded: number; total: number }) => void) | null;
   };
 };
 
+const WASM_URL = "/pdfjs/wasm/";
+const MAX_PARALLEL_RENDERS = 2;
+let activeRenders = 0;
+const renderQueue: Array<() => void> = [];
+
+function acquireRender(isCancelled: () => boolean): Promise<boolean> {
+  return new Promise((resolve) => {
+    const start = () => {
+      if (isCancelled()) {
+        resolve(false);
+        return;
+      }
+      if (activeRenders >= MAX_PARALLEL_RENDERS) {
+        renderQueue.push(start);
+        return;
+      }
+      activeRenders += 1;
+      resolve(true);
+    };
+    start();
+  });
+}
+
+function releaseRender(): void {
+  activeRenders = Math.max(0, activeRenders - 1);
+  while (activeRenders < MAX_PARALLEL_RENDERS && renderQueue.length > 0) {
+    const before = activeRenders;
+    renderQueue.shift()?.();
+    if (activeRenders === before) continue;
+  }
+}
+
+const MAX_CACHED_DOCUMENTS = 3;
+const documentCache = new Map<string, Promise<PdfDocument>>();
+const documentOrder: string[] = [];
+
+function loadDocument(
+  fileId: string,
+  onProgress: (progress: number) => void,
+): Promise<PdfDocument> {
+  const cached = documentCache.get(fileId);
+  if (cached) {
+    onProgress(100);
+    return cached;
+  }
+
+  const pending = (async () => {
+    const pdfjs = (await import("pdfjs-dist")) as unknown as PdfjsModule;
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    const task = pdfjs.getDocument({
+      url: `/api/river-basin/files/${fileId}`,
+      disableRange: true,
+      // Scanned pages stay blank unless these image decoders are loaded.
+      wasmUrl: WASM_URL,
+    });
+    task.onProgress = ({ loaded, total }) => {
+      if (total > 0) onProgress(Math.round((loaded / total) * 100));
+    };
+    return task.promise;
+  })();
+
+  documentCache.set(fileId, pending);
+  documentOrder.push(fileId);
+  pending.catch(() => {
+    documentCache.delete(fileId);
+  });
+
+  while (documentOrder.length > MAX_CACHED_DOCUMENTS) {
+    const oldest = documentOrder.shift();
+    if (!oldest || oldest === fileId) continue;
+    const evicted = documentCache.get(oldest);
+    documentCache.delete(oldest);
+    void evicted?.then((document) => document.destroy()).catch(() => undefined);
+  }
+
+  return pending;
+}
+
 export function StudyPages({
   fileId,
   title,
+  onReady,
 }: {
   fileId: string;
   title: string;
+  onReady?: () => void;
 }) {
   const [pdf, setPdf] = useState<PdfDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
 
   useEffect(() => {
     let cancelled = false;
-    let loadingTask: { destroy: () => void } | null = null;
-    let pdfDoc: PdfDocument | null = null;
-
     setPdf(null);
     setError(null);
     setProgress(0);
 
-    (async () => {
-      try {
-        const pdfjs = (await import("pdfjs-dist")) as unknown as PdfjsModule;
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        const task = pdfjs.getDocument({
-          url: `/api/river-basin/files/${fileId}`,
-          disableRange: true,
-          disableStream: true,
-        });
-        loadingTask = task;
-        task.onProgress = ({ loaded, total }) => {
-          if (!cancelled && total > 0)
-            setProgress(Math.round((loaded / total) * 100));
-        };
-        pdfDoc = await task.promise;
-        if (cancelled) {
-          await pdfDoc.destroy();
-          return;
-        }
-        setPdf(pdfDoc);
-      } catch (error) {
-        console.error(error);
+    loadDocument(fileId, (value) => {
+      if (!cancelled) setProgress(value);
+    })
+      .then((document) => {
+        if (cancelled) return;
+        setPdf(document);
+        onReadyRef.current?.();
+      })
+      .catch((loadError: unknown) => {
+        console.error(loadError);
         if (!cancelled) setError("This part of the study could not be opened.");
-      }
-    })();
+      });
 
     return () => {
       cancelled = true;
-      try {
-        loadingTask?.destroy();
-      } catch {
-        // The loading task may already be finished.
-      }
-      try {
-        void pdfDoc?.destroy();
-      } catch {
-        // The document may already be destroyed with the loading task.
-      }
     };
   }, [fileId]);
 
@@ -103,10 +156,18 @@ export function StudyPages({
 
   if (!pdf) {
     return (
-      <p className="text-muted-foreground px-6 py-16 text-center text-sm">
-        Opening {title}
-        {progress > 0 ? ` (${progress}%)` : "…"}
-      </p>
+      <div className="px-6 py-16">
+        <p className="text-muted-foreground text-center text-sm">
+          Opening {title}
+          {progress > 0 ? ` (${progress}%)` : "…"}
+        </p>
+        <div className="bg-muted mx-auto mt-4 h-1.5 w-full max-w-md overflow-hidden rounded-full">
+          <div
+            className="bg-primary h-full transition-[width] duration-150"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -123,6 +184,7 @@ export function StudyPages({
           key={`${fileId}-${index + 1}`}
           pdf={pdf}
           pageNumber={index + 1}
+          eager={index === 0}
         />
       ))}
     </article>
@@ -132,21 +194,24 @@ export function StudyPages({
 function StudyPage({
   pdf,
   pageNumber,
+  eager,
 }: {
   pdf: PdfDocument;
   pageNumber: number;
+  eager: boolean;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(eager);
   const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
+    const root = frame.closest("[role=tabpanel]");
     const observer = new IntersectionObserver(
       ([entry]) => setVisible(entry?.isIntersecting ?? false),
-      { rootMargin: "900px 0px" },
+      { root: root instanceof Element ? root : null, rootMargin: "160px 0px" },
     );
     observer.observe(frame);
     return () => observer.disconnect();
@@ -165,39 +230,45 @@ function StudyPage({
     if (!canvas) return;
 
     let cancelled = false;
+    let started = false;
     let renderTask: { promise: Promise<void>; cancel: () => void } | null =
       null;
 
     (async () => {
-      const page = await pdf.getPage(pageNumber);
+      const granted = await acquireRender(() => cancelled);
+      if (!granted) return;
       if (cancelled) {
-        page.cleanup();
+        releaseRender();
         return;
       }
-      const context = canvas.getContext("2d");
-      const frame = frameRef.current;
-      if (!context || !frame) return;
-
-      const base = page.getViewport({ scale: 1 });
-      const scale = Math.min(Math.max(frame.clientWidth, 320) / base.width, 2);
-      const viewport = page.getViewport({ scale });
-      const pixelRatio = window.devicePixelRatio || 1;
-      canvas.width = Math.floor(viewport.width * pixelRatio);
-      canvas.height = Math.floor(viewport.height * pixelRatio);
-      canvas.style.width = "100%";
-      canvas.style.height = "auto";
-
-      renderTask = page.render({
-        canvas: null,
-        canvasContext: context,
-        viewport,
-        transform: [pixelRatio, 0, 0, pixelRatio, 0, 0],
-      });
+      started = true;
       try {
+        const page = await pdf.getPage(pageNumber);
+        if (cancelled) {
+          page.cleanup();
+          return;
+        }
+        const frame = frameRef.current;
+        if (!frame) return;
+
+        const base = page.getViewport({ scale: 1 });
+        const width = Math.max(frame.clientWidth, 320);
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.25);
+        const viewport = page.getViewport({
+          scale: (width / base.width) * pixelRatio,
+        });
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        canvas.style.width = "100%";
+        canvas.style.height = "auto";
+
+        renderTask = page.render({ canvas, viewport });
         await renderTask.promise;
         if (!cancelled) setPainted(true);
       } catch {
         // Cancelled when the page scrolls away or the study changes.
+      } finally {
+        if (started) releaseRender();
       }
     })();
 
@@ -212,13 +283,20 @@ function StudyPage({
       ref={frameRef}
       className="border-border relative overflow-hidden rounded-md border bg-white shadow-sm"
     >
+      {painted ? null : (
+        <div
+          className="aspect-[1/1.294] w-full animate-pulse bg-neutral-100"
+          aria-hidden
+        />
+      )}
       <canvas
         ref={canvasRef}
-        className={painted ? "block h-auto w-full bg-white" : "hidden"}
+        className={
+          painted
+            ? "relative block h-auto w-full bg-white"
+            : "absolute inset-x-0 top-0 w-full"
+        }
       />
-      {painted ? null : (
-        <div className="bg-muted/40 aspect-[1/1.294] w-full" aria-hidden />
-      )}
     </div>
   );
 }
