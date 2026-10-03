@@ -34,10 +34,6 @@ export const ACCOMPLISHMENT_DASHBOARD_URL =
 /** Floodwatch drainage and flood monitoring dashboard. */
 export const FLOODWATCH_URL = "https://floodwatch-ten.vercel.app/";
 
-/** Bacoor City waterways monitor. */
-export const BACOOR_CITY_WATERWAYS_URL =
-  "https://bacoor-city-waterways.vercel.app/";
-
 /** Live equipment dashboard (Google Apps Script). */
 export const EQUIPMENT_DASHBOARD_URL =
   "https://script.google.com/macros/s/AKfycbwNtjYcdf7oLwfE0miNFwesRGLndcZmOF12XTNKubEUN37vOsytQB3czx-3faXQUnD3/exec";

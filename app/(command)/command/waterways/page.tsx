@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { WaterwaysWorkspace } from "./waterways-workspace";
+import { WaterwaysView } from "@/features/waterways/components/waterways-view";
 
 export const metadata: Metadata = {
   title: "Waterways",
   description:
-    "Live city waterway monitoring. Bacoor City Waterways is available now.",
+    "Explore the DENR INREMP river system: 284,000 river segments by upper river basin and flow, with hazard layers and nearby flood-prone areas.",
 };
 
 export default function WaterwaysPage() {
-  return <WaterwaysWorkspace />;
+  return <WaterwaysView />;
 }
