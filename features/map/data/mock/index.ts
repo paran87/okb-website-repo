@@ -302,10 +302,17 @@ export const MOCK_EQUIPMENT: FeatureCollection = {
   ],
 };
 
+/** Filled at runtime from the Floodwatch (Flood Prone Areas) API. */
+const FLOODWATCH_AREAS_PLACEHOLDER: FeatureCollection = {
+  type: "FeatureCollection",
+  features: [],
+};
+
 export const MOCK_GEOJSON_REGISTRY = {
   incidents: MOCK_INCIDENTS,
   "flood-zones": MOCK_FLOOD_ZONES,
   "deos-flood-prone-areas": DEOS_FLOOD_PRONE_AREAS,
+  "floodwatch-areas": FLOODWATCH_AREAS_PLACEHOLDER,
   roads: MOCK_ROADS,
   sensors: MOCK_SENSORS,
   equipment: MOCK_EQUIPMENT,

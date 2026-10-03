@@ -1,13 +1,14 @@
 import type { ReactNode } from "react";
 import { WidgetContainer } from "@/features/dashboard/components/widgets/widget-container";
 import type { NcrBreakdownRow } from "@/features/dashboard/lib/ncr-summary";
-import { cn } from "@/utils/cn";
 
 interface NcrBreakdownPanelProps {
   title: string;
   subtitle: string;
   icon: ReactNode;
-  rows: readonly NcrBreakdownRow[];
+  rows: readonly Pick<NcrBreakdownRow, "label" | "count">[];
+  /** Bar fill color (defaults to the incident red). */
+  barColor?: string;
   className?: string;
 }
 
@@ -17,6 +18,7 @@ export function NcrBreakdownPanel({
   subtitle,
   icon,
   rows,
+  barColor = "#dc2626",
   className,
 }: NcrBreakdownPanelProps) {
   const max = Math.max(...rows.map((r) => r.count), 1);
@@ -39,8 +41,11 @@ export function NcrBreakdownPanel({
           </div>
           <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-muted">
             <div
-              className={cn("h-full rounded-full bg-danger")}
-              style={{ width: `${(row.count / max) * 100}%` }}
+              className="h-full rounded-full"
+              style={{
+                width: `${(row.count / max) * 100}%`,
+                backgroundColor: barColor,
+              }}
             />
           </div>
         </div>

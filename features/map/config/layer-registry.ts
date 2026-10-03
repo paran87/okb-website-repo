@@ -6,6 +6,7 @@ export type MockGeoJsonKey =
   | "incidents"
   | "flood-zones"
   | "deos-flood-prone-areas"
+  | "floodwatch-areas"
   | "roads"
   | "sensors"
   | "equipment";
@@ -123,8 +124,36 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
  */
 export function createFloodOverviewLayerRegistry(): LayerConfig[] {
   const base = createDefaultLayerRegistry().filter(
-    (layer) => !["roads", "sensors", "equipment", "incidents"].includes(layer.id),
+    (layer) =>
+      !["roads", "sensors", "equipment", "incidents", "flood-zones"].includes(
+        layer.id,
+      ),
   );
+  const floodwatchAreas: LayerConfig = {
+    id: "floodwatch-areas",
+    sourceId: "source-floodwatch-areas",
+    label: "Flood Prone Areas (Floodwatch)",
+    kind: "cluster",
+    category: "flood-prone",
+    visible: true,
+    opacity: 1,
+    order: 10,
+    dataKey: "floodwatch-areas",
+    layerIds: [
+      "floodwatch-areas-clusters",
+      "floodwatch-areas-cluster-count",
+      "floodwatch-areas-points",
+    ],
+    interactive: true,
+    cluster: true,
+    legend: [
+      { id: "fw-area", label: "Flood-prone area", color: "#7c3aed", shape: "circle" },
+    ],
+    metadata: {
+      description: "Flood Prone Areas tab — Floodwatch national list",
+      source: "Floodwatch",
+    },
+  };
   const ncrIncidents: LayerConfig = {
     id: "ncr-incidents",
     sourceId: "source-ncr-incidents",
@@ -151,7 +180,7 @@ export function createFloodOverviewLayerRegistry(): LayerConfig[] {
       featureCount: 123,
     },
   };
-  return [...base, ncrIncidents];
+  return [...base, floodwatchAreas, ncrIncidents];
 }
 
 /** Resolve GeoJSON for a data key (lazy import in service). */

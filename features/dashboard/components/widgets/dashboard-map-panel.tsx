@@ -3,6 +3,7 @@
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
 import { createFloodOverviewLayerRegistry } from "@/features/map/config/layer-registry";
+import { FloodwatchAreasOverlay } from "@/features/floodwatch/components/floodwatch-areas-overlay";
 import { cn } from "@/utils/cn";
 
 const DASHBOARD_LAYERS = createFloodOverviewLayerRegistry();
@@ -28,6 +29,7 @@ export function DashboardMapPanel({ className }: DashboardMapPanelProps) {
         showSearch={false}
         className="h-full min-h-[280px] w-full lg:min-h-[360px] xl:min-h-0"
       />
+      <FloodwatchAreasOverlay />
     </div>
   );
 }

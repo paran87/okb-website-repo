@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   Building2,
   CheckCircle2,
@@ -14,7 +14,6 @@ import {
 import { FadeIn } from "@/components/ui/motion";
 import { ErrorState } from "@/components/ui/error-state";
 import { DashboardSkeleton } from "@/features/dashboard/components/dashboard-skeleton";
-import { FloodZonesPanel } from "@/features/dashboard/components/widgets/flood-zones-panel";
 import { NcrBreakdownPanel } from "@/features/dashboard/components/widgets/ncr-breakdown-panel";
 import {
   NcrStatGrid,
@@ -22,10 +21,7 @@ import {
 } from "@/features/dashboard/components/widgets/ncr-stat-grid";
 import { WeatherCard } from "@/features/dashboard/components/widgets/weather-card";
 import { useDashboardData } from "@/features/dashboard/hooks/use-dashboard-data";
-import {
-  getFloodZones,
-  type FloodZoneRow,
-} from "@/features/dashboard/lib/flood-zones-summary";
+import { useFloodwatchSummary } from "@/features/floodwatch/hooks/use-floodwatch-summary";
 import { getNcrSummary } from "@/features/dashboard/lib/ncr-summary";
 
 const DashboardMapPanel = dynamic(
@@ -44,19 +40,8 @@ const DashboardMapPanel = dynamic(
 export function OperationsDashboard() {
   const { data, isLoading, isError, refetch } = useDashboardData();
   const summary = useMemo(() => getNcrSummary(), []);
-  const [zones, setZones] = useState<FloodZoneRow[]>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getFloodZones()
-      .then((rows) => {
-        if (!cancelled) setZones(rows);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const floodwatch = useFloodwatchSummary();
+  const fw = floodwatch.data;
 
   const stats: NcrStat[] = useMemo(
     () => [
@@ -86,9 +71,13 @@ export function OperationsDashboard() {
       },
       {
         id: "zones",
-        label: "Flood-Prone Zones",
-        value: zones.filter((z) => z.floodProne).length,
-        hint: `${zones.length} mapped zones`,
+        label: "Flood-Prone Areas",
+        value: fw?.totalAreas ?? 0,
+        hint: fw
+          ? `${fw.byRegion.length} regions · Floodwatch`
+          : floodwatch.isError
+            ? "Floodwatch unavailable"
+            : "Loading Floodwatch…",
         icon: Layers,
         tone: "zone",
       },
@@ -101,7 +90,7 @@ export function OperationsDashboard() {
         tone: "primary",
       },
     ],
-    [summary, zones],
+    [summary, fw, floodwatch.isError],
   );
 
   if (isLoading) return <DashboardSkeleton />;
@@ -146,9 +135,13 @@ export function OperationsDashboard() {
             rows={summary.byDeo}
             className="max-h-44 min-h-0 flex-1 xl:max-h-none"
           />
-          <FloodZonesPanel
-            zones={zones}
-            className="hidden shrink-0 xl:flex"
+          <NcrBreakdownPanel
+            title="Flood-Prone Areas"
+            subtitle="Floodwatch · by region"
+            icon={<Layers className="size-4" aria-hidden />}
+            rows={fw?.byRegion.slice(0, 8) ?? []}
+            barColor="#7c3aed"
+            className="hidden max-h-48 min-h-0 flex-1 xl:flex"
           />
         </div>
 
@@ -163,9 +156,13 @@ export function OperationsDashboard() {
           />
         </div>
 
-        <FloodZonesPanel
-          zones={zones}
-          className="col-span-2 xl:hidden"
+        <NcrBreakdownPanel
+          title="Flood-Prone Areas"
+          subtitle="Floodwatch · by region"
+          icon={<Layers className="size-4" aria-hidden />}
+          rows={fw?.byRegion.slice(0, 8) ?? []}
+          barColor="#7c3aed"
+          className="col-span-2 max-h-44 xl:hidden"
         />
       </div>
     </FadeIn>
