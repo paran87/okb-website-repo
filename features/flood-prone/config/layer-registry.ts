@@ -15,17 +15,15 @@ export function createFloodProneLayerRegistry(): LayerConfig[] {
       dataKey: "deos-flood-prone-areas",
       layerIds: [
         "deos-flood-prone-areas-circle",
+        "deos-flood-prone-areas-selected",
         "deos-flood-prone-areas-labels",
       ],
       interactive: true,
       cluster: false,
       legend: [
-        {
-          id: "fpa1",
-          label: "Flood-prone road section (123)",
-          color: "#f97316",
-          shape: "circle",
-        },
+        { id: "fpa-located", label: "Located", color: "#2563eb", shape: "circle" },
+        { id: "fpa-review", label: "Needs review", color: "#f97316", shape: "circle" },
+        { id: "fpa-selected", label: "Selected", color: "#0f172a", shape: "circle" },
       ],
       metadata: {
         description: "DPWH DEOS Updated Flood Prone Areas 2026 — NCR road sections",

@@ -1,5 +1,9 @@
 import type { FeatureCollection } from "geojson";
-import type { DeosFloodProneArea } from "@/features/flood-prone/types";
+import type {
+  DeosFloodProneArea,
+  NcrCriticalAreaRecord,
+} from "@/features/flood-prone/types";
+import { parseArea } from "@/features/flood-prone/lib/parse-area";
 import { DEOS_FLOOD_PRONE_AREAS } from "@/features/flood-prone/data";
 import rawAreas from "@/features/flood-prone/data/deos-flood-prone-raw.json";
 
@@ -11,6 +15,35 @@ export const floodProneService = {
 
   getGeoJson(): FeatureCollection {
     return DEOS_FLOOD_PRONE_AREAS;
+  },
+
+  /** Table records joined with marker coordinates and geocode status. */
+  getRecords(): NcrCriticalAreaRecord[] {
+    const features = new Map(
+      DEOS_FLOOD_PRONE_AREAS.features.map((f) => [f.properties?.id, f]),
+    );
+    return this.getAreas().map((area) => {
+      const feature = features.get(area.id);
+      const coords =
+        feature?.geometry.type === "Point"
+          ? (feature.geometry.coordinates as [number, number])
+          : null;
+      return {
+        id: area.id,
+        index: area.index,
+        deo: area.deo,
+        region: "NCR",
+        province: "NCR",
+        ...parseArea(area),
+        description: area.description,
+        longitude: coords?.[0] ?? null,
+        latitude: coords?.[1] ?? null,
+        status:
+          feature?.properties?.geocodeMethod === "road-lookup"
+            ? "located"
+            : "review",
+      };
+    });
   },
 
   getDeoGroups(): { deo: string; areas: DeosFloodProneArea[] }[] {
