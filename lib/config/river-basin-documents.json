@@ -1,0 +1,741 @@
+{
+  "cagayan": {
+    "feasibility": [
+      {
+        "id": "1Z2uc2JtHcfZ_ASsZzuFzXuiwj7pT9zlG",
+        "title": "FS of Flood Control Project for Lower Cagayan Part 01",
+        "edition": "Report"
+      },
+      {
+        "id": "1AzZY4kIKKNisiHD-ShT9H7hT5W9oNC14",
+        "title": "FS of Flood Control Project for Lower Cagayan Part 02",
+        "edition": "Report"
+      },
+      {
+        "id": "1IWLmVZDzEgQjCYwV6GEX2BjDzEWWZ9PK",
+        "title": "FS of Flood Control Project for Lower Cagayan Part 03",
+        "edition": "Report"
+      },
+      {
+        "id": "138XJGbzdjyHeICwqLNxsYKcJtDvKPBVi",
+        "title": "FS of Flood Control Project for Lower Cagayan Part 04",
+        "edition": "Report"
+      },
+      {
+        "id": "1n1IWdbDDhshea9Wzs6IJsejRtbw-XV1_",
+        "title": "FS of Flood Control Project for Lower Cagayan Part 05",
+        "edition": "Report"
+      },
+      {
+        "id": "1DjBEMAWj7kMsA0fDwC5WBUI6RUyHbP-P",
+        "title": "FS of Flood Control Project for Lower Cagayan Part 06",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1CP-G2AGSuN7E3Gn2qK4tIz0lL-U5HRBO",
+        "title": "MP on Cagayan River Basin Water Resources Development_Part 1",
+        "edition": "Report"
+      },
+      {
+        "id": "1Uja0bv0p7oewQsbPCpom4IncpGHLeuUD",
+        "title": "MP on Cagayan River Basin Water Resources Development_Part 2",
+        "edition": "Report"
+      },
+      {
+        "id": "1hSfzc7ckW7k9k3kwYNrkBjaQ_Hd414VA",
+        "title": "MP on Cagayan River Basin Water Resources Development_Part 3",
+        "edition": "Report"
+      },
+      {
+        "id": "1CRoZY2oO1IWxw0WvEe4_PndU3ohbzzxF",
+        "title": "MP on Cagayan River Basin Water Resources Development_Part 4",
+        "edition": "Report"
+      },
+      {
+        "id": "1tRBkdJT5v07KCOwFJcGFGaL82dFHh3tK",
+        "title": "MP on Cagayan River Basin Water Resources Development_Part 5",
+        "edition": "Report"
+      }
+    ],
+    "unclassified": []
+  },
+  "mindanao": {
+    "feasibility": [
+      {
+        "id": "1d-0CP-HNdExbAerEbPlkxQE_zACn37yz",
+        "title": "Draft FS AlaRB April 2025",
+        "edition": "Report"
+      },
+      {
+        "id": "196L_Pm_4k1-ttrs0Hcu1k5K_7Ffqmp0B",
+        "title": "Feasibility Study Ambal Simuay and Rio Grande de Mindanao (Latest)",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1ATByi2Rk7YbVa6G6CKOcLYPBGPc5xY-j",
+        "title": "Ala Master Plan_Vol1_03312025",
+        "edition": "ADB-CTI 2025"
+      },
+      {
+        "id": "1My29FbwjisS4sPst71i4feDi3CZfms0f",
+        "title": "Mindanao River Basin Integrated Management and Development Exec. Summary Vol 1",
+        "edition": "RBCO-WEC 2014"
+      },
+      {
+        "id": "1h8VOzenxEzbBXrg-tncPTvTPGLQhrn4q",
+        "title": "Mindanao River Basin Integrated Management and Development Master Plan Vol 2",
+        "edition": "RBCO-WEC 2014"
+      },
+      {
+        "id": "1XyAmfPkPHIeW1SgSAtC0YbF-XrL2ZGPR",
+        "title": "Updating of MRB Flood Management MP Main Report",
+        "edition": "Updating MRB - WEC 2017"
+      },
+      {
+        "id": "1ayDL4XtDxtXZS5MAzU3CWiwZzrwZj_pQ",
+        "title": "Updating of MRB Flood Management MP Part 1",
+        "edition": "Updating MRB - WEC 2017"
+      },
+      {
+        "id": "1Xwcxm8-cddsyo7Gr05TpnDZdjdFeGsOT",
+        "title": "Updating of MRB Flood Management MP Part 2",
+        "edition": "Updating MRB - WEC 2017"
+      },
+      {
+        "id": "1LMMMkaK6aeT5550L9mCzokwm4TBPJ9es",
+        "title": "Updating of MRB Flood Management MP Part 3",
+        "edition": "Updating MRB - WEC 2017"
+      },
+      {
+        "id": "1BJKWh4t2aaOH_pMgmNOKvvn6J_8CYUG1",
+        "title": "Updating of MRB Flood Management MP Part 4",
+        "edition": "Updating MRB - WEC 2017"
+      },
+      {
+        "id": "13NmSSIGs_i8_1Y682iBOjt473fbhgNoq",
+        "title": "Updating of MRB Flood Management MP Part 5",
+        "edition": "Updating MRB - WEC 2017"
+      }
+    ],
+    "unclassified": []
+  },
+  "agusan": {
+    "feasibility": [],
+    "masterPlan": [
+      {
+        "id": "11TLJ8mPt3XMov-9wyFbNxAbwqbyFzLxv",
+        "title": "Master Plan for Agusan-River-Basin",
+        "edition": "DENR-ADB-WEC 2008"
+      },
+      {
+        "id": "1X02Wfx6mC3h13XlS1YIBAexZa3frFkuZ",
+        "title": "Study of Countermeasures for Mitigation of Siltation in Tagubo River",
+        "edition": "DPWH-NK 2004"
+      },
+      {
+        "id": "1rhMJjCrGY4wUvTJhzUn1QE3zf5uhk8Oc",
+        "title": "ANNEX_MASTER PLAN FOR AGUSAN RIVER BASIN",
+        "edition": "ExIm Korea-DOWHA 2024"
+      },
+      {
+        "id": "1s_7RrWkr75Aswta6yQ8ixDvv4ToOFlxY",
+        "title": "MASTER PLAN FOR AGUSAN RIVER BASINS",
+        "edition": "ExIm Korea-DOWHA 2024"
+      }
+    ],
+    "unclassified": []
+  },
+  "pampanga": {
+    "feasibility": [
+      {
+        "id": "1bcYMJjoScGP6COll9aVNNvm9g6HEEspc",
+        "title": "Pampanga Delta Development Project FS Part 01",
+        "edition": "JICA 1982"
+      },
+      {
+        "id": "1Bpkcb6geJ5Pdnet5HjzE7R1SDPIrrj9C",
+        "title": "Pampanga Delta Development Project FS Part 02",
+        "edition": "JICA 1982"
+      },
+      {
+        "id": "1Gi2rDv631QMQFLZdYuiJZo5Ch94h0jgQ",
+        "title": "Feasibility Study of Pampanga Delta Development Project Phase II",
+        "edition": "WEC 2021"
+      },
+      {
+        "id": "1XtHOeZ4n8V6scvTuaLoBr_eFSt8wyAVU",
+        "title": "Feasibility Study of Proposed Central Luzon-Pampanga River Floodway",
+        "edition": "WEC 2021"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1uZ6oujwPU6Bl3ZggAwiIxFTXAcJA__KZ",
+        "title": "2025 PRB Draft MP Report",
+        "edition": "KEXIMBANK-KyongHo-2025"
+      },
+      {
+        "id": "19TG6KDQ5zECg0TiPE6fbVHPqTXsDcVTD",
+        "title": "Study_Report_IWRM_Pampanga_River_Basin",
+        "edition": "NWRB-JICA-CTI 2011"
+      }
+    ],
+    "unclassified": []
+  },
+  "agno": {
+    "feasibility": [
+      {
+        "id": "1IfaI_e3Tfdp4IgiUqOcrl6RrQtmnVXTc",
+        "title": "01 AGNO FS Main Report (1 of 2)",
+        "edition": "ADB-Saman 2025"
+      },
+      {
+        "id": "10LefwwC32uNSTsdIo30cEu9wD6AM3i9R",
+        "title": "02 AGNO FS Main Report (2 of 2)",
+        "edition": "ADB-Saman 2025"
+      },
+      {
+        "id": "15cfxvIxSrntdfeYSlIpbCA34J0folb7K",
+        "title": "Study of Agno River Basin Flood Control FS Part 1",
+        "edition": "JICA 1991"
+      },
+      {
+        "id": "1v5NcF-RHOKCxrZkDxNuIsKSzCHVNqT1F",
+        "title": "Study of Agno River Basin Flood Control FS Part 2",
+        "edition": "JICA 1991"
+      },
+      {
+        "id": "1zPAvOsQ9WWZBMo4RkTc8V1yXiUgbj7iR",
+        "title": "Study of Agno River Basin Flood Control FS Part 3",
+        "edition": "JICA 1991"
+      },
+      {
+        "id": "1hgnBF9lGr9duZ9bHOTS_PoNeq-NzDdH4",
+        "title": "01 - Cover Page.doc",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "19LpLY-YOHdCd2JRYyLIQdkr4lmLgvmlL",
+        "title": "ExecutiveSummary_Agno FS Updating.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "12jHGNsGeSefMyZhKtUjHyF8RshPzS_Z7",
+        "title": "PART A PAGE 5 a-3.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "14BrnuRIZOvdl1VM_jChWM8NwQ2LuPedu",
+        "title": "PART A.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1pHiP9mCXmaSQgrXHJAtWsqCcAxq73puD",
+        "title": "PART B-a3.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1G9eayYAQejCUlRu6Wd28GjgWhK9hWO_U",
+        "title": "PART C.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1lmnS3Mi8EIrLu7RIVhGVL9jRu9l_7-qz",
+        "title": "PART D-a3.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1T9ct7iFIKXi2KiPZqya2glKfBaf2B_hG",
+        "title": "PART E.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1BsxwFGCnIKppAsk3FypwhsHoJu58q1XI",
+        "title": "PART F-a3.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1-uebm-30glrWqIXuakjWC-bGwlx2CW5T",
+        "title": "PART G.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1Yq-fMsF0Zzg1S6mgtPK6hHyuj2bp4MiE",
+        "title": "PART H (WORD) a3..doc",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1PS3aLtVUF314Ob0H_nH6NMciAgsTXAq0",
+        "title": "PART H (WORD) a3",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "18zmr572Kz8OeUUgG1ZwE1VSuh3DKFVhb",
+        "title": "PART I.docx",
+        "edition": "PertConsult 2014"
+      },
+      {
+        "id": "1bLsikgPKLCtzmPLfX19b7kqc1aMcSk5V",
+        "title": "TABLE OF CONTENTS FS.docx",
+        "edition": "PertConsult 2014"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1U67mqpqqdUQEiwz9Iqfr4GSm9JCf4mtK",
+        "title": "MP_AGNO (MAY 2026)",
+        "edition": "ADB-Saman 2025"
+      },
+      {
+        "id": "1aET374tFA92KdzUGNdQXWg1N3jTh1TpY",
+        "title": "Study of Agno River Basin Flood Control MP Part 1",
+        "edition": "JICA 1991"
+      },
+      {
+        "id": "12Swyc6LJf0Z4fTckSbOLWYVdpTpgqqmg",
+        "title": "Study of Agno River Basin Flood Control MP Part 2",
+        "edition": "JICA 1991"
+      },
+      {
+        "id": "1ptJ4zesXEWCitwhiPzicBiNEdYFettoH",
+        "title": "Study of Agno River Basin Flood Control Part 3 MP",
+        "edition": "JICA 1991"
+      },
+      {
+        "id": "1f_yClxqDkNMX3uvx4b_VJ6dHY5qodRzw",
+        "title": "Study of Agno River Basin Flood Control Part 4 MP",
+        "edition": "JICA 1991"
+      }
+    ],
+    "unclassified": []
+  },
+  "abra": {
+    "feasibility": [
+      {
+        "id": "1m2_wrk8TcCycmiCyJdRADOMee5QNkReP",
+        "title": "ARB Volume III-Feasibility Study Report",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1974vuqWCa4uNjgio_ZLrkXRJ677pE9Rw",
+        "title": "ARB Volume II-Master Plan Report",
+        "edition": "ADB-EGIS 2024"
+      }
+    ],
+    "unclassified": []
+  },
+  "pasig-marikina": {
+    "feasibility": [
+      {
+        "id": "1-6wDlCvA0TRMoKuya3XNVaaKY2eAtztp",
+        "title": "East Mangahan FS",
+        "edition": "East Mangahan 2007"
+      },
+      {
+        "id": "19MWxnoSKJdx5wnjtfGiDosxoQ2sKU44c",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_01",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "16OFJuN-5ve7dQ2I2OIHrNf3EIumgTObV",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_02",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "18yAjBueS_l4uofhS3Atig-ya0nU6Qv9t",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_03",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1I0aH0gesnSlTZKHOpCzWavSULMtKfpj0",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_04",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "19ZX6Lx9yqRnkzMYCf-L87cpOSJSqm6-1",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_05",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1Peckjyt78buWXEUJBeTMlXcn9K_ET1kC",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_06",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1Q0HULQU-Vmc3_Vmk8_zbRc_aQovMhhE9",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_07",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1qp4yfuHEvdQCB5lLT6txhCLd-WrUiIoP",
+        "title": "Paranaque Spillway FS",
+        "edition": "Paranaque Spillway 1975"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "19MWxnoSKJdx5wnjtfGiDosxoQ2sKU44c",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_01",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "16OFJuN-5ve7dQ2I2OIHrNf3EIumgTObV",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_02",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "18yAjBueS_l4uofhS3Atig-ya0nU6Qv9t",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_03",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1I0aH0gesnSlTZKHOpCzWavSULMtKfpj0",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_04",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "19ZX6Lx9yqRnkzMYCf-L87cpOSJSqm6-1",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_05",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1Peckjyt78buWXEUJBeTMlXcn9K_ET1kC",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_06",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1Q0HULQU-Vmc3_Vmk8_zbRc_aQovMhhE9",
+        "title": "Study on Flood Control and Drainage Project in Metro Manila_07",
+        "edition": "JICA 1990"
+      },
+      {
+        "id": "1WAUJCV31saqY8yYQKv38R1rjuxhfjfYu",
+        "title": "The Preparatory Study for Pasig-Marikina Channel Improvement Project Part 1",
+        "edition": "JICA 2011"
+      },
+      {
+        "id": "11pQzHeawzcF2LpeMnNhqQ4sn6hXh3VrG",
+        "title": "The Preparatory Study for Pasig-Marikina Channel Improvement Project Part 2",
+        "edition": "JICA 2011"
+      },
+      {
+        "id": "13KtUFL54J4UhJRpyg1dQVf5QhQ97MJlb",
+        "title": "The Preparatory Study for Pasig-Marikina Channel Improvement Project Part 3",
+        "edition": "JICA 2011"
+      },
+      {
+        "id": "1MTlZTT15DowNihEZpPLsiWxwwDRGNpj7",
+        "title": "MP for Flood Management in Metro Manila and Surrounding Areas",
+        "edition": "Worldbank 2013"
+      }
+    ],
+    "unclassified": []
+  },
+  "bicol": {
+    "feasibility": [],
+    "masterPlan": [
+      {
+        "id": "1dd3rrLaN9bmKX6oRL_zPaLYDvmTdLSHS",
+        "title": "July 2025 BRB Draft MP Report",
+        "edition": "KEXIMBANK-KyongHo-2025"
+      }
+    ],
+    "unclassified": []
+  },
+  "apayao-abulug": {
+    "feasibility": [
+      {
+        "id": "1NfmI8pu-QKz2pq4xIqP6BbT2OnhgOp7X",
+        "title": "AARB Volume III-Feasibility Study Report",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1X9jkoShiymmJH89Ajsh4PAUfej4ktvti",
+        "title": "AARB MP II- Part I",
+        "edition": "Report"
+      },
+      {
+        "id": "1290sHqnrYd9Gxl82_g61DyeiuTLSRL-M",
+        "title": "AARB MP II- Part II",
+        "edition": "Report"
+      },
+      {
+        "id": "1O8whDIIRbMpYJtX-4oTtIXhuCzRAP-kD",
+        "title": "AARB MP II-Part III",
+        "edition": "Report"
+      }
+    ],
+    "unclassified": []
+  },
+  "tagum-libuganon": {
+    "feasibility": [
+      {
+        "id": "1wXkvd4qcytGZy2TgDUWH3qeO63TgKNzd",
+        "title": "TLRB Volume III-Feasibility Study Report",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1Jpsjr3lzNi3IKgafHoj2I1L1VHqeefJt",
+        "title": "Vol II_MP_TLRB_2.1",
+        "edition": "Report"
+      },
+      {
+        "id": "1e97gn53y8bSWt7JzKnUmoo_x2Mtf0TXw",
+        "title": "Vol II_MP_TLRB_2.2",
+        "edition": "Report"
+      },
+      {
+        "id": "19vtZUQDggHvGW1iVgVbhGhKbHdmyxAUq",
+        "title": "Vol II_MP_TLRB_2.3",
+        "edition": "Report"
+      }
+    ],
+    "unclassified": []
+  },
+  "ilog-hilabangan": {
+    "feasibility": [
+      {
+        "id": "1WZm4WkJwkd9ZAbSRstcrXo7zvSEOEMnW",
+        "title": "Ilog Hilabangan Feasibility Study",
+        "edition": "ADB-CTI 2024"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1Bnx4AtZwJWiz-HKfQIudydWisncP41as",
+        "title": "Ilog-Hilabangan Master Plan",
+        "edition": "ADB-CTI 2024"
+      },
+      {
+        "id": "1r7XFi7SgVROhPwQlrnUfjAm2wiP1IOiJ",
+        "title": "Ilog Hilabangan RB Flood Control MP Part 1",
+        "edition": "JICA-CTI 1991"
+      },
+      {
+        "id": "1dFTbtYrdzCe9hC-mRxkJVIsQw_HnG981",
+        "title": "Ilog Hilabangan RB Flood Control MP Part 2",
+        "edition": "JICA-CTI 1991"
+      },
+      {
+        "id": "1VEsSxS_kI28RPr2p6HK7qwetn1doZBUL",
+        "title": "Ilog Hilabangan RB Flood Control MP Part 3",
+        "edition": "JICA-CTI 1991"
+      },
+      {
+        "id": "1rH02ZQIfrS0d7PwpW6ahPPyCaMl7LQlO",
+        "title": "Ilog Hilabangan RB Flood Control MP Part 4",
+        "edition": "JICA-CTI 1991"
+      }
+    ],
+    "unclassified": []
+  },
+  "panay": {
+    "feasibility": [
+      {
+        "id": "1BdTjhdWXGR-HJ5IKdw03XwQwrmwqkQOq",
+        "title": "ANNEX_FEASIBILITY STUDY FOR PANAY RIVER BASIN",
+        "edition": "ExIm Korea-DOWHA 2024"
+      },
+      {
+        "id": "1AqbnzVUeRkfqHI0qCAGUegA5xTzSRmpc",
+        "title": "FEASIBILITY STUDY FOR PANAY RIVER BASIN",
+        "edition": "ExIm Korea-DOWHA 2024"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "11QChXrWarQ9pi-lA0WR5XlJvS7fxrhJ_",
+        "title": "ANNEX_ MASTER PLAN FOR PANAY RIVER BASIN",
+        "edition": "ExIm Korea-DOWHA 2024"
+      },
+      {
+        "id": "1urs5oNqYc-wxDhz7Rova8fDKrw8L1ro-",
+        "title": "MASTER PLAN FOR PANAY RIVER BASIN",
+        "edition": "ExIm Korea-DOWHA 2024"
+      },
+      {
+        "id": "1yONDIJ9_55YQrltt_wSwZsoGY2Y6huvq",
+        "title": "Panay RB Wide Flood Control MP Part 1",
+        "edition": "JICA 1985"
+      },
+      {
+        "id": "1Mm-QwRqwAZupRJert0jP9GPdDqYamtCf",
+        "title": "Panay RB Wide Flood Control MP Part 2",
+        "edition": "JICA 1985"
+      },
+      {
+        "id": "1ypMKb563COHFl5WvHvdXBH0O1Puq9bLf",
+        "title": "Panay RB Wide Flood Control MP Part 3",
+        "edition": "JICA 1985"
+      },
+      {
+        "id": "1frj_N-kmxjmBwP2yQgyUVu0ZQYakdmC-",
+        "title": "Panay RB Wide Flood Control MP Part 4",
+        "edition": "JICA 1985"
+      },
+      {
+        "id": "1U9i24KHpJVXjX4NYrVSmZGwolRP5ESJ-",
+        "title": "Panay RB Wide Flood Control MP Part 5",
+        "edition": "JICA 1985"
+      }
+    ],
+    "unclassified": []
+  },
+  "tagoloan": {
+    "feasibility": [
+      {
+        "id": "1COyrgVKS_VaQQL_xqIWm02_24sErohFY",
+        "title": "Feasibility Study on Tagoloan 11999414_01",
+        "edition": "FRIMP CTI - Main Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1_iqIb6OLTOzRIUrlVvsPq2Eby-U2KJdm",
+        "title": "GEDJR10012 SectorLoanDRM 02",
+        "edition": "FRIMP CTI - Main Report"
+      }
+    ],
+    "unclassified": [
+      {
+        "id": "1xp7UQowKycrTE1pO4PRjIAknyF_XgrEl",
+        "title": "TRB.Vol2Part1.MainReport",
+        "edition": "RBCO"
+      },
+      {
+        "id": "1tH-W5cL4J__AIQVsQ9GQopczucDWh-DF",
+        "title": "TRB.Vol2Part2.MainReport",
+        "edition": "RBCO"
+      }
+    ]
+  },
+  "ranao-agus": {
+    "feasibility": [
+      {
+        "id": "15FPJVNxfuUnuz5omfwXups7OzCZDrKc8",
+        "title": "RARB Volume III-Feasibility Study Report",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "14jgMjCU2qXOkaAuBSWnrSJcayAcI93Hg",
+        "title": "Vol II_MP_RARB_2.1",
+        "edition": "Report"
+      },
+      {
+        "id": "1xUnAcD9HlqLG7Ma0MeUGv8LJqGao3-Mv",
+        "title": "Vol II_MP_RARB_2.2",
+        "edition": "Report"
+      },
+      {
+        "id": "1-PvPVxDjf26XjQ7QiFR1OOpYEcEH7WaQ",
+        "title": "Vol II_MP_RARB_2.3",
+        "edition": "Report"
+      }
+    ],
+    "unclassified": []
+  },
+  "davao": {
+    "feasibility": [],
+    "masterPlan": [],
+    "unclassified": [
+      {
+        "id": "1PsjEIXiFw4pecxfiG456PZx6mKq9CbBL",
+        "title": "MP and FS on Flood Control and Drainage in Davao City",
+        "edition": "Report"
+      }
+    ]
+  },
+  "cagayan-de-oro": {
+    "feasibility": [
+      {
+        "id": "1lxdvvRThqvEJNyhlXEkyjcy5pDoYzpD1",
+        "title": "JICA CDO_12150157_02",
+        "edition": "JICA 2014"
+      },
+      {
+        "id": "1FRta1P0IH2gvllA3gBu07g27lbcDYWbE",
+        "title": "FS of Flood Control and Drainage Projects on CDO RB ",
+        "edition": "Woodfields 2011"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1PxhMRJr7cDdu_za8IDGrC4FL9ctc0TdR",
+        "title": "JICA CDO_12150157_01",
+        "edition": "JICA 2014"
+      },
+      {
+        "id": "1R8GhvsaNgR1H8_AJPsPJPMhSWGDelFR_",
+        "title": "MP of Flood Control and Drainage Projects on CDO RB ",
+        "edition": "Woodfields 2011"
+      }
+    ],
+    "unclassified": []
+  },
+  "jalaur": {
+    "feasibility": [
+      {
+        "id": "1Yb0VZluXN9kHFeMs9CYYMHZNbwKQzgVV",
+        "title": "JRB Volume III-Feasibility Study Report",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "15u6Uae4pDIFJzbxq_GPl-yoV5oe5ST-c",
+        "title": "JRB MP Vol. II- Part I",
+        "edition": "Report"
+      },
+      {
+        "id": "1alqvhmYDUxUsgWfZ0eviKdEPyYnI-A_s",
+        "title": "JRB MP Vol. II- Part II",
+        "edition": "Report"
+      },
+      {
+        "id": "1892LskgNctmJUwLYIqbh2KLh2IUQIHOX",
+        "title": "JRB MP Vol. II- Part IIII",
+        "edition": "Report"
+      }
+    ],
+    "unclassified": []
+  },
+  "buayan-malungon": {
+    "feasibility": [
+      {
+        "id": "1C9e1yQrEflEQd0-ZY9I2PlRX5rG282iW",
+        "title": "BMRB Volume III-Feasibility Study Report",
+        "edition": "Report"
+      }
+    ],
+    "masterPlan": [
+      {
+        "id": "1KpHviFgI55gVPic6hAnvpKVguCqt9IjC",
+        "title": "BMRB MP Vol. II- Part I",
+        "edition": "Report"
+      },
+      {
+        "id": "19ir_D11_tHEGbDcAdG9BxU02_G9UTnyD",
+        "title": "BMRB MP Vol. II- Part II",
+        "edition": "Report"
+      },
+      {
+        "id": "12UbEuMSoqbVFvDqD7xeE-DFASmR7VQ1T",
+        "title": "BMRB MP Vol. II- Part III",
+        "edition": "Report"
+      }
+    ],
+    "unclassified": []
+  }
+}

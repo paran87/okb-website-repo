@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Mountain } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
 import { MAJOR_RIVER_BASINS } from "@/lib/config/river-basins";
 import { ROUTES } from "@/lib/constants";
+import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "River Basin",
-  description: "The 18 major river basins and their master plan and feasibility study files.",
+  description:
+    "The 18 major river basins and their feasibility studies and master plans.",
 };
 
 export default function RiverBasinPage() {
@@ -15,7 +16,7 @@ export default function RiverBasinPage() {
     <div className="space-y-6">
       <PageHeader
         title="River Basin"
-        description="Eighteen major river basins. Open a basin for its master plan and feasibility study files."
+        description="Eighteen major river basins. Open a basin to read its feasibility study and master plan."
         breadcrumbs={[
           { label: "Dashboard", href: ROUTES.dashboard },
           { label: "River Basin" },
@@ -26,20 +27,23 @@ export default function RiverBasinPage() {
           <li key={basin.slug}>
             <Link
               href={`${ROUTES.riverBasin}/${basin.slug}`}
-              className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-primary/40 hover:bg-muted/40"
+              className="border-border bg-card hover:border-primary/40 hover:bg-muted/40 flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
             >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-sm font-semibold text-primary">
+              <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-md text-sm font-semibold">
                 {basin.number}
               </span>
               <span className="min-w-0">
-                <span className="block truncate font-medium text-foreground">
+                <span className="text-foreground block truncate font-medium">
                   {basin.label}
                 </span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="text-muted-foreground block text-xs">
                   Major river basin
                 </span>
               </span>
-              <Mountain className="ml-auto size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <Mountain
+                className="text-muted-foreground ml-auto size-4 shrink-0"
+                aria-hidden
+              />
             </Link>
           </li>
         ))}

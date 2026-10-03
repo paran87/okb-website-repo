@@ -118,12 +118,3 @@ export type MajorRiverBasin = (typeof MAJOR_RIVER_BASINS)[number];
 export function getRiverBasin(slug: string): MajorRiverBasin | undefined {
   return MAJOR_RIVER_BASINS.find((basin) => basin.slug === slug);
 }
-
-export function riverBasinFolderUrl(folderId: string): string {
-  return `https://drive.google.com/drive/folders/${folderId}`;
-}
-
-/** Public folder listing Google allows other sites to frame. */
-export function riverBasinEmbedUrl(folderId: string): string {
-  return `https://drive.google.com/embeddedfolderview?id=${folderId}#list`;
-}
