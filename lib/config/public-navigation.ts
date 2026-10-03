@@ -17,11 +17,6 @@ export const PUBLIC_NAV_ITEMS: readonly PublicNavItem[] = [
     description: "Policy basis, principles, and the operational cycle",
   },
   {
-    label: "Dredger Status",
-    href: PUBLIC_ROUTES.dredgerStatus,
-    description: "Live dredger deployment and operational status",
-  },
-  {
     label: "Accomplishment",
     href: PUBLIC_ROUTES.accomplishment,
     description: "Outputs and outcomes from the live dashboard",

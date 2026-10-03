@@ -16,7 +16,6 @@ export const PUBLIC_ROUTES = {
   about: "/about",
   initiatives: "/initiatives",
   framework: "/framework",
-  dredgerStatus: "/dredger-status",
   accomplishment: "/accomplishment",
   advisories: "/advisories",
   profile: "/profile",
@@ -31,10 +30,6 @@ export const FRAMEWORK_DOCUMENT_HREF =
 /** Live Oplan Kontra Baha accomplishments dashboard (Google Apps Script). */
 export const ACCOMPLISHMENT_DASHBOARD_URL =
   "https://script.google.com/macros/s/AKfycbzX6AKleN8DhDTU5Re8kOwQk4lF71YRUgl9ZjgUJv4marmOFWbTw-uweiSK5tr1kl3A/exec";
-
-/** Live dredger status dashboard (Google Apps Script). */
-export const DREDGER_STATUS_DASHBOARD_URL =
-  "https://script.google.com/macros/s/AKfycbwNtjYcdf7oLwfE0miNFwesRGLndcZmOF12XTNKubEUN37vOsytQB3czx-3faXQUnD3/exec";
 
 /** Floodwatch drainage and flood monitoring dashboard. */
 export const FLOODWATCH_URL = "https://floodwatch-ten.vercel.app/";

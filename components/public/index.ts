@@ -9,7 +9,6 @@ export * from "./public-page-container";
 export * from "./public-page-section";
 export * from "./profile-gallery";
 export * from "./accomplishment-dashboard";
-export * from "./dredger-dashboard";
 export * from "./okb-framework-story";
 export * from "./framework-ridge-to-reef";
 export * from "./framework-cycle";

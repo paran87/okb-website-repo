@@ -54,8 +54,18 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/activity",
-        destination: "/dredger-status",
+        destination: "/",
         permanent: true,
+      },
+      {
+        source: "/dredger-status",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/dredger-status/:path*",
+        destination: "/",
+        permanent: false,
       },
       ...legacyCommandPaths.map((path) => ({
         source: `/${path}`,

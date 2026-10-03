@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Ship,
   ArrowUpRight,
   BarChart3,
   BookOpen,
@@ -41,11 +40,6 @@ const EXPLORE_LINKS: readonly {
 }[] = [
   { href: PUBLIC_ROUTES.about, label: "About", icon: Info },
   { href: PUBLIC_ROUTES.framework, label: "OKB Framework", icon: FileText },
-  {
-    href: PUBLIC_ROUTES.dredgerStatus,
-    label: "Dredger Status",
-    icon: Ship,
-  },
   {
     href: PUBLIC_ROUTES.accomplishment,
     label: "Accomplishment",
