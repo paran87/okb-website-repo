@@ -41,25 +41,6 @@ const ZOOM_CIRCLE_RADIUS: [
   10,
 ];
 
-/** City weather dots are the main subject of the weather map — keep them large. */
-const WEATHER_CIRCLE_RADIUS = [
-  "interpolate",
-  ["linear"],
-  ["zoom"],
-  4,
-  4.5,
-  6,
-  6,
-  8,
-  7.5,
-  10,
-  9,
-  12,
-  11,
-  15,
-  14,
-] as const;
-
 const ZOOM_CIRCLE_STROKE: [
   "interpolate",
   ["linear"],
@@ -227,41 +208,17 @@ export function buildLayerSpecs(config: LayerConfig) {
           type: "circle" as const,
           source: sourceId,
           paint: {
-            "circle-radius": isWeatherStation
-              ? [...WEATHER_CIRCLE_RADIUS]
-              : [...ZOOM_CIRCLE_RADIUS],
-            "circle-color": isWeatherStation
+            "circle-radius": [...ZOOM_CIRCLE_RADIUS],
+            "circle-color": isFloodProne
               ? [
                   "match",
-                  ["get", "condition"],
-                  "monsoon-rain",
-                  "#dc2626",
-                  "thunderstorms",
-                  "#ea580c",
-                  "rain",
+                  ["get", "geocodeMethod"],
+                  "road-lookup",
                   "#2563eb",
-                  "rain-showers",
-                  "#0d9488",
-                  "cloudy",
-                  "#64748b",
-                  "partly-cloudy",
-                  "#84cc16",
-                  "sunny",
-                  "#eab308",
-                  "#64748b",
+                  "#f97316",
                 ]
-              : isFloodProne
-                ? [
-                    "match",
-                    ["get", "geocodeMethod"],
-                    "road-lookup",
-                    "#2563eb",
-                    "#f97316",
-                  ]
-                : "#22c55e",
-            "circle-stroke-width": isWeatherStation
-              ? 2
-              : [...ZOOM_CIRCLE_STROKE],
+              : "#22c55e",
+            "circle-stroke-width": [...ZOOM_CIRCLE_STROKE],
             "circle-stroke-color": "#ffffff",
             "circle-opacity": config.opacity,
           },
