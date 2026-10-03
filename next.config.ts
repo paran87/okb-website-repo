@@ -22,7 +22,6 @@ const legacyCommandPaths = [
   "dashboard",
   "flood-monitoring",
   "incidents",
-  "critical-areas",
   "flood-prone",
   "drainages",
   "roads",

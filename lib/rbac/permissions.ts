@@ -16,8 +16,6 @@ export const Permission = {
   INCIDENT_UPDATE: "incident:update",
   INCIDENT_DELETE: "incident:delete",
 
-  CRITICAL_AREA_VIEW: "critical-area:view",
-  CRITICAL_AREA_MANAGE: "critical-area:manage",
 
   FLOOD_PRONE_VIEW: "flood-prone:view",
   FLOOD_PRONE_MANAGE: "flood-prone:manage",
@@ -55,7 +53,6 @@ const VIEW_PERMISSIONS: readonly Permission[] = [
   Permission.DASHBOARD_VIEW,
   Permission.MAP_VIEW,
   Permission.INCIDENT_VIEW,
-  Permission.CRITICAL_AREA_VIEW,
   Permission.FLOOD_PRONE_VIEW,
   Permission.EQUIPMENT_VIEW,
   Permission.PROJECT_VIEW,
@@ -76,7 +73,6 @@ const DISTRICT_ENGINEER_PERMISSIONS: readonly Permission[] = [
   ...FIELD_ENGINEER_PERMISSIONS,
   Permission.EQUIPMENT_MANAGE,
   Permission.PROJECT_MANAGE,
-  Permission.CRITICAL_AREA_MANAGE,
   Permission.FLOOD_PRONE_MANAGE,
   Permission.REPORT_GENERATE,
 ];
