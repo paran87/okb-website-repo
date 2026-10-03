@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 import blobManifest from "./lib/config/river-basin-blob.json";
-import waterwayTiles from "./lib/config/waterway-tiles.json";
 
 /**
  * Next.js configuration for the OKB Command Center.
@@ -108,20 +107,13 @@ const nextConfig: NextConfig = {
         source: "/studies/:file",
         destination: `${studyBlobOrigin}/river-basin-studies/:file`,
       });
-      // Pre-rendered waterway river tiles (same Blob store).
-      if (waterwayTiles.enabled) {
-        rewrites.push({
-          source: "/waterway-tiles/:z/:x/:y",
-          destination: `${studyBlobOrigin}/waterway-tiles/${waterwayTiles.version}/:z/:x/:y.png`,
-        });
-      }
     }
     return rewrites;
   },
   async headers() {
     return [
       {
-        source: "/waterway-tiles/:z/:x/:y",
+        source: "/waterway-tiles/:path*",
         headers: [
           {
             key: "Cache-Control",

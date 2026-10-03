@@ -3,6 +3,9 @@
 Requests /api/waterways/tiles/{z}/{x}/{y} (the app renders each tile from the DENR
 map service) and saves PNG files; fully transparent tiles become 1x1 blanks.
 
+Output goes to public/waterway-tiles/<version>/ (bump "version" in
+lib/config/waterway-tiles.json after re-rendering so caches refresh).
+
 Usage: python3 scripts/waterway-tiles/render.py OUT_DIR [BASE_URL] [MIN_Z] [MAX_Z] [WORKERS]
 Requires: pip install pillow
 """

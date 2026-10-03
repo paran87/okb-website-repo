@@ -32,6 +32,8 @@ interface WaterwaysMapProps {
   riverTilesUrl: string;
   /** Serve the default view from pre-rendered tiles up to `staticMaxZoom`. */
   useStatic: boolean;
+  /** URL template of the pre-rendered tiles (files in public/waterway-tiles). */
+  staticTilesUrl: string;
   staticMaxZoom: number;
   overlays: Record<OverlayId, OverlayState>;
   highlight: FeatureCollection;
@@ -75,6 +77,7 @@ export function WaterwaysMap(props: WaterwaysMapProps) {
 function WaterwaysLayers({
   riverTilesUrl,
   useStatic,
+  staticTilesUrl,
   staticMaxZoom,
   overlays,
   highlight,
@@ -157,7 +160,7 @@ function WaterwaysLayers({
         const id = rasterId(`rivers-static-${u.code}`);
         map.addSource(id, {
           type: "raster",
-          tiles: [`${origin()}/waterway-tiles/{z}/{x}/{y}`],
+          tiles: [`${origin()}${staticTilesUrl}`],
           tileSize: 512,
           minzoom: 0,
           maxzoom: staticMaxZoom,
@@ -315,6 +318,7 @@ function WaterwaysLayers({
     styleVersion,
     riverTilesUrl,
     useStatic,
+    staticTilesUrl,
     staticMaxZoom,
     basinPoints,
   ]);

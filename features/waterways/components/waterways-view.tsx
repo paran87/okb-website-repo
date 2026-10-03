@@ -293,6 +293,7 @@ export function WaterwaysView() {
       <WaterwaysMap
         riverTilesUrl={riverTilesUrl}
         useStatic={waterwayTiles.enabled && !filtering}
+        staticTilesUrl={`/waterway-tiles/${waterwayTiles.version}/{z}/{x}/{y}.png`}
         staticMaxZoom={waterwayTiles.maxZoom}
         overlays={overlays}
         highlight={highlight}
