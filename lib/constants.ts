@@ -55,6 +55,7 @@ export const ROUTES = {
   riverBasin: "/command/river-basin",
   waterways: "/command/waterways",
   projects: "/command/projects",
+  operations: "/command/operations",
   equipment: "/command/equipment",
   weather: "/command/weather",
   reports: "/command/reports",

@@ -29,6 +29,7 @@ const legacyCommandPaths = [
   "river-basin",
   "waterways",
   "projects",
+  "operations",
   "equipment",
   "weather",
   "reports",
