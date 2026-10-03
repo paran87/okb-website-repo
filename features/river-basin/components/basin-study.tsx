@@ -117,25 +117,6 @@ export function BasinStudy({
             key={activeDocument.id}
             fileId={activeDocument.id}
             title={activeDocument.title}
-            onReady={() => {
-              const documents = activeEdition?.documents ?? [];
-              const index = documents.findIndex(
-                (document) => document.id === activeDocument.id,
-              );
-              const next = index >= 0 ? documents[index + 1] : undefined;
-              const otherDocuments =
-                tab === "feasibility"
-                  ? studies.masterPlan
-                  : studies.feasibility;
-              const other = groupByEdition(otherDocuments)[0]?.documents[0];
-              const upcoming = [next, other].filter(
-                (document): document is StudyDocument =>
-                  document !== undefined && document.id !== activeDocument.id,
-              );
-              for (const document of upcoming) {
-                void fetch(`/api/river-basin/files/${document.id}`);
-              }
-            }}
           />
         ) : (
           <EmptyState
