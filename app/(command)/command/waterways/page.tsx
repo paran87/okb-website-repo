@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { GitBranch } from "lucide-react";
-import { ModulePage } from "@/components/layout/module-page";
+import { WaterwaysWorkspace } from "./waterways-workspace";
 
-export const metadata: Metadata = { title: "Waterways" };
+export const metadata: Metadata = {
+  title: "Waterways",
+  description:
+    "Live city waterway monitoring. Bacoor City Waterways is available now.",
+};
 
 export default function WaterwaysPage() {
-  return (
-    <ModulePage
-      title="Waterways"
-      description="River levels, drainage systems, and waterway infrastructure monitoring."
-      icon={GitBranch}
-    />
-  );
+  return <WaterwaysWorkspace />;
 }

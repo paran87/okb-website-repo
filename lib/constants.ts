@@ -39,6 +39,10 @@ export const DREDGER_STATUS_DASHBOARD_URL =
 /** Floodwatch drainage and flood monitoring dashboard. */
 export const FLOODWATCH_URL = "https://floodwatch-ten.vercel.app/";
 
+/** Bacoor City waterways monitor. */
+export const BACOOR_CITY_WATERWAYS_URL =
+  "https://bacoor-city-waterways.vercel.app/";
+
 /** Command Center route paths (single source of truth for navigation + links). */
 export const ROUTES = {
   dashboard: "/command",
