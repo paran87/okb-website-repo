@@ -9,12 +9,21 @@ interface SearchBoxProps
   value: string;
   onChange: (value: string) => void;
   onClear?: () => void;
+  inputClassName?: string;
 }
 
 /** Controlled search input with icon and clear affordance. */
 export const SearchBox = forwardRef<HTMLInputElement, SearchBoxProps>(
   (
-    { value, onChange, onClear, placeholder = "Search…", className, ...props },
+    {
+      value,
+      onChange,
+      onClear,
+      placeholder = "Search…",
+      className,
+      inputClassName,
+      ...props
+    },
     ref,
   ) => {
     return (
@@ -30,8 +39,11 @@ export const SearchBox = forwardRef<HTMLInputElement, SearchBoxProps>(
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
-          className="h-10 w-full rounded-lg border border-border bg-card pl-9 pr-9 text-body text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40"
           {...props}
+          className={cn(
+            "h-10 w-full rounded-lg border border-border bg-card pl-9 pr-9 text-body text-foreground outline-none transition-colors placeholder:text-[#5b6b82] placeholder:opacity-100 focus:border-ring focus:ring-2 focus:ring-ring/40 dark:placeholder:text-[#cbd5e1] [&::-webkit-search-cancel-button]:appearance-none",
+            inputClassName,
+          )}
         />
         {value ? (
           <button
