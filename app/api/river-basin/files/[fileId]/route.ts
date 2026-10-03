@@ -1,7 +1,8 @@
 import { isRiverBasinFile } from "@/lib/river-basin/documents";
-import { fetchDriveFile, webStream } from "@/lib/river-basin/drive-file";
+import { downloadDriveFile } from "@/lib/river-basin/drive-file";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /** Stream a published river-basin study so the page can render it in place. */
 export async function GET(
@@ -14,20 +15,20 @@ export async function GET(
   }
 
   try {
-    const file = await fetchDriveFile(fileId);
-    if (file.status !== 200) {
+    const file = await downloadDriveFile(fileId);
+    if (!file.subarray(0, 5).equals(Buffer.from("%PDF-"))) {
       return new Response("Study file is unavailable", { status: 502 });
     }
 
-    const headers = new Headers({
-      "Content-Type": "application/octet-stream",
-      "Cache-Control": "private, max-age=3600",
-      "X-Content-Type-Options": "nosniff",
+    return new Response(new Uint8Array(file), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length": String(file.byteLength),
+        "Cache-Control": "private, max-age=3600",
+        "X-Content-Type-Options": "nosniff",
+      },
     });
-    if (file.contentLength)
-      headers.set("Content-Length", String(file.contentLength));
-
-    return new Response(webStream(file.stream), { status: 200, headers });
   } catch {
     return new Response("Study file is unavailable", { status: 502 });
   }
