@@ -24,6 +24,7 @@ async function worker() {
     const body = await readFile(path.join(dir, file));
     const blob = await put(`river-basin-studies/${id}.pdf`, body, {
       access: "public",
+      multipart: body.length > 20 * 1024 * 1024,
       contentType: "application/pdf",
       addRandomSuffix: false,
       allowOverwrite: true,
