@@ -110,7 +110,6 @@ export function OperationsDashboard() {
               <LeftOperationsPanel
                 className="min-h-[220px] flex-1 xl:min-h-0"
                 incidents={data.incidents}
-                criticalAreas={data.criticalAreas}
                 fieldReports={data.fieldReports}
                 roadClosures={data.roadClosures}
               />

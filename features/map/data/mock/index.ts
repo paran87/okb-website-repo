@@ -84,57 +84,6 @@ export const MOCK_INCIDENTS: FeatureCollection = {
   ],
 };
 
-/** Mock critical area polygons. */
-export const MOCK_CRITICAL_AREAS: FeatureCollection = {
-  type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      properties: {
-        id: "ca-001",
-        title: "Marikina River Basin",
-        status: "Level 3",
-        priority: "critical",
-        category: "critical-areas",
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [
-          [
-            [121.07, 14.64],
-            [121.1, 14.64],
-            [121.1, 14.67],
-            [121.07, 14.67],
-            [121.07, 14.64],
-          ],
-        ],
-      },
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "ca-002",
-        title: "Tullahan Flood Plain",
-        status: "Level 2",
-        priority: "high",
-        category: "critical-areas",
-      },
-      geometry: {
-        type: "Polygon",
-        coordinates: [
-          [
-            [120.99, 14.7],
-            [121.02, 14.7],
-            [121.02, 14.73],
-            [120.99, 14.73],
-            [120.99, 14.7],
-          ],
-        ],
-      },
-    },
-  ],
-};
-
 /** Mock flood-prone zone polygons. */
 export const MOCK_FLOOD_ZONES: FeatureCollection = {
   type: "FeatureCollection",
@@ -355,7 +304,6 @@ export const MOCK_EQUIPMENT: FeatureCollection = {
 
 export const MOCK_GEOJSON_REGISTRY = {
   incidents: MOCK_INCIDENTS,
-  "critical-areas": MOCK_CRITICAL_AREAS,
   "flood-zones": MOCK_FLOOD_ZONES,
   "deos-flood-prone-areas": DEOS_FLOOD_PRONE_AREAS,
   roads: MOCK_ROADS,

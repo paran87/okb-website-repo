@@ -215,7 +215,6 @@ model User {
   sessions                Session[]
   reportedIncidents       FloodIncident[]
   floodResponses          FloodResponse[]
-  criticalAreaInspections CriticalAreaInspection[]
   equipmentAssignments    EquipmentAssignment[]
   droneFlights            DroneFlight[]
   dispatchesCommanded     EmergencyDispatch[]
@@ -417,7 +416,6 @@ model City {
   waterways       Waterway[]
   drainageSystems DrainageSystem[]
   pumpStations    PumpStation[]
-  criticalAreas   CriticalArea[]
   floodProneAreas FloodProneArea[]
   projects        Project[]
   weatherStations WeatherStation[]
@@ -745,99 +743,6 @@ model FloodResponse {
 }
 
 // =============================================================================
-// CRITICAL AREAS
-// =============================================================================
-
-/// A monitored high-risk critical area (GIS Polygon).
-model CriticalArea {
-  id          String  @id @default(uuid()) @db.Uuid
-  code        String  @unique
-  name        String
-  description String?
-  riskLevelId String? @db.Uuid
-  cityId      String? @db.Uuid
-  geometry    Unsupported("geometry(Polygon, 4326)")?
-
-  riskLevel   FloodRiskLevel? @relation(fields: [riskLevelId], references: [id])
-  city        City?           @relation(fields: [cityId], references: [id])
-  inspections CriticalAreaInspection[]
-  photos      CriticalAreaPhoto[]
-  history     CriticalAreaHistory[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-  createdBy String?   @db.Uuid
-  updatedBy String?   @db.Uuid
-
-  @@index([riskLevelId])
-  @@index([cityId])
-  @@index([deletedAt])
-  @@index([geometry], type: Gist)
-}
-
-/// Inspection record for a critical area.
-model CriticalAreaInspection {
-  id            String           @id @default(uuid()) @db.Uuid
-  criticalAreaId String          @db.Uuid
-  inspectorId   String?          @db.Uuid
-  result        InspectionResult @default(NEEDS_ATTENTION)
-  findings      String?
-  inspectedAt   DateTime         @default(now())
-
-  criticalArea CriticalArea @relation(fields: [criticalAreaId], references: [id], onDelete: Cascade)
-  inspector    User?        @relation(fields: [inspectorId], references: [id])
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-  createdBy String?   @db.Uuid
-  updatedBy String?   @db.Uuid
-
-  @@index([criticalAreaId])
-  @@index([inspectorId])
-  @@index([inspectedAt])
-}
-
-/// Photo attached to a critical area.
-model CriticalAreaPhoto {
-  id             String  @id @default(uuid()) @db.Uuid
-  criticalAreaId String  @db.Uuid
-  fileId         String  @db.Uuid
-  caption        String?
-
-  criticalArea CriticalArea @relation(fields: [criticalAreaId], references: [id], onDelete: Cascade)
-  file         File         @relation(fields: [fileId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdBy String?  @db.Uuid
-  updatedBy String?  @db.Uuid
-
-  @@index([criticalAreaId])
-  @@index([fileId])
-}
-
-/// Append-only history for a critical area.
-model CriticalAreaHistory {
-  id             String   @id @default(uuid()) @db.Uuid
-  criticalAreaId String   @db.Uuid
-  change         String
-  note           String?
-  recordedAt     DateTime @default(now())
-
-  criticalArea CriticalArea @relation(fields: [criticalAreaId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  createdBy String?  @db.Uuid
-  updatedBy String?  @db.Uuid
-
-  @@index([criticalAreaId])
-  @@index([recordedAt])
-}
-
-// =============================================================================
 // FLOOD-PRONE AREAS
 // =============================================================================
 
@@ -851,7 +756,6 @@ model FloodRiskLevel {
   level       Int     @default(0)
   isActive    Boolean @default(true)
 
-  criticalAreas   CriticalArea[]
   floodProneAreas FloodProneArea[]
 
   createdAt DateTime @default(now())
@@ -1577,7 +1481,6 @@ model File {
   users               User[]
   floodIncidentPhotos FloodIncidentPhoto[]
   floodIncidentVideos FloodIncidentVideo[]
-  criticalAreaPhotos  CriticalAreaPhoto[]
   projectPhotos       ProjectPhoto[]
   projectDocuments    ProjectDocument[]
   generatedFiles      GeneratedFile[]

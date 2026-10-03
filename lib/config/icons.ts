@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Waves,
-  ShieldAlert,
   Droplets,
   Gauge,
   Truck,
@@ -39,7 +38,6 @@ import {
 export const AppIcons = {
   dashboard: LayoutDashboard,
   floodMonitoring: Waves,
-  criticalAreas: ShieldAlert,
   floodProne: Droplets,
   drainages: Network,
   pumpingStations: Gauge,

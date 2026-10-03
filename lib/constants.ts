@@ -52,7 +52,6 @@ export const ROUTES = {
   dashboardAlt: "/command/dashboard",
   floodMonitoring: "/command/flood-monitoring",
   incidents: "/command/incidents",
-  criticalAreas: "/command/critical-areas",
   floodProne: "/command/flood-prone",
   drainages: "/command/drainages",
   roads: "/command/roads",

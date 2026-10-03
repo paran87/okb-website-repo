@@ -21,7 +21,6 @@ export type LayerKind =
 export type LayerCategory =
   | "basemap"
   | "incidents"
-  | "critical-areas"
   | "flood-prone"
   | "roads"
   | "waterways"

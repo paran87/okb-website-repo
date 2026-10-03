@@ -33,7 +33,7 @@ export default function AboutPage() {
             <ul className="okb-public-body mt-4 list-disc space-y-2 pl-5">
               <li>Planning and construction of flood-control projects</li>
               <li>Maintenance of waterways, drainage, and pump facilities</li>
-              <li>Monitoring of flood-prone and critical areas</li>
+              <li>Monitoring of flood-prone areas</li>
               <li>Coordination with LGUs and partner agencies</li>
               <li>Public advisories during weather emergencies</li>
             </ul>

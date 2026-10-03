@@ -4,7 +4,6 @@ import type { LayerConfig } from "@/features/map/types";
 /** Mock GeoJSON data keys resolved by GeoJSONService. */
 export type MockGeoJsonKey =
   | "incidents"
-  | "critical-areas"
   | "flood-zones"
   | "deos-flood-prone-areas"
   | "roads"
@@ -55,22 +54,6 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
       legend: [
         { id: "rd1", label: "Road corridor", color: "#f59e0b", shape: "line" },
         { id: "rd2", label: "Closure", color: "#dc2626", shape: "line" },
-      ],
-    },
-    {
-      id: "critical-areas",
-      sourceId: "source-critical-areas",
-      label: "Critical Areas",
-      kind: "polygon",
-      category: "critical-areas",
-      visible: true,
-      opacity: 0.35,
-      order: 30,
-      dataKey: "critical-areas",
-      layerIds: ["critical-areas-fill", "critical-areas-outline"],
-      interactive: true,
-      legend: [
-        { id: "ca1", label: "Critical area", color: "#7c3aed", shape: "square" },
       ],
     },
     {
@@ -134,7 +117,7 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
   ];
 }
 
-/** Flood Monitoring overview — flood zones, critical areas, and incidents only. */
+/** Flood Monitoring overview — flood zones and incidents only. */
 export function createFloodOverviewLayerRegistry(): LayerConfig[] {
   return createDefaultLayerRegistry().filter(
     (layer) => !["roads", "sensors", "equipment"].includes(layer.id),

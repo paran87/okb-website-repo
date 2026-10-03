@@ -16,7 +16,7 @@ interface IncidentCardProps {
   className?: string;
 }
 
-/** Scrollable list item for incidents, critical areas, reports, and closures. */
+/** Scrollable list item for incidents, reports, and closures. */
 export function IncidentCard({
   item,
   icon: Icon = MapPin,

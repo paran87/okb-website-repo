@@ -16,10 +16,6 @@ const initiatives = [
     body: "Pumping stations, interceptors, and drainage upgrades for low-lying cities and major thoroughfares.",
   },
   {
-    title: "Critical-area readiness",
-    body: "Pre-positioned equipment and rapid-response protocols for historically flood-prone corridors.",
-  },
-  {
     title: "National situational awareness",
     body: "Shared GIS monitoring through the OKB Command Center for weather, incidents, and asset deployment.",
   },
