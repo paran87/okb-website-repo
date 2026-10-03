@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import blobManifest from "./lib/config/river-basin-blob.json";
 
 /**
  * Next.js configuration for the OKB Command Center.
@@ -36,13 +37,28 @@ const legacyCommandPaths = [
   "settings",
 ] as const;
 
+/**
+ * River basin studies live in Vercel Blob. Blob rejects the CORS preflight a
+ * browser sends for `Range` requests, so the viewer reads them from this same
+ * origin and Vercel forwards (and edge-caches) the bytes.
+ */
+const studyBlobOrigin = (() => {
+  const first = Object.values(blobManifest as Record<string, string>)[0];
+  return first ? new URL(first).origin : null;
+})();
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
   serverExternalPackages: ["@prisma/client", "pino", "pino-pretty"],
   experimental: {
-    optimizePackageImports: ["lucide-react", "recharts", "framer-motion", "maplibre-gl"],
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "framer-motion",
+      "maplibre-gl",
+    ],
   },
   images: {
     remotePatterns: [
@@ -84,8 +100,27 @@ const nextConfig: NextConfig = {
       })),
     ];
   },
+  async rewrites() {
+    return studyBlobOrigin
+      ? [
+          {
+            source: "/studies/:file",
+            destination: `${studyBlobOrigin}/river-basin-studies/:file`,
+          },
+        ]
+      : [];
+  },
   async headers() {
     return [
+      {
+        source: "/studies/:file",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
       {
         source: "/:path*",
         headers: securityHeaders,

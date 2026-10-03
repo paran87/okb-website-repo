@@ -1,5 +1,5 @@
-import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth/config";
 
 const { auth } = NextAuth(authConfig);
@@ -22,6 +22,6 @@ export default auth(() => {
 export const config = {
   matcher: [
     // Run on pages only; skip API routes, Next internals, and static assets.
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!api|studies|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
