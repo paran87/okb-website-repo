@@ -10,6 +10,7 @@ import type {
 } from "geojson";
 import { BarChart3, SlidersHorizontal, Waves, X } from "lucide-react";
 import type { ApiSuccess } from "@/lib/api/response";
+import waterwayTiles from "@/lib/config/waterway-tiles.json";
 import { cn } from "@/utils/cn";
 import { floodProneService } from "@/features/flood-prone/services/flood-prone.service";
 import {
@@ -291,6 +292,8 @@ export function WaterwaysView() {
     <div className="bg-muted/20 relative h-full min-h-[560px] flex-1 overflow-hidden">
       <WaterwaysMap
         riverTilesUrl={riverTilesUrl}
+        useStatic={waterwayTiles.enabled && !filtering}
+        staticMaxZoom={waterwayTiles.maxZoom}
         overlays={overlays}
         highlight={highlight}
         floodPoints={floodPoints ?? []}

@@ -28,8 +28,11 @@ export interface OverlayState {
 }
 
 interface WaterwaysMapProps {
-  /** Tile URL template for the river layer (already carries the filters). */
+  /** Tile URL query for the live river layer (already carries the filters). */
   riverTilesUrl: string;
+  /** Serve the default view from pre-rendered tiles up to `staticMaxZoom`. */
+  useStatic: boolean;
+  staticMaxZoom: number;
   overlays: Record<OverlayId, OverlayState>;
   highlight: FeatureCollection;
   floodPoints: Feature<Point>[];
@@ -71,6 +74,8 @@ export function WaterwaysMap(props: WaterwaysMapProps) {
 
 function WaterwaysLayers({
   riverTilesUrl,
+  useStatic,
+  staticMaxZoom,
   overlays,
   highlight,
   floodPoints,
@@ -145,7 +150,31 @@ function WaterwaysLayers({
       });
     };
     for (const o of AREA_OVERLAYS) raster(o.id, `?o=${o.id}`);
-    raster("rivers", riverTilesUrl);
+    if (useStatic) {
+      // Pre-rendered default view: instant, served from the CDN. One source per
+      // basin, limited to its extent, so no tile outside the rendered set is requested.
+      for (const u of URBS) {
+        const id = rasterId(`rivers-static-${u.code}`);
+        map.addSource(id, {
+          type: "raster",
+          tiles: [`${origin()}/waterway-tiles/{z}/{x}/{y}`],
+          tileSize: 512,
+          minzoom: 0,
+          maxzoom: staticMaxZoom,
+          bounds: u.bounds,
+          attribution: "DENR INREMP GDSS",
+        });
+        map.addLayer({
+          id,
+          type: "raster",
+          source: id,
+          maxzoom: staticMaxZoom + 1,
+          paint: { "raster-fade-duration": 150 },
+        });
+      }
+    }
+    // Live tiles: filtered views, and detail beyond the pre-rendered zooms.
+    raster("rivers", riverTilesUrl, useStatic ? staticMaxZoom + 1 : 0);
     for (const o of OVERLAYS.filter((o) => POINT_OVERLAYS.includes(o.id)))
       raster(o.id, `?o=${o.id}`, 9);
 
@@ -280,7 +309,15 @@ function WaterwaysLayers({
       },
     });
     setApplied((n) => n + 1);
-  }, [map, status, styleVersion, riverTilesUrl, basinPoints]);
+  }, [
+    map,
+    status,
+    styleVersion,
+    riverTilesUrl,
+    useStatic,
+    staticMaxZoom,
+    basinPoints,
+  ]);
 
   // Visibility / opacity of the toggled layers.
   useEffect(() => {
