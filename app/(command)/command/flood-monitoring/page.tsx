@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
-import { FloodMonitoringMap } from "@/features/map/components/flood-monitoring-map";
+import { FloodOverview } from "@/features/flood-monitoring/components/flood-overview";
 
-export const metadata: Metadata = { title: "Flood Monitoring" };
+export const metadata: Metadata = {
+  title: "Flood Monitoring",
+  description:
+    "Active NCR incidents and national flood-prone areas on one live map.",
+};
 
-/** GIS-first flood monitoring workspace powered by the MapEngine. */
+/** Flood Monitoring overview — full-bleed map with floating summaries. */
 export default function FloodMonitoringPage() {
-  return (
-    <div className="flex h-full flex-col gap-3 p-3">
-      <header className="shrink-0">
-        <h1 className="text-heading text-foreground">Flood Monitoring</h1>
-        <p className="text-body text-muted-foreground">
-          Active incidents from NCR Critical Areas (DEOS 2026) and flood-prone zones.
-        </p>
-      </header>
-      <FloodMonitoringMap />
-    </div>
-  );
+  return <FloodOverview />;
 }
