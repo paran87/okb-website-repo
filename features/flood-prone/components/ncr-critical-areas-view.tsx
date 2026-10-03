@@ -95,7 +95,7 @@ export function NcrCriticalAreasView() {
     if (features.length === 0) return;
     mapService.fitToFeatureCollection(
       map,
-      { type: "FeatureCollection", features },
+      { features },
       { padding: 72, maxZoom: 15, duration: 800 },
     );
   }, [filtered]);
