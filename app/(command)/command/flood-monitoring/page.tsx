@@ -10,7 +10,7 @@ export default function FloodMonitoringPage() {
       <header className="shrink-0">
         <h1 className="text-heading text-foreground">Flood Monitoring</h1>
         <p className="text-body text-muted-foreground">
-          National GIS situational awareness — mock operational layers active.
+          Active incidents from NCR Critical Areas (DEOS 2026) and flood-prone zones.
         </p>
       </header>
       <FloodMonitoringMap />
