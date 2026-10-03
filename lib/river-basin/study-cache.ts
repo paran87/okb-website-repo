@@ -18,6 +18,13 @@ const cacheOrder: string[] = [];
 let cacheBytes = 0;
 const inflight = new Map<string, SharedDownload>();
 
+/** Whole-file bytes when this instance already holds the study in memory. */
+export function getCachedStudyBytes(fileId: string): Uint8Array | undefined {
+  const cached = cache.get(fileId);
+  if (cached) touch(fileId);
+  return cached;
+}
+
 export type SharedStudy = {
   contentLength: number | null;
   fromCache: boolean;

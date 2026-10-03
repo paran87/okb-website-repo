@@ -4,6 +4,7 @@ import { Mountain } from "lucide-react";
 import { MAJOR_RIVER_BASINS } from "@/lib/config/river-basins";
 import { ROUTES } from "@/lib/constants";
 import { PageHeader } from "@/components/ui/page-header";
+import { PrefetchPdfEngine } from "@/features/river-basin/components/prefetch-pdf-engine";
 
 export const metadata: Metadata = {
   title: "River Basin",
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 export default function RiverBasinPage() {
   return (
     <div className="space-y-6">
+      <PrefetchPdfEngine />
       <PageHeader
         title="River Basin"
         description="Eighteen major river basins. Open a basin to read its feasibility study and master plan."

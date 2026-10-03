@@ -22,6 +22,9 @@ type PdfjsModule = {
   getDocument: (params: {
     url: string;
     disableRange: boolean;
+    disableStream: boolean;
+    disableAutoFetch: boolean;
+    rangeChunkSize: number;
     wasmUrl: string;
   }) => {
     promise: Promise<PdfDocument>;
@@ -30,7 +33,9 @@ type PdfjsModule = {
 };
 
 const WASM_URL = "/pdfjs/wasm/";
-const MAX_PARALLEL_RENDERS = 2;
+const MAX_PARALLEL_RENDERS = 3;
+/** Eager first pages so the study is readable the moment it opens. */
+const EAGER_PAGES = 2;
 let activeRenders = 0;
 const renderQueue: Array<() => void> = [];
 
@@ -80,7 +85,13 @@ function loadDocument(
     pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
     const task = pdfjs.getDocument({
       url: `/api/river-basin/files/${fileId}`,
-      disableRange: true,
+      // The server forwards byte ranges to Google Drive, so only the pages on
+      // screen are downloaded. Streaming is off so pdf.js drops the initial
+      // full-file request once it sees ranges are supported.
+      disableRange: false,
+      disableStream: true,
+      disableAutoFetch: true,
+      rangeChunkSize: 512 * 1024,
       // Scanned pages stay blank unless these image decoders are loaded.
       wasmUrl: WASM_URL,
     });
@@ -184,7 +195,7 @@ export function StudyPages({
           key={`${fileId}-${index + 1}`}
           pdf={pdf}
           pageNumber={index + 1}
-          eager={index === 0}
+          eager={index < EAGER_PAGES}
         />
       ))}
     </article>
@@ -299,4 +310,10 @@ function StudyPage({
       />
     </div>
   );
+}
+
+/** Warm the PDF engine so the first study opens without a cold start. */
+export function prefetchPdfEngine(): void {
+  void import("pdfjs-dist").catch(() => undefined);
+  void fetch("/pdf.worker.min.mjs").catch(() => undefined);
 }

@@ -23,6 +23,61 @@ type Opened = {
   html?: string;
 };
 
+export type DriveRange = {
+  body: ReadableStream<Uint8Array>;
+  /** Raw Content-Range header, e.g. "bytes 0-1023/59989280". */
+  contentRange: string;
+  /** Bytes in this slice. */
+  contentLength: number;
+  /** Size of the whole file. */
+  totalSize: number;
+};
+
+/**
+ * Ask Google Drive for just a byte range of a public file.
+ *
+ * usercontent.google.com honours Range, so the viewer can pull the pages it
+ * needs from a 60 MB study instead of waiting for the whole download.
+ * Returns null whenever Drive does not answer with a clean 206 so callers can
+ * fall back to the full-file path.
+ */
+export async function openDriveRange(
+  fileId: string,
+  range: string,
+): Promise<DriveRange | null> {
+  const url = new URL("https://drive.usercontent.google.com/download");
+  url.searchParams.set("id", fileId);
+  url.searchParams.set("export", "download");
+  url.searchParams.set("confirm", "t");
+
+  try {
+    const response = await fetch(url, {
+      headers: { "User-Agent": USER_AGENT, Accept: "*/*", Range: range },
+    });
+    const contentRange = response.headers.get("content-range");
+    const total = contentRange?.match(/\/(\d+)$/)?.[1];
+    const length = Number(response.headers.get("content-length"));
+    if (
+      response.status !== 206 ||
+      !response.body ||
+      !contentRange ||
+      !total ||
+      !Number.isFinite(length)
+    ) {
+      await response.body?.cancel().catch(() => undefined);
+      return null;
+    }
+    return {
+      body: response.body,
+      contentRange,
+      contentLength: length,
+      totalSize: Number(total),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Open a public Google Drive file as a stream.
  *
