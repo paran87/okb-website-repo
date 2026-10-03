@@ -3,6 +3,7 @@ import type { FeatureCollection } from "geojson";
 import type { LayerConfig } from "@/features/map/types";
 import { geoJsonService } from "@/features/map/services/geojson.service";
 import { MAP_LABEL_FONT } from "@/features/map/config/map-styles";
+import { CLOUD_ICON_PREFIX, ensureCloudIcons } from "@/features/weather/lib/cloud-icons";
 import type { MockGeoJsonRegistryKey } from "@/features/map/data/mock";
 
 /** Circle size scales hard with zoom — tiny when zoomed out, clear when zoomed in. */
@@ -39,6 +40,25 @@ const ZOOM_CIRCLE_RADIUS: [
   15,
   10,
 ];
+
+/** City weather dots are the main subject of the weather map — keep them large. */
+const WEATHER_CIRCLE_RADIUS = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  4,
+  4.5,
+  6,
+  6,
+  8,
+  7.5,
+  10,
+  9,
+  12,
+  11,
+  15,
+  14,
+] as const;
 
 const ZOOM_CIRCLE_STROKE: [
   "interpolate",
@@ -161,13 +181,55 @@ export function buildLayerSpecs(config: LayerConfig) {
       const isFloodProne =
         id.includes("flood-prone") || id.includes("deos");
       const isWeatherStation = id.includes("weather-station");
+      if (isWeatherStation) {
+        // PAGASA-style cloud icon + city/temperature label. Keeps the
+        // "-circle" id so layerIds, popups and the radar overlay still resolve.
+        return [
+          {
+            id: `${id}-circle`,
+            type: "symbol" as const,
+            source: sourceId,
+            layout: {
+              "icon-image": ["concat", CLOUD_ICON_PREFIX, ["get", "condition"]],
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 7, 0.8, 10, 1, 14, 1.3],
+              "icon-allow-overlap": true,
+              "text-field": [
+                "format",
+                ["get", "name"],
+                {},
+                "\n",
+                {},
+                ["concat", ["to-string", ["get", "temperature"]], "°C"],
+                { "font-scale": 0.9 },
+              ],
+              "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 9, 9, 11, 13, 13],
+              "text-font": [...MAP_LABEL_FONT],
+              "text-offset": [0, 1.4],
+              "text-anchor": "top",
+              "text-max-width": 7,
+              "text-optional": true,
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "icon-opacity": config.opacity,
+              "text-color": "#0f172a",
+              "text-halo-color": "rgba(255,255,255,0.95)",
+              "text-halo-width": 2,
+              "text-opacity": ["step", ["zoom"], 0, 5.5, 1],
+            },
+          } as AddLayerObject,
+        ];
+      }
+
       const specs: AddLayerObject[] = [
         {
           id: `${id}-circle`,
           type: "circle" as const,
           source: sourceId,
           paint: {
-            "circle-radius": [...ZOOM_CIRCLE_RADIUS],
+            "circle-radius": isWeatherStation
+              ? [...WEATHER_CIRCLE_RADIUS]
+              : [...ZOOM_CIRCLE_RADIUS],
             "circle-color": isWeatherStation
               ? [
                   "match",
@@ -179,7 +241,7 @@ export function buildLayerSpecs(config: LayerConfig) {
                   "rain",
                   "#2563eb",
                   "rain-showers",
-                  "#06b6d4",
+                  "#0d9488",
                   "cloudy",
                   "#64748b",
                   "partly-cloudy",
@@ -197,7 +259,9 @@ export function buildLayerSpecs(config: LayerConfig) {
                     "#f97316",
                   ]
                 : "#22c55e",
-            "circle-stroke-width": [...ZOOM_CIRCLE_STROKE],
+            "circle-stroke-width": isWeatherStation
+              ? 2
+              : [...ZOOM_CIRCLE_STROKE],
             "circle-stroke-color": "#ffffff",
             "circle-opacity": config.opacity,
           },
@@ -380,6 +444,7 @@ export const layerService = {
 
     const specs = buildLayerSpecs(config);
     try {
+      if (config.id.includes("weather-station")) ensureCloudIcons(map);
       for (const spec of specs) {
         if (map.getLayer(spec.id)) {
           // Refresh paint so zoom-scaled circle sizes apply after code updates
@@ -394,7 +459,10 @@ export const layerService = {
         }
         map.addLayer({
           ...spec,
-          layout: { visibility: config.visible ? "visible" : "none" },
+          layout: {
+            ...("layout" in spec ? spec.layout : undefined),
+            visibility: config.visible ? "visible" : "none",
+          },
         } as AddLayerObject);
       }
     } catch (error) {

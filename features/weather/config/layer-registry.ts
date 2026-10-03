@@ -37,7 +37,7 @@ export function createWeatherLayerRegistry(): LayerConfig[] {
         {
           id: "ws-showers",
           label: "Rain showers",
-          color: "#06b6d4",
+          color: "#0d9488",
           shape: "circle",
         },
         {
