@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import blobManifest from "./lib/config/river-basin-blob.json";
+import studyStorage from "./lib/config/study-storage.json";
 
 /**
  * Next.js configuration for the OKB Command Center.
@@ -38,14 +38,11 @@ const legacyCommandPaths = [
 ] as const;
 
 /**
- * River basin studies live in Vercel Blob. Blob rejects the CORS preflight a
- * browser sends for `Range` requests, so the viewer reads them from this same
- * origin and Vercel forwards (and edge-caches) the bytes.
+ * River basin study PDFs are stored in Cloudflare R2 (lib/config/study-storage.json).
+ * The viewer reads them from this same origin and Vercel forwards (and edge-caches)
+ * the bytes, so no CORS preflight is involved. Empty until the PDFs are uploaded.
  */
-const studyBlobOrigin = (() => {
-  const first = Object.values(blobManifest as Record<string, string>)[0];
-  return first ? new URL(first).origin : null;
-})();
+const studyOrigin = studyStorage.origin || null;
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -102,10 +99,10 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     const rewrites = [];
-    if (studyBlobOrigin) {
+    if (studyOrigin) {
       rewrites.push({
         source: "/studies/:file",
-        destination: `${studyBlobOrigin}/river-basin-studies/:file`,
+        destination: `${studyOrigin}/river-basin-studies/:file`,
       });
     }
     return rewrites;

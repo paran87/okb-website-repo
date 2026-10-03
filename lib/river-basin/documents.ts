@@ -1,5 +1,6 @@
 import blobManifest from "@/lib/config/river-basin-blob.json";
 import catalog from "@/lib/config/river-basin-documents.json";
+import studyStorage from "@/lib/config/study-storage.json";
 
 export type StudyDocument = {
   id: string;
@@ -106,10 +107,12 @@ export function isRiverBasinFile(fileId: string): boolean {
 const blobUrls = blobManifest as Record<string, string>;
 
 /**
- * Same-origin path of the optimized study (next.config.ts rewrites it to Vercel
- * Blob), when it has been uploaded. Same-origin avoids Blob's CORS preflight
- * rejection of `Range` requests.
+ * Same-origin path of the optimized study (next.config.ts rewrites it to the R2
+ * bucket), once the PDFs have been uploaded. Same-origin avoids CORS preflights
+ * on `Range` requests. Undefined falls back to the Google Drive route.
  */
 export function getBlobStudyUrl(fileId: string): string | undefined {
-  return blobUrls[fileId] ? `/studies/${fileId}.pdf` : undefined;
+  return studyStorage.origin && blobUrls[fileId]
+    ? `/studies/${fileId}.pdf`
+    : undefined;
 }
