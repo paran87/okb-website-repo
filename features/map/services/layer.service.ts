@@ -3,6 +3,7 @@ import type { FeatureCollection } from "geojson";
 import type { LayerConfig } from "@/features/map/types";
 import { geoJsonService } from "@/features/map/services/geojson.service";
 import { MAP_LABEL_FONT } from "@/features/map/config/map-styles";
+import { CLOUD_ICON_PREFIX, ensureCloudIcons } from "@/features/weather/lib/cloud-icons";
 import type { MockGeoJsonRegistryKey } from "@/features/map/data/mock";
 
 /** Circle size scales hard with zoom — tiny when zoomed out, clear when zoomed in. */
@@ -180,6 +181,46 @@ export function buildLayerSpecs(config: LayerConfig) {
       const isFloodProne =
         id.includes("flood-prone") || id.includes("deos");
       const isWeatherStation = id.includes("weather-station");
+      if (isWeatherStation) {
+        // PAGASA-style cloud icon + city/temperature label. Keeps the
+        // "-circle" id so layerIds, popups and the radar overlay still resolve.
+        return [
+          {
+            id: `${id}-circle`,
+            type: "symbol" as const,
+            source: sourceId,
+            layout: {
+              "icon-image": ["concat", CLOUD_ICON_PREFIX, ["get", "condition"]],
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 7, 0.8, 10, 1, 14, 1.3],
+              "icon-allow-overlap": true,
+              "text-field": [
+                "format",
+                ["get", "name"],
+                {},
+                "\n",
+                {},
+                ["concat", ["to-string", ["get", "temperature"]], "°C"],
+                { "font-scale": 0.9 },
+              ],
+              "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 9, 9, 11, 13, 13],
+              "text-font": [...MAP_LABEL_FONT],
+              "text-offset": [0, 1.4],
+              "text-anchor": "top",
+              "text-max-width": 7,
+              "text-optional": true,
+              "text-allow-overlap": false,
+            },
+            paint: {
+              "icon-opacity": config.opacity,
+              "text-color": "#0f172a",
+              "text-halo-color": "rgba(255,255,255,0.95)",
+              "text-halo-width": 2,
+              "text-opacity": ["step", ["zoom"], 0, 5.5, 1],
+            },
+          } as AddLayerObject,
+        ];
+      }
+
       const specs: AddLayerObject[] = [
         {
           id: `${id}-circle`,
@@ -226,41 +267,6 @@ export function buildLayerSpecs(config: LayerConfig) {
           },
         },
       ];
-
-      if (isWeatherStation) {
-        // PAGASA-style cloud tag: city name plus temperature in a pill label.
-        specs.push({
-          id: `${id}-labels`,
-          type: "symbol" as const,
-          source: sourceId,
-          minzoom: 5.5,
-          layout: {
-            "text-field": [
-              "format",
-              ["get", "name"],
-              {},
-              "\n",
-              {},
-              ["to-string", ["get", "temperature"]],
-              { "font-scale": 0.95 },
-              "°C",
-              { "font-scale": 0.95 },
-            ],
-            "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 9, 9, 11, 13, 13],
-            "text-font": [...MAP_LABEL_FONT],
-            "text-offset": [0, 1.1],
-            "text-anchor": "top",
-            "text-max-width": 7,
-            "text-allow-overlap": false,
-            "text-optional": true,
-          },
-          paint: {
-            "text-color": "#0f172a",
-            "text-halo-color": "rgba(255,255,255,0.95)",
-            "text-halo-width": 2,
-          },
-        });
-      }
 
       if (isFloodProne) {
         // Highlight ring for the selected record; the page drives its filter.
@@ -438,6 +444,7 @@ export const layerService = {
 
     const specs = buildLayerSpecs(config);
     try {
+      if (config.id.includes("weather-station")) ensureCloudIcons(map);
       for (const spec of specs) {
         if (map.getLayer(spec.id)) {
           // Refresh paint so zoom-scaled circle sizes apply after code updates
@@ -452,7 +459,10 @@ export const layerService = {
         }
         map.addLayer({
           ...spec,
-          layout: { visibility: config.visible ? "visible" : "none" },
+          layout: {
+            ...("layout" in spec ? spec.layout : undefined),
+            visibility: config.visible ? "visible" : "none",
+          },
         } as AddLayerObject);
       }
     } catch (error) {

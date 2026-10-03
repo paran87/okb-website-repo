@@ -83,11 +83,15 @@ export function WeatherMapLegend({
           <ul className="grid grid-cols-1 gap-x-2 gap-y-1 min-[360px]:grid-cols-1 sm:space-y-0.5">
             {CITY_CONDITIONS.map((item) => (
               <li key={item.label} className="flex items-center gap-2 leading-none">
-                <span
-                  className="size-4 shrink-0 rounded-full ring-2 ring-white dark:ring-slate-900"
-                  style={{ backgroundColor: item.color }}
-                  aria-hidden
-                />
+                <svg viewBox="8 6 62 46" className="h-4 w-5 shrink-0" aria-hidden>
+                  <path
+                    d="M24 21a13 13 0 0 0 0 26h33a13 13 0 0 0 0-26 17 17 0 0 0-33 0z"
+                    fill={item.color}
+                    stroke="#ffffff"
+                    strokeWidth="4"
+                    paintOrder="stroke"
+                  />
+                </svg>
                 <span className="text-[11px] text-foreground sm:text-xs">{item.label}</span>
               </li>
             ))}
