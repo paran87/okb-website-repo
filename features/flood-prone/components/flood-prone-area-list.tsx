@@ -38,7 +38,7 @@ export function FloodProneAreaList({
       <div className="space-y-3 border-b border-border p-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground">
-            Flood-Prone Areas
+            NCR Critical Areas
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             DEOS Updated List 2026 — {areas.length} road sections

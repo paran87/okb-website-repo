@@ -58,14 +58,14 @@ export const NAV_ITEMS: readonly NavEntry[] = [
       },
       {
         type: "link",
-        label: "Flood-prone Areas",
+        label: "NCR Critical Areas",
         href: ROUTES.floodProne,
         icon: AppIcons.floodProne,
         permission: Permission.FLOOD_PRONE_VIEW,
       },
       {
         type: "link",
-        label: "Drainages",
+        label: "Flood Prone Areas",
         href: ROUTES.drainages,
         icon: AppIcons.drainages,
         permission: Permission.MAP_VIEW,

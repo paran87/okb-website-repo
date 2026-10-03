@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FloodProneMap } from "@/features/flood-prone/components/flood-prone-map";
 
 export const metadata: Metadata = {
-  title: "Flood-Prone Areas",
+  title: "NCR Critical Areas",
   description:
     "Interactive Philippine map with DEOS Updated Flood Prone Areas 2026 road sections.",
 };
@@ -12,7 +12,7 @@ export default function FloodPronePage() {
     <div className="flex h-full flex-col overflow-hidden">
       <header className="shrink-0 border-b border-border px-4 py-2 md:px-5">
         <h1 className="text-base font-semibold text-foreground">
-          Flood-Prone Areas
+          NCR Critical Areas
         </h1>
         <p className="text-xs text-muted-foreground">
           Scroll or use +/- to zoom across the Philippines · 123 NCR flood-prone
