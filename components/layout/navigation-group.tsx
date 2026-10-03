@@ -25,7 +25,6 @@ export interface NavigationGroupProps {
   expanded: boolean;
   collapsed: boolean;
   active?: boolean;
-  hideChevron?: boolean;
   onToggle: () => void;
   isChildActive: (href: string) => boolean;
   onNavigate?: () => void;
@@ -42,7 +41,6 @@ export function NavigationGroup({
   expanded,
   collapsed,
   active = false,
-  hideChevron = false,
   onToggle,
   isChildActive,
   onNavigate,
@@ -111,24 +109,22 @@ export function NavigationGroup({
             ) : null}
           </span>
         )}
-        {hideChevron ? null : (
-          <button
-            type="button"
-            onClick={onToggle}
-            aria-expanded={expanded}
-            aria-controls={`nav-group-${id}`}
-            aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <ChevronDown
-              className={cn(
-                "size-4 transition-transform duration-200",
-                expanded && "rotate-180",
-              )}
-              aria-hidden
-            />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-controls={`nav-group-${id}`}
+          aria-label={`${expanded ? "Collapse" : "Expand"} ${label}`}
+          className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <ChevronDown
+            className={cn(
+              "size-4 transition-transform duration-200",
+              expanded && "rotate-180",
+            )}
+            aria-hidden
+          />
+        </button>
       </div>
 
       <AnimatePresence initial={false}>

@@ -51,11 +51,8 @@ function NavTree({
 
   useEffect(() => {
     for (const item of items) {
-      if (item.type !== "group") continue;
-      if (isGroupActive(pathname, item)) {
+      if (item.type === "group" && isGroupActive(pathname, item)) {
         setNavGroupExpanded(item.label, true);
-      } else if (item.hideChevron) {
-        setNavGroupExpanded(item.label, false);
       }
     }
   }, [pathname, items, setNavGroupExpanded]);
@@ -92,7 +89,6 @@ function NavTree({
               children={item.children}
               expanded={expanded}
               collapsed={collapsed}
-              hideChevron={item.hideChevron}
               active={item.href ? isLinkActive(pathname, item.href) : false}
               onToggle={() => toggleNavGroup(item.label)}
               isChildActive={(href) => isLinkActive(pathname, href)}
