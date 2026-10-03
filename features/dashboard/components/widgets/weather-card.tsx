@@ -24,9 +24,10 @@ export function WeatherCard({ weather, className }: WeatherCardProps) {
       subtitle={weather.region}
       icon={<CloudRain className="size-4" aria-hidden />}
       className={className}
-      bodyClassName="space-y-3"
+      compact
+      bodyClassName="space-y-1.5"
     >
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-1.5">
         <MetricTile
           icon={CloudRain}
           label="Rainfall"
@@ -53,19 +54,16 @@ export function WeatherCard({ weather, className }: WeatherCardProps) {
         />
       </div>
 
-      <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5">
-        <p className="text-label text-muted-foreground">Storm Status</p>
-        <div className="mt-1 flex items-start justify-between gap-2">
-          <p className="text-caption font-medium text-foreground">
+      <div className="rounded-md border border-border/60 bg-muted/20 p-1.5">
+        <p className="text-[10px] text-muted-foreground">Storm Status</p>
+        <div className="mt-0.5 flex items-start justify-between gap-1.5">
+          <p className="text-[11px] leading-tight font-medium text-foreground">
             {weather.stormStatus}
           </p>
           <StatusBadge label="Active" status={weather.stormTone} />
         </div>
       </div>
 
-      <p className="text-label text-muted-foreground">
-        Updated {weather.updatedAt}
-      </p>
     </WidgetContainer>
   );
 }
@@ -82,12 +80,12 @@ function MetricTile({
   accent: string;
 }) {
   return (
-    <div className="rounded-lg border border-border/60 bg-card/50 p-2">
-      <div className="flex items-center gap-1.5">
-        <Icon className={cn("size-3.5", accent)} aria-hidden />
-        <span className="text-label text-muted-foreground">{label}</span>
+    <div className="rounded-md border border-border/60 bg-card/50 p-1.5">
+      <div className="flex items-center gap-1">
+        <Icon className={cn("size-3", accent)} aria-hidden />
+        <span className="text-[10px] text-muted-foreground">{label}</span>
       </div>
-      <p className="mt-1 font-mono text-body font-medium text-foreground">
+      <p className="mt-0.5 font-mono text-xs font-medium text-foreground">
         {value}
       </p>
     </div>
