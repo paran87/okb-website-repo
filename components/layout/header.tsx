@@ -56,13 +56,16 @@ function WeatherPlaceholder() {
   const { data } = useWeatherSummary();
 
   return (
-    <div className="hidden items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 lg:flex">
-      <CloudSun className="size-4 text-warning" aria-hidden />
-      <div className="leading-tight">
-        <p className="text-caption font-medium text-foreground">
+    <div className="hidden min-w-0 max-w-[16rem] items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 lg:flex xl:max-w-md 2xl:max-w-xl">
+      <CloudSun className="size-4 shrink-0 text-warning" aria-hidden />
+      <div className="min-w-0 leading-tight">
+        <p className="truncate text-caption font-medium text-foreground">
           {data?.region ?? "Metro Manila"}
         </p>
-        <p className="text-label text-muted-foreground">
+        <p
+          className="truncate text-label text-muted-foreground"
+          title={data ? `${data.temperature}${data.temperatureUnit} · ${data.condition}` : undefined}
+        >
           {data
             ? `${data.temperature}${data.temperatureUnit} · ${data.condition}`
             : "Weather · —"}
@@ -103,7 +106,7 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+      <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         <QuickSearch />
         <WeatherPlaceholder />
         <LiveClock />
