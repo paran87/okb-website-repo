@@ -138,7 +138,7 @@ export function NcrCriticalAreasView() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search road, barangay, municipality…"
-            className={cn(selectClass, "pl-9")}
+            className={cn(selectClass, "pl-9 lg:pl-9")}
           />
         </label>
         <select
