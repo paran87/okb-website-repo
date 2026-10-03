@@ -16,3 +16,21 @@ export interface FloodProneAreaProperties {
   category: "flood-prone";
   geocodeMethod?: "nominatim" | "centroid";
 }
+
+/** Table row for the NCR Critical Areas view, derived from a DEOS area. */
+export interface NcrCriticalAreaRecord {
+  id: string;
+  index: number;
+  deo: string;
+  region: string;
+  province: string;
+  municipality: string;
+  /** Barangay or landmark detail pulled from the description. */
+  location: string;
+  road: string;
+  description: string;
+  longitude: number | null;
+  latitude: number | null;
+  /** "located" markers came from a road lookup; "review" ones are approximate. */
+  status: "located" | "review";
+}

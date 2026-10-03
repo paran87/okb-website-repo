@@ -189,7 +189,13 @@ export function buildLayerSpecs(config: LayerConfig) {
                   "#64748b",
                 ]
               : isFloodProne
-                ? "#f97316"
+                ? [
+                    "match",
+                    ["get", "geocodeMethod"],
+                    "road-lookup",
+                    "#2563eb",
+                    "#f97316",
+                  ]
                 : "#22c55e",
             "circle-stroke-width": [...ZOOM_CIRCLE_STROKE],
             "circle-stroke-color": "#ffffff",
@@ -199,6 +205,19 @@ export function buildLayerSpecs(config: LayerConfig) {
       ];
 
       if (isFloodProne) {
+        // Highlight ring for the selected record; the page drives its filter.
+        specs.push({
+          id: `${id}-selected`,
+          type: "circle" as const,
+          source: sourceId,
+          filter: ["==", ["get", "id"], ""],
+          paint: {
+            "circle-radius": 11,
+            "circle-color": "#f97316",
+            "circle-stroke-width": 3,
+            "circle-stroke-color": "#0f172a",
+          },
+        });
         specs.push({
           id: `${id}-labels`,
           type: "symbol" as const,
