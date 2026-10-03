@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { FLOODWATCH_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Drainages",
+  title: "Flood Prone Areas",
   description:
     "Live Floodwatch drainage and flood monitoring for the OKB Command Center.",
 };
