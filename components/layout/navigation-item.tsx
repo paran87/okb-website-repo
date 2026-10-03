@@ -31,7 +31,7 @@ export function NavigationItem({
     <Link
       href={href}
       onClick={onNavigate}
-      title={collapsed ? label : undefined}
+      title={label}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group flex items-center gap-3 rounded-lg px-3 py-2 text-body transition-all duration-150",

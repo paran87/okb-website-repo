@@ -15,7 +15,8 @@ export function CommandShell({ children }: { children: ReactNode }) {
     pathname === ROUTES.floodProne ||
     pathname === ROUTES.drainages ||
     pathname === ROUTES.waterways ||
-    pathname === ROUTES.equipment;
+    pathname === ROUTES.equipment ||
+    pathname.startsWith(`${ROUTES.riverBasin}/`);
 
   return (
     <AppShell
