@@ -1,3 +1,4 @@
+import blobManifest from "@/lib/config/river-basin-blob.json";
 import catalog from "@/lib/config/river-basin-documents.json";
 
 export type StudyDocument = {
@@ -100,4 +101,11 @@ for (const raw of Object.values(data)) {
 /** True when the id is one of the published basin study files. */
 export function isRiverBasinFile(fileId: string): boolean {
   return allowedFileIds.has(fileId);
+}
+
+const blobUrls = blobManifest as Record<string, string>;
+
+/** CDN URL of the optimized study in Vercel Blob, when it has been uploaded. */
+export function getBlobStudyUrl(fileId: string): string | undefined {
+  return blobUrls[fileId];
 }
