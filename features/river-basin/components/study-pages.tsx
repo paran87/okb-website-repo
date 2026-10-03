@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getBlobStudyUrl } from "@/lib/river-basin/documents";
+import { ensureMapUpsert } from "@/lib/river-basin/map-upsert-polyfill";
 
 type PdfPage = {
   getViewport: (params: { scale: number }) => { width: number; height: number };
@@ -78,8 +79,9 @@ function loadDocument(fileId: string): Promise<PdfDocument> {
   }
 
   const pending = (async () => {
+    ensureMapUpsert();
     const pdfjs = (await import("pdfjs-dist")) as unknown as PdfjsModule;
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.upsert.mjs";
     const open = (url: string) => {
       const task = pdfjs.getDocument({
         url,
@@ -313,6 +315,8 @@ function StudyPage({
 
 /** Warm the PDF engine so the first study opens without a cold start. */
 export function prefetchPdfEngine(): void {
+  ensureMapUpsert();
   void import("pdfjs-dist").catch(() => undefined);
+  void fetch("/pdf.worker.upsert.mjs").catch(() => undefined);
   void fetch("/pdf.worker.min.mjs").catch(() => undefined);
 }

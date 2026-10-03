@@ -105,7 +105,11 @@ export function isRiverBasinFile(fileId: string): boolean {
 
 const blobUrls = blobManifest as Record<string, string>;
 
-/** CDN URL of the optimized study in Vercel Blob, when it has been uploaded. */
+/**
+ * Same-origin path of the optimized study (next.config.ts rewrites it to Vercel
+ * Blob), when it has been uploaded. Same-origin avoids Blob's CORS preflight
+ * rejection of `Range` requests.
+ */
 export function getBlobStudyUrl(fileId: string): string | undefined {
-  return blobUrls[fileId];
+  return blobUrls[fileId] ? `/studies/${fileId}.pdf` : undefined;
 }
