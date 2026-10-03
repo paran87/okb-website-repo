@@ -30,7 +30,7 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
         {
           id: "fz-flood-prone",
           label: "Flood-prone zone",
-          color: "#f97316",
+          color: "#7c3aed",
           shape: "square",
         },
       ],
@@ -117,11 +117,41 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
   ];
 }
 
-/** Flood Monitoring overview — flood zones and incidents only. */
+/**
+ * Flood Monitoring overview — flood-prone zones plus active incidents, which
+ * are the NCR Critical Areas records (DEOS 2026 list).
+ */
 export function createFloodOverviewLayerRegistry(): LayerConfig[] {
-  return createDefaultLayerRegistry().filter(
-    (layer) => !["roads", "sensors", "equipment"].includes(layer.id),
+  const base = createDefaultLayerRegistry().filter(
+    (layer) => !["roads", "sensors", "equipment", "incidents"].includes(layer.id),
   );
+  const ncrIncidents: LayerConfig = {
+    id: "ncr-incidents",
+    sourceId: "source-ncr-incidents",
+    label: "Active Incidents (NCR Critical Areas)",
+    kind: "cluster",
+    category: "incidents",
+    visible: true,
+    opacity: 1,
+    order: 60,
+    dataKey: "deos-flood-prone-areas",
+    layerIds: [
+      "ncr-incidents-clusters",
+      "ncr-incidents-cluster-count",
+      "ncr-incidents-points",
+    ],
+    interactive: true,
+    cluster: true,
+    legend: [
+      { id: "ncr-in", label: "Active incident", color: "#dc2626", shape: "circle" },
+    ],
+    metadata: {
+      description: "NCR Critical Areas — DEOS Updated Flood Prone Areas 2026",
+      source: "DEOS Updated Flood Prone Areas 2026",
+      featureCount: 123,
+    },
+  };
+  return [...base, ncrIncidents];
 }
 
 /** Resolve GeoJSON for a data key (lazy import in service). */
