@@ -29,10 +29,17 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 
+html{
+    max-width:100%;
+    overflow-x:hidden;
+}
+
 body{
     font-family:"Barlow",Arial,sans-serif;
     background:var(--bg);
     color:var(--text);
+    max-width:100%;
+    overflow-x:hidden;
 }
 
 /* HEADER */
@@ -195,10 +202,13 @@ body{
 
 .search{
     position:relative;
+    flex:1 1 180px;
+    min-width:0;
 }
 
 .search input{
-    width:210px;
+    width:100%;
+    max-width:280px;
     padding:7px 12px;
     border:1px solid #ced9e6;
     background:#fff;
@@ -499,7 +509,11 @@ body{
     font-weight:800;
 }
 
-.table-scroll{overflow:auto}
+.table-scroll{
+    overflow-x:auto;
+    max-width:100%;
+    -webkit-overflow-scrolling:touch;
+}
 
 table{
     width:100%;
@@ -720,21 +734,65 @@ tbody tr:hover{background:#fffaf6}
     opacity:1;
 }
 
+.summary-banner--four{grid-template-columns:repeat(4,1fr)}
+
 @media(max-width:1050px){
     .stats,.stats.four{grid-template-columns:repeat(2,1fr)}
     .grid-2{grid-template-columns:1fr}
     .region-grid{grid-template-columns:repeat(3,1fr)}
     .date-chip{margin-left:0}
+    .summary-banner,.summary-banner--four{grid-template-columns:repeat(3,1fr)}
 }
 
-@media(max-width:650px){
-    .header-inner,.main,.toolbar-inner{padding-left:14px;padding-right:14px}
+@media(max-width:720px){
+    .header-inner{
+        min-height:0;
+        align-items:flex-start;
+        padding:16px 14px;
+    }
+    .header h1{
+        font-size:22px;
+        line-height:1.08;
+        letter-spacing:0;
+    }
+    .eyebrow{letter-spacing:1.4px}
     .header-meta{display:none}
-    .stats,.stats.four{grid-template-columns:1fr 1fr}
-    .region-grid{grid-template-columns:1fr 1fr}
-    .summary-banner{grid-template-columns:1fr 1fr}
+    .tabs{padding:0 8px}
+    .tab{
+        height:48px;
+        padding:0 12px;
+        font-size:11px;
+        letter-spacing:.2px;
+    }
+    .toolbar-inner{
+        align-items:stretch;
+        padding:10px 14px;
+    }
+    .search,.search input,.pdf-btn,.date-chip{
+        width:100%;
+        max-width:none;
+        margin-left:0;
+    }
+    .main{padding:14px}
+    .tab-intro{
+        flex-direction:column;
+        align-items:flex-start;
+        padding:14px;
+    }
+    .tab-intro h2{font-size:18px}
+    .stats,.stats.four,.summary-banner,.summary-banner--four{
+        grid-template-columns:1fr 1fr;
+    }
+    .stat{padding:12px}
+    .stat b,.summary-item b{font-size:22px}
     .summary-item{border:0}
-    .bar-label{width:115px}
+    .grid-2{grid-template-columns:1fr}
+    .region-grid{grid-template-columns:1fr 1fr}
+    .bar-label{width:92px;font-size:9px}
+    .bar-value{width:34px}
+    .panel-body{padding:10px}
+    th,td{padding:8px 8px}
+    .toast{left:12px;right:12px;bottom:12px}
 }
 </style>
 </head>
@@ -1083,7 +1141,7 @@ tbody tr:hover{background:#fffaf6}
             </div>
         </div>
 
-        <div class="summary-banner" style="grid-template-columns:repeat(4,1fr)">
+        <div class="summary-banner summary-banner--four">
             <div class="summary-item"><small>Nationwide Total</small><b>24</b></div>
             <div class="summary-item orange"><small>Updated NCR / III / V</small><b>16</b></div>
             <div class="summary-item green"><small>Other Regions Retained</small><b>8</b></div>

@@ -26,7 +26,7 @@ export function CommandShell({ children }: { children: ReactNode }) {
       hideUtilityPanel={isFullBleed}
       mainClassName={
         isFullBleed
-          ? pathname === ROUTES.drainages
+          ? pathname === ROUTES.drainages || pathname === ROUTES.pumpingStations
             ? "flex min-h-0 flex-col overflow-hidden"
             : "flex min-h-0 flex-col overflow-y-auto xl:overflow-hidden"
           : undefined
