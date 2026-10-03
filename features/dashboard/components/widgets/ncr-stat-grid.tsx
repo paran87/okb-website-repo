@@ -22,7 +22,7 @@ const TONE: Record<NcrStat["tone"], string> = {
 export function NcrStatGrid({ stats }: { stats: readonly NcrStat[] }) {
   return (
     <div
-      className="grid shrink-0 grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2 lg:grid-cols-5"
+      className="grid shrink-0 grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2 lg:grid-cols-5 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1"
       role="list"
       aria-label="Incident summary"
     >
