@@ -21,7 +21,7 @@ type RawBasin = BasinStudies & {
 
 const data = catalog as Record<string, RawBasin>;
 
-function editionYear(edition: string): number {
+export function editionYear(edition: string): number {
   const years = [...edition.matchAll(/(?:19|20)\d{2}/g)]
     .map((match) => match[0])
     .filter((year): year is string => Boolean(year))
@@ -119,7 +119,10 @@ export function getBlobStudyUrl(fileId: string): string | undefined {
     : undefined;
 }
 
-const chunks = chunkManifest as Record<string, { pages: number; per: number }>;
+const chunks = chunkManifest as Record<
+  string,
+  { pages: number; per: number; bytes?: number }
+>;
 const nonPdf = new Set(nonPdfIds as string[]);
 
 /**
@@ -136,4 +139,12 @@ export function getStudyChunks(
 /** Word documents in the collection: they cannot be previewed as PDF. */
 export function isNonPdfStudy(fileId: string): boolean {
   return nonPdf.has(fileId);
+}
+
+/** Page count and file size of a study, for the document list. */
+export function getStudyMeta(
+  fileId: string,
+): { pages: number; bytes: number | null } | undefined {
+  const entry = chunks[fileId];
+  return entry ? { pages: entry.pages, bytes: entry.bytes ?? null } : undefined;
 }

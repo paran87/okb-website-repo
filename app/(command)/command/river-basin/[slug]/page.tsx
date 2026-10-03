@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getRiverBasin, MAJOR_RIVER_BASINS } from "@/lib/config/river-basins";
 import { getBasinStudies } from "@/lib/river-basin/documents";
+import { getAdjacentBasins, getBasinSummary } from "@/lib/river-basin/summary";
 import { BasinStudy } from "@/features/river-basin/components/basin-study";
 
 export function generateStaticParams() {
@@ -31,7 +32,17 @@ export default async function RiverBasinDetailPage({
   const { slug } = await params;
   const basin = getRiverBasin(slug);
   const studies = getBasinStudies(slug);
-  if (!basin || !studies) notFound();
+  const summary = getBasinSummary(slug);
+  if (!basin || !studies || !summary) notFound();
+  const { prev, next } = getAdjacentBasins(slug);
 
-  return <BasinStudy basin={basin} studies={studies} />;
+  return (
+    <BasinStudy
+      basin={basin}
+      summary={summary}
+      prev={prev}
+      next={next}
+      studies={studies}
+    />
+  );
 }

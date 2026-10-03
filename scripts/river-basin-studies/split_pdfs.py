@@ -4,7 +4,7 @@ The viewer opens a study by loading just its first chunk (one request) and fetch
 later chunks as the reader scrolls, instead of making many serial range requests.
 
 Chunk i of a study covers pages [i*per + 1, min((i+1)*per, pages)]; `per` is stored
-in the manifest lib/config/river-basin-chunks.json as {id: {"pages": N, "per": P}}.
+in the manifest lib/config/river-basin-chunks.json as {id: {"pages": N, "per": P, "bytes": size}}.
 
 Usage: python3 scripts/river-basin-studies/split_pdfs.py IN_DIR OUT_DIR [workers]
 Requires: pip install pikepdf
@@ -55,7 +55,7 @@ def main():
             result = future.result()
             report.append(result)
             if "error" not in result:
-                manifest[result["id"]] = {"pages": result["pages"], "per": result["per"]}
+                manifest[result["id"]] = {"pages": result["pages"], "per": result["per"], "bytes": result["src"]}
             print(done, "/", len(files), {k: v for k, v in result.items() if k in ("id", "chunks", "error")}, flush=True)
     with open(os.path.join(out_dir, "report.json"), "w", encoding="utf-8") as f:
         json.dump(report, f, indent=1)

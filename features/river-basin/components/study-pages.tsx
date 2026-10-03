@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { RotateCw } from "lucide-react";
 import {
   getBlobStudyUrl,
   getStudyChunks,
@@ -209,19 +210,33 @@ function loadDocument(fileId: string): Promise<PdfDocument> {
   return pending;
 }
 
+/** Page width at 100% zoom, in rem (matches the former max-w-4xl). */
+const BASE_PAGE_REM = 56;
+
 export function StudyPages({
   fileId,
   title,
+  zoom = 1,
+  jump,
   onReady,
+  onPageChange,
 }: {
   fileId: string;
   title: string;
-  onReady?: () => void;
+  zoom?: number;
+  /** Scrolls to a page whenever `n` changes. */
+  jump?: { page: number; n: number };
+  onReady?: (pages: number) => void;
+  onPageChange?: (page: number) => void;
 }) {
   const [pdf, setPdf] = useState<PdfDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const articleRef = useRef<HTMLElement>(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const onPageChangeRef = useRef(onPageChange);
+  onPageChangeRef.current = onPageChange;
   const wordDocument = isNonPdfStudy(fileId);
 
   useEffect(() => {
@@ -234,7 +249,7 @@ export function StudyPages({
       .then((document) => {
         if (cancelled) return;
         setPdf(document);
-        onReadyRef.current?.();
+        onReadyRef.current?.(document.numPages);
       })
       .catch((loadError: unknown) => {
         console.error(loadError);
@@ -244,7 +259,51 @@ export function StudyPages({
     return () => {
       cancelled = true;
     };
-  }, [fileId, wordDocument]);
+  }, [fileId, wordDocument, attempt]);
+
+  // Report the page nearest the top of the scroll area.
+  useEffect(() => {
+    const article = articleRef.current;
+    const root = article?.closest("[role=tabpanel]");
+    if (!pdf || !article || !(root instanceof HTMLElement)) return;
+    let frame = 0;
+    let last = 0;
+    const update = () => {
+      frame = 0;
+      const top = root.getBoundingClientRect().top + 96;
+      const pages = article.querySelectorAll<HTMLElement>("[data-page]");
+      let current = 1;
+      for (const el of pages) {
+        if (el.getBoundingClientRect().bottom > top) {
+          current = Number(el.dataset.page);
+          break;
+        }
+        current = Number(el.dataset.page);
+      }
+      if (current !== last) {
+        last = current;
+        onPageChangeRef.current?.(current);
+      }
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    root.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      root.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [pdf]);
+
+  useEffect(() => {
+    if (!jump || !pdf) return;
+    const target = articleRef.current?.querySelector<HTMLElement>(
+      `[data-page="${Math.min(Math.max(jump.page, 1), pdf.numPages)}"]`,
+    );
+    target?.scrollIntoView({ block: "start" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jump?.n, pdf]);
 
   if (wordDocument) {
     return (
@@ -267,39 +326,59 @@ export function StudyPages({
 
   if (error) {
     return (
-      <p className="text-muted-foreground px-6 py-16 text-center text-sm">
-        {error}
-      </p>
+      <div className="mx-auto max-w-[28rem] px-6 py-16 text-center">
+        <p className="text-foreground text-sm font-medium">{error}</p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Check your connection and try again.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAttempt((n) => n + 1)}
+          className="bg-primary text-primary-foreground mt-4 inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium hover:opacity-90"
+        >
+          <RotateCw className="size-4" aria-hidden />
+          Try again
+        </button>
+      </div>
     );
   }
 
   if (!pdf) {
     return (
-      <div className="px-6 py-16">
+      <div
+        className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 sm:px-6"
+        role="status"
+        aria-live="polite"
+      >
         <p className="text-muted-foreground text-center text-sm">
           Opening {title}…
         </p>
-        <div className="bg-muted mx-auto mt-4 h-1.5 w-full max-w-md overflow-hidden rounded-full">
+        <div className="bg-muted mx-auto h-1.5 w-full max-w-[28rem] overflow-hidden rounded-full">
           <div className="bg-primary h-full w-1/3 animate-pulse rounded-full" />
         </div>
+        <div className="aspect-[1/1.294] w-full animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-200/90" />
       </div>
     );
   }
 
   return (
-    <article className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-6 sm:px-6">
-      <header className="space-y-1">
-        <h2 className="text-foreground text-lg font-semibold">{title}</h2>
-        <p className="text-muted-foreground text-xs">
-          {pdf.numPages} {pdf.numPages === 1 ? "page" : "pages"}
-        </p>
-      </header>
+    <article
+      ref={articleRef}
+      className="mx-auto flex flex-col gap-4 px-4 py-6 sm:px-6"
+      style={{
+        width:
+          zoom <= 1
+            ? `min(100%, ${BASE_PAGE_REM * zoom}rem)`
+            : `${BASE_PAGE_REM * zoom}rem`,
+      }}
+    >
       {Array.from({ length: pdf.numPages }, (_, index) => (
         <StudyPage
           key={`${fileId}-${index + 1}`}
           pdf={pdf}
           pageNumber={index + 1}
           eager={index < EAGER_PAGES}
+          zoom={zoom}
         />
       ))}
     </article>
@@ -310,10 +389,12 @@ function StudyPage({
   pdf,
   pageNumber,
   eager,
+  zoom,
 }: {
   pdf: PdfDocument;
   pageNumber: number;
   eager: boolean;
+  zoom: number;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -391,12 +472,14 @@ function StudyPage({
       cancelled = true;
       renderTask?.cancel();
     };
-  }, [pdf, pageNumber, visible]);
+  }, [pdf, pageNumber, visible, zoom]);
 
   return (
     <div
       ref={frameRef}
-      className="border-border relative overflow-hidden rounded-md border bg-white shadow-sm"
+      id={`study-page-${pageNumber}`}
+      data-page={pageNumber}
+      className="border-border relative scroll-mt-4 overflow-hidden rounded-md border bg-white shadow-sm"
     >
       {painted ? null : (
         <div
