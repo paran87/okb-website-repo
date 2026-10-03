@@ -56,6 +56,8 @@ export function FloodOverview() {
     <div className="relative h-full min-h-[560px] flex-1 overflow-hidden bg-muted/20">
       <MapEngine
         initialView={{ ...NCR_MAP_VIEW, zoom: 11 }}
+        initialStyleId="light"
+        lockBasemap
         initialLayers={LAYERS}
         showSearch={false}
         showLayerPanel={false}
