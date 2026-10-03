@@ -92,7 +92,7 @@ function loadDocument(fileId: string): Promise<PdfDocument> {
         disableRange: false,
         disableStream: true,
         disableAutoFetch: true,
-        rangeChunkSize: 512 * 1024,
+        rangeChunkSize: 2 * 1024 * 1024,
         // Scanned pages stay blank unless these image decoders are loaded.
         wasmUrl: WASM_URL,
       });
