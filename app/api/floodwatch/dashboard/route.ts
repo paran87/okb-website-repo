@@ -1,0 +1,6 @@
+import { withApiHandler } from "@/lib/api/handler";
+import { ok } from "@/lib/api/response";
+import { floodwatchService } from "@/features/floodwatch/services/floodwatch.service";
+
+/** Flood Prone Areas (Floodwatch) dashboard totals. */
+export const GET = withApiHandler(async () => ok(await floodwatchService.getSummary()));

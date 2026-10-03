@@ -273,9 +273,11 @@ export function buildLayerSpecs(config: LayerConfig) {
           paint: {
             "circle-color": id.includes("incident")
               ? "#dc2626"
-              : id.includes("flood-prone")
-                ? "#f97316"
-                : "#8b5cf6",
+              : id.includes("floodwatch")
+                ? "#7c3aed"
+                : id.includes("flood-prone")
+                  ? "#f97316"
+                  : "#8b5cf6",
             "circle-radius": [
               "interpolate",
               ["linear"],
@@ -323,9 +325,11 @@ export function buildLayerSpecs(config: LayerConfig) {
             "circle-radius": [...ZOOM_CIRCLE_RADIUS],
             "circle-color": id.includes("incident")
               ? "#dc2626"
-              : id.includes("flood-prone")
-                ? "#f97316"
-                : "#8b5cf6",
+              : id.includes("floodwatch")
+                ? "#7c3aed"
+                : id.includes("flood-prone")
+                  ? "#f97316"
+                  : "#8b5cf6",
             "circle-stroke-width": [...ZOOM_CIRCLE_STROKE],
             "circle-stroke-color": "#ffffff",
             "circle-opacity": config.opacity,
