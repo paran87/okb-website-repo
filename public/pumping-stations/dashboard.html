@@ -1,0 +1,2028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>DPWH Pumping & Flood Control Dashboard</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root{
+    --navy:#0b2c5f;
+    --blue:#16478d;
+    --orange:#f06418;
+    --orange2:#ff8b3d;
+    --bg:#eef3f8;
+    --white:#fff;
+    --text:#142943;
+    --muted:#7d8da3;
+    --border:#dfe6ee;
+    --green:#159b73;
+    --red:#d5483d;
+    --purple:#7547c7;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+    font-family:"Barlow",Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+}
+
+/* HEADER */
+.header{
+    background:linear-gradient(120deg,#082451,#123e7c 70%,#174d96);
+    border-bottom:3px solid var(--orange);
+    color:#fff;
+}
+
+.header-inner{
+    max-width:1500px;
+    margin:auto;
+    min-height:116px;
+    padding:25px 28px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+}
+
+.eyebrow{
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:3px;
+    color:#afc1dc;
+    text-transform:uppercase;
+}
+
+.header h1{
+    font-size:clamp(27px,3vw,43px);
+    font-weight:900;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    margin-top:5px;
+}
+
+.header h1 span{color:var(--orange2)}
+
+.orange-line{
+    width:64px;
+    height:3px;
+    margin-top:10px;
+    background:var(--orange);
+}
+
+.header-meta{
+    text-align:right;
+}
+
+.header-meta small{
+    display:block;
+    color:#91a8c9;
+    font-size:9px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    font-weight:700;
+}
+
+.header-meta strong{
+    font-size:14px;
+    color:#fff;
+}
+
+/* TABS */
+.tabs-wrap{
+    background:#fff;
+    border-bottom:1px solid var(--border);
+    box-shadow:0 2px 8px rgba(23,43,77,.06);
+    position:sticky;
+    top:0;
+    z-index:20;
+    overflow:auto;
+}
+
+.tabs{
+    max-width:1500px;
+    margin:auto;
+    display:flex;
+    min-width:max-content;
+    padding:0 28px;
+}
+
+.tab{
+    height:55px;
+    padding:0 22px;
+    border:0;
+    border-bottom:3px solid transparent;
+    background:none;
+    color:#728197;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+    cursor:pointer;
+}
+
+.tab:hover{
+    color:var(--navy);
+    background:#f8fafc;
+}
+
+.tab.active{
+    color:var(--orange);
+    border-bottom-color:var(--orange);
+    background:#fff8f3;
+}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* TOOLBAR */
+.toolbar{
+    background:#f8fafc;
+    border-bottom:1px solid var(--border);
+}
+
+.toolbar-inner{
+    max-width:1500px;
+    margin:auto;
+    min-height:55px;
+    padding:7px 28px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+}
+
+.toolbar-label{
+    color:#8290a3;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+}
+
+.filter{
+    padding:6px 12px;
+    border:1px solid #ced9e6;
+    background:#fff;
+    color:#52677f;
+    border-radius:6px;
+    font-family:inherit;
+    font-size:10px;
+    font-weight:700;
+    text-transform:uppercase;
+    cursor:pointer;
+}
+
+.filter:hover{
+    border-color:var(--orange);
+    color:var(--orange);
+}
+
+.filter.active{
+    color:#fff;
+    border-color:var(--orange);
+    background:var(--orange);
+}
+
+.search{
+    position:relative;
+}
+
+.search input{
+    width:210px;
+    padding:7px 12px;
+    border:1px solid #ced9e6;
+    background:#fff;
+    border-radius:6px;
+    font:500 11px inherit;
+    outline:none;
+}
+
+.search input:focus{border-color:var(--blue)}
+
+.date-chip{
+    margin-left:auto;
+    min-height:36px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:5px 10px;
+    background:#fff;
+    border:1px solid #d6e0eb;
+    border-radius:7px;
+}
+
+.date-icon{
+    width:26px;
+    height:26px;
+    display:grid;
+    place-items:center;
+    border-radius:6px;
+    background:#fff0e7;
+    color:var(--orange);
+}
+
+.date-chip.blue .date-icon{
+    color:var(--blue);
+    background:#edf4ff;
+}
+
+.date-chip small{
+    display:block;
+    color:#92a0b1;
+    font-size:7px;
+    font-weight:800;
+    letter-spacing:1.2px;
+    text-transform:uppercase;
+}
+
+.date-chip strong{
+    display:block;
+    margin-top:1px;
+    color:var(--navy);
+    font-size:10px;
+}
+
+.pdf-btn{
+    border:0;
+    border-radius:7px;
+    background:var(--navy);
+    color:#fff;
+    padding:9px 14px;
+    font-family:inherit;
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    cursor:pointer;
+}
+
+.pdf-btn:hover{background:var(--orange)}
+
+/* MAIN */
+.main{
+    max-width:1500px;
+    margin:auto;
+    padding:22px 28px 35px;
+}
+
+/* HERO */
+.tab-intro{
+    background:#fff;
+    border:1px solid var(--border);
+    border-top:3px solid var(--orange);
+    border-radius:10px;
+    padding:16px 19px;
+    margin-bottom:18px;
+    display:flex;
+    justify-content:space-between;
+    gap:20px;
+    align-items:center;
+}
+
+.tab-intro small{
+    color:var(--orange);
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+}
+
+.tab-intro h2{
+    color:var(--navy);
+    font-size:21px;
+    font-weight:900;
+    text-transform:uppercase;
+    margin-top:2px;
+}
+
+.tab-intro p{
+    color:#8493a6;
+    font-size:11px;
+    margin-top:4px;
+}
+
+/* STATS */
+.stats{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+    margin-bottom:18px;
+}
+
+.stats.four{grid-template-columns:repeat(4,1fr)}
+
+.stat{
+    position:relative;
+    overflow:hidden;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:16px;
+}
+
+.stat:before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:4px;
+    background:var(--blue);
+}
+
+.stat.orange:before{background:var(--orange)}
+.stat.green:before{background:var(--green)}
+.stat.red:before{background:var(--red)}
+.stat.purple:before{background:var(--purple)}
+
+.stat b{
+    display:block;
+    color:var(--navy);
+    font-size:27px;
+    font-weight:900;
+}
+
+.stat span{
+    display:block;
+    color:#8290a2;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    margin-top:2px;
+}
+
+.stat small{
+    color:#adb7c5;
+    font-size:9px;
+}
+
+/* PANEL */
+.grid-2{
+    display:grid;
+    grid-template-columns:1fr 410px;
+    gap:17px;
+    margin-bottom:18px;
+}
+
+.panel{
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.panel-head{
+    min-height:48px;
+    padding:10px 15px;
+    background:var(--navy);
+    display:flex;
+    align-items:center;
+    gap:9px;
+    color:#fff;
+}
+
+.panel-icon{
+    width:30px;
+    height:30px;
+    display:grid;
+    place-items:center;
+    background:var(--orange);
+    border-radius:6px;
+}
+
+.panel-head small{
+    display:block;
+    font-size:7px;
+    letter-spacing:1.8px;
+    color:#9eb4d3;
+    text-transform:uppercase;
+}
+
+.panel-head b{
+    display:block;
+    font-size:12px;
+    letter-spacing:.4px;
+    text-transform:uppercase;
+}
+
+.panel-body{padding:15px}
+
+/* =========================================================
+   MULTI-COLOR CHART SYSTEM
+========================================================= */
+
+.bar-row{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-height:23px;
+    margin-bottom:2px;
+}
+
+.bar-label{
+    width:190px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:10px;
+    font-weight:600;
+    color:#53687f;
+}
+
+.bar-track{
+    flex:1;
+    height:7px;
+    background:#edf2f7;
+    border-radius:6px;
+    overflow:hidden;
+}
+
+.bar-fill{
+    height:100%;
+    border-radius:6px;
+    transition:width 1.2s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+
+.bar-value{
+    width:55px;
+    text-align:right;
+    font-size:10px;
+    font-weight:800;
+}
+
+/* TABLE */
+.table-card{
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.table-title{
+    min-height:48px;
+    padding:10px 15px;
+    color:#fff;
+    background:var(--navy);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+}
+
+.table-title-left{
+    display:flex;
+    gap:9px;
+    align-items:center;
+}
+
+.table-title b{
+    font-size:12px;
+    text-transform:uppercase;
+}
+
+.count{
+    padding:3px 9px;
+    border-radius:20px;
+    color:#ffad77;
+    background:rgba(240,100,24,.16);
+    border:1px solid rgba(240,100,24,.3);
+    font-size:9px;
+    font-weight:800;
+}
+
+.table-scroll{overflow:auto}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    padding:10px 12px;
+    background:#f4f7fa;
+    border-bottom:2px solid var(--border);
+    color:#7d8da2;
+    text-align:left;
+    font-size:9px;
+    letter-spacing:1.2px;
+    text-transform:uppercase;
+    white-space:nowrap;
+}
+
+td{
+    padding:10px 12px;
+    border-bottom:1px solid #edf1f5;
+    color:#43586e;
+    font-size:11px;
+    vertical-align:middle;
+}
+
+tbody tr:hover{background:#fffaf6}
+
+.name{
+    color:var(--navy);
+    font-weight:700;
+}
+
+.location{
+    color:#77889c;
+    font-size:10px;
+}
+
+.pill{
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:5px;
+    background:#edf3fb;
+    color:var(--blue);
+    border:1px solid #d5e1ef;
+    font-size:9px;
+    font-weight:700;
+}
+
+.status{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:3px 8px;
+    border-radius:20px;
+    font-size:9px;
+    font-weight:800;
+    white-space:nowrap;
+}
+
+.status:before{
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+}
+
+.status.op{
+    color:#087356;
+    background:#e8f7f1;
+    border:1px solid #c2e8da;
+}
+
+.status.op:before{background:var(--green)}
+
+.status.non{
+    color:#ad3129;
+    background:#fff0ee;
+    border:1px solid #f2cbc7;
+}
+
+.status.non:before{background:var(--red)}
+
+.highlight{
+    color:var(--orange);
+    font-weight:800;
+}
+
+/* SUMMARY */
+.summary-banner{
+    padding:18px;
+    margin-bottom:18px;
+    border-radius:10px;
+    background:linear-gradient(115deg,#082451,#17488d);
+    border-left:5px solid var(--orange);
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+}
+
+.summary-item{
+    text-align:center;
+    border-right:1px solid rgba(255,255,255,.12);
+}
+
+.summary-item:last-child{border:0}
+
+.summary-item small{
+    color:#a8bad4;
+    font-size:8px;
+    text-transform:uppercase;
+    letter-spacing:1.4px;
+    font-weight:700;
+}
+
+.summary-item b{
+    display:block;
+    color:#fff;
+    font-size:28px;
+    font-weight:900;
+}
+
+.summary-item.green b{color:#42d4a3}
+.summary-item.red b{color:#ff7b72}
+.summary-item.orange b{color:#ff9c5f}
+
+/* =========================================================
+   REGION CARDS — MULTI-COLOR
+========================================================= */
+
+.region-grid{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:10px;
+    margin-bottom:18px;
+}
+
+.region-card{
+    position:relative;
+    overflow:hidden;
+    background:#fff;
+    border:1px solid var(--border);
+    border-radius:9px;
+    padding:14px 12px;
+    text-align:center;
+    transition:transform .2s ease, box-shadow .2s ease;
+}
+
+.region-card:hover{
+    transform:translateY(-2px);
+    box-shadow:0 6px 18px rgba(25,45,75,.10);
+}
+
+.region-card::before{
+    content:"";
+    position:absolute;
+    left:0;right:0;top:0;
+    height:4px;
+    background:var(--region-color,#16478d);
+}
+
+.region-card::after{
+    content:"";
+    position:absolute;
+    width:70px;height:70px;
+    right:-30px;bottom:-35px;
+    border-radius:50%;
+    background:var(--region-color,#16478d);
+    opacity:.07;
+    pointer-events:none;
+}
+
+.region-card small{
+    color:#8b99ab;
+    font-size:9px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.8px;
+}
+
+.region-card b{
+    display:block;
+    margin:5px 0 2px;
+    color:var(--region-color,#0b2c5f);
+    font-size:25px;
+    font-weight:900;
+}
+
+/* EMPTY */
+.empty{
+    text-align:center;
+    padding:30px;
+    color:#9aa8b9;
+    font-weight:600;
+}
+
+/* TOAST */
+.toast{
+    position:fixed;
+    right:25px;
+    bottom:25px;
+    padding:12px 16px;
+    color:#fff;
+    background:var(--navy);
+    border-left:4px solid var(--orange);
+    border-radius:8px;
+    font-size:11px;
+    font-weight:700;
+    box-shadow:0 8px 30px rgba(0,0,0,.2);
+    transform:translateY(80px);
+    opacity:0;
+    transition:.25s;
+    z-index:999;
+}
+
+.toast.show{
+    transform:none;
+    opacity:1;
+}
+
+@media(max-width:1050px){
+    .stats,.stats.four{grid-template-columns:repeat(2,1fr)}
+    .grid-2{grid-template-columns:1fr}
+    .region-grid{grid-template-columns:repeat(3,1fr)}
+    .date-chip{margin-left:0}
+}
+
+@media(max-width:650px){
+    .header-inner,.main,.toolbar-inner{padding-left:14px;padding-right:14px}
+    .header-meta{display:none}
+    .stats,.stats.four{grid-template-columns:1fr 1fr}
+    .region-grid{grid-template-columns:1fr 1fr}
+    .summary-banner{grid-template-columns:1fr 1fr}
+    .summary-item{border:0}
+    .bar-label{width:115px}
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <div>
+            <div class="eyebrow">Department of Public Works and Highways</div>
+            <h1>DPWH <span>PUMPING STATIONS</span> DASHBOARD</h1>
+            <div class="orange-line"></div>
+        </div>
+
+        <div class="header-meta">
+            <small>Monitoring Dashboard</small>
+            <strong>National & NCR Operations</strong>
+        </div>
+    </div>
+</header>
+
+<nav class="tabs-wrap">
+    <div class="tabs">
+        <button class="tab active" data-tab="turnover">▣ &nbsp; MOA Turnover</button>
+        <button class="tab" data-tab="operationality">⚡ &nbsp; NCR Operationality</button>
+        <button class="tab" data-tab="deployment">▰ &nbsp; Nationwide Deployment</button>
+        <button class="tab" data-tab="inventory">◆ &nbsp; Nationwide Inventory</button>
+    </div>
+</nav>
+
+<!-- ======================================================
+     TAB 1
+====================================================== -->
+<section class="tab-panel active" id="turnover">
+
+    <div class="toolbar">
+        <div class="toolbar-inner">
+            <span class="toolbar-label">Office:</span>
+
+            <button class="filter active" data-turnover-office="ALL">All</button>
+            <button class="filter" data-turnover-office="REGIONAL OFFICE - NCR">Regional NCR</button>
+            <button class="filter" data-turnover-office="NORTH MANILA DEO">North Manila</button>
+            <button class="filter" data-turnover-office="SOUTH MANILA DEO">South Manila</button>
+            <button class="filter" data-turnover-office="QUEZON CITY 2ND DEO">Quezon City</button>
+            <button class="filter" data-turnover-office="LAS PIÑAS-MUNTINLUPA DEO">LP-Muntinlupa</button>
+            <button class="filter" data-turnover-office="MALABON - NAVOTAS DEO">Malabon-Navotas</button>
+
+            <div class="search">
+                <input id="turnoverSearch" placeholder="Search station / location">
+            </div>
+
+            <div class="date-chip">
+                <div class="date-icon">▣</div>
+                <div>
+                    <small>MOA Turnover</small>
+                    <strong>August 14, 2026</strong>
+                </div>
+            </div>
+
+            <button class="pdf-btn" onclick="exportTurnover()">↓ Download PDF</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <div class="tab-intro">
+            <div>
+                <small>DPWH-NCR → MMDA</small>
+                <h2>MOA Turnover Listing</h2>
+                <p>Listing for drafting of MOA for turnover of pumping stations to MMDA from DPWH-NCR.</p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat orange"><b id="turnoverTotal">44</b><span>Stations Shown</span></div>
+            <div class="stat"><b id="turnoverCapacity">0</b><span>Combined Capacity</span><small>cms</small></div>
+            <div class="stat"><b id="turnoverOffices">6</b><span>Offices</span></div>
+            <div class="stat green"><b id="turnoverPeak">21</b><span>Peak Capacity</span><small>cms</small></div>
+            <div class="stat purple"><b>MMDA</b><span>Receiving Agency</span></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-icon">▥</div>
+                    <div><small>Capacity ranking</small><b>Top Pumping Stations</b></div>
+                </div>
+                <div class="panel-body" id="turnoverChart"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-icon">▦</div>
+                    <div><small>Office breakdown</small><b>Stations Per Office</b></div>
+                </div>
+                <div class="panel-body" id="turnoverOfficeChart"></div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-title">
+                <div class="table-title-left">
+                    <div class="panel-icon">☷</div>
+                    <b>Pumping Station Listing</b>
+                </div>
+                <span class="count" id="turnoverCount"></span>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Pumping Station</th>
+                            <th>Office</th>
+                            <th>Capacity</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody id="turnoverBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</section>
+
+<!-- ======================================================
+     TAB 2
+====================================================== -->
+<section class="tab-panel" id="operationality">
+
+    <div class="toolbar">
+        <div class="toolbar-inner">
+            <span class="toolbar-label">Group:</span>
+
+            <button class="filter active" data-op-group="ALL">All</button>
+            <button class="filter" data-op-group="DPWH">DPWH-NCR</button>
+            <button class="filter" data-op-group="UPMO">UPMO FCMC</button>
+
+            <span class="toolbar-label" style="margin-left:7px">Status:</span>
+
+            <button class="filter active" data-op-status="ALL">All</button>
+            <button class="filter" data-op-status="Y">Operational</button>
+            <button class="filter" data-op-status="N">Non-Operational</button>
+
+            <div class="search">
+                <input id="opSearch" placeholder="Search station / remarks">
+            </div>
+
+            <div class="date-chip blue">
+                <div class="date-icon">◷</div>
+                <div>
+                    <small>Operationality As Of</small>
+                    <strong>August 24, 2026 · 9:38:45 AM</strong>
+                </div>
+            </div>
+
+            <button class="pdf-btn" onclick="exportOperationality()">↓ Download PDF</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <div class="tab-intro">
+            <div>
+                <small>NCR Operations</small>
+                <h2>Operationality Status</h2>
+                <p>Operational condition of DPWH-NCR and UPMO Flood Control Management Cluster pumping stations.</p>
+            </div>
+        </div>
+
+        <div class="summary-banner">
+            <div class="summary-item"><small>Grand Total</small><b>87</b></div>
+            <div class="summary-item green"><small>Operational</small><b>61</b></div>
+            <div class="summary-item red"><small>Non-Operational</small><b>26</b></div>
+            <div class="summary-item orange"><small>DPWH-NCR</small><b>51</b></div>
+            <div class="summary-item"><small>UPMO FCMC</small><b>36</b></div>
+        </div>
+
+        <div class="stats four">
+            <div class="stat"><b>51</b><span>DPWH-NCR Total</span></div>
+            <div class="stat green"><b>47</b><span>DPWH-NCR Operational</span></div>
+            <div class="stat red"><b>4</b><span>DPWH-NCR Non-Operational</span></div>
+            <div class="stat orange"><b>36</b><span>UPMO FCMC</span><small>14 operational · 22 non-operational</small></div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-title">
+                <div class="table-title-left">
+                    <div class="panel-icon">⚡</div>
+                    <b>NCR Pumping Station Operationality</b>
+                </div>
+                <span class="count" id="opCount"></span>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Group</th>
+                            <th>Office</th>
+                            <th>Pumping Station</th>
+                            <th>Status</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="opBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</section>
+
+<!-- ======================================================
+     TAB 3
+====================================================== -->
+<section class="tab-panel" id="deployment">
+
+    <div class="toolbar">
+        <div class="toolbar-inner">
+            <span class="toolbar-label">Region:</span>
+
+            <button class="filter active" data-region="ALL">All Regions</button>
+            <button class="filter" data-region="NCR">NCR</button>
+            <button class="filter" data-region="Region III">Region III</button>
+            <button class="filter" data-region="Region V">Region V</button>
+            <button class="filter" data-region="OTHER">Other Regions</button>
+
+            <div class="search">
+                <input id="deploymentSearch" placeholder="Search office / location / DPCN">
+            </div>
+
+            <div class="date-chip">
+                <div class="date-icon">↻</div>
+                <div>
+                    <small>Mobile Pumps Updated</small>
+                    <strong>August 30, 2026</strong>
+                </div>
+            </div>
+
+            <button class="pdf-btn" onclick="exportDeployment()">↓ Download PDF</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <div class="tab-intro">
+            <div>
+                <small>Nationwide Monitoring</small>
+                <h2>Mobile Pump Deployment</h2>
+                <p>Updated nationwide mobile pump deployment list by current office assignment and deployment location.</p>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat orange"><b>24</b><span>Nationwide Units</span></div>
+            <div class="stat"><b id="deploymentShown">24</b><span>Units Shown</span></div>
+            <div class="stat green"><b>24</b><span>Operational</span><small>100% reported operational</small></div>
+            <div class="stat purple"><b>10</b><span>Regions</span></div>
+            <div class="stat"><b>11</b><span>NCR Units</span></div>
+        </div>
+
+        <div class="region-grid" id="deploymentRegions"></div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-icon">▥</div>
+                    <div><small>Regional distribution</small><b>Units Per Region</b></div>
+                </div>
+                <div class="panel-body" id="deploymentChart"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-icon">▰</div>
+                    <div><small>Fleet configuration</small><b>Unit Types</b></div>
+                </div>
+                <div class="panel-body" id="typeChart"></div>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <div class="table-title">
+                <div class="table-title-left">
+                    <div class="panel-icon">▰</div>
+                    <b>Nationwide Mobile Pump Deployment</b>
+                </div>
+                <span class="count" id="deploymentCount"></span>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Region</th>
+                            <th>Current Office Assignment</th>
+                            <th>Current Deployment Location</th>
+                            <th>Unit Type</th>
+                            <th>DPCN</th>
+                            <th>Count</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deploymentBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</section>
+
+<!-- ======================================================
+     TAB 4
+====================================================== -->
+<section class="tab-panel" id="inventory">
+
+    <div class="toolbar">
+        <div class="toolbar-inner">
+            <span class="toolbar-label">View:</span>
+            <button class="filter active">Summary Overview</button>
+
+            <div class="date-chip blue">
+                <div class="date-icon">◆</div>
+                <div>
+                    <small>Inventory Updated</small>
+                    <strong>August 30, 2026</strong>
+                </div>
+            </div>
+
+            <button class="pdf-btn" onclick="exportInventory()">↓ Download PDF</button>
+        </div>
+    </div>
+
+    <main class="main">
+
+        <div class="tab-intro">
+            <div>
+                <small>Consolidated National Inventory</small>
+                <h2>Nationwide Mobile Pump Inventory</h2>
+                <p>Consolidated from updated NCR, Region III and Region V entries and retained entries for all other regions.</p>
+            </div>
+        </div>
+
+        <div class="summary-banner" style="grid-template-columns:repeat(4,1fr)">
+            <div class="summary-item"><small>Nationwide Total</small><b>24</b></div>
+            <div class="summary-item orange"><small>Updated NCR / III / V</small><b>16</b></div>
+            <div class="summary-item green"><small>Other Regions Retained</small><b>8</b></div>
+            <div class="summary-item"><small>Regions Covered</small><b>10</b></div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-icon">▥</div>
+                    <div><small>Consolidated inventory</small><b>Regional Distribution</b></div>
+                </div>
+                <div class="panel-body" id="inventoryChart"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-icon">◆</div>
+                    <div><small>Inventory indicators</small><b>Summary</b></div>
+                </div>
+
+                <div class="panel-body">
+                    <table>
+                        <thead>
+                            <tr><th>Indicator</th><th>Count</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Updated NCR / Regions III / V</td><td class="highlight">16</td></tr>
+                            <tr><td>Other Regions Retained</td><td class="highlight">8</td></tr>
+                            <tr><td><b>Nationwide Total</b></td><td class="highlight">24</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="region-grid" id="inventoryRegions"></div>
+
+        <div class="table-card">
+            <div class="table-title">
+                <div class="table-title-left">
+                    <div class="panel-icon">◆</div>
+                    <b>Regional Mobile Pump Inventory</b>
+                </div>
+                <span class="count">24 Total Units</span>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Region</th>
+                            <th>Units</th>
+                            <th>% of Nationwide Inventory</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</section>
+
+<div class="toast" id="toast">PDF downloaded successfully.</div>
+
+<script>
+const {jsPDF}=window.jspdf;
+
+/* =========================================================
+   DASHBOARD COLOR PALETTES
+========================================================= */
+
+const dashboardColors = [
+    "#16478d", // blue
+    "#f06418", // orange
+    "#159b73", // green
+    "#7547c7", // purple
+    "#d5483d", // red
+    "#1799b5", // cyan
+    "#d9a314", // yellow
+    "#c43f88", // pink
+    "#4e5fc7", // indigo
+    "#168e82"  // teal
+];
+
+const regionColors = {
+    "NCR": "#16478d",
+    "Region III": "#f06418",
+    "Region IV-A": "#159b73",
+    "Region V": "#7547c7",
+    "Region VII": "#d5483d",
+    "Region IX": "#1799b5",
+    "Region X": "#d9a314",
+    "Region XI": "#c43f88",
+    "Region XII": "#4e5fc7",
+    "Region XIII": "#168e82"
+};
+
+const officeColors = {
+    "REGIONAL OFFICE - NCR": "#16478d",
+    "NORTH MANILA DEO": "#159b73",
+    "SOUTH MANILA DEO": "#f06418",
+    "QUEZON CITY 2ND DEO": "#7547c7",
+    "LAS PIÑAS-MUNTINLUPA DEO": "#1799b5",
+    "MALABON - NAVOTAS DEO": "#d5483d"
+};
+
+const unitTypeColors = {
+    "Truck Mounted Mobile Pump": "#16478d",
+    "Trailer Mounted Mobile Pump": "#f06418",
+    "Mobile Pump": "#159b73"
+};
+
+/* ======================================================
+   TURNOVER DATA
+====================================================== */
+
+const turnoverData=[
+["Sunog Apog P.S.","REGIONAL OFFICE - NCR",14,"14 cms","Hermosa St., Tondo, Manila"],
+["Barangay 98 Pumping Station","NORTH MANILA DEO",.2,"0.2 cms","Brgy. 98, Vitas, Tondo Manila"],
+["Barangay 99 Pumping Station","NORTH MANILA DEO",.3,"0.3 cms","Brgy. 99, Vitas, Tondo Manila"],
+["Barangay 129 Pumping Station","NORTH MANILA DEO",1,"1.00 cms","Brgy. 129, Rodriguez, Tondo Manila"],
+["Pacheco Pumping Station","NORTH MANILA DEO",1,"1.00 cms","Road 10, Pier 16, Tondo Manila"],
+["Tayuman Pumping Station","NORTH MANILA DEO",1,"1.00 cms","Brgy. 55, Prudencio St., Tayuman, Tondo Manila"],
+["Barangay 55 Pumping Station","NORTH MANILA DEO",1,"1.00 cms","Brgy. 55, Prudencio St., Tayuman, Tondo Manila"],
+["Barangay 182 Pumping Station","NORTH MANILA DEO",1,"1.00 cms","Brgy. 182, Benita St., Tondo Manila"],
+["Muelle Del Pan Pumping Station","NORTH MANILA DEO",1.22,"1.22 cms","Del Pan, Muelle De Binondo, Manila"],
+["P. Ducos Pumping Station","NORTH MANILA DEO",.75,"0.75 cms","P. Ducos, Quiapo Manila"],
+["Earnshaw Pumping Station","NORTH MANILA DEO",.5,"0.50 cms","Legarda St., Sampaloc Manila"],
+["Valencia-DPWH Office Pumping Station","NORTH MANILA DEO",21,"21.00 cms","Brgy 636, Sta. Mesa, Manila"],
+["PUP Pumping Station","NORTH MANILA DEO",1.22,"1.22 cms","Inside PUP Campus Area, Sta. Mesa, Manila"],
+["Bacood Pumping Station","NORTH MANILA DEO",.6,"0.60 cms","Bacood, Sta. Mesa, Manila"],
+["Barangay 601 & 602 Mini Pumping Station","NORTH MANILA DEO",.5,"0.50 cms","Brgy. 601, Martes St., Sta. Mesa, Manila"],
+["EDSA P.S.","SOUTH MANILA DEO",3,"3.00 cms","EDSA corner Roxas Blvd., Brgy. 76, Pasay City"],
+["Diokno P.S.","SOUTH MANILA DEO",2,"2.00 cms","Brgy. 76, Zone 10, Diokno Blvd., Pasay City"],
+["Apacible Pumping Station","SOUTH MANILA DEO",1,"1.00 cms","Estero de Paco, Brgy. 673, Manila City"],
+["BAC III Pumping Station","SOUTH MANILA DEO",1.5,"1.50 cms","BAC III Drive, Pasay City"],
+["Quezon Ave. – G. Araneta Underpass P.S.","QUEZON CITY 2ND DEO",.9,"3 units × 0.30 cms","Brgy. Tatalon, Quezon City"],
+["Zapote River Drive Tunnel P.S.","LAS PIÑAS-MUNTINLUPA DEO",.6,"0.6 cms","Zapote Riverdrive, Brgy. Zapote, Las Piñas City"],
+["Perez P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Tonsuya, Malabon City"],
+["Niugan Pilapil P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Niugan, Malabon City"],
+["Merville Dampalit P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Dampalit, Malabon City"],
+["Maysilo P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Maysilo, Malabon City"],
+["Magsaysay Potrero P.S.", "MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Potrero, Malabon City"],
+["Tonsuya P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Tonsuya, Malabon City"],
+["Muzon III P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Muzon, Malabon City"],
+["Paez P.S.","MALABON - NAVOTAS DEO",.3,"0.30 cms","Brgy. Concepcion, Malabon City"],
+["Longos P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Longos, Malabon City"],
+["Bonifacio P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Baritan, Malabon City"],
+["M. Blas P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Hulong Duhat, Malabon City"],
+["Herrera P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Ibaba, Malabon City"],
+["Remigio P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Maysilo, Malabon City"],
+["Muzon II P.S.","MALABON - NAVOTAS DEO",2,"2 units × 1.00 cms","Brgy. Muzon, Malabon City"],
+["Panghulo P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Panghulo, Malabon City"],
+["Juliana P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Potrero, Malabon City"],
+["Magsaysay San Agustin P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. San Agustin, Malabon City"],
+["Sacristia P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. San Agustin, Malabon City"],
+["Asinan P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. San Agustin, Malabon City"],
+["Luna II P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. San Agustin, Malabon City"],
+["Disierto P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Tañong, Malabon City"],
+["Adante-Tañong P.S.","MALABON - NAVOTAS DEO",.6,"0.60 cms","Brgy. Tañong, Malabon City"],
+["Muzon IV P.S.","MALABON - NAVOTAS DEO",4,"2 units × 2.00 cms","Brgy. Muzon, Malabon City"]
+].map((r,i)=>({
+    id:i+1,
+    name:r[0],
+    office:r[1],
+    capacity:r[2],
+    capacityLabel:r[3],
+    location:r[4]
+}));
+
+/* ======================================================
+   OPERATIONALITY
+====================================================== */
+
+const dpwhOpNames=[
+["REGIONAL OFFICE - NCR","Sunog Apog P.S.","Y",""],
+["REGIONAL OFFICE - NCR","Remedios P.S.","N","2 Pumps undergoing repair, 3 Mobile Pumps on standby."],
+["REGIONAL OFFICE - NCR","Abad P.S.","Y","Existing 1 pump operational, 1 Mobile Pump on standby."],
+["REGIONAL OFFICE - NCR","Faura P.S.","N","Main pump non-operational due to ongoing repair; station using two relief pumps of same capacity."],
+["NMDEO","Barangay 98 Pumping Station","Y",""],
+["NMDEO","Barangay 99 Pumping Station","Y",""],
+["NMDEO","Barangay 129 Pumping Station","Y",""],
+["NMDEO","Pacheco Pumping Station","Y",""],
+["NMDEO","Tayuman Pumping Station","Y",""],
+["NMDEO","Barangay 55 Pumping Station","Y",""],
+["NMDEO","Barangay 182 Pumping Station","Y",""],
+["NMDEO","Muelle Del Pan Pumping Station","Y",""],
+["NMDEO","P. Ducos Pumping Station","Y",""],
+["NMDEO","Earnshaw Pumping Station","Y",""],
+["NMDEO","Valencia-DPWH Office Pumping Station","Y",""],
+["NMDEO","PUP Pumping Station","Y",""],
+["NMDEO","Bacood Pumping Station","Y",""],
+["NMDEO","Barangay 601 & 602 Mini Pumping Station","Y",""],
+["SMDEO","EDSA P.S.","Y",""],
+["SMDEO","Diokno P.S.","Y",""],
+["SMDEO","APACIBLE PUMPING STATION","Y",""],
+["SMDEO","BAC III PUMPING STATION","Y",""],
+["QC2DEO","Quezon Ave. – G. Araneta Underpass P.S.","Y",""],
+["LPMDEO","Zapote River Drive Tunnel P.S.","Y",""],
+["LPMDEO","Alido Bridge PS","N","For Repair (request already included in CY 2027 submission to BOM)."],
+["MNDEO","Dampalit P.S.","Y",""],
+["MNDEO","Perez P.S.","Y",""],
+["MNDEO","Sanciangco PS","N","For demolition."],
+["MNDEO","Hernandez P.S.","Y",""],
+["MNDEO","Niugan Pilapil P.S.","Y",""],
+["MNDEO","Merville Dampalit P.S.","Y",""],
+["MNDEO","Maysilo P.S.","Y",""],
+["MNDEO","Magsaysay Potrero P.S.","Y",""],
+["MNDEO","Tonsuya P.S.","Y",""],
+["MNDEO","Muzon III P.S.","Y",""],
+["MNDEO","Paez P.S.","Y",""],
+["MNDEO","Longos P.S.","Y",""],
+["MNDEO","Bonifacio P.S.","Y",""],
+["MNDEO","M. Blas P.S.","Y",""],
+["MNDEO","Herrera P.S.","Y",""],
+["MNDEO","Remigio P.S.","Y",""],
+["MNDEO","Muzon II P.S.","Y","1 pump operational; 1 pump undergoing repair works."],
+["MNDEO","Panghulo P.S.","Y",""],
+["MNDEO","Juliana P.S.","Y",""],
+["MNDEO","Magsaysay San Agustin P.S.","Y",""],
+["MNDEO","Sacristia P.S.","Y",""],
+["MNDEO","Asinan P.S.","Y",""],
+["MNDEO","Luna II P.S.","Y",""],
+["MNDEO","Disierto P.S.","Y",""],
+["MNDEO","Adante-Tañong P.S.","Y",""],
+["MNDEO","Muzon IV P.S.","Y",""]
+].map((x,i)=>({
+    id:i+1,group:"DPWH",office:x[0],name:x[1],status:x[2],remarks:x[3]
+}));
+
+const upmoData=[
+["Hagonoy Pumping Station","N","On-going Construction"],
+["Tripa de Gallina Pumping Station","N","On-going Construction"],
+["Acacia Pumping Station","N","On-going Construction"],
+["Merville-Dampalit Pumping Station","N","On-going Construction"],
+["Balot Pumping Station","N","On-going Construction"],
+["Artex Pumping Station","N","On-going Construction"],
+["Magsaysay Pumping Station","N","On-going Construction"],
+["Niugan Pumping Station","N","On-going Construction"],
+["Muzon Pumping Station","N","On-going Construction"],
+["Concepcion Pumping Station","N","On-going Construction"],
+["Herrera Pumping Station","N","On-going Construction"],
+["Libertad Pumping Station","N","On-going Construction"],
+["Taguig and Labasan Substation","N","On-going Construction"],
+["Uli-Uli Pumping Station","N","On-going Construction"],
+["Pandacan Pumping Station (Floodgate Only)","N","On-going Construction"],
+["Quiapo Pumping Station (Floodgate Only)","N","On-going Construction"],
+["Tanza Pumping Station","Y","For Joint Inspection with MMDA prior to signing of MOA"],
+["Hulong Duhat Pumping Station","Y","For Joint Inspection with MMDA prior to signing of MOA"],
+["Aviles Pumping Station","Y","For Punch-listing"],
+["San Andres Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Escolta Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Santibañez Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Beata Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Abucay Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Bangkulasi Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Maypajo Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Catmon Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["North Navotas Pumping Station","Y","MOA for turnover to be signed by Chairman Artes"],
+["Tumana Pumping Station","N","Pumps malfunctioning / clogged due to voluminous garbage at site"],
+["Iwahig Pumping Station","N","Pumps functional but clogged during operation due to voluminous garbage"],
+["Pacheco Pumping Station","Y","On-going coordination with MMDA regarding turnover"],
+["Navotas Coastal Dike #2 / Floodgate Complex","Y","Includes operational pump/floodgate components; QAU/acceptance activities ongoing"],
+["Doña Imelda Pumping Station","N","On-going Construction"],
+["Roxas II Pumping Station","N","On-going Construction"],
+["Roxas I Pumping Station","N","On-going Construction"],
+["Tatalon Pumping Station","N","On-going Construction"]
+].map((x,i)=>({
+    id:i+1,group:"UPMO",office:"UPMO FCMC",name:x[0],status:x[1],remarks:x[2]
+}));
+
+const operationalityData=[...dpwhOpNames,...upmoData];
+
+/* ======================================================
+   MOBILE DEPLOYMENT
+====================================================== */
+
+const deploymentData=[
+["NCR","South Manila DEO","Abad Santos Pumping Station, Roxas Boulevard","Truck Mounted Mobile Pump","H17-20"],
+["NCR","South Manila DEO","Padre Faura Pumping Station, Roxas Boulevard","Truck Mounted Mobile Pump","H17-6"],
+["NCR","DPWH NCR","Remedios Pumping Station, Roxas Boulevard","Truck Mounted Mobile Pump","On Process (New)"],
+["NCR","DPWH NCR / Bureau of Equipment","Padre Faura Pumping Station, Roxas Boulevard","Mobile Pump",""],
+["NCR","Metro Manila 2nd DEO / Bureau of Equipment","4th Estate, Dr. A. Santos Avenue, Parañaque City","Truck Mounted Mobile Pump","H17-11"],
+["NCR","Las Piñas–Muntinlupa DEO / Bureau of Equipment","Zapote River / Talon Dos, Las Piñas City","Truck Mounted Mobile Pump","H17-13"],
+["NCR","Las Piñas–Muntinlupa DEO / Bureau of Equipment","Zapote River / Talon Dos, Las Piñas City","Truck Mounted Mobile Pump","H17-10"],
+["NCR","Quezon City 2nd DEO","E. Rodriguez Avenue, Quezon City","Trailer Mounted Mobile Pump","On Process (New)"],
+["NCR","Metro Manila 3rd DEO","Coloong 2, Valenzuela City","Mobile Pump",""],
+["NCR","Malabon–Navotas DEO / Bureau of Equipment","Malabon City / Navotas City","Mobile Pump",""],
+["NCR","North Manila DEO","Vitas Pumping Station / Malacañang Compound","Truck Mounted Mobile Pump","H17-17"],
+["Region III","DPWH Regional Office III","Muella de Victoria, Sto. Tomas, Pampanga","Truck Mounted Mobile Pump","H17-3"],
+["Region III","Pampanga Deployment","Lubao, Pampanga","Mobile Pump",""],
+["Region III","Pampanga Deployment / Bureau of Equipment","Estero de Sunog Apog, Tondo, Manila","Mobile Pump",""],
+["Region V","DPWH Region V","Naga Area Shop, Naga City, Camarines Sur","Trailer Mounted Mobile Pump","On Process (New)"],
+["Region V","DPWH Region V","Naga Area Shop, Naga City, Camarines Sur","Trailer Mounted Mobile Pump","On Process (New)"],
+["Region IV-A","DPWH Regional Office IV-A","Calamba, Laguna","Truck Mounted Mobile Pump","H17-4"],
+["Region VII","DPWH Regional Office VII","Cebu City","Truck Mounted Mobile Pump","H17-5"],
+["Region VII","DPWH Regional Office VII","Cebu City","Truck Mounted Mobile Pump","H17-19"],
+["Region IX","DPWH Regional Office IX","Zamboanga City","Truck Mounted Mobile Pump","H17-14"],
+["Region X","DPWH Regional Office X","Cagayan de Oro City","Truck Mounted Mobile Pump","H17-15"],
+["Region XI","DPWH Regional Office XI","Davao City","Truck Mounted Mobile Pump","H17-7"],
+["Region XII","Cotabato 3rd DEO","Kidapawan, Cotabato","Truck Mounted Mobile Pump","H17-16"],
+["Region XIII","DPWH Regional Office XIII","Butuan City","Truck Mounted Mobile Pump","H17-8"]
+].map((x,i)=>({
+    id:i+1,
+    region:x[0],
+    office:x[1],
+    location:x[2],
+    type:x[3],
+    dpcn:x[4],
+    count:1,
+    status:"Operational"
+}));
+
+const regionInventory=[
+["NCR",11],
+["Region III",3],
+["Region IV-A",1],
+["Region V",2],
+["Region VII",2],
+["Region IX",1],
+["Region X",1],
+["Region XI",1],
+["Region XII",1],
+["Region XIII",1]
+].map(x=>({region:x[0],units:x[1]}));
+
+/* ======================================================
+   STATE
+====================================================== */
+
+let turnoverOffice="ALL";
+let filteredTurnover=[...turnoverData];
+
+let opGroup="ALL";
+let opStatus="ALL";
+let filteredOp=[...operationalityData];
+
+let deploymentRegion="ALL";
+let filteredDeployment=[...deploymentData];
+
+/* ======================================================
+   TABS
+====================================================== */
+
+document.querySelectorAll(".tab").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+        document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("active"));
+
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+    });
+});
+
+/* ======================================================
+   MULTI-COLOR CHART FUNCTION
+====================================================== */
+
+function chart(container, data, labelFn, valueFn, colorFn = null) {
+    const el = document.getElementById(container);
+
+    if (!data.length) {
+        el.innerHTML = '<div class="empty">No data found.</div>';
+        return;
+    }
+
+    const max = Math.max(...data.map(valueFn), 1);
+
+    el.innerHTML = data.map((x, index) => {
+
+        const value = valueFn(x);
+
+        const color = colorFn
+            ? colorFn(x, index)
+            : dashboardColors[index % dashboardColors.length];
+
+        return `
+            <div class="bar-row">
+
+                <div class="bar-label"
+                     title="${labelFn(x)}">
+                    ${labelFn(x)}
+                </div>
+
+                <div class="bar-track">
+                    <div
+                        class="bar-fill"
+                        style="
+                            width:${(value / max) * 100}%;
+                            background:${color};
+                        ">
+                    </div>
+                </div>
+
+                <div
+                    class="bar-value"
+                    style="color:${color};">
+                    ${value}
+                </div>
+
+            </div>
+        `;
+
+    }).join("");
+}
+
+function toast(msg){
+    const t=document.getElementById("toast");
+    t.textContent=msg;
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),2600);
+}
+
+/* ======================================================
+   TURNOVER RENDERING
+====================================================== */
+
+function renderTurnover(){
+    const q=document.getElementById("turnoverSearch").value.toLowerCase().trim();
+
+    filteredTurnover=turnoverData.filter(x=>{
+        const officeOk=turnoverOffice==="ALL" || x.office===turnoverOffice;
+        const qOk=!q ||
+            x.name.toLowerCase().includes(q) ||
+            x.office.toLowerCase().includes(q) ||
+            x.location.toLowerCase().includes(q);
+        return officeOk && qOk;
+    });
+
+    const body=document.getElementById("turnoverBody");
+
+    body.innerHTML=filteredTurnover.length ? filteredTurnover.map((x,i)=>`
+        <tr>
+            <td>${i+1}</td>
+            <td class="name">${x.name}</td>
+            <td><span class="pill" style="background:${officeColors[x.office]}22;color:${officeColors[x.office]};border-color:${officeColors[x.office]}55;">${x.office}</span></td>
+            <td class="highlight">${x.capacityLabel}</td>
+            <td class="location">${x.location}</td>
+        </tr>
+    `).join("") : `<tr><td colspan="5" class="empty">No stations match the current filter.</td></tr>`;
+
+    const totalCap=filteredTurnover.reduce((a,b)=>a+b.capacity,0);
+    const peak=filteredTurnover.length ? Math.max(...filteredTurnover.map(x=>x.capacity)) : 0;
+
+    document.getElementById("turnoverTotal").textContent=filteredTurnover.length;
+    document.getElementById("turnoverCapacity").textContent=totalCap.toFixed(2).replace(/\.00$/,"");
+    document.getElementById("turnoverOffices").textContent=new Set(filteredTurnover.map(x=>x.office)).size;
+    document.getElementById("turnoverPeak").textContent=peak;
+    document.getElementById("turnoverCount").textContent=`${filteredTurnover.length} station${filteredTurnover.length===1?"":"s"}`;
+
+    chart(
+        "turnoverChart",
+        [...filteredTurnover].sort((a,b)=>b.capacity-a.capacity).slice(0,10),
+        x=>x.name,
+        x=>x.capacity,
+        (x,index)=>dashboardColors[index % dashboardColors.length]
+    );
+
+    const officeMap={};
+    filteredTurnover.forEach(x=>officeMap[x.office]=(officeMap[x.office]||0)+1);
+
+    chart(
+        "turnoverOfficeChart",
+        Object.entries(officeMap).map(([name,count])=>({name,count})),
+        x=>x.name,
+        x=>x.count,
+        x=>officeColors[x.name] || "#16478d"
+    );
+}
+
+document.querySelectorAll("[data-turnover-office]").forEach(btn=>{
+    btn.onclick=()=>{
+        document.querySelectorAll("[data-turnover-office]").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        turnoverOffice=btn.dataset.turnoverOffice;
+        renderTurnover();
+    };
+});
+
+document.getElementById("turnoverSearch").addEventListener("input",renderTurnover);
+
+/* ======================================================
+   OPERATIONALITY RENDERING
+====================================================== */
+
+function renderOperationality(){
+    const q=document.getElementById("opSearch").value.toLowerCase().trim();
+
+    filteredOp=operationalityData.filter(x=>{
+        return (opGroup==="ALL" || x.group===opGroup) &&
+               (opStatus==="ALL" || x.status===opStatus) &&
+               (!q ||
+                x.name.toLowerCase().includes(q) ||
+                x.office.toLowerCase().includes(q) ||
+                x.remarks.toLowerCase().includes(q));
+    });
+
+    document.getElementById("opCount").textContent=`${filteredOp.length} record${filteredOp.length===1?"":"s"}`;
+
+    document.getElementById("opBody").innerHTML=filteredOp.length ? filteredOp.map((x,i)=>`
+        <tr>
+            <td>${i+1}</td>
+            <td><span class="pill" style="background:${x.group==='DPWH'?'#16478d22':'#7547c722'};color:${x.group==='DPWH'?'#16478d':'#7547c7'};border-color:${x.group==='DPWH'?'#16478d55':'#7547c755'};">${x.group==="DPWH"?"DPWH-NCR":"UPMO FCMC"}</span></td>
+            <td>${x.office}</td>
+            <td class="name">${x.name}</td>
+            <td>
+                <span class="status ${x.status==="Y"?"op":"non"}">
+                    ${x.status==="Y"?"Operational":"Non-Operational"}
+                </span>
+            </td>
+            <td class="location">${x.remarks||"—"}</td>
+        </tr>
+    `).join("") : `<tr><td colspan="6" class="empty">No records match the current filter.</td></tr>`;
+}
+
+document.querySelectorAll("[data-op-group]").forEach(btn=>{
+    btn.onclick=()=>{
+        document.querySelectorAll("[data-op-group]").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        opGroup=btn.dataset.opGroup;
+        renderOperationality();
+    };
+});
+
+document.querySelectorAll("[data-op-status]").forEach(btn=>{
+    btn.onclick=()=>{
+        document.querySelectorAll("[data-op-status]").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        opStatus=btn.dataset.opStatus;
+        renderOperationality();
+    };
+});
+
+document.getElementById("opSearch").addEventListener("input",renderOperationality);
+
+/* ======================================================
+   DEPLOYMENT RENDERING
+====================================================== */
+
+function renderDeployment(){
+    const q=document.getElementById("deploymentSearch").value.toLowerCase().trim();
+
+    filteredDeployment=deploymentData.filter(x=>{
+        let regionOk=true;
+
+        if(deploymentRegion==="NCR") regionOk=x.region==="NCR";
+        else if(deploymentRegion==="Region III") regionOk=x.region==="Region III";
+        else if(deploymentRegion==="Region V") regionOk=x.region==="Region V";
+        else if(deploymentRegion==="OTHER") regionOk=!["NCR","Region III","Region V"].includes(x.region);
+
+        const qOk=!q ||
+            x.region.toLowerCase().includes(q) ||
+            x.office.toLowerCase().includes(q) ||
+            x.location.toLowerCase().includes(q) ||
+            x.type.toLowerCase().includes(q) ||
+            x.dpcn.toLowerCase().includes(q);
+
+        return regionOk && qOk;
+    });
+
+    document.getElementById("deploymentShown").textContent=filteredDeployment.length;
+    document.getElementById("deploymentCount").textContent=`${filteredDeployment.length} unit${filteredDeployment.length===1?"":"s"}`;
+
+    document.getElementById("deploymentBody").innerHTML=filteredDeployment.length ? filteredDeployment.map((x,i)=>{
+        const rc = regionColors[x.region] || "#16478d";
+        return `
+        <tr>
+            <td>${i+1}</td>
+            <td><span class="pill" style="background:${rc}22;color:${rc};border-color:${rc}55;">${x.region}</span></td>
+            <td class="name">${x.office}</td>
+            <td class="location">${x.location}</td>
+            <td>${x.type}</td>
+            <td class="${x.dpcn.includes("New")?"highlight":""}">${x.dpcn||"—"}</td>
+            <td>${x.count}</td>
+            <td><span class="status op">Operational</span></td>
+        </tr>`;
+    }).join("") : `<tr><td colspan="8" class="empty">No mobile pumps match the current filter.</td></tr>`;
+}
+
+document.querySelectorAll("[data-region]").forEach(btn=>{
+    btn.onclick=()=>{
+        document.querySelectorAll("[data-region]").forEach(x=>x.classList.remove("active"));
+        btn.classList.add("active");
+        deploymentRegion=btn.dataset.region;
+        renderDeployment();
+    };
+});
+
+document.getElementById("deploymentSearch").addEventListener("input",renderDeployment);
+
+function buildDeploymentSummary(){
+    document.getElementById("deploymentRegions").innerHTML=regionInventory.map(x=>`
+        <div class="region-card" style="--region-color:${regionColors[x.region] || '#16478d'}">
+            <small>${x.region}</small>
+            <b>${x.units}</b>
+            <small>unit${x.units===1?"":"s"}</small>
+        </div>
+    `).join("");
+
+    chart(
+        "deploymentChart",
+        regionInventory,
+        x=>x.region,
+        x=>x.units,
+        x=>regionColors[x.region] || "#16478d"
+    );
+
+    const typeMap={};
+    deploymentData.forEach(x=>typeMap[x.type]=(typeMap[x.type]||0)+1);
+
+    chart(
+        "typeChart",
+        Object.entries(typeMap).map(([name,count])=>({name,count})),
+        x=>x.name,
+        x=>x.count,
+        x=>unitTypeColors[x.name] || "#16478d"
+    );
+}
+
+/* ======================================================
+   INVENTORY
+====================================================== */
+
+function renderInventory(){
+    document.getElementById("inventoryRegions").innerHTML=regionInventory.map(x=>`
+        <div class="region-card" style="--region-color:${regionColors[x.region] || '#16478d'}">
+            <small>${x.region}</small>
+            <b>${x.units}</b>
+            <small>${(x.units/24*100).toFixed(1)}% of total</small>
+        </div>
+    `).join("");
+
+    document.getElementById("inventoryBody").innerHTML=regionInventory.map((x,i)=>{
+        const rc = regionColors[x.region] || "#16478d";
+        return `
+        <tr>
+            <td>${i+1}</td>
+            <td class="name"><span class="pill" style="background:${rc}22;color:${rc};border-color:${rc}55;">${x.region}</span></td>
+            <td class="highlight">${x.units}</td>
+            <td>${(x.units/24*100).toFixed(1)}%</td>
+        </tr>`;
+    }).join("");
+
+    chart(
+        "inventoryChart",
+        regionInventory,
+        x=>x.region,
+        x=>x.units,
+        x=>regionColors[x.region] || "#16478d"
+    );
+}
+
+/* ======================================================
+   PDF COMMON
+====================================================== */
+
+function pdfHeader(doc,title,subtitle,date){
+    const w=doc.internal.pageSize.getWidth();
+
+    doc.setFillColor(11,44,95);
+    doc.rect(0,0,w,31,"F");
+
+    doc.setFillColor(240,100,24);
+    doc.rect(0,29,w,2,"F");
+
+    doc.setFillColor(240,100,24);
+    doc.rect(9,7,3,17,"F");
+
+    doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(16);
+    doc.text(title,17,15);
+
+    doc.setTextColor(183,201,225);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(7.5);
+    doc.text(subtitle,17,22);
+
+    doc.setFont("helvetica","bold");
+    doc.setTextColor(255,174,116);
+    doc.text(date,w-10,15,{align:"right"});
+}
+
+function pdfFooter(doc,label){
+    const pages=doc.internal.getNumberOfPages();
+
+    for(let p=1;p<=pages;p++){
+        doc.setPage(p);
+
+        const w=doc.internal.pageSize.getWidth();
+        const h=doc.internal.pageSize.getHeight();
+
+        doc.setFillColor(11,44,95);
+        doc.rect(0,h-8,w,8,"F");
+
+        doc.setTextColor(180,199,222);
+        doc.setFont("helvetica","normal");
+        doc.setFontSize(6.5);
+
+        doc.text(`DPWH Pumping & Flood Control Dashboard | ${label}`,10,h-3);
+        doc.text(`Page ${p} of ${pages}`,w-10,h-3,{align:"right"});
+    }
+}
+
+function tablePDF(doc,head,body,startY,widths){
+    doc.autoTable({
+        head:[head],
+        body,
+        startY,
+        margin:{left:9,right:9,bottom:13},
+        theme:"grid",
+        styles:{
+            font:"helvetica",
+            fontSize:7,
+            cellPadding:2.3,
+            lineWidth:.15,
+            lineColor:[218,226,235],
+            textColor:[55,77,101]
+        },
+        headStyles:{
+            fillColor:[11,44,95],
+            textColor:[255,255,255],
+            fontStyle:"bold",
+            fontSize:7
+        },
+        alternateRowStyles:{
+            fillColor:[248,250,252]
+        },
+        columnStyles:widths||{}
+    });
+}
+
+/* ======================================================
+   PDF: TURNOVER
+====================================================== */
+
+function exportTurnover(){
+    if(!filteredTurnover.length){
+        toast("No data to export.");
+        return;
+    }
+
+    const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+
+    pdfHeader(
+        doc,
+        "DPWH-NCR PUMPING STATIONS — MOA TURNOVER",
+        "Listing for drafting of MOA for turnover of pumping stations to MMDA from DPWH-NCR",
+        "MOA Turnover · August 14, 2026"
+    );
+
+    const filterName=turnoverOffice==="ALL"?"All Offices":turnoverOffice;
+
+    doc.setTextColor(70,91,116);
+    doc.setFontSize(7);
+    doc.text(`Current dashboard filter: ${filterName}`,10,37);
+
+    tablePDF(
+        doc,
+        ["#","PUMPING STATION","OFFICE","CAPACITY","LOCATION"],
+        filteredTurnover.map((x,i)=>[
+            i+1,x.name,x.office,x.capacityLabel,x.location
+        ]),
+        41,
+        {
+            0:{cellWidth:8},
+            1:{cellWidth:62},
+            2:{cellWidth:53},
+            3:{cellWidth:28},
+            4:{cellWidth:"auto"}
+        }
+    );
+
+    pdfFooter(doc,"MOA Turnover");
+    doc.save("DPWH_MOA_Turnover_Filtered.pdf");
+    toast("MOA Turnover PDF downloaded.");
+}
+
+/* ======================================================
+   PDF: OPERATIONALITY
+====================================================== */
+
+function exportOperationality(){
+    if(!filteredOp.length){
+        toast("No data to export.");
+        return;
+    }
+
+    const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+
+    pdfHeader(
+        doc,
+        "NCR PUMPING STATION OPERATIONALITY",
+        "DPWH-NCR and UPMO Flood Control Management Cluster",
+        "As of August 24, 2026 · 9:38:45 AM"
+    );
+
+    doc.setTextColor(70,91,116);
+    doc.setFontSize(7);
+    doc.text(
+        `Filter: ${opGroup==="ALL"?"All Groups":opGroup} | ${opStatus==="ALL"?"All Statuses":opStatus==="Y"?"Operational":"Non-Operational"}`,
+        10,37
+    );
+
+    tablePDF(
+        doc,
+        ["#","GROUP","OFFICE","PUMPING STATION","STATUS","REMARKS"],
+        filteredOp.map((x,i)=>[
+            i+1,
+            x.group==="DPWH"?"DPWH-NCR":"UPMO FCMC",
+            x.office,
+            x.name,
+            x.status==="Y"?"Operational":"Non-Operational",
+            x.remarks||"—"
+        ]),
+        41,
+        {
+            0:{cellWidth:8},
+            1:{cellWidth:24},
+            2:{cellWidth:34},
+            3:{cellWidth:58},
+            4:{cellWidth:30},
+            5:{cellWidth:"auto"}
+        }
+    );
+
+    pdfFooter(doc,"NCR Operationality");
+    doc.save("DPWH_NCR_Operationality_Filtered.pdf");
+    toast("Operationality PDF downloaded.");
+}
+
+/* ======================================================
+   PDF: DEPLOYMENT
+====================================================== */
+
+function exportDeployment(){
+    if(!filteredDeployment.length){
+        toast("No data to export.");
+        return;
+    }
+
+    const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+
+    pdfHeader(
+        doc,
+        "NATIONWIDE MOBILE PUMP DEPLOYMENT",
+        "Current office assignments and deployment locations",
+        "Updated August 30, 2026"
+    );
+
+    doc.setTextColor(70,91,116);
+    doc.setFontSize(7);
+
+    const f=deploymentRegion==="ALL"?"All Regions":
+        deploymentRegion==="OTHER"?"Other Regions":deploymentRegion;
+
+    doc.text(`Current dashboard filter: ${f}`,10,37);
+
+    tablePDF(
+        doc,
+        ["#","REGION","OFFICE ASSIGNMENT","DEPLOYMENT LOCATION","UNIT TYPE","DPCN","COUNT","STATUS"],
+        filteredDeployment.map((x,i)=>[
+            i+1,x.region,x.office,x.location,x.type,x.dpcn||"—",x.count,x.status
+        ]),
+        41,
+        {
+            0:{cellWidth:7},
+            1:{cellWidth:19},
+            2:{cellWidth:48},
+            3:{cellWidth:56},
+            4:{cellWidth:39},
+            5:{cellWidth:24},
+            6:{cellWidth:12},
+            7:{cellWidth:"auto"}
+        }
+    );
+
+    pdfFooter(doc,"Nationwide Mobile Pump Deployment");
+    doc.save("DPWH_Nationwide_Mobile_Pump_Deployment_Filtered.pdf");
+    toast("Deployment PDF downloaded.");
+}
+
+/* ======================================================
+   PDF: INVENTORY
+====================================================== */
+
+function exportInventory(){
+    const doc=new jsPDF({orientation:"landscape",unit:"mm",format:"a4"});
+
+    pdfHeader(
+        doc,
+        "NATIONWIDE MOBILE PUMP INVENTORY SUMMARY",
+        "Consolidated updated and retained regional mobile pump inventory",
+        "Updated August 30, 2026"
+    );
+
+    doc.setTextColor(11,44,95);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(12);
+    doc.text("24 Nationwide Units",10,42);
+
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100,120,145);
+    doc.text("16 Updated NCR / Regions III / V   |   8 Other Regions Retained",10,48);
+
+    tablePDF(
+        doc,
+        ["#","REGION","UNITS","% OF NATIONWIDE TOTAL"],
+        regionInventory.map((x,i)=>[
+            i+1,x.region,x.units,(x.units/24*100).toFixed(1)+"%"
+        ]),
+        54,
+        {
+            0:{cellWidth:15},
+            1:{cellWidth:90},
+            2:{cellWidth:40},
+            3:{cellWidth:60}
+        }
+    );
+
+    pdfFooter(doc,"Nationwide Mobile Pump Inventory");
+    doc.save("DPWH_Nationwide_Mobile_Pump_Inventory.pdf");
+    toast("Inventory PDF downloaded.");
+}
+
+/* ======================================================
+   INITIALIZE
+====================================================== */
+
+renderTurnover();
+renderOperationality();
+buildDeploymentSummary();
+renderDeployment();
+renderInventory();
+</script>
+
+</body>
+</html>
