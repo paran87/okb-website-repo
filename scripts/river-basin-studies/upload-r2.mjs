@@ -5,7 +5,7 @@
 //   R2_BUCKET=... R2_PUBLIC_URL=https://pub-xxxx.r2.dev \
 //   node scripts/river-basin-studies/upload-r2.mjs /path/to/optimized/pdfs
 import { createReadStream } from "node:fs";
-import { readdir, readFile, stat, writeFile } from "node:fs/promises";
+import { readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
