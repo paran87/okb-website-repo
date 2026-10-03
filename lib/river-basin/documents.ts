@@ -1,5 +1,7 @@
 import blobManifest from "@/lib/config/river-basin-blob.json";
+import chunkManifest from "@/lib/config/river-basin-chunks.json";
 import catalog from "@/lib/config/river-basin-documents.json";
+import nonPdfIds from "@/lib/config/river-basin-nonpdf.json";
 import studyStorage from "@/lib/config/study-storage.json";
 
 export type StudyDocument = {
@@ -115,4 +117,23 @@ export function getBlobStudyUrl(fileId: string): string | undefined {
   return studyStorage.origin && blobUrls[fileId]
     ? `/studies/${fileId}.pdf`
     : undefined;
+}
+
+const chunks = chunkManifest as Record<string, { pages: number; per: number }>;
+const nonPdf = new Set(nonPdfIds as string[]);
+
+/**
+ * Page count and pages-per-chunk when the study was split into small standalone
+ * PDFs (see scripts/river-basin-studies/split_pdfs.py). Loading the first chunk
+ * is one request, instead of the many serial range requests a single big PDF needs.
+ */
+export function getStudyChunks(
+  fileId: string,
+): { pages: number; per: number } | undefined {
+  return studyStorage.origin ? chunks[fileId] : undefined;
+}
+
+/** Word documents in the collection: they cannot be previewed as PDF. */
+export function isNonPdfStudy(fileId: string): boolean {
+  return nonPdf.has(fileId);
 }

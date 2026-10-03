@@ -101,6 +101,10 @@ const nextConfig: NextConfig = {
     const rewrites = [];
     if (studyOrigin) {
       rewrites.push({
+        source: "/studies/chunks/:id/:file",
+        destination: `${studyOrigin}/river-basin-studies/chunks/:id/:file`,
+      });
+      rewrites.push({
         source: "/studies/:file",
         destination: `${studyOrigin}/river-basin-studies/:file`,
       });
@@ -119,7 +123,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/studies/:file",
+        source: "/studies/:path*",
         headers: [
           {
             key: "Cache-Control",

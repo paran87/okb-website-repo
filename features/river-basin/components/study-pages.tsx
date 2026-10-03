@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getBlobStudyUrl } from "@/lib/river-basin/documents";
+import {
+  getBlobStudyUrl,
+  getStudyChunks,
+  isNonPdfStudy,
+} from "@/lib/river-basin/documents";
 import { ensureMapUpsert } from "@/lib/river-basin/map-upsert-polyfill";
 
 type PdfPage = {
@@ -26,7 +30,7 @@ type PdfjsModule = {
     disableRange: boolean;
     disableStream: boolean;
     disableAutoFetch: boolean;
-    rangeChunkSize: number;
+    rangeChunkSize?: number;
     wasmUrl: string;
   }) => {
     promise: Promise<PdfDocument>;
@@ -71,6 +75,104 @@ function releaseRender(): void {
 const MAX_CACHED_DOCUMENTS = 3;
 const documentCache = new Map<string, Promise<PdfDocument>>();
 const documentOrder: string[] = [];
+/** Chunk files kept open per study; older ones are reloaded from the browser cache if needed. */
+const MAX_OPEN_CHUNKS = 6;
+
+async function loadPdfjs(): Promise<PdfjsModule> {
+  ensureMapUpsert();
+  const pdfjs = (await import("pdfjs-dist")) as unknown as PdfjsModule;
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.upsert.mjs";
+  return pdfjs;
+}
+
+/**
+ * A study split into small standalone PDFs behaves like one document: pages are
+ * served from whichever chunk holds them, chunks load whole in a single request,
+ * and the next chunk is fetched ahead of the reader.
+ */
+async function openChunkedDocument(
+  fileId: string,
+  info: { pages: number; per: number },
+): Promise<PdfDocument> {
+  const pdfjs = await loadPdfjs();
+  const chunkCount = Math.ceil(info.pages / info.per);
+  const open = new Map<number, Promise<PdfDocument>>();
+
+  const load = (index: number): Promise<PdfDocument> => {
+    const cached = open.get(index);
+    if (cached) return cached;
+    const task = pdfjs.getDocument({
+      url: `/studies/chunks/${fileId}/${index}.pdf`,
+      // Chunks are small: one plain request each, no range reads.
+      disableRange: true,
+      disableStream: false,
+      disableAutoFetch: false,
+      wasmUrl: WASM_URL,
+    });
+    const promise = task.promise;
+    open.set(index, promise);
+    promise.catch(() => open.delete(index));
+    while (open.size > MAX_OPEN_CHUNKS) {
+      const oldest = open.keys().next().value as number;
+      if (oldest === index) break;
+      const evicted = open.get(oldest);
+      open.delete(oldest);
+      void evicted?.then((doc) => doc.destroy()).catch(() => undefined);
+    }
+    return promise;
+  };
+
+  // Fail early (so the caller can fall back) if the first chunk is unavailable.
+  await load(0);
+  if (chunkCount > 1) void load(1).catch(() => undefined);
+
+  return {
+    numPages: info.pages,
+    async getPage(pageNumber: number) {
+      const index = Math.floor((pageNumber - 1) / info.per);
+      const doc = await load(index);
+      if (index + 1 < chunkCount) void load(index + 1).catch(() => undefined);
+      return doc.getPage(((pageNumber - 1) % info.per) + 1);
+    },
+    async destroy() {
+      const docs = [...open.values()];
+      open.clear();
+      await Promise.all(
+        docs.map((doc) => doc.then((d) => d.destroy()).catch(() => undefined)),
+      );
+    },
+  };
+}
+
+async function openWholeDocument(fileId: string): Promise<PdfDocument> {
+  const pdfjs = await loadPdfjs();
+  const open = (url: string) => {
+    const task = pdfjs.getDocument({
+      url,
+      // Ranges are served by the R2 bucket (or forwarded to Google Drive by
+      // the API fallback), so only the pages on screen are downloaded.
+      // Streaming is off so pdf.js drops the initial full-file request once
+      // it sees ranges are supported.
+      disableRange: false,
+      disableStream: true,
+      disableAutoFetch: true,
+      rangeChunkSize: 2 * 1024 * 1024,
+      // Scanned pages stay blank unless these image decoders are loaded.
+      wasmUrl: WASM_URL,
+    });
+    return task.promise;
+  };
+
+  const apiUrl = `/api/river-basin/files/${fileId}`;
+  const storedUrl = getBlobStudyUrl(fileId);
+  if (!storedUrl) return open(apiUrl);
+  try {
+    return await open(storedUrl);
+  } catch {
+    // Stored copy unavailable: fall back to the Google Drive proxy.
+    return open(apiUrl);
+  }
+}
 
 function loadDocument(fileId: string): Promise<PdfDocument> {
   const cached = documentCache.get(fileId);
@@ -78,36 +180,16 @@ function loadDocument(fileId: string): Promise<PdfDocument> {
     return cached;
   }
 
+  const chunks = getStudyChunks(fileId);
   const pending = (async () => {
-    ensureMapUpsert();
-    const pdfjs = (await import("pdfjs-dist")) as unknown as PdfjsModule;
-    pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.upsert.mjs";
-    const open = (url: string) => {
-      const task = pdfjs.getDocument({
-        url,
-        // Ranges are served by Vercel Blob's CDN (or forwarded to Google Drive
-        // by the API fallback), so only the pages on screen are downloaded.
-        // Streaming is off so pdf.js drops the initial full-file request once
-        // it sees ranges are supported.
-        disableRange: false,
-        disableStream: true,
-        disableAutoFetch: true,
-        rangeChunkSize: 2 * 1024 * 1024,
-        // Scanned pages stay blank unless these image decoders are loaded.
-        wasmUrl: WASM_URL,
-      });
-      return task.promise;
-    };
-
-    const apiUrl = `/api/river-basin/files/${fileId}`;
-    const blobUrl = getBlobStudyUrl(fileId);
-    if (!blobUrl) return open(apiUrl);
-    try {
-      return await open(blobUrl);
-    } catch {
-      // CDN copy unavailable: fall back to the Google Drive proxy.
-      return open(apiUrl);
+    if (chunks) {
+      try {
+        return await openChunkedDocument(fileId, chunks);
+      } catch {
+        // Chunks unavailable: fall back to the single-file viewer.
+      }
     }
+    return openWholeDocument(fileId);
   })();
 
   documentCache.set(fileId, pending);
@@ -140,8 +222,10 @@ export function StudyPages({
   const [error, setError] = useState<string | null>(null);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const wordDocument = isNonPdfStudy(fileId);
 
   useEffect(() => {
+    if (wordDocument) return;
     let cancelled = false;
     setPdf(null);
     setError(null);
@@ -160,7 +244,26 @@ export function StudyPages({
     return () => {
       cancelled = true;
     };
-  }, [fileId]);
+  }, [fileId, wordDocument]);
+
+  if (wordDocument) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-16 text-center">
+        <h2 className="text-foreground text-base font-semibold">{title}</h2>
+        <p className="text-muted-foreground mt-2 text-sm">
+          This document is a Word file, so it cannot be previewed here.
+        </p>
+        <a
+          href={`https://drive.google.com/file/d/${fileId}/view`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-primary text-primary-foreground mt-4 inline-flex rounded-md px-3 py-2 text-sm font-medium hover:opacity-90"
+        >
+          Open in Google Drive
+        </a>
+      </div>
+    );
+  }
 
   if (error) {
     return (
