@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { getBlobStudyUrl } from "@/lib/river-basin/documents";
 
 type PdfPage = {
   getViewport: (params: { scale: number }) => { width: number; height: number };
@@ -70,35 +71,41 @@ const MAX_CACHED_DOCUMENTS = 3;
 const documentCache = new Map<string, Promise<PdfDocument>>();
 const documentOrder: string[] = [];
 
-function loadDocument(
-  fileId: string,
-  onProgress: (progress: number) => void,
-): Promise<PdfDocument> {
+function loadDocument(fileId: string): Promise<PdfDocument> {
   const cached = documentCache.get(fileId);
   if (cached) {
-    onProgress(100);
     return cached;
   }
 
   const pending = (async () => {
     const pdfjs = (await import("pdfjs-dist")) as unknown as PdfjsModule;
     pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-    const task = pdfjs.getDocument({
-      url: `/api/river-basin/files/${fileId}`,
-      // The server forwards byte ranges to Google Drive, so only the pages on
-      // screen are downloaded. Streaming is off so pdf.js drops the initial
-      // full-file request once it sees ranges are supported.
-      disableRange: false,
-      disableStream: true,
-      disableAutoFetch: true,
-      rangeChunkSize: 512 * 1024,
-      // Scanned pages stay blank unless these image decoders are loaded.
-      wasmUrl: WASM_URL,
-    });
-    task.onProgress = ({ loaded, total }) => {
-      if (total > 0) onProgress(Math.round((loaded / total) * 100));
+    const open = (url: string) => {
+      const task = pdfjs.getDocument({
+        url,
+        // Ranges are served by Vercel Blob's CDN (or forwarded to Google Drive
+        // by the API fallback), so only the pages on screen are downloaded.
+        // Streaming is off so pdf.js drops the initial full-file request once
+        // it sees ranges are supported.
+        disableRange: false,
+        disableStream: true,
+        disableAutoFetch: true,
+        rangeChunkSize: 512 * 1024,
+        // Scanned pages stay blank unless these image decoders are loaded.
+        wasmUrl: WASM_URL,
+      });
+      return task.promise;
     };
-    return task.promise;
+
+    const apiUrl = `/api/river-basin/files/${fileId}`;
+    const blobUrl = getBlobStudyUrl(fileId);
+    if (!blobUrl) return open(apiUrl);
+    try {
+      return await open(blobUrl);
+    } catch {
+      // CDN copy unavailable: fall back to the Google Drive proxy.
+      return open(apiUrl);
+    }
   })();
 
   documentCache.set(fileId, pending);
@@ -129,7 +136,6 @@ export function StudyPages({
 }) {
   const [pdf, setPdf] = useState<PdfDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
 
@@ -137,11 +143,8 @@ export function StudyPages({
     let cancelled = false;
     setPdf(null);
     setError(null);
-    setProgress(0);
 
-    loadDocument(fileId, (value) => {
-      if (!cancelled) setProgress(value);
-    })
+    loadDocument(fileId)
       .then((document) => {
         if (cancelled) return;
         setPdf(document);
@@ -169,14 +172,10 @@ export function StudyPages({
     return (
       <div className="px-6 py-16">
         <p className="text-muted-foreground text-center text-sm">
-          Opening {title}
-          {progress > 0 ? ` (${progress}%)` : "…"}
+          Opening {title}…
         </p>
         <div className="bg-muted mx-auto mt-4 h-1.5 w-full max-w-md overflow-hidden rounded-full">
-          <div
-            className="bg-primary h-full transition-[width] duration-150"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="bg-primary h-full w-1/3 animate-pulse rounded-full" />
         </div>
       </div>
     );
