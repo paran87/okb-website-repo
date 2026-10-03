@@ -2,7 +2,10 @@
 
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
+import { createFloodOverviewLayerRegistry } from "@/features/map/config/layer-registry";
 import { cn } from "@/utils/cn";
+
+const DASHBOARD_LAYERS = createFloodOverviewLayerRegistry();
 
 interface DashboardMapPanelProps {
   className?: string;
@@ -20,6 +23,7 @@ export function DashboardMapPanel({ className }: DashboardMapPanelProps) {
       <MapEngine
         initialView={NCR_MAP_VIEW}
         initialStyleId="light"
+        initialLayers={DASHBOARD_LAYERS}
         lockBasemap
         showSearch={false}
         className="h-full min-h-[280px] w-full lg:min-h-[360px] xl:min-h-0"

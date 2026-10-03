@@ -2,7 +2,7 @@ import type { DashboardData, WeatherSummary } from "@/features/dashboard/types";
 import type { PagasaNcrSummary } from "@/features/weather/types";
 import type { ApiSuccess } from "@/lib/api/response";
 import {
-  MOCK_DASHBOARD_DATA,
+  MOCK_WEATHER,
   MOCK_DASHBOARD_LATENCY_MS,
 } from "@/features/dashboard/services/mock-data";
 
@@ -14,7 +14,7 @@ export const dashboardService = {
   async getDashboardData(): Promise<DashboardData> {
     await delay(MOCK_DASHBOARD_LATENCY_MS);
 
-    let weather = MOCK_DASHBOARD_DATA.weather;
+    let weather = MOCK_WEATHER;
     try {
       const response = await fetch("/api/weather/summary", { cache: "no-store" });
       if (response.ok) {
@@ -26,7 +26,6 @@ export const dashboardService = {
     }
 
     return {
-      ...MOCK_DASHBOARD_DATA,
       weather,
       lastUpdated: new Date().toISOString(),
     };

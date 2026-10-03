@@ -12,17 +12,16 @@ export function DashboardSkeleton({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="flex shrink-0 gap-2 overflow-hidden">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 w-44 shrink-0 rounded-card" />
+      <div className="grid shrink-0 grid-cols-2 gap-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 min-w-0 flex-1 rounded-card" />
         ))}
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-12">
-        <Skeleton className="hidden h-full min-h-0 rounded-card xl:col-span-2 xl:block" />
-        <Skeleton className="min-h-[280px] rounded-card xl:col-span-8 xl:min-h-0" />
-        <Skeleton className="hidden min-h-0 rounded-card xl:col-span-2 xl:block" />
+        <Skeleton className="hidden h-full min-h-0 rounded-card xl:col-span-3 xl:block" />
+        <Skeleton className="min-h-[280px] rounded-card xl:col-span-6 xl:min-h-0" />
+        <Skeleton className="hidden min-h-0 rounded-card xl:col-span-3 xl:block" />
       </div>
-      <Skeleton className="h-28 shrink-0 rounded-card" />
     </div>
   );
 }

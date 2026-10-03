@@ -100,16 +100,6 @@ export interface DashboardMapState {
 }
 
 export interface DashboardData {
-  kpis: readonly KpiMetric[];
-  incidents: readonly OperationalListItem[];
-  fieldReports: readonly OperationalListItem[];
-  roadClosures: readonly OperationalListItem[];
   weather: WeatherSummary;
-  equipment: EquipmentSummary;
-  systemHealth: readonly SystemHealthItem[];
-  alerts: readonly DashboardAlert[];
-  notifications: readonly DashboardAlert[];
-  activity: readonly ActivityEvent[];
-  map: DashboardMapState;
   lastUpdated: string;
 }
