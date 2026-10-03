@@ -40,6 +40,25 @@ const ZOOM_CIRCLE_RADIUS: [
   10,
 ];
 
+/** City weather dots are the main subject of the weather map — keep them large. */
+const WEATHER_CIRCLE_RADIUS = [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  4,
+  4.5,
+  6,
+  6,
+  8,
+  7.5,
+  10,
+  9,
+  12,
+  11,
+  15,
+  14,
+] as const;
+
 const ZOOM_CIRCLE_STROKE: [
   "interpolate",
   ["linear"],
@@ -167,7 +186,9 @@ export function buildLayerSpecs(config: LayerConfig) {
           type: "circle" as const,
           source: sourceId,
           paint: {
-            "circle-radius": [...ZOOM_CIRCLE_RADIUS],
+            "circle-radius": isWeatherStation
+              ? [...WEATHER_CIRCLE_RADIUS]
+              : [...ZOOM_CIRCLE_RADIUS],
             "circle-color": isWeatherStation
               ? [
                   "match",
@@ -179,7 +200,7 @@ export function buildLayerSpecs(config: LayerConfig) {
                   "rain",
                   "#2563eb",
                   "rain-showers",
-                  "#06b6d4",
+                  "#0d9488",
                   "cloudy",
                   "#64748b",
                   "partly-cloudy",
@@ -197,12 +218,49 @@ export function buildLayerSpecs(config: LayerConfig) {
                     "#f97316",
                   ]
                 : "#22c55e",
-            "circle-stroke-width": [...ZOOM_CIRCLE_STROKE],
+            "circle-stroke-width": isWeatherStation
+              ? 2
+              : [...ZOOM_CIRCLE_STROKE],
             "circle-stroke-color": "#ffffff",
             "circle-opacity": config.opacity,
           },
         },
       ];
+
+      if (isWeatherStation) {
+        // PAGASA-style cloud tag: city name plus temperature in a pill label.
+        specs.push({
+          id: `${id}-labels`,
+          type: "symbol" as const,
+          source: sourceId,
+          minzoom: 5.5,
+          layout: {
+            "text-field": [
+              "format",
+              ["get", "name"],
+              {},
+              "\n",
+              {},
+              ["to-string", ["get", "temperature"]],
+              { "font-scale": 0.95 },
+              "°C",
+              { "font-scale": 0.95 },
+            ],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 9, 9, 11, 13, 13],
+            "text-font": [...MAP_LABEL_FONT],
+            "text-offset": [0, 1.1],
+            "text-anchor": "top",
+            "text-max-width": 7,
+            "text-allow-overlap": false,
+            "text-optional": true,
+          },
+          paint: {
+            "text-color": "#0f172a",
+            "text-halo-color": "rgba(255,255,255,0.95)",
+            "text-halo-width": 2,
+          },
+        });
+      }
 
       if (isFloodProne) {
         // Highlight ring for the selected record; the page drives its filter.

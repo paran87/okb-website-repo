@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, List } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -13,7 +13,7 @@ const CITY_CONDITIONS = [
   { color: "#eab308", label: "Fair / sunny" },
   { color: "#84cc16", label: "Partly cloudy" },
   { color: "#64748b", label: "Cloudy" },
-  { color: "#06b6d4", label: "Rain showers" },
+  { color: "#0d9488", label: "Rain showers" },
   { color: "#2563eb", label: "Rain" },
   { color: "#ea580c", label: "Thunderstorms" },
   { color: "#dc2626", label: "Monsoon rains" },
@@ -25,6 +25,11 @@ export function WeatherMapLegend({
   className,
 }: WeatherMapLegendProps) {
   const [open, setOpen] = useState(true);
+
+  // Start collapsed on phones so the legend does not cover the map.
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 639px)").matches) setOpen(false);
+  }, []);
 
   if (!open) {
     return (
@@ -47,15 +52,15 @@ export function WeatherMapLegend({
   return (
     <aside
       className={cn(
-        "glass pointer-events-auto w-[220px] rounded-xl shadow-panel",
+        "glass pointer-events-auto w-[190px] rounded-xl sm:w-[220px] shadow-panel",
         className,
       )}
       aria-label="Weather map guide"
     >
-      <header className="flex items-start justify-between gap-2 border-b border-border/60 px-3 py-2">
+      <header className="flex items-start justify-between gap-2 border-b border-border/60 px-2.5 py-1.5 sm:px-3 sm:py-2">
         <div>
           <p className="text-xs font-semibold text-foreground">Map guide</p>
-          <p className="text-[10px] leading-snug text-muted-foreground">
+          <p className="hidden text-[10px] leading-snug text-muted-foreground sm:block">
             What the colors and dots mean
           </p>
         </div>
@@ -70,20 +75,20 @@ export function WeatherMapLegend({
         </button>
       </header>
 
-      <div className="space-y-3 px-3 py-2.5">
+      <div className="space-y-2 px-2.5 py-2 sm:space-y-3 sm:px-3 sm:py-2.5">
         <section>
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
             City dots (149)
           </p>
-          <ul className="space-y-1.5">
+          <ul className="grid grid-cols-1 gap-x-2 gap-y-1 min-[360px]:grid-cols-1 sm:space-y-0.5">
             {CITY_CONDITIONS.map((item) => (
-              <li key={item.label} className="flex items-center gap-2">
+              <li key={item.label} className="flex items-center gap-2 leading-none">
                 <span
-                  className="size-2.5 shrink-0 rounded-full ring-2 ring-white dark:ring-slate-900"
+                  className="size-4 shrink-0 rounded-full ring-2 ring-white dark:ring-slate-900"
                   style={{ backgroundColor: item.color }}
                   aria-hidden
                 />
-                <span className="text-xs text-foreground">{item.label}</span>
+                <span className="text-[11px] text-foreground sm:text-xs">{item.label}</span>
               </li>
             ))}
           </ul>
