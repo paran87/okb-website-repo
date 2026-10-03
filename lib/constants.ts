@@ -48,6 +48,7 @@ export const ROUTES = {
   floodProne: "/command/flood-prone",
   drainages: "/command/drainages",
   roads: "/command/roads",
+  riverBasin: "/command/river-basin",
   waterways: "/command/waterways",
   projects: "/command/projects",
   equipment: "/command/equipment",

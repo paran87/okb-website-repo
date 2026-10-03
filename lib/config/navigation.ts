@@ -97,6 +97,13 @@ export const NAV_ITEMS: readonly NavEntry[] = [
   },
   {
     type: "link",
+    label: "River Basin",
+    href: ROUTES.riverBasin,
+    icon: AppIcons.riverBasin,
+    permission: Permission.WATERWAY_VIEW,
+  },
+  {
+    type: "link",
     label: "Waterways",
     href: ROUTES.waterways,
     icon: AppIcons.waterways,

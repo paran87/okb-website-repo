@@ -26,6 +26,7 @@ const legacyCommandPaths = [
   "flood-prone",
   "drainages",
   "roads",
+  "river-basin",
   "waterways",
   "projects",
   "equipment",
