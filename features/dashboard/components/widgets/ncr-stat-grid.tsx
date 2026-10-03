@@ -7,7 +7,7 @@ export interface NcrStat {
   value: number;
   hint: string;
   icon: LucideIcon;
-  tone: "danger" | "success" | "warning" | "primary";
+  tone: "danger" | "success" | "warning" | "primary" | "zone";
 }
 
 const TONE: Record<NcrStat["tone"], string> = {
@@ -15,13 +15,14 @@ const TONE: Record<NcrStat["tone"], string> = {
   success: "bg-success/15 text-success",
   warning: "bg-warning/15 text-warning",
   primary: "bg-primary/15 text-primary",
+  zone: "bg-[#7c3aed]/15 text-[#7c3aed]",
 };
 
 /** Headline counts derived from the NCR Critical Areas data. */
 export function NcrStatGrid({ stats }: { stats: readonly NcrStat[] }) {
   return (
     <div
-      className="grid shrink-0 grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4"
+      className="grid shrink-0 grid-cols-2 gap-1.5 sm:grid-cols-3 sm:gap-2 lg:grid-cols-5"
       role="list"
       aria-label="Incident summary"
     >
@@ -29,20 +30,20 @@ export function NcrStatGrid({ stats }: { stats: readonly NcrStat[] }) {
         <article
           key={id}
           role="listitem"
-          className="glass flex items-center gap-3 rounded-card border border-border/60 p-3 shadow-panel"
+          className="glass flex items-center gap-2 rounded-lg border border-border/60 p-2 shadow-panel"
         >
           <div
             className={cn(
-              "flex size-9 shrink-0 items-center justify-center rounded-lg",
+              "flex size-7 shrink-0 items-center justify-center rounded-md",
               TONE[tone],
             )}
           >
-            <Icon className="size-4" aria-hidden />
+            <Icon className="size-3.5" aria-hidden />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-label text-muted-foreground">{label}</p>
-            <p className="font-mono text-h3 text-foreground">{value}</p>
-            <p className="truncate text-label text-muted-foreground">{hint}</p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">{label}</p>
+            <p className="font-mono text-base font-semibold leading-tight text-foreground">{value}</p>
+            <p className="truncate text-[10px] leading-tight text-muted-foreground">{hint}</p>
           </div>
         </article>
       ))}
