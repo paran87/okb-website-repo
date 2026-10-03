@@ -13,6 +13,7 @@ export function CommandShell({ children }: { children: ReactNode }) {
     pathname === ROUTES.dashboardAlt ||
     pathname === ROUTES.floodMonitoring ||
     pathname === ROUTES.floodProne ||
+    pathname === ROUTES.roads ||
     pathname === ROUTES.drainages ||
     pathname === ROUTES.waterways ||
     pathname === ROUTES.equipment ||
