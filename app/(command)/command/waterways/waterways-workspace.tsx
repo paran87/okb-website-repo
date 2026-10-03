@@ -56,7 +56,7 @@ export function WaterwaysWorkspace() {
           onChange={setQuery}
           placeholder="Search Waterways"
           aria-label="Search Waterways"
-          className="max-w-md"
+          className="w-full max-w-xl"
         />
       </header>
 
