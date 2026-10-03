@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import {
   FileText,
   Route,
-  ShieldAlert,
   Waves,
 } from "lucide-react";
 import { Tabs } from "@/components/ui/tabs";
@@ -14,7 +13,6 @@ import type { OperationalListItem } from "@/features/dashboard/types";
 
 interface LeftOperationsPanelProps {
   incidents: readonly OperationalListItem[];
-  criticalAreas: readonly OperationalListItem[];
   fieldReports: readonly OperationalListItem[];
   roadClosures: readonly OperationalListItem[];
   className?: string;
@@ -23,7 +21,6 @@ interface LeftOperationsPanelProps {
 /** Left-side operational lists with tabbed navigation. */
 export function LeftOperationsPanel({
   incidents,
-  criticalAreas,
   fieldReports,
   roadClosures,
   className,
@@ -48,17 +45,6 @@ export function LeftOperationsPanel({
               <ScrollList>
                 {incidents.map((item) => (
                   <IncidentCard key={item.id} item={item} icon={Waves} />
-                ))}
-              </ScrollList>
-            ),
-          },
-          {
-            id: "critical",
-            label: "Critical",
-            content: (
-              <ScrollList>
-                {criticalAreas.map((item) => (
-                  <IncidentCard key={item.id} item={item} icon={ShieldAlert} />
                 ))}
               </ScrollList>
             ),

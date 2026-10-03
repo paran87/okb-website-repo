@@ -102,7 +102,6 @@ export interface DashboardMapState {
 export interface DashboardData {
   kpis: readonly KpiMetric[];
   incidents: readonly OperationalListItem[];
-  criticalAreas: readonly OperationalListItem[];
   fieldReports: readonly OperationalListItem[];
   roadClosures: readonly OperationalListItem[];
   weather: WeatherSummary;
