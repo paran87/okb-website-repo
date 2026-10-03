@@ -3,8 +3,14 @@ import tls from "node:tls";
 import { PUMPING_STATIONS_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const REQUEST_TIMEOUT_MS = 20_000;
+
+const ALLOWED_HOSTS = new Set([
+  "script.google.com",
+  "script.googleusercontent.com",
+]);
 
 /**
  * Google serves this Apps Script deployment with X-Frame-Options: SAMEORIGIN,
@@ -15,27 +21,21 @@ const REQUEST_TIMEOUT_MS = 20_000;
  * returns that document from our origin, which the command center can frame.
  */
 export async function GET() {
-  let page: UpstreamResponse;
+  let page: UpstreamPage;
 
   try {
     page = await fetchAppsScriptHtml(PUMPING_STATIONS_URL);
   } catch {
-    return new Response("Unable to load the pumping stations dashboard.", {
-      status: 502,
-    });
+    return loadError(502);
   }
 
   if (page.status < 200 || page.status >= 300) {
-    return new Response("Unable to load the pumping stations dashboard.", {
-      status: page.status,
-    });
+    return loadError(page.status);
   }
 
-  const userHtml = extractUserHtml(page.body.toString("utf8"));
+  const userHtml = dashboardDocument(page.body);
   if (!userHtml) {
-    return new Response("Unable to load the pumping stations dashboard.", {
-      status: 502,
-    });
+    return loadError(502);
   }
 
   return new Response(userHtml, {
@@ -45,6 +45,29 @@ export async function GET() {
       "Cache-Control": "no-store",
     },
   });
+}
+
+function loadError(status: number): Response {
+  return new Response("Unable to load the pumping stations dashboard.", {
+    status,
+  });
+}
+
+interface UpstreamPage {
+  status: number;
+  body: string;
+}
+
+function dashboardDocument(body: string): string | null {
+  const extracted = extractUserHtml(body);
+  if (extracted) return extracted;
+
+  const trimmed = body.trimStart().toLowerCase();
+  if (trimmed.startsWith("<!doctype html") || trimmed.startsWith("<html")) {
+    return body;
+  }
+
+  return null;
 }
 
 function extractUserHtml(wrapper: string): string | null {
@@ -109,46 +132,86 @@ function decodeJsString(source: string, quoteIndex: number): string {
   throw new Error("Unterminated JavaScript string.");
 }
 
-interface UpstreamResponse {
+async function fetchAppsScriptHtml(startUrl: string): Promise<UpstreamPage> {
+  try {
+    return await fetchWithCertificates(startUrl);
+  } catch (error) {
+    if (!isCertificateError(error) || typeof tls.getCACertificates !== "function") {
+      throw error;
+    }
+    return fetchWithCertificates(startUrl, tls.getCACertificates("system"));
+  }
+}
+
+function isCertificateError(error: unknown): boolean {
+  if (!(error instanceof Error) || !("code" in error)) return false;
+  const code = error.code;
+  return (
+    code === "UNABLE_TO_VERIFY_LEAF_SIGNATURE" ||
+    code === "UNABLE_TO_GET_ISSUER_CERT_LOCALLY" ||
+    code === "SELF_SIGNED_CERT_IN_CHAIN"
+  );
+}
+
+async function fetchWithCertificates(
+  startUrl: string,
+  ca?: readonly string[],
+): Promise<UpstreamPage> {
+  let current = startUrl;
+
+  for (let hop = 0; hop < 5; hop += 1) {
+    const parsed = new URL(current);
+    if (parsed.protocol !== "https:" || !ALLOWED_HOSTS.has(parsed.hostname)) {
+      throw new Error("Upstream host is not allowed.");
+    }
+
+    const response = await requestGoogle(parsed, ca);
+    if (response.status >= 300 && response.status < 400 && response.location) {
+      current = new URL(response.location, parsed).toString();
+      continue;
+    }
+
+    return {
+      status: response.status,
+      body: response.body.toString("utf8"),
+    };
+  }
+
+  throw new Error("Too many redirects.");
+}
+
+interface GoogleResponse {
   status: number;
+  location?: string;
   body: Buffer;
 }
 
-function fetchAppsScriptHtml(url: string, redirects = 0): Promise<UpstreamResponse> {
-  const parsed = new URL(url);
-  if (parsed.protocol !== "https:" || parsed.hostname !== "script.google.com") {
-    return Promise.reject(new Error("Upstream host is not allowed."));
-  }
-
+function requestGoogle(url: URL, ca?: readonly string[]): Promise<GoogleResponse> {
   return new Promise((resolve, reject) => {
     const request = https.get(
       {
-        hostname: parsed.hostname,
-        path: `${parsed.pathname}${parsed.search}`,
+        hostname: url.hostname,
+        path: `${url.pathname}${url.search}`,
         headers: {
           Accept: "text/html,application/xhtml+xml",
           "User-Agent":
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
         },
-        ca: tls.getCACertificates("system"),
+        ...(ca ? { ca: [...ca] } : {}),
         rejectUnauthorized: true,
       },
       (response) => {
-        const status = response.statusCode ?? 500;
-        const location = response.headers.location;
-
-        if (status >= 300 && status < 400 && location && redirects < 5) {
-          response.resume();
-          resolve(fetchAppsScriptHtml(new URL(location, parsed).toString(), redirects + 1));
-          return;
-        }
-
         const chunks: Buffer[] = [];
         response.on("data", (chunk: Buffer) => {
           chunks.push(chunk);
         });
         response.on("end", () => {
-          resolve({ status, body: Buffer.concat(chunks) });
+          const location = response.headers.location;
+          resolve({
+            status: response.statusCode ?? 500,
+            location: Array.isArray(location) ? location[0] : location,
+            body: Buffer.concat(chunks),
+          });
         });
       },
     );
