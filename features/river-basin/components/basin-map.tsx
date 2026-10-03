@@ -408,10 +408,8 @@ function BasinMapOverlay({ slug, label }: BasinMapProps) {
     sync();
     const onStyle = () => sync();
     map.on("style.load", onStyle);
-    map.on("idle", onStyle);
     return () => {
       map.off("style.load", onStyle);
-      map.off("idle", onStyle);
     };
   }, [map, status, sync, dataVersion]);
 

@@ -42,10 +42,6 @@ export const BACOOR_CITY_WATERWAYS_URL =
 export const EQUIPMENT_DASHBOARD_URL =
   "https://script.google.com/macros/s/AKfycbwNtjYcdf7oLwfE0miNFwesRGLndcZmOF12XTNKubEUN37vOsytQB3czx-3faXQUnD3/exec";
 
-/** DPWH road network portfolio (ArcGIS). */
-export const ROAD_NETWORK_URL =
-  "https://dpwh.maps.arcgis.com/apps/instant/portfolio/index.html?appid=4e07d41a7b4b47a4a08e03caa8b3eafa";
-
 /** Command Center route paths (single source of truth for navigation + links). */
 export const ROUTES = {
   dashboard: "/command",
