@@ -8,7 +8,7 @@ control), designed to operate like a National Emergency Operations Center.
 > production architecture, application shell, theming, shared component library,
 > state/data infrastructure, auth foundation, and API structure. **No business
 > features are implemented yet**, and the Prisma schema is intentionally empty.
-> Operational modules (flood monitoring, critical areas, equipment, etc.) are
+> Operational modules (flood monitoring, equipment, etc.) are
 > delivered in later phases — their routes, navigation, and RBAC entries are
 > already wired into the shell.
 
