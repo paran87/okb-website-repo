@@ -28,6 +28,9 @@ import {
   WifiOff,
   PanelRightClose,
   PanelRightOpen,
+  Inbox,
+  BrainCircuit,
+  Archive,
   type LucideIcon,
 } from "lucide-react";
 
@@ -44,6 +47,9 @@ export const AppIcons = {
   equipment: Truck,
   weather: CloudRain,
   reports: FileBarChart,
+  reportsIncoming: Inbox,
+  reportsAiSummary: BrainCircuit,
+  reportsArchive: Archive,
   analytics: BarChart3,
   incidents: AlertTriangle,
   roads: Route,
