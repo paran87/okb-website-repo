@@ -377,48 +377,81 @@ export function ReportDetailView({
           {/* Monitored locations */}
           {r.observations.length ? (
             <OpsSection title={`Flood monitoring status · ${r.observations.length} location${r.observations.length === 1 ? "" : "s"}`} icon={MapPinned} bodyClassName="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-caption">
-                  <thead className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-2 font-semibold">Location</th>
-                      <th className="px-2 py-2 font-semibold">Status</th>
-                      <th className="px-2 py-2 font-semibold">Water level</th>
-                      <th className="px-2 py-2 font-semibold">Road</th>
-                      <th className="px-4 py-2 font-semibold" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {r.observations.map((o) => (
-                      <tr key={o.index} className="align-top">
-                        <td className="px-4 py-2.5">
-                          <p className="font-semibold text-foreground">{o.label}</p>
-                          {o.intervention ? <p className="text-muted-foreground">{o.intervention}</p> : null}
-                        </td>
-                        <td className="px-2 py-2.5">
-                          <ConditionBadge condition={o.condition} />
-                          {o.subsidedAt ? <p className="mt-1 text-success">Subsided {formatClock(o.subsidedAt)}</p> : null}
-                        </td>
-                        <td className="px-2 py-2.5 font-mono text-foreground" title={o.conditionBasis ?? undefined}>
-                          {o.heightM !== null ? formatMeters(o.heightM) : o.heightRaw ? `“${o.heightRaw}”` : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="px-2 py-2.5 text-foreground">{o.roadStatus ?? <span className="text-muted-foreground">—</span>}</td>
-                        <td className="px-4 py-2.5 text-right">
-                          {o.key ? (
-                            <button
-                              type="button"
-                              onClick={() => setHistoryKey(o.key)}
-                              className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
-                            >
-                              <History className="size-3.5" aria-hidden />
-                              History
-                            </button>
-                          ) : null}
-                        </td>
+              {/* Narrow containers: one stacked row per location so no column is pushed off-screen. */}
+              <div className="@container">
+                <ul className="divide-y divide-border/60 text-caption @xl:hidden">
+                  {r.observations.map((o) => (
+                    <li key={o.index} className="space-y-1.5 px-4 py-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 break-words font-semibold text-foreground">{o.label}</p>
+                        <ConditionBadge condition={o.condition} />
+                      </div>
+                      {o.intervention ? <p className="text-muted-foreground">{o.intervention}</p> : null}
+                      <p className="text-foreground">
+                        <span className="text-muted-foreground">Water level: </span>
+                        <span className="font-mono">
+                          {o.heightM !== null ? formatMeters(o.heightM) : o.heightRaw ? `“${o.heightRaw}”` : "—"}
+                        </span>
+                        <span className="text-muted-foreground"> · Road: </span>
+                        {o.roadStatus ?? "—"}
+                      </p>
+                      {o.subsidedAt ? <p className="text-success">Subsided {formatClock(o.subsidedAt)}</p> : null}
+                      {o.key ? (
+                        <button
+                          type="button"
+                          onClick={() => setHistoryKey(o.key)}
+                          className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                        >
+                          <History className="size-3.5" aria-hidden />
+                          History
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+                <div className="hidden overflow-x-auto @xl:block">
+                  <table className="w-full min-w-[560px] text-left text-caption">
+                    <thead className="border-b border-border text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <tr>
+                        <th className="px-4 py-2 font-semibold">Location</th>
+                        <th className="px-2 py-2 font-semibold">Status</th>
+                        <th className="px-2 py-2 font-semibold">Water level</th>
+                        <th className="px-2 py-2 font-semibold">Road</th>
+                        <th className="px-4 py-2 font-semibold" />
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {r.observations.map((o) => (
+                        <tr key={o.index} className="align-top">
+                          <td className="px-4 py-2.5">
+                            <p className="font-semibold text-foreground">{o.label}</p>
+                            {o.intervention ? <p className="text-muted-foreground">{o.intervention}</p> : null}
+                          </td>
+                          <td className="px-2 py-2.5">
+                            <ConditionBadge condition={o.condition} />
+                            {o.subsidedAt ? <p className="mt-1 text-success">Subsided {formatClock(o.subsidedAt)}</p> : null}
+                          </td>
+                          <td className="px-2 py-2.5 font-mono text-foreground" title={o.conditionBasis ?? undefined}>
+                            {o.heightM !== null ? formatMeters(o.heightM) : o.heightRaw ? `“${o.heightRaw}”` : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="px-2 py-2.5 text-foreground">{o.roadStatus ?? <span className="text-muted-foreground">—</span>}</td>
+                          <td className="px-4 py-2.5 text-right">
+                            {o.key ? (
+                              <button
+                                type="button"
+                                onClick={() => setHistoryKey(o.key)}
+                                className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                              >
+                                <History className="size-3.5" aria-hidden />
+                                History
+                              </button>
+                            ) : null}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
               <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
                 Status is derived from the AI-extracted values and quoted source wording (hover a water level for the basis).

@@ -130,8 +130,40 @@ function IncidentList() {
   }
 
   return (
-    <div className="space-y-3">
-      <Card className="overflow-hidden">
+    <div className="@container space-y-3">
+      {/* Narrow containers: one stacked card per incident so every field is visible. */}
+      <ul className="space-y-2 @4xl:hidden">
+        {result.items.map((i) => (
+          <li key={i.id}>
+            <button
+              type="button"
+              onClick={() => open(i.id)}
+              className="w-full space-y-2 rounded-card border border-border bg-card p-3 text-left text-caption outline-none hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="font-mono font-semibold text-foreground">{i.code}</span>
+                <Badge variant={SEVERITY_META[i.severity].variant}>{SEVERITY_META[i.severity].label}</Badge>
+                <Badge variant={INCIDENT_STATUS_META[i.status].variant} dot>
+                  {INCIDENT_STATUS_META[i.status].label}
+                </Badge>
+              </div>
+              <p className="text-body font-medium text-foreground">{truncate(i.title, 120)}</p>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+                <dt className="text-muted-foreground">Type</dt>
+                <dd className="text-foreground">{incidentTypeLabel(i.incidentType)}</dd>
+                <dt className="text-muted-foreground">Location</dt>
+                <dd className="break-words text-foreground">{i.locationText ?? "—"}</dd>
+                <dt className="text-muted-foreground">Created</dt>
+                <dd className="text-foreground">
+                  {formatDateTime(i.createdAt)} · by {i.createdBy}
+                </dd>
+              </dl>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <Card className="hidden overflow-hidden @4xl:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-caption">
             <thead className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">

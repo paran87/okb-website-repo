@@ -55,65 +55,110 @@ function ListSkeleton({ rows }: { rows: number }) {
 
 function ArchiveTable({ items, onOpen }: { items: ReportListItem[]; onOpen: (id: string) => void }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] text-left text-caption">
-          <thead className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="px-4 py-2.5 font-semibold">Received</th>
-              <th className="px-3 py-2.5 font-semibold">Source / group</th>
-              <th className="px-3 py-2.5 font-semibold">Sender</th>
-              <th className="px-3 py-2.5 font-semibold">Type · office</th>
-              <th className="px-3 py-2.5 font-semibold">Report</th>
-              <th className="px-3 py-2.5 font-semibold">Locations</th>
-              <th className="px-4 py-2.5 font-semibold">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border/60">
-            {items.map((it) => (
-              <tr
-                key={it.id}
-                onClick={() => onOpen(it.id)}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen(it.id)}
-                tabIndex={0}
-                className="cursor-pointer align-top outline-none hover:bg-muted/30 focus-visible:bg-muted/40"
-              >
-                <td className="whitespace-nowrap px-4 py-2.5">
-                  <p className="text-foreground">{formatDateTime(it.messageTime ?? it.receivedAt)}</p>
-                  <p className="font-mono text-[11px] text-muted-foreground">{it.reference}</p>
-                </td>
-                <td className="px-3 py-2.5">
-                  <PlatformBadge platform={it.platform} />
-                  <p className="mt-1 max-w-[200px] truncate text-foreground">{it.groupName ?? "Unnamed group"}</p>
-                </td>
-                <td className="px-3 py-2.5 text-foreground">{it.senderName ?? "—"}</td>
-                <td className="px-3 py-2.5">
-                  <p className="text-foreground">{reportTypeLabel(it.reportType)}</p>
-                  <p className="text-muted-foreground">{[it.office, it.region].filter(Boolean).join(" · ") || "Office not reported"}</p>
-                </td>
-                <td className="max-w-[360px] px-3 py-2.5 text-foreground">
-                  {it.title ? <p className="font-semibold">{it.title}</p> : null}
-                  <p className="text-muted-foreground">{truncate(it.aiSummary ? parseAiSummary(it.aiSummary).overall : it.preview, 160)}</p>
-                </td>
-                <td className="whitespace-nowrap px-3 py-2.5">
-                  {it.locationCount ? (
-                    <span>
+    <div className="@container">
+      {/* Narrow containers: stacked cards so no column is pushed off-screen. */}
+      <ul className="space-y-2 @5xl:hidden">
+        {items.map((it) => (
+          <li key={it.id}>
+            <button
+              type="button"
+              onClick={() => onOpen(it.id)}
+              className="w-full space-y-2 rounded-card border border-border bg-card p-3 text-left text-caption outline-none hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex flex-wrap items-center gap-1.5">
+                <PlatformBadge platform={it.platform} />
+                <StatusBadge status={it.status} />
+                {it.incidents[0] ? <span className="font-mono text-[11px] text-success">{it.incidents[0].code}</span> : null}
+              </div>
+              {it.title ? <p className="text-body font-semibold text-foreground">{it.title}</p> : null}
+              <p className="text-muted-foreground">{truncate(it.aiSummary ? parseAiSummary(it.aiSummary).overall : it.preview, 160)}</p>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+                <dt className="text-muted-foreground">Received</dt>
+                <dd className="text-foreground">
+                  {formatDateTime(it.messageTime ?? it.receivedAt)} <span className="font-mono text-[11px] text-muted-foreground">{it.reference}</span>
+                </dd>
+                <dt className="text-muted-foreground">Group</dt>
+                <dd className="break-words text-foreground">
+                  {it.groupName ?? "Unnamed group"} · {it.senderName ?? "—"}
+                </dd>
+                <dt className="text-muted-foreground">Type</dt>
+                <dd className="text-foreground">
+                  {reportTypeLabel(it.reportType)}
+                  {[it.office, it.region].filter(Boolean).length ? ` · ${[it.office, it.region].filter(Boolean).join(" · ")}` : ""}
+                </dd>
+                {it.locationCount ? (
+                  <>
+                    <dt className="text-muted-foreground">Locations</dt>
+                    <dd className="text-foreground">
                       {it.locationCount} · <span className={it.floodedCount ? "font-semibold text-warning" : ""}>{it.floodedCount} flooded</span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
-                <td className="px-4 py-2.5">
-                  <StatusBadge status={it.status} />
-                  {it.incidents[0] ? <p className="mt-1 font-mono text-[11px] text-success">{it.incidents[0].code}</p> : null}
-                </td>
+                    </dd>
+                  </>
+                ) : null}
+              </dl>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <Card className="hidden overflow-hidden @5xl:block">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[960px] text-left text-caption">
+            <thead className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2.5 font-semibold">Received</th>
+                <th className="px-3 py-2.5 font-semibold">Source / group</th>
+                <th className="px-3 py-2.5 font-semibold">Sender</th>
+                <th className="px-3 py-2.5 font-semibold">Type · office</th>
+                <th className="px-3 py-2.5 font-semibold">Report</th>
+                <th className="px-3 py-2.5 font-semibold">Locations</th>
+                <th className="px-4 py-2.5 font-semibold">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {items.map((it) => (
+                <tr
+                  key={it.id}
+                  onClick={() => onOpen(it.id)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onOpen(it.id)}
+                  tabIndex={0}
+                  className="cursor-pointer align-top outline-none hover:bg-muted/30 focus-visible:bg-muted/40"
+                >
+                  <td className="whitespace-nowrap px-4 py-2.5">
+                    <p className="text-foreground">{formatDateTime(it.messageTime ?? it.receivedAt)}</p>
+                    <p className="font-mono text-[11px] text-muted-foreground">{it.reference}</p>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <PlatformBadge platform={it.platform} />
+                    <p className="mt-1 max-w-[200px] truncate text-foreground">{it.groupName ?? "Unnamed group"}</p>
+                  </td>
+                  <td className="px-3 py-2.5 text-foreground">{it.senderName ?? "—"}</td>
+                  <td className="px-3 py-2.5">
+                    <p className="text-foreground">{reportTypeLabel(it.reportType)}</p>
+                    <p className="text-muted-foreground">{[it.office, it.region].filter(Boolean).join(" · ") || "Office not reported"}</p>
+                  </td>
+                  <td className="max-w-[360px] px-3 py-2.5 text-foreground">
+                    {it.title ? <p className="font-semibold">{it.title}</p> : null}
+                    <p className="text-muted-foreground">{truncate(it.aiSummary ? parseAiSummary(it.aiSummary).overall : it.preview, 160)}</p>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5">
+                    {it.locationCount ? (
+                      <span>
+                        {it.locationCount} · <span className={it.floodedCount ? "font-semibold text-warning" : ""}>{it.floodedCount} flooded</span>
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <StatusBadge status={it.status} />
+                    {it.incidents[0] ? <p className="mt-1 font-mono text-[11px] text-success">{it.incidents[0].code}</p> : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
   );
 }
 
