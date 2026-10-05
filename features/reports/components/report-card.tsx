@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import type { ReportListItem } from "@/features/reports/types";
 import { formatDateTime, formatFull, formatRelative } from "@/features/reports/lib/format";
+import { parseAiSummary } from "@/features/reports/lib/ai-summary";
 import { reportTypeLabel } from "@/features/reports/lib/labels";
 import { useReviewReport } from "@/features/reports/hooks/use-reports";
 import { AiTag, PlatformBadge, StatusBadge } from "@/features/reports/components/report-ui";
@@ -23,6 +24,7 @@ export function ReportCard({ item, reviewEnabled, incidentsEnabled, onOpen, onCr
   const review = useReviewReport(item.id);
   const reviewable = item.status === "extracted" || item.status === "needs_review";
   const time = item.messageTime ?? item.receivedAt;
+  const ai = item.aiSummary ? parseAiSummary(item.aiSummary) : null;
 
   return (
     <article
@@ -92,7 +94,12 @@ export function ReportCard({ item, reviewEnabled, incidentsEnabled, onOpen, onCr
             <AiTag label="AI Summary" />
             <span className="text-[10px] text-muted-foreground">Not verified</span>
           </div>
-          <p className="text-body text-foreground">{item.aiSummary}</p>
+          <p className="text-body text-foreground">{ai?.overall}</p>
+          {ai?.locationCount ? (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Covers {ai.locationCount} location{ai.locationCount === 1 ? "" : "s"} — open the report for the full per-location summary.
+            </p>
+          ) : null}
         </div>
       ) : item.status === "processing" ? (
         <p className="mt-3 text-caption text-primary">AI analysis is in progress.</p>

@@ -328,7 +328,7 @@ export function ReportDetailView({
           {/* AI summary — separate from source */}
           {r.aiSummary ? (
             <AiPanel title="AI Summary" footer={meta?.extractedAt ? <span>· {formatDateTime(meta.extractedAt)}</span> : null}>
-              {r.aiSummary}
+              <div className="whitespace-pre-line">{r.aiSummary}</div>
             </AiPanel>
           ) : (
             <div className="rounded-xl border border-dashed border-border px-4 py-3 text-caption text-muted-foreground">

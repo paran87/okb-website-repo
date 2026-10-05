@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import type { SeriesComparison } from "@/features/reports/types";
+import { parseAiSummary } from "@/features/reports/lib/ai-summary";
 import { formatDateTime, formatShortDateTime } from "@/features/reports/lib/format";
 import { useSituationSummary } from "@/features/reports/hooks/use-reports";
 import { AiPanel, CountBars, MetricTile, OpsSection } from "@/features/reports/components/report-ui";
@@ -152,7 +153,7 @@ export function AiSituationView() {
                   <ul className="space-y-3">
                     {data.latestAiSummaries.map((s) => (
                       <li key={s.id} className="border-l-2 border-primary/50 pl-3">
-                        <p className="text-body text-foreground">{s.summary}</p>
+                        <p className="text-body text-foreground">{parseAiSummary(s.summary).overall}</p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
                           AI summary · {s.groupName ?? "Unnamed group"} · {formatShortDateTime(s.messageTime)} ·{" "}
                           <Link href={`${ROUTES.reports}/${s.id}`} className="font-mono text-primary hover:underline">

@@ -11,6 +11,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
 import type { ReportListItem, ReportListQuery, ReportsAccessState } from "@/features/reports/types";
+import { parseAiSummary } from "@/features/reports/lib/ai-summary";
 import { formatDateTime, truncate } from "@/features/reports/lib/format";
 import { reportTypeLabel } from "@/features/reports/lib/labels";
 import { useNewReportsCount, useReportList } from "@/features/reports/hooks/use-reports";
@@ -92,7 +93,7 @@ function ArchiveTable({ items, onOpen }: { items: ReportListItem[]; onOpen: (id:
                 </td>
                 <td className="max-w-[360px] px-3 py-2.5 text-foreground">
                   {it.title ? <p className="font-semibold">{it.title}</p> : null}
-                  <p className="text-muted-foreground">{truncate(it.aiSummary ?? it.preview, 160)}</p>
+                  <p className="text-muted-foreground">{truncate(it.aiSummary ? parseAiSummary(it.aiSummary).overall : it.preview, 160)}</p>
                 </td>
                 <td className="whitespace-nowrap px-3 py-2.5">
                   {it.locationCount ? (
