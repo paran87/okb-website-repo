@@ -12,8 +12,9 @@ const CLOUD_COLORS: Record<string, string> = {
   "monsoon-rain": "#dc2626",
 };
 
-const W = 80;
-const H = 56;
+// Compact canvas keeps the weather markers visually lighter on the map.
+const W = 64;
+const H = 46;
 const RATIO = 2;
 
 function cloudPath(ctx: CanvasRenderingContext2D, dx = 0, dy = 0) {
