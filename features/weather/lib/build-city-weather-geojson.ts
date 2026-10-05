@@ -101,6 +101,17 @@ function cityCondition(
   base: PagasaWeatherCondition,
   psgcCode: string,
 ): PagasaWeatherCondition {
+  // Rain conditions must remain visually truthful on the map.
+  // Do not downgrade rain/rain-showers into cloudy/partly-cloudy.
+  if (
+    base === "rain" ||
+    base === "rain-showers" ||
+    base === "thunderstorms" ||
+    base === "monsoon-rain"
+  ) {
+    return base;
+  }
+
   const variants = CONDITION_VARIANTS[base];
   return variants[hashCode(psgcCode) % variants.length] ?? base;
 }
