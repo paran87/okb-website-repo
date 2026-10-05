@@ -36,7 +36,7 @@ export function EmptyState({
           {title}
         </p>
         {description ? (
-          <p className="mx-auto max-w-sm text-body text-muted-foreground">
+          <p className="mx-auto max-w-[24rem] text-body text-muted-foreground">
             {description}
           </p>
         ) : null}

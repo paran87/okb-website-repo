@@ -28,7 +28,7 @@ export function ErrorState({
       </div>
       <div className="space-y-1">
         <p className="text-subheading text-foreground">{title}</p>
-        <p className="mx-auto max-w-sm text-body text-muted-foreground">
+        <p className="mx-auto max-w-[24rem] text-body text-muted-foreground">
           {description}
         </p>
       </div>

@@ -9,11 +9,13 @@ import { cn } from "@/utils/cn";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl";
 
+// Arbitrary widths: the named --spacing-* tokens in globals.css override
+// max-w-{xs..3xl} (e.g. max-w-lg would be 1.5rem).
 const SIZE_CLASSES: Record<ModalSize, string> = {
-  sm: "max-w-sm",
-  md: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
+  sm: "max-w-[24rem]",
+  md: "max-w-[32rem]",
+  lg: "max-w-[42rem]",
+  xl: "max-w-[56rem]",
 };
 
 interface ModalProps {
