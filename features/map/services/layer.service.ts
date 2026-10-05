@@ -172,7 +172,7 @@ export function buildLayerSpecs(config: LayerConfig) {
             source: sourceId,
             layout: {
               "icon-image": ["concat", CLOUD_ICON_PREFIX, ["get", "condition"]],
-              "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.6, 7, 0.8, 10, 1, 14, 1.3],
+              "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.42, 7, 0.55, 10, 0.68, 14, 0.86],
               "icon-allow-overlap": true,
               "text-field": [
                 "format",
