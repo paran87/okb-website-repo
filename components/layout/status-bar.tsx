@@ -2,8 +2,6 @@
 
 import type { StatusTone } from "@/components/ui/status-indicator";
 import { StatusIndicator } from "@/components/ui/status-indicator";
-import { DEFAULT_REGION } from "@/lib/constants";
-import { ROLE_LABELS, UserRole } from "@/lib/rbac/roles";
 import { cn } from "@/utils/cn";
 
 interface ServiceStatus {
@@ -29,8 +27,6 @@ interface StatusBarProps {
 
 /** Bottom operational status bar for service health and session context. */
 export function StatusBar({ className }: StatusBarProps) {
-  const role = UserRole.ADMINISTRATOR;
-
   return (
     <footer
       role="contentinfo"
@@ -61,17 +57,9 @@ export function StatusBar({ className }: StatusBarProps) {
           Connection:{" "}
           <span className="text-success">Good</span>
         </span>
-        <span className="hidden lg:inline">
-          User:{" "}
-          <span className="text-foreground">Operator</span>
-          <span className="text-muted-foreground">
-            {" "}
-            · {ROLE_LABELS[role]}
-          </span>
-        </span>
         <span className="hidden md:inline">
-          Region:{" "}
-          <span className="text-foreground">{DEFAULT_REGION}</span>
+          Operator:{" "}
+          <span className="text-foreground">JENER L. BRAGA</span>
         </span>
       </div>
     </footer>
