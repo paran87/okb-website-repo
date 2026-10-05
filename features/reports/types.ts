@@ -534,4 +534,6 @@ export interface ReportsAccessState {
   operatorName: string | null;
   /** Bridge review API configured (Mark Reviewed / Reject / Reopen). */
   reviewEnabled: boolean;
+  /** Operator access gate switched off: report data is open to anyone. */
+  accessGateDisabled: boolean;
 }

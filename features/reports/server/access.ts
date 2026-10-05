@@ -24,6 +24,13 @@ import type { ReportStore } from "@/features/reports/server/store";
  * Access fails closed: with neither configured, report data is not served.
  */
 
+/**
+ * TEMPORARILY DISABLED at the owner's request: while false, report data is
+ * served to anyone who opens the Reports pages and OKB_REPORTS_ACCESS_KEY is
+ * ignored. Set back to true to require operator access again.
+ */
+const ACCESS_GATE_ENABLED = false;
+
 const COOKIE = "okb_reports_access";
 const MAX_AGE_S = 12 * 60 * 60;
 
@@ -100,12 +107,15 @@ export async function getAccessState(request: NextRequest): Promise<ReportsAcces
   const session = await sessionOperator();
   const grant = verify(cfg, request.cookies.get(COOKIE)?.value);
   const devOpen = store?.kind === "fixtures" && !cfg.accessKey;
+  const gateOff = !ACCESS_GATE_ENABLED && store !== null;
   return {
     dataSource,
-    accessConfigured: Boolean(cfg.accessKey) || devOpen,
-    granted: Boolean(session || grant || devOpen),
-    operatorName: session ?? grant?.n ?? (devOpen ? "Developer (fixtures)" : null),
+    accessConfigured: Boolean(cfg.accessKey) || devOpen || gateOff,
+    granted: Boolean(session || grant || devOpen || gateOff),
+    operatorName:
+      session ?? grant?.n ?? (devOpen ? "Developer (fixtures)" : gateOff ? "Unidentified operator" : null),
     reviewEnabled: Boolean(store?.reviewEnabled),
+    accessGateDisabled: gateOff,
   };
 }
 

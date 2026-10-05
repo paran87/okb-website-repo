@@ -128,7 +128,10 @@ export function ReportsContextBar({ state }: { state: ReportsAccessState }) {
           Operator: <span className="font-medium text-foreground">{state.operatorName}</span>
         </span>
         {!state.reviewEnabled ? <span className="text-warning">Review actions unavailable (bridge API not configured)</span> : null}
-        {state.dataSource === "supabase" ? (
+        {state.accessGateDisabled ? (
+          <span className="font-semibold text-warning">Operator access check is disabled — anyone with the link can view reports</span>
+        ) : null}
+        {state.dataSource === "supabase" && !state.accessGateDisabled ? (
           <button
             type="button"
             onClick={() => revoke.mutate()}
