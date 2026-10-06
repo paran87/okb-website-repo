@@ -25,11 +25,11 @@ import type { ReportStore } from "@/features/reports/server/store";
  */
 
 /**
- * TEMPORARILY DISABLED at the owner's request: while false, report data is
- * served to anyone who opens the Reports pages and OKB_REPORTS_ACCESS_KEY is
- * ignored. Set back to true to require operator access again.
+ * Operator access check for the Reports pages, Settings → Automated WhatsApp
+ * reports and every /api/reports/* route. When false, report data is served to
+ * anyone who opens the pages and OKB_REPORTS_ACCESS_KEY is ignored.
  */
-const ACCESS_GATE_ENABLED = false;
+const ACCESS_GATE_ENABLED = true;
 
 const COOKIE = "okb_reports_access";
 const MAX_AGE_S = 12 * 60 * 60;
