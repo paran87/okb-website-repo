@@ -24,14 +24,14 @@ export function MapPopup({
   return (
     <div
       className={cn(
-        "glass w-64 rounded-card shadow-panel",
+        "glass w-60 rounded-lg shadow-panel",
         className,
       )}
       role="dialog"
       aria-label={typeof title === "string" ? title : "Map popup"}
     >
-      <div className="flex items-start justify-between gap-2 border-b border-border/60 px-3 py-2">
-        <h3 className="text-body font-semibold text-foreground">{title}</h3>
+      <div className="flex items-start justify-between gap-1 border-b border-border/60 px-2 py-1.5">
+        <h3 className="text-xs font-semibold leading-tight text-foreground">{title}</h3>
         {onClose ? (
           <IconButton
             icon={X}
@@ -43,12 +43,12 @@ export function MapPopup({
         ) : null}
       </div>
       {children ? (
-        <div className="px-3 py-2 text-caption text-muted-foreground">
+        <div className="px-2 py-1.5 text-[10px] leading-tight text-muted-foreground">
           {children}
         </div>
       ) : null}
       {footer ? (
-        <div className="border-t border-border/60 px-3 py-2">{footer}</div>
+        <div className="border-t border-border/60 px-2 py-1.5">{footer}</div>
       ) : null}
     </div>
   );
