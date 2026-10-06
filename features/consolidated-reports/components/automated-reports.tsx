@@ -37,7 +37,9 @@ import {
 const DELIVERY_STATUS: Record<WhatsAppStatus, { label: string; variant: BadgeVariant }> = {
   pending: { label: "Ready to send · waiting for bridge phone", variant: "warning" },
   notified: { label: "Ready to send · on bridge phone", variant: "info" },
-  opened: { label: "Opened in WhatsApp", variant: "success" },
+  opened: { label: "Opened in WhatsApp", variant: "info" },
+  sent: { label: "Sent · confirmed by operator", variant: "success" },
+  failed: { label: "Failed", variant: "danger" },
 };
 
 const SHARE_INSTRUCTION = "WhatsApp share screen will open. Select the configured destination group and press Send.";
@@ -99,8 +101,13 @@ function SettingsPanel() {
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(toInput(saved));
   const set = (patch: Partial<ConsolidatedSettingsInput>) => setDraft({ ...form, ...patch });
   const noSchedule = form.enabled && form.scheduleTimes.length === 0 && form.intervalMinutes === null;
-  const groupMissing = form.destinationGroup.trim().length === 0;
-  const savedGroupMissing = saved.destinationGroup.trim().length === 0;
+  // The destination group can be set here (override) or on the bridge phone (Settings → WhatsApp Report Groups).
+  const phone = (saved.bridgeDevices ?? [])
+    .slice()
+    .sort((a, b) => (b.lastSeenAt ?? "").localeCompare(a.lastSeenAt ?? ""))[0];
+  const phoneDestination = phone?.destinationGroupName?.trim() ?? "";
+  const groupMissing = form.destinationGroup.trim().length === 0 && !phoneDestination;
+  const savedGroupMissing = saved.destinationGroup.trim().length === 0 && !phoneDestination;
 
   const toggleTime = (t: (typeof SCHEDULE_TIMES)[number], on: boolean) =>
     set({ scheduleTimes: SCHEDULE_TIMES.filter((x) => (x === t ? on : form.scheduleTimes.includes(x))) });
@@ -164,6 +171,11 @@ function SettingsPanel() {
                   ? "Has not checked in yet. Install the latest bridge app and configure the backend."
                   : `Last check ${formatShort(saved.lastDeviceCheckAt)}${phoneStale ? " — the phone may be offline" : ""}`}
               </span>
+              {phone ? (
+                <span className="block text-caption text-muted-foreground">
+                  Source group: {phone.sourceGroupName ?? "not set"} · Destination group: {phone.destinationGroupName ?? "not set"}
+                </span>
+              ) : null}
             </span>
           </p>
         </Row>
@@ -171,15 +183,24 @@ function SettingsPanel() {
         <Row label="Destination group">
           <Field
             htmlFor="okb-auto-group"
-            error={groupMissing ? "No destination group is configured. Enter the WhatsApp group name." : undefined}
-            description="When a report is ready, WhatsApp will open the share screen. Select this group and press Send. The group is not selected automatically."
+            error={
+              groupMissing
+                ? "No destination group is configured here or on the bridge phone. Enter the WhatsApp group name."
+                : undefined
+            }
+            description={
+              (phoneDestination && !form.destinationGroup.trim()
+                ? `Using the bridge phone's destination group “${phoneDestination}”. Enter a name here only to override it. `
+                : "") +
+              "When a report is ready, WhatsApp will open the share screen. Select this group and press Send. The group is not selected automatically."
+            }
           >
             <Input
               id="okb-auto-group"
               value={form.destinationGroup}
               onChange={(e) => set({ destinationGroup: e.target.value })}
               maxLength={100}
-              placeholder="e.g. NCR Flood Monitoring"
+              placeholder={phoneDestination || "e.g. OKB COMMAND CENTER"}
               invalid={groupMissing}
               className="h-11"
             />
@@ -263,15 +284,16 @@ function SettingsPanel() {
         </div>
         {savedGroupMissing ? (
           <p role="alert" className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-caption font-semibold text-warning">
-            No destination group is configured. Reports are not prepared and Test Send is unavailable until a
-            WhatsApp destination group is saved.
+            No destination group is configured here or on the bridge phone. Reports are not prepared and Test Send
+            is unavailable until a WhatsApp destination group is set.
           </p>
         ) : null}
         <p className="text-caption text-muted-foreground">
           {dirty ? "Save your changes before a test send. " : ""}
           Test Send prepares a TEST REPORT from recent reports; it does not affect the regular reports. The bridge
-          phone checks every 15 minutes and shows a notification when a report is ready. {SHARE_INSTRUCTION} The
-          Command Center can only see that WhatsApp was opened, not that the report was sent.
+          phone checks every 15 minutes and shows a notification when a report is ready. {SHARE_INSTRUCTION} A report
+          shows as Sent only after the operator confirms it on the bridge phone; opening WhatsApp alone is shown as
+          Opened in WhatsApp.
         </p>
       </CardContent>
     </Card>
@@ -363,8 +385,16 @@ function History() {
                 <dd className="text-foreground">{formatShort(r.generatedAt)}</dd>
                 <dt className="text-muted-foreground">Opened in WhatsApp at</dt>
                 <dd className="text-foreground">{formatShort(r.openedAt)}</dd>
+                <dt className="text-muted-foreground">Sent at</dt>
+                <dd className="text-foreground">{r.sentAt ? `${formatShort(r.sentAt)} (confirmed)` : "—"}</dd>
                 <dt className="text-muted-foreground">Delivery status</dt>
                 <dd>{delivery(r)}</dd>
+                {r.errorMessage ? (
+                  <>
+                    <dt className="text-muted-foreground">Problem</dt>
+                    <dd className="break-words text-danger">{r.errorMessage}</dd>
+                  </>
+                ) : null}
               </dl>
               <div className="flex flex-wrap gap-1.5">{pdf(r)}</div>
               <ReportActions r={r} />
@@ -385,6 +415,7 @@ function History() {
                 <th className="px-3 py-2.5 font-semibold">Delivery status</th>
                 <th className="px-3 py-2.5 font-semibold">Prepared at</th>
                 <th className="px-3 py-2.5 font-semibold">Opened in WhatsApp at</th>
+                <th className="px-3 py-2.5 font-semibold">Sent at</th>
                 <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
               </tr>
             </thead>
@@ -403,6 +434,7 @@ function History() {
                     <td className="px-3 py-2.5">{delivery(r)}</td>
                     <td className="px-3 py-2.5 text-foreground">{formatShort(r.generatedAt)}</td>
                     <td className="px-3 py-2.5 text-foreground">{formatShort(r.openedAt)}</td>
+                    <td className="px-3 py-2.5 text-foreground">{r.sentAt ? `${formatShort(r.sentAt)} (confirmed)` : "—"}</td>
                     <td className="px-4 py-2.5">
                       <ReportActions r={r} compact />
                     </td>

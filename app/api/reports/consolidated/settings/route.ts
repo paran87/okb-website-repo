@@ -16,10 +16,7 @@ const settingsSchema = z
     sendOnlyIfReports: z.boolean(),
     destinationGroup: z.string().trim().max(100),
   })
-  .refine((s) => !s.enabled || s.destinationGroup.length > 0, {
-    message: "Enter the WhatsApp destination group before enabling automated reports",
-    path: ["destinationGroup"],
-  })
+  // A blank destination is allowed when the bridge phone has one configured; the backend checks that.
   .refine((s) => !s.enabled || s.scheduleTimes.length > 0 || s.intervalMinutes !== null, {
     message: "Choose at least one schedule time or an interval",
     path: ["scheduleTimes"],

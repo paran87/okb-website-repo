@@ -24,6 +24,18 @@ export interface ConsolidatedSettings {
   lastDeviceCheckAt: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
+  /** Bridge phones and the WhatsApp report groups configured on them (Settings → WhatsApp Report Groups). */
+  bridgeDevices?: BridgeDevice[];
+}
+
+export interface BridgeDevice {
+  deviceId: string;
+  deviceName: string | null;
+  lastSeenAt: string | null;
+  /** Group the phone captures field reports from. */
+  sourceGroupName: string | null;
+  /** Group the phone shares consolidated reports to. */
+  destinationGroupName: string | null;
 }
 
 export type ConsolidatedSettingsInput = Pick<
@@ -32,11 +44,11 @@ export type ConsolidatedSettingsInput = Pick<
 >;
 
 /**
- * pending: ready to send, waiting for the bridge phone · notified: ready to send, notification on the phone ·
- * opened: the operator opened WhatsApp's share screen. Android cannot observe whether Send was pressed, so
- * there is no "sent" status.
+ * pending: ready to send, waiting for the bridge phone · notified: ready to send, on the phone ·
+ * opened: the operator opened WhatsApp's share screen (not proof of sending) ·
+ * sent: the operator confirmed on the phone that it was sent · failed: the PDF could not reach the phone.
  */
-export type WhatsAppStatus = "pending" | "notified" | "opened";
+export type WhatsAppStatus = "pending" | "notified" | "opened" | "sent" | "failed";
 
 export interface ConsolidatedReport {
   id: string;
@@ -53,5 +65,13 @@ export interface ConsolidatedReport {
   notifiedAt: string | null;
   /** When the operator opened WhatsApp's share screen from the phone notification (not proof of sending). */
   openedAt: string | null;
+  /** When the operator confirmed on the bridge phone that the report was sent. */
+  sentAt?: string | null;
+  failedAt?: string | null;
+  errorMessage?: string | null;
+  /** WhatsApp group(s) the included field reports came from. */
+  sourceGroup?: string | null;
+  /** Bridge phone the delivery belongs to. */
+  deviceId?: string | null;
   createdBy: string | null;
 }
