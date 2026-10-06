@@ -13,6 +13,10 @@ export interface ConsolidatedSettings {
   scheduleTimes: ScheduleTime[];
   intervalMinutes: ReportInterval | null;
   sendOnlyIfReports: boolean;
+  /**
+   * WhatsApp group the operator selects in WhatsApp's share screen. Shown as an instruction only: neither the
+   * backend nor the phone selects it automatically. Empty = not configured.
+   */
   destinationGroup: string;
   timezone: "Asia/Manila";
   enabledAt: string | null;
@@ -27,8 +31,12 @@ export type ConsolidatedSettingsInput = Pick<
   "enabled" | "scheduleTimes" | "intervalMinutes" | "sendOnlyIfReports" | "destinationGroup"
 >;
 
-/** pending: waiting for the bridge phone · notified: ready on the phone · shared: opened in WhatsApp by the operator */
-export type WhatsAppStatus = "pending" | "notified" | "shared";
+/**
+ * pending: ready to send, waiting for the bridge phone · notified: ready to send, notification on the phone ·
+ * opened: the operator opened WhatsApp's share screen. Android cannot observe whether Send was pressed, so
+ * there is no "sent" status.
+ */
+export type WhatsAppStatus = "pending" | "notified" | "opened";
 
 export interface ConsolidatedReport {
   id: string;
@@ -43,6 +51,7 @@ export interface ConsolidatedReport {
   destinationGroup: string | null;
   generatedAt: string;
   notifiedAt: string | null;
-  sentAt: string | null;
+  /** When the operator opened WhatsApp's share screen from the phone notification (not proof of sending). */
+  openedAt: string | null;
   createdBy: string | null;
 }

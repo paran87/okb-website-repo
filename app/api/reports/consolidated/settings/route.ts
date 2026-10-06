@@ -14,7 +14,11 @@ const settingsSchema = z
     scheduleTimes: z.array(z.enum(SCHEDULE_TIMES)).max(SCHEDULE_TIMES.length),
     intervalMinutes: z.union([z.literal(15), z.literal(30), z.literal(60), z.literal(120), z.null()]),
     sendOnlyIfReports: z.boolean(),
-    destinationGroup: z.string().trim().min(1, "Enter the WhatsApp group name").max(100),
+    destinationGroup: z.string().trim().max(100),
+  })
+  .refine((s) => !s.enabled || s.destinationGroup.length > 0, {
+    message: "Enter the WhatsApp destination group before enabling automated reports",
+    path: ["destinationGroup"],
   })
   .refine((s) => !s.enabled || s.scheduleTimes.length > 0 || s.intervalMinutes !== null, {
     message: "Choose at least one schedule time or an interval",

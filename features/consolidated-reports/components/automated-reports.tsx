@@ -33,11 +33,14 @@ import {
   type WhatsAppStatus,
 } from "@/features/consolidated-reports/types";
 
-const WHATSAPP_STATUS: Record<WhatsAppStatus, { label: string; variant: BadgeVariant }> = {
-  pending: { label: "Waiting for bridge phone", variant: "warning" },
-  notified: { label: "Ready on phone", variant: "info" },
-  shared: { label: "Opened in WhatsApp", variant: "success" },
+// Delivery is completed by the operator in WhatsApp; the bridge can only tell that the share screen was opened.
+const DELIVERY_STATUS: Record<WhatsAppStatus, { label: string; variant: BadgeVariant }> = {
+  pending: { label: "Ready to send · waiting for bridge phone", variant: "warning" },
+  notified: { label: "Ready to send · on bridge phone", variant: "info" },
+  opened: { label: "Opened in WhatsApp", variant: "success" },
 };
+
+const SHARE_INSTRUCTION = "WhatsApp share screen will open. Select the configured destination group and press Send.";
 
 const PHONE_STALE_MS = 45 * 60 * 1000;
 
@@ -97,6 +100,7 @@ function SettingsPanel() {
   const set = (patch: Partial<ConsolidatedSettingsInput>) => setDraft({ ...form, ...patch });
   const noSchedule = form.enabled && form.scheduleTimes.length === 0 && form.intervalMinutes === null;
   const groupMissing = form.destinationGroup.trim().length === 0;
+  const savedGroupMissing = saved.destinationGroup.trim().length === 0;
 
   const toggleTime = (t: (typeof SCHEDULE_TIMES)[number], on: boolean) =>
     set({ scheduleTimes: SCHEDULE_TIMES.filter((x) => (x === t ? on : form.scheduleTimes.includes(x))) });
@@ -114,10 +118,11 @@ function SettingsPanel() {
     test.mutate(undefined, {
       onSuccess: (r) =>
         toast.success({
-          title: "TEST REPORT generated",
-          description: `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}. The bridge phone shows it at its next check (within 15 minutes).`,
+          title: "TEST REPORT prepared",
+          description: `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}. The bridge phone shows a notification at its next check (within 15 minutes). ${SHARE_INSTRUCTION}`,
+          duration: 10_000,
         }),
-      onError: (e) => toast.error({ title: "Test report not generated", description: errorMessage(e) }),
+      onError: (e) => toast.error({ title: "TEST REPORT not prepared", description: errorMessage(e) }),
     });
 
   const lastCheck = saved.lastDeviceCheckAt ? new Date(saved.lastDeviceCheckAt).getTime() : null;
@@ -164,12 +169,17 @@ function SettingsPanel() {
         </Row>
 
         <Row label="Destination group">
-          <Field htmlFor="okb-auto-group" error={groupMissing ? "Enter the WhatsApp group name" : undefined}>
+          <Field
+            htmlFor="okb-auto-group"
+            error={groupMissing ? "No destination group is configured. Enter the WhatsApp group name." : undefined}
+            description="When a report is ready, WhatsApp will open the share screen. Select this group and press Send. The group is not selected automatically."
+          >
             <Input
               id="okb-auto-group"
               value={form.destinationGroup}
               onChange={(e) => set({ destinationGroup: e.target.value })}
               maxLength={100}
+              placeholder="e.g. NCR Flood Monitoring"
               invalid={groupMissing}
               className="h-11"
             />
@@ -235,7 +245,7 @@ function SettingsPanel() {
             size="lg"
             onClick={onTest}
             isLoading={test.isPending}
-            disabled={dirty}
+            disabled={dirty || savedGroupMissing}
             leftIcon={<Send className="size-4" aria-hidden />}
             className="justify-center"
           >
@@ -245,17 +255,23 @@ function SettingsPanel() {
             size="lg"
             onClick={onSave}
             isLoading={save.isPending}
-            disabled={!dirty || noSchedule || groupMissing}
+            disabled={!dirty || noSchedule || (form.enabled && groupMissing)}
             className="justify-center"
           >
             Save Settings
           </Button>
         </div>
+        {savedGroupMissing ? (
+          <p role="alert" className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-caption font-semibold text-warning">
+            No destination group is configured. Reports are not prepared and Test Send is unavailable until a
+            WhatsApp destination group is saved.
+          </p>
+        ) : null}
         <p className="text-caption text-muted-foreground">
           {dirty ? "Save your changes before a test send. " : ""}
-          The bridge phone checks every 15 minutes and shows a notification when a report is ready. Tap it, choose
-          the group in WhatsApp and press Send. Test reports are marked TEST REPORT and do not affect the regular
-          reports.
+          Test Send prepares a TEST REPORT from recent reports; it does not affect the regular reports. The bridge
+          phone checks every 15 minutes and shows a notification when a report is ready. {SHARE_INSTRUCTION} The
+          Command Center can only see that WhatsApp was opened, not that the report was sent.
         </p>
       </CardContent>
     </Card>
@@ -284,7 +300,8 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
         isLoading={resend.isPending}
         onClick={() =>
           resend.mutate(r.id, {
-            onSuccess: () => toast.success({ title: "Queued again", description: "The bridge phone shows it at its next check." }),
+            onSuccess: () =>
+              toast.success({ title: "Ready to send again", description: `The bridge phone shows it at its next check. ${SHARE_INSTRUCTION}` }),
             onError: (e) => toast.error({ title: "Not queued", description: errorMessage(e) }),
           })
         }
@@ -320,9 +337,9 @@ function History() {
   const pdf = (r: ConsolidatedReport) => (
     <Badge variant={r.pdfStatus === "generated" ? "success" : "danger"}>PDF: {r.pdfStatus === "generated" ? "Generated" : "Failed"}</Badge>
   );
-  const wa = (r: ConsolidatedReport) => (
-    <Badge variant={WHATSAPP_STATUS[r.whatsappStatus].variant} dot>
-      {WHATSAPP_STATUS[r.whatsappStatus].label}
+  const delivery = (r: ConsolidatedReport) => (
+    <Badge variant={DELIVERY_STATUS[r.whatsappStatus].variant} dot>
+      {DELIVERY_STATUS[r.whatsappStatus].label}
     </Badge>
   );
 
@@ -342,15 +359,14 @@ function History() {
                 <dd className="text-foreground">{p.time}</dd>
                 <dt className="text-muted-foreground">Reports</dt>
                 <dd className="text-foreground">{count(r)}</dd>
-                <dt className="text-muted-foreground">Generated</dt>
+                <dt className="text-muted-foreground">Prepared at</dt>
                 <dd className="text-foreground">{formatShort(r.generatedAt)}</dd>
-                <dt className="text-muted-foreground">Sent</dt>
-                <dd className="text-foreground">{formatShort(r.sentAt)}</dd>
+                <dt className="text-muted-foreground">Opened in WhatsApp at</dt>
+                <dd className="text-foreground">{formatShort(r.openedAt)}</dd>
+                <dt className="text-muted-foreground">Delivery status</dt>
+                <dd>{delivery(r)}</dd>
               </dl>
-              <div className="flex flex-wrap gap-1.5">
-                {pdf(r)}
-                {wa(r)}
-              </div>
+              <div className="flex flex-wrap gap-1.5">{pdf(r)}</div>
               <ReportActions r={r} />
             </li>
           );
@@ -365,9 +381,10 @@ function History() {
                 <th className="px-4 py-2.5 font-semibold">Date</th>
                 <th className="px-3 py-2.5 font-semibold">Reporting period</th>
                 <th className="px-3 py-2.5 font-semibold">Reports</th>
-                <th className="px-3 py-2.5 font-semibold">Status</th>
-                <th className="px-3 py-2.5 font-semibold">Generated</th>
-                <th className="px-3 py-2.5 font-semibold">Sent</th>
+                <th className="px-3 py-2.5 font-semibold">PDF</th>
+                <th className="px-3 py-2.5 font-semibold">Delivery status</th>
+                <th className="px-3 py-2.5 font-semibold">Prepared at</th>
+                <th className="px-3 py-2.5 font-semibold">Opened in WhatsApp at</th>
                 <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
               </tr>
             </thead>
@@ -382,12 +399,10 @@ function History() {
                     </td>
                     <td className="px-3 py-2.5 text-foreground">{p.time}</td>
                     <td className="px-3 py-2.5 text-foreground">{count(r)}</td>
-                    <td className="space-y-1 px-3 py-2.5">
-                      <div>{pdf(r)}</div>
-                      <div>{wa(r)}</div>
-                    </td>
+                    <td className="px-3 py-2.5">{pdf(r)}</td>
+                    <td className="px-3 py-2.5">{delivery(r)}</td>
                     <td className="px-3 py-2.5 text-foreground">{formatShort(r.generatedAt)}</td>
-                    <td className="px-3 py-2.5 text-foreground">{formatShort(r.sentAt)}</td>
+                    <td className="px-3 py-2.5 text-foreground">{formatShort(r.openedAt)}</td>
                     <td className="px-4 py-2.5">
                       <ReportActions r={r} compact />
                     </td>
