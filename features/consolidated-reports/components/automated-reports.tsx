@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Download, Eye, FileText, Send, Smartphone } from "lucide-react";
+import { Download, Eye, FileText, MessageSquareText, RotateCcw, Send, Smartphone } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   useConsolidatedHistory,
   useConsolidatedSettings,
   useResend,
+  useRetryText,
   useSaveConsolidatedSettings,
   useTestSend,
 } from "@/features/consolidated-reports/hooks";
@@ -29,18 +30,43 @@ import {
   type ConsolidatedReport,
   type ConsolidatedSettings,
   type ConsolidatedSettingsInput,
+  type PdfDeliveryStatus,
   type ReportInterval,
+  type TextDeliveryStatus,
   type WhatsAppStatus,
 } from "@/features/consolidated-reports/types";
 
-// Delivery is completed by the operator in WhatsApp; the bridge can only tell that the share screen was opened.
-const DELIVERY_STATUS: Record<WhatsAppStatus, { label: string; variant: BadgeVariant }> = {
-  pending: { label: "Ready to send · waiting for bridge phone", variant: "warning" },
-  notified: { label: "Ready to send · on bridge phone", variant: "info" },
-  opened: { label: "Opened in WhatsApp", variant: "success" },
+// TEXT: sent automatically to the destination group by the bridge phone (no operator action).
+const TEXT_STATUS: Record<TextDeliveryStatus, { label: string; variant: BadgeVariant }> = {
+  scheduled: { label: "Scheduled", variant: "info" },
+  sending: { label: "Sending", variant: "info" },
+  sent: { label: "Sent", variant: "success" },
+  failed: { label: "Failed", variant: "danger" },
 };
 
-const SHARE_INSTRUCTION = "WhatsApp share screen will open. Select the configured destination group and press Send.";
+// PDF: manual. The operator taps "Send as PDF" on the phone and sends it from WhatsApp's share screen.
+const PDF_STATUS: Record<PdfDeliveryStatus, { label: string; variant: BadgeVariant }> = {
+  ready: { label: "PDF Ready · waiting for bridge phone", variant: "warning" },
+  notified: { label: "PDF Ready · on bridge phone", variant: "info" },
+  opened: { label: "Opened in WhatsApp", variant: "info" },
+  sent: { label: "Sent (operator confirmed)", variant: "success" },
+  failed: { label: "Failed", variant: "danger" },
+};
+
+// Older backends report only the PDF state, as whatsappStatus.
+const LEGACY_PDF_STATUS: Record<WhatsAppStatus, PdfDeliveryStatus> = {
+  pending: "ready",
+  notified: "notified",
+  opened: "opened",
+  sent: "sent",
+  failed: "failed",
+};
+
+const pdfStatusOf = (r: ConsolidatedReport): PdfDeliveryStatus | null =>
+  r.pdfDelivery?.status ?? (r.pdfStatus === "generated" ? (LEGACY_PDF_STATUS[r.whatsappStatus] ?? "ready") : null);
+
+const PDF_INSTRUCTION =
+  "PDF: the bridge phone shows “PDF Ready”; the operator taps “Send as PDF”, selects the destination group in WhatsApp and presses Send.";
 
 const PHONE_STALE_MS = 45 * 60 * 1000;
 
@@ -119,7 +145,7 @@ function SettingsPanel() {
       onSuccess: (r) =>
         toast.success({
           title: "TEST REPORT prepared",
-          description: `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}. The bridge phone shows a notification at its next check (within 15 minutes). ${SHARE_INSTRUCTION}`,
+          description: `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}. The bridge phone sends the TEST text automatically to ${r.destinationGroup ?? "the destination group"} at its next check (within 15 minutes). ${PDF_INSTRUCTION}`,
           duration: 10_000,
         }),
       onError: (e) => toast.error({ title: "TEST REPORT not prepared", description: errorMessage(e) }),
@@ -138,8 +164,9 @@ function SettingsPanel() {
           <div className="min-w-0">
             <h2 className="text-subheading text-foreground">Automated WhatsApp reports</h2>
             <p className="text-caption text-muted-foreground">
-              One consolidated PDF of the field reports received in each reporting period, sent to the WhatsApp group
-              from the OKB Bridge phone.
+              One consolidated report of the field reports received in each reporting period. The TEXT report is sent
+              automatically to the WhatsApp destination group by the OKB Bridge phone, also at 12:00 AM with nobody at
+              the phone. The PDF is prepared on the phone for the operator to send manually.
             </p>
           </div>
         </div>
@@ -172,7 +199,7 @@ function SettingsPanel() {
           <Field
             htmlFor="okb-auto-group"
             error={groupMissing ? "No destination group is configured. Enter the WhatsApp group name." : undefined}
-            description="When a report is ready, WhatsApp will open the share screen. Select this group and press Send. The group is not selected automatically."
+            description="The consolidated TEXT report is sent to this group automatically by the bridge phone. The PDF is sent to it manually. Enter the name exactly as it appears in WhatsApp; it must not be the source group."
           >
             <Input
               id="okb-auto-group"
@@ -270,8 +297,8 @@ function SettingsPanel() {
         <p className="text-caption text-muted-foreground">
           {dirty ? "Save your changes before a test send. " : ""}
           Test Send prepares a TEST REPORT from recent reports; it does not affect the regular reports. The bridge
-          phone checks every 15 minutes and shows a notification when a report is ready. {SHARE_INSTRUCTION} The
-          Command Center can only see that WhatsApp was opened, not that the report was sent.
+          phone checks just after each scheduled time and every 15 minutes, sends the TEXT report on its own and
+          marks it Sent only after it sees the message in the destination group. {PDF_INSTRUCTION}
         </p>
       </CardContent>
     </Card>
@@ -281,35 +308,96 @@ function SettingsPanel() {
 function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?: boolean }) {
   const toast = useToast();
   const resend = useResend();
+  const retry = useRetryText();
   const base = `/api/reports/consolidated/${encodeURIComponent(r.id)}/pdf`;
+  const hasPdf = r.pdfStatus === "generated";
+  const textFailed = r.textDelivery?.status === "failed";
+  const size = compact ? "h-10" : "h-11 flex-1";
   const link = cn(
     "inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-caption font-semibold text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-    compact ? "h-10" : "h-11 flex-1",
+    size,
   );
   return (
-    <div className={cn("flex gap-2", compact ? "justify-end" : "")}>
-      <a href={base} target="_blank" rel="noopener" className={link}>
-        <Eye className="size-4" aria-hidden /> View
-      </a>
-      <a href={`${base}?download=1`} className={link}>
-        <Download className="size-4" aria-hidden /> Download
-      </a>
-      <Button
-        variant="outline"
-        size="md"
-        isLoading={resend.isPending}
-        onClick={() =>
-          resend.mutate(r.id, {
-            onSuccess: () =>
-              toast.success({ title: "Ready to send again", description: `The bridge phone shows it at its next check. ${SHARE_INSTRUCTION}` }),
-            onError: (e) => toast.error({ title: "Not queued", description: errorMessage(e) }),
-          })
-        }
-        className={cn("justify-center text-caption font-semibold", compact ? "h-10" : "h-11 flex-1")}
-        leftIcon={<Send className="size-4" aria-hidden />}
-      >
-        Resend
-      </Button>
+    <div className={cn("flex flex-wrap gap-2", compact ? "justify-end" : "")}>
+      {textFailed ? (
+        <Button
+          variant="outline"
+          size="md"
+          isLoading={retry.isPending}
+          onClick={() =>
+            retry.mutate(r.id, {
+              onSuccess: () =>
+                toast.success({ title: "Text report scheduled again", description: "The bridge phone sends it automatically at its next check." }),
+              onError: (e) => toast.error({ title: "Not retried", description: errorMessage(e) }),
+            })
+          }
+          className={cn("justify-center text-caption font-semibold", size)}
+          leftIcon={<RotateCcw className="size-4" aria-hidden />}
+        >
+          Retry text
+        </Button>
+      ) : null}
+      {hasPdf ? (
+        <>
+          <a href={base} target="_blank" rel="noopener" className={link}>
+            <Eye className="size-4" aria-hidden /> View
+          </a>
+          <a href={`${base}?download=1`} className={link}>
+            <Download className="size-4" aria-hidden /> Download
+          </a>
+          <Button
+            variant="outline"
+            size="md"
+            isLoading={resend.isPending}
+            onClick={() =>
+              resend.mutate(r.id, {
+                onSuccess: () =>
+                  toast.success({ title: "PDF ready on the phone again", description: `Shown at the next check. ${PDF_INSTRUCTION}` }),
+                onError: (e) => toast.error({ title: "Not queued", description: errorMessage(e) }),
+              })
+            }
+            className={cn("justify-center text-caption font-semibold", size)}
+            leftIcon={<Send className="size-4" aria-hidden />}
+            aria-label="Resend PDF"
+          >
+            Resend
+          </Button>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+/** AUTOMATIC TEXT REPORT status: badge, destination and outcome. No send action: it is sent automatically. */
+function TextStatus({ r }: { r: ConsolidatedReport }) {
+  const t = r.textDelivery;
+  if (!t) {
+    return <span className="text-muted-foreground">{r.reportCount === 0 ? "None (no reports)" : "—"}</span>;
+  }
+  const retrying = t.status === "scheduled" && t.errorMessage !== null;
+  const status = TEXT_STATUS[t.status];
+  return (
+    <div className="space-y-1">
+      <Badge variant={retrying ? "warning" : status.variant} dot>
+        {retrying ? `Scheduled · retrying (${t.attempts}/${t.maxAttempts})` : status.label}
+      </Badge>
+      {t.destinationGroup ? <p className="break-words text-muted-foreground">→ {t.destinationGroup}</p> : null}
+      {t.status === "sent" ? <p className="text-foreground">Sent {formatShort(t.sentAt)}</p> : null}
+      {t.errorMessage && t.status !== "sent" ? <p className="break-words text-danger">{t.errorMessage}</p> : null}
+    </div>
+  );
+}
+
+function PdfStatus({ r }: { r: ConsolidatedReport }) {
+  const status = pdfStatusOf(r);
+  if (!status) return <Badge variant="danger">PDF not generated</Badge>;
+  const sentAt = r.pdfDelivery?.sentAt ?? null;
+  return (
+    <div className="space-y-1">
+      <Badge variant={PDF_STATUS[status].variant} dot>
+        {PDF_STATUS[status].label}
+      </Badge>
+      {status === "sent" && sentAt ? <p className="text-foreground">Sent {formatShort(sentAt)}</p> : null}
     </div>
   );
 }
@@ -334,14 +422,6 @@ function History() {
   }
 
   const count = (r: ConsolidatedReport) => `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}`;
-  const pdf = (r: ConsolidatedReport) => (
-    <Badge variant={r.pdfStatus === "generated" ? "success" : "danger"}>PDF: {r.pdfStatus === "generated" ? "Generated" : "Failed"}</Badge>
-  );
-  const delivery = (r: ConsolidatedReport) => (
-    <Badge variant={DELIVERY_STATUS[r.whatsappStatus].variant} dot>
-      {DELIVERY_STATUS[r.whatsappStatus].label}
-    </Badge>
-  );
 
   return (
     <div className="@container space-y-3">
@@ -354,19 +434,26 @@ function History() {
                 <span className="text-body font-semibold text-foreground">{p.date}</span>
                 {r.kind === "test" ? <Badge variant="warning">TEST</Badge> : null}
               </div>
-              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5">
                 <dt className="text-muted-foreground">Reporting period</dt>
                 <dd className="text-foreground">{p.time}</dd>
                 <dt className="text-muted-foreground">Reports</dt>
                 <dd className="text-foreground">{count(r)}</dd>
                 <dt className="text-muted-foreground">Prepared at</dt>
                 <dd className="text-foreground">{formatShort(r.generatedAt)}</dd>
-                <dt className="text-muted-foreground">Opened in WhatsApp at</dt>
-                <dd className="text-foreground">{formatShort(r.openedAt)}</dd>
-                <dt className="text-muted-foreground">Delivery status</dt>
-                <dd>{delivery(r)}</dd>
+                <dt className="flex items-start gap-1 text-muted-foreground">
+                  <MessageSquareText className="mt-0.5 size-3.5 shrink-0" aria-hidden /> Automatic text
+                </dt>
+                <dd className="min-w-0">
+                  <TextStatus r={r} />
+                </dd>
+                <dt className="flex items-start gap-1 text-muted-foreground">
+                  <FileText className="mt-0.5 size-3.5 shrink-0" aria-hidden /> PDF (manual)
+                </dt>
+                <dd className="min-w-0">
+                  <PdfStatus r={r} />
+                </dd>
               </dl>
-              <div className="flex flex-wrap gap-1.5">{pdf(r)}</div>
               <ReportActions r={r} />
             </li>
           );
@@ -381,10 +468,9 @@ function History() {
                 <th className="px-4 py-2.5 font-semibold">Date</th>
                 <th className="px-3 py-2.5 font-semibold">Reporting period</th>
                 <th className="px-3 py-2.5 font-semibold">Reports</th>
-                <th className="px-3 py-2.5 font-semibold">PDF</th>
-                <th className="px-3 py-2.5 font-semibold">Delivery status</th>
+                <th className="px-3 py-2.5 font-semibold">Automatic text</th>
+                <th className="px-3 py-2.5 font-semibold">PDF (manual)</th>
                 <th className="px-3 py-2.5 font-semibold">Prepared at</th>
-                <th className="px-3 py-2.5 font-semibold">Opened in WhatsApp at</th>
                 <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
               </tr>
             </thead>
@@ -399,10 +485,13 @@ function History() {
                     </td>
                     <td className="px-3 py-2.5 text-foreground">{p.time}</td>
                     <td className="px-3 py-2.5 text-foreground">{count(r)}</td>
-                    <td className="px-3 py-2.5">{pdf(r)}</td>
-                    <td className="px-3 py-2.5">{delivery(r)}</td>
+                    <td className="max-w-56 px-3 py-2.5">
+                      <TextStatus r={r} />
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <PdfStatus r={r} />
+                    </td>
                     <td className="px-3 py-2.5 text-foreground">{formatShort(r.generatedAt)}</td>
-                    <td className="px-3 py-2.5 text-foreground">{formatShort(r.openedAt)}</td>
                     <td className="px-4 py-2.5">
                       <ReportActions r={r} compact />
                     </td>

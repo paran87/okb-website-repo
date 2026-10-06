@@ -14,8 +14,8 @@ export interface ConsolidatedSettings {
   intervalMinutes: ReportInterval | null;
   sendOnlyIfReports: boolean;
   /**
-   * WhatsApp group the operator selects in WhatsApp's share screen. Shown as an instruction only: neither the
-   * backend nor the phone selects it automatically. Empty = not configured.
+   * WhatsApp group consolidated reports go to: the TEXT report is sent there automatically by the OKB Bridge
+   * phone; the PDF is sent there manually by the operator. Required to enable automated reports.
    */
   destinationGroup: string;
   timezone: "Asia/Manila";
@@ -32,11 +32,49 @@ export type ConsolidatedSettingsInput = Pick<
 >;
 
 /**
- * pending: ready to send, waiting for the bridge phone · notified: ready to send, notification on the phone ·
- * opened: the operator opened WhatsApp's share screen. Android cannot observe whether Send was pressed, so
- * there is no "sent" status.
+ * Legacy PDF status (older backends): pending: waiting for the bridge phone · notified: on the phone ·
+ * opened: share screen opened · sent: operator confirmed · failed: could not reach the phone.
  */
-export type WhatsAppStatus = "pending" | "notified" | "opened";
+export type WhatsAppStatus = "pending" | "notified" | "opened" | "sent" | "failed";
+
+/** TEXT (automatic): scheduled → sending → sent | failed (retried with backoff until the attempts run out). */
+export type TextDeliveryStatus = "scheduled" | "sending" | "sent" | "failed";
+/** PDF (manual): ready → notified (on the phone) → opened (share screen) → sent (operator confirmed) | failed. */
+export type PdfDeliveryStatus = "ready" | "notified" | "opened" | "sent" | "failed";
+
+interface DeliveryBase {
+  id: string;
+  destinationGroup: string | null;
+  deviceId: string | null;
+  attempts: number;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+  claimedAt: string | null;
+  notifiedAt: string | null;
+  openedAt: string | null;
+  sentAt: string | null;
+  failedAt: string | null;
+}
+
+/** The consolidated TEXT report, sent automatically to the destination group by the bridge phone. */
+export interface TextDelivery extends DeliveryBase {
+  deliveryType: "TEXT";
+  status: TextDeliveryStatus;
+  maxAttempts: number;
+  nextAttemptAt: string | null;
+  partCount: number;
+  /** Reference printed in the WhatsApp message, e.g. "OKB-1A2B3C4D". */
+  ref: string | null;
+  /** How the phone confirmed the message in the chat. */
+  verification: string | null;
+}
+
+/** The consolidated PDF, sent manually by the operator from the bridge phone. */
+export interface PdfDelivery extends DeliveryBase {
+  deliveryType: "PDF";
+  status: PdfDeliveryStatus;
+}
 
 export interface ConsolidatedReport {
   id: string;
@@ -54,4 +92,7 @@ export interface ConsolidatedReport {
   /** When the operator opened WhatsApp's share screen from the phone notification (not proof of sending). */
   openedAt: string | null;
   createdBy: string | null;
+  /** Absent from older backends, which only know the PDF ([whatsappStatus]). */
+  textDelivery?: TextDelivery | null;
+  pdfDelivery?: PdfDelivery | null;
 }

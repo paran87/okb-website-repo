@@ -88,3 +88,12 @@ export function useResend() {
     onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
   });
 }
+
+export function useRetryText() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<ConsolidatedReport>(`/api/reports/consolidated/${encodeURIComponent(id)}/text-retry`, { method: "POST", body: "{}" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+  });
+}
