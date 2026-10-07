@@ -388,6 +388,8 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
   const [confirmDelete, setConfirmDelete] = useState(false);
   const base = `/api/reports/consolidated/${encodeURIComponent(r.id)}/pdf`;
   const hasPdf = r.pdfStatus === "generated";
+  // Resend puts the PDF on the phone again; a report sent as TEXT never had a PDF delivery.
+  const canResend = hasPdf && r.pdfDelivery !== null;
   const textFailed = r.textDelivery?.status === "failed";
   const textActive = r.textDelivery?.status === "scheduled" || r.textDelivery?.status === "sending";
   const size = compact ? "h-10" : "h-11 flex-1";
@@ -456,7 +458,7 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
           <a href={`${base}?download=1`} className={link}>
             <Download className="size-4" aria-hidden /> Download
           </a>
-          <Button
+          {canResend ? <Button
             variant="outline"
             size="md"
             isLoading={resend.isPending}
@@ -472,7 +474,7 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
             aria-label="Resend PDF"
           >
             Resend
-          </Button>
+          </Button> : null}
         </>
       ) : null}
       <Button
@@ -521,7 +523,11 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
 function TextStatus({ r }: { r: ConsolidatedReport }) {
   const t = r.textDelivery;
   if (!t) {
-    return <span className="text-muted-foreground">{r.reportCount === 0 ? "None (no reports)" : "—"}</span>;
+    return (
+      <span className="text-muted-foreground">
+        {r.pdfDelivery ? "Not sent as text (PDF only)" : r.reportCount === 0 ? "None (no reports)" : "—"}
+      </span>
+    );
   }
   const retrying = t.status === "scheduled" && t.errorMessage !== null;
   const status = TEXT_STATUS[t.status];
@@ -544,6 +550,10 @@ function TextStatus({ r }: { r: ConsolidatedReport }) {
 }
 
 function PdfStatus({ r }: { r: ConsolidatedReport }) {
+  // Sent as TEXT: the PDF exists (View / Download) but was never offered to the phone.
+  if (r.pdfDelivery === null && r.textDelivery) {
+    return <span className="text-muted-foreground">{r.pdfStatus === "generated" ? "Not sent as PDF (text only)" : "—"}</span>;
+  }
   const status = pdfStatusOf(r);
   if (!status) return <Badge variant="danger">PDF not generated</Badge>;
   const sentAt = r.pdfDelivery?.sentAt ?? null;

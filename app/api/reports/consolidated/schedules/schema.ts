@@ -9,6 +9,7 @@ export const scheduleSchema = z
     periodStart: z.string().datetime(),
     periodEnd: z.string().datetime(),
     sendAt: z.string().datetime(),
+    deliveryType: z.enum(["TEXT", "PDF"]).default("TEXT"),
   })
   .refine((s) => Date.parse(s.periodStart) < Date.parse(s.periodEnd), {
     message: "The monitoring period must start before it ends",

@@ -43,11 +43,18 @@ export type ConsolidatedSettingsInput = Pick<ConsolidatedSettings, "enabled" | "
  */
 export type ScheduleStatus = "pending" | "generated" | "no_reports" | "missed";
 
+/**
+ * How an entry is sent: TEXT = the consolidated text automatically to the destination group (no PDF goes to
+ * the phone); PDF = the PDF to the bridge phone ("PDF Ready", sent by the operator), no automatic text.
+ */
+export type ScheduleDeliveryType = "TEXT" | "PDF";
+
 export interface ScheduleEntry {
   id: string;
   periodStart: string;
   periodEnd: string;
   sendAt: string;
+  deliveryType: ScheduleDeliveryType;
   status: ScheduleStatus;
   reportId: string | null;
   report: ConsolidatedReport | null;
@@ -61,6 +68,7 @@ export interface ScheduleInput {
   periodStart: string;
   periodEnd: string;
   sendAt: string;
+  deliveryType: ScheduleDeliveryType;
 }
 
 /** Longest monitoring period the backend accepts. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowRight, Ban, CalendarClock, Pencil, Plus, RotateCcw, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, Ban, CalendarClock, FileText, MessageSquareText, Pencil, Plus, RotateCcw, Send, Trash2, TriangleAlert, X } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,12 +18,18 @@ import {
   useConsolidatedSettings,
   useCreateSchedule,
   useDeleteSchedule,
+  useResend,
   useRetryText,
   useSchedules,
   useUpdateSchedule,
 } from "@/features/consolidated-reports/hooks";
 import { dateTimeParts, formatShort, manilaInputToIso, manilaInputValue } from "@/features/consolidated-reports/format";
-import { MAX_SCHEDULE_PERIOD_DAYS, type ScheduleEntry, type ScheduleInput } from "@/features/consolidated-reports/types";
+import {
+  MAX_SCHEDULE_PERIOD_DAYS,
+  type ScheduleDeliveryType,
+  type ScheduleEntry,
+  type ScheduleInput,
+} from "@/features/consolidated-reports/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Same grace as the backend: a date of sending a few minutes ago is still accepted. */
@@ -35,8 +41,14 @@ interface Draft {
   from: string;
   to: string;
   send: string;
+  as: ScheduleDeliveryType;
 }
-const EMPTY: Draft = { from: "", to: "", send: "" };
+const EMPTY: Draft = { from: "", to: "", send: "", as: "TEXT" };
+
+const SEND_AS: { value: ScheduleDeliveryType; label: string; hint: string }[] = [
+  { value: "TEXT", label: "Send report as text", hint: "Sent automatically to the group. No PDF goes to the bridge phone." },
+  { value: "PDF", label: "Send report as PDF", hint: "The PDF goes to the bridge phone (“PDF Ready”) to send manually. No automatic text." },
+];
 
 /** Entries a new period may not be confused with: only those not yet prepared can still change. */
 const overlaps = (a: { start: number; end: number }, e: ScheduleEntry) =>
@@ -65,7 +77,7 @@ function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null
   }
   if (send && Date.parse(send) < Date.now() - PAST_GRACE_MS) errors.push("The date of sending is in the past.");
   const others = entries.filter((e) => e.id !== editingId);
-  if (start && end && send && others.some((e) => e.periodStart === start && e.periodEnd === end && e.sendAt === send)) {
+  if (start && end && send && others.some((e) => e.periodStart === start && e.periodEnd === end && e.sendAt === send && e.deliveryType === d.as)) {
     errors.push("This exact entry is already in the schedule.");
   }
   if (start && end && Date.parse(start) < Date.parse(end)) {
@@ -77,7 +89,8 @@ function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null
   if (end && send && Date.parse(send) - Date.parse(end) > DAY_MS) {
     warnings.push("The date of sending is more than a day after the monitoring period ends.");
   }
-  const input: ScheduleInput | null = errors.length === 0 && start && end && send ? { periodStart: start, periodEnd: end, sendAt: send } : null;
+  const input: ScheduleInput | null =
+    errors.length === 0 && start && end && send ? { periodStart: start, periodEnd: end, sendAt: send, deliveryType: d.as } : null;
   return { errors, warnings, input };
 }
 
@@ -94,6 +107,19 @@ function Stamp({ iso }: { iso: string }) {
     <span className="inline-flex flex-col leading-tight">
       <span className="whitespace-nowrap">{p.date}</span>
       <span className="whitespace-nowrap text-muted-foreground">{p.time}</span>
+    </span>
+  );
+}
+
+/** SEND AS: Text (automatic) or PDF (manual, from the bridge phone). */
+function SendAs({ type }: { type: ScheduleDeliveryType }) {
+  return type === "PDF" ? (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-foreground">
+      <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden /> PDF
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-foreground">
+      <MessageSquareText className="size-4 shrink-0 text-muted-foreground" aria-hidden /> Text
     </span>
   );
 }
@@ -150,6 +176,7 @@ function EntryStatus({ e, enabled }: { e: ScheduleEntry; enabled: boolean }) {
   const r = e.report;
   const t = r?.textDelivery ?? null;
   const count = r ? `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}` : null;
+  if (e.deliveryType === "PDF" && r) return <PdfEntryStatus r={r} count={count} />;
   if (!r || !t) {
     return <div className="space-y-1">{badge("default", "PDF only")}{note(count ? `${count}; no text for an empty period.` : "Report not found.")}</div>;
   }
@@ -237,6 +264,52 @@ function EntryStatus({ e, enabled }: { e: ScheduleEntry; enabled: boolean }) {
   );
 }
 
+/** STATUS of an entry sent as PDF: the operator sends it from the bridge phone; Resend puts it there again. */
+function PdfEntryStatus({ r, count }: { r: NonNullable<ScheduleEntry["report"]>; count: string | null }) {
+  const toast = useToast();
+  const resend = useResend();
+  const p = r.pdfDelivery ?? null;
+  const badge = (variant: BadgeVariant, label: string) => (
+    <Badge variant={variant} dot>
+      {label}
+    </Badge>
+  );
+  const note = (text: string, tone = "text-muted-foreground") => <p className={cn("break-words", tone)}>{text}</p>;
+  let body;
+  if (!p) body = <>{badge("danger", "PDF not generated")}</>;
+  else if (p.status === "sent") body = <>{badge("success", "SENT")}{note(`Sent ${formatShort(p.sentAt)} (operator confirmed)`, "text-foreground")}</>;
+  else if (p.status === "failed") body = <>{badge("danger", "FAILED")}{p.errorMessage ? note(p.errorMessage, "text-danger") : null}</>;
+  else if (p.status === "opened") body = <>{badge("info", "Opened in WhatsApp")}{note("Waiting for the operator to confirm it was sent.")}</>;
+  else if (p.status === "notified") body = <>{badge("info", "PDF Ready on the phone")}{note("The operator taps “Send as PDF” on the bridge phone.")}</>;
+  else body = <>{badge("warning", "PDF ready")}{note("Goes to the bridge phone at its next check.")}</>;
+  return (
+    <div className="flex flex-col items-start gap-1">
+      {body}
+      {p && p.status !== "sent" && p.status !== "ready" ? (
+        <Button
+          variant="outline"
+          size="md"
+          isLoading={resend.isPending}
+          onClick={() =>
+            resend.mutate(r.id, {
+              onSuccess: () => toast.success({ title: "PDF ready on the phone again", description: "Shown at the bridge phone's next check." }),
+              onError: (err) => toast.error({ title: "Not queued", description: errorMessage(err) }),
+            })
+          }
+          className="h-10 justify-center text-caption font-semibold"
+          leftIcon={<Send className="size-4" aria-hidden />}
+        >
+          Resend PDF
+        </Button>
+      ) : null}
+      <p className="text-muted-foreground">
+        {count}
+        {p?.destinationGroup ? ` → ${p.destinationGroup}` : ""}
+      </p>
+    </div>
+  );
+}
+
 function EntryActions({ e, onEdit, onDelete, compact = false }: { e: ScheduleEntry; onEdit: () => void; onDelete: () => void; compact?: boolean }) {
   const size = compact ? "h-10" : "h-11 flex-1";
   return (
@@ -292,6 +365,7 @@ export function ReportSchedule() {
       from: manilaInputValue(new Date(e.periodStart)),
       to: manilaInputValue(new Date(e.periodEnd)),
       send: manilaInputValue(new Date(e.sendAt)),
+      as: e.deliveryType,
     });
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -321,8 +395,9 @@ export function ReportSchedule() {
             <h2 className="text-subheading text-foreground">Report schedule</h2>
             <p className="text-caption text-muted-foreground">
               Add as many reports as you need. At each date of sending, only the flood reports received in its
-              monitoring period (AI-analyzed and summarized) go into one consolidated report, and the bridge phone sends
-              it to the destination group automatically. Times are Asia/Manila.
+              monitoring period (AI-analyzed and summarized) go into one consolidated report. Sent as text, the bridge
+              phone sends it to the destination group automatically; sent as PDF, it waits on the phone as “PDF Ready”
+              for the operator. Times are Asia/Manila.
             </p>
           </div>
         </div>
@@ -347,6 +422,33 @@ export function ReportSchedule() {
             <Field label="Date of sending" htmlFor="okb-sched-send" className="sm:col-span-2 xl:col-span-1">
               <Input id="okb-sched-send" type="datetime-local" value={draft.send} min={draft.to || undefined} onChange={(e) => setField("send", e.target.value)} className="h-11" />
             </Field>
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-caption font-medium text-foreground">Send report as</p>
+            <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Send report as">
+              {SEND_AS.map((o) => {
+                const active = draft.as === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => setDraft((d) => ({ ...d, as: o.value }))}
+                    className={cn(
+                      "min-h-11 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      active ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-muted/40",
+                    )}
+                  >
+                    <span className="flex items-center gap-2 text-caption font-semibold text-foreground">
+                      {o.value === "PDF" ? <FileText className="size-4 shrink-0" aria-hidden /> : <MessageSquareText className="size-4 shrink-0" aria-hidden />}
+                      {o.label}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-muted-foreground">{o.hint}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {check.errors.length > 0 ? (
             <div role="alert" className="space-y-1 rounded-lg border border-danger/50 bg-danger/10 px-3 py-2 text-caption text-danger">
@@ -405,6 +507,10 @@ export function ReportSchedule() {
                     <dd className="text-foreground">
                       <Stamp iso={e.sendAt} />
                     </dd>
+                    <dt className="text-muted-foreground">Send as</dt>
+                    <dd>
+                      <SendAs type={e.deliveryType} />
+                    </dd>
                     <dt className="text-muted-foreground">Status</dt>
                     <dd className="min-w-0">
                       <EntryStatus e={e} enabled={enabled} />
@@ -421,6 +527,7 @@ export function ReportSchedule() {
                   <tr>
                     <th className="px-4 py-2.5 font-semibold">Monitoring period</th>
                     <th className="px-3 py-2.5 font-semibold">Date of sending</th>
+                    <th className="px-3 py-2.5 font-semibold">Send as</th>
                     <th className="px-3 py-2.5 font-semibold">Action</th>
                     <th className="px-4 py-2.5 font-semibold">Status</th>
                   </tr>
@@ -433,6 +540,9 @@ export function ReportSchedule() {
                       </td>
                       <td className="px-3 py-3 text-foreground">
                         <Stamp iso={e.sendAt} />
+                      </td>
+                      <td className="px-3 py-3">
+                        <SendAs type={e.deliveryType} />
                       </td>
                       <td className="w-28 px-3 py-3">
                         <EntryActions e={e} onEdit={() => startEdit(e)} onDelete={() => setDeleting(e)} compact />
