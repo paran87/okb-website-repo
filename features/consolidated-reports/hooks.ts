@@ -6,6 +6,8 @@ import type {
   ConsolidatedReport,
   ConsolidatedSettings,
   ConsolidatedSettingsInput,
+  ScheduleEntry,
+  ScheduleInput,
   TestPeriod,
 } from "@/features/consolidated-reports/types";
 
@@ -41,7 +43,15 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
 export const consolidatedKeys = {
   settings: ["consolidated-reports", "settings"] as const,
   history: ["consolidated-reports", "history"] as const,
+  schedules: ["consolidated-reports", "schedules"] as const,
 };
+
+/** A change to a report or to the schedule shows in both lists. */
+const invalidateReports = (qc: ReturnType<typeof useQueryClient>) =>
+  Promise.all([
+    qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+    qc.invalidateQueries({ queryKey: consolidatedKeys.schedules }),
+  ]);
 
 const retry = (count: number, error: Error) =>
   !(error instanceof ReportsApiError && [400, 401, 403, 404, 409, 422, 503].includes(error.status)) && count < 1;
@@ -78,7 +88,7 @@ export function useTestSend() {
   return useMutation({
     mutationFn: (period: TestPeriod = {}) =>
       api<ConsolidatedReport>("/api/reports/consolidated/test", { method: "POST", body: JSON.stringify(period) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+    onSuccess: () => invalidateReports(qc),
   });
 }
 
@@ -87,7 +97,7 @@ export function useResend() {
   return useMutation({
     mutationFn: (id: string) =>
       api<ConsolidatedReport>(`/api/reports/consolidated/${encodeURIComponent(id)}/resend`, { method: "POST", body: "{}" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+    onSuccess: () => invalidateReports(qc),
   });
 }
 
@@ -96,7 +106,7 @@ export function useRetryText() {
   return useMutation({
     mutationFn: (id: string) =>
       api<ConsolidatedReport>(`/api/reports/consolidated/${encodeURIComponent(id)}/text-retry`, { method: "POST", body: "{}" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+    onSuccess: () => invalidateReports(qc),
   });
 }
 
@@ -105,6 +115,48 @@ export function useCancelText() {
   return useMutation({
     mutationFn: (id: string) =>
       api<ConsolidatedReport>(`/api/reports/consolidated/${encodeURIComponent(id)}/text-cancel`, { method: "POST", body: "{}" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+    onSuccess: () => invalidateReports(qc),
+  });
+}
+
+export function useSchedules(enabled = true) {
+  return useQuery({
+    queryKey: consolidatedKeys.schedules,
+    queryFn: () => api<ScheduleEntry[]>("/api/reports/consolidated/schedules"),
+    refetchInterval: 60_000,
+    enabled,
+    retry,
+  });
+}
+
+export function useCreateSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ScheduleInput) =>
+      api<ScheduleEntry>("/api/reports/consolidated/schedules", { method: "POST", body: JSON.stringify(input) }),
+    onSuccess: () => invalidateReports(qc),
+  });
+}
+
+export function useUpdateSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: ScheduleInput }) =>
+      api<ScheduleEntry>(`/api/reports/consolidated/schedules/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => invalidateReports(qc),
+  });
+}
+
+export function useDeleteSchedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ id: string; deleted: boolean }>(`/api/reports/consolidated/schedules/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => invalidateReports(qc),
   });
 }

@@ -7,6 +7,8 @@ import type {
   ConsolidatedReport,
   ConsolidatedSettings,
   ConsolidatedSettingsInput,
+  ScheduleEntry,
+  ScheduleInput,
   TestPeriod,
 } from "@/features/consolidated-reports/types";
 
@@ -93,6 +95,25 @@ export async function retryText(id: string): Promise<ConsolidatedReport> {
 /** Stops a scheduled or retrying automatic TEXT delivery (the backend refuses one that was already sent). */
 export async function cancelText(id: string): Promise<ConsolidatedReport> {
   return json(await call(`/${encodeURIComponent(id)}/text-cancel`, { method: "POST" }));
+}
+
+/** The report schedule, by date of sending. */
+export async function listSchedules(): Promise<ScheduleEntry[]> {
+  return (await json<{ schedules: ScheduleEntry[] }>(await call("/schedules"))).schedules;
+}
+
+export async function createSchedule(input: ScheduleInput, createdBy: string): Promise<ScheduleEntry> {
+  return json(await call("/schedules", { method: "POST", body: JSON.stringify({ ...input, createdBy }) }));
+}
+
+/** Only an entry still waiting for its date of sending can be edited (the backend answers 409 otherwise). */
+export async function updateSchedule(id: string, input: ScheduleInput): Promise<ScheduleEntry> {
+  return json(await call(`/schedules/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }));
+}
+
+/** Removes an entry; a prepared report not yet sent is cancelled first (it stays in the history). */
+export async function deleteSchedule(id: string): Promise<{ id: string; deleted: boolean }> {
+  return json(await call(`/schedules/${encodeURIComponent(id)}`, { method: "DELETE" }));
 }
 
 export async function fetchPdf(id: string): Promise<{ bytes: ArrayBuffer; fileName: string }> {

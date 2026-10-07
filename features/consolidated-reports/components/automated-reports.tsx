@@ -1,11 +1,10 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Ban, Download, Eye, FileText, MessageSquareText, Plus, RotateCcw, Send, Smartphone, X } from "lucide-react";
+import { Ban, Download, Eye, FileText, MessageSquareText, RotateCcw, Send, Smartphone } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -15,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ReportsGate } from "@/features/reports/components/reports-gate";
+import { ReportSchedule } from "@/features/consolidated-reports/components/report-schedule";
 import { cn } from "@/utils/cn";
 import {
   useConsolidatedHistory,
@@ -25,18 +25,13 @@ import {
   useSaveConsolidatedSettings,
   useTestSend,
 } from "@/features/consolidated-reports/hooks";
-import { formatDate, formatShort, manilaInputToIso, manilaInputValue, periodText, timeLabel } from "@/features/consolidated-reports/format";
+import { formatDate, formatShort, manilaInputToIso, manilaInputValue, periodText } from "@/features/consolidated-reports/format";
 import {
-  MAX_SCHEDULE_TIMES,
   MAX_TEST_PERIOD_DAYS,
-  REPORT_INTERVALS,
-  SCHEDULE_TIME_PATTERN,
-  SCHEDULE_TIMES,
   type ConsolidatedReport,
   type ConsolidatedSettings,
   type ConsolidatedSettingsInput,
   type PdfDeliveryStatus,
-  type ReportInterval,
   type TestPeriod,
   type TextDeliveryStatus,
   type WhatsAppStatus,
@@ -87,12 +82,7 @@ const PDF_INSTRUCTION =
 const PHONE_STALE_MS = 45 * 60 * 1000;
 
 function toInput(s: ConsolidatedSettings): ConsolidatedSettingsInput {
-  return {
-    enabled: s.enabled,
-    scheduleTimes: s.scheduleTimes,
-    intervalMinutes: s.intervalMinutes,
-    sendOnlyIfReports: s.sendOnlyIfReports,
-  };
+  return { enabled: s.enabled, sendOnlyIfReports: s.sendOnlyIfReports };
 }
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "The request failed.");
@@ -112,7 +102,6 @@ function SettingsPanel() {
   const save = useSaveConsolidatedSettings();
   const test = useTestSend();
   const [draft, setDraft] = useState<ConsolidatedSettingsInput | null>(null);
-  const [customTime, setCustomTime] = useState("");
   const [testRange, setTestRange] = useState<TestRange>("24");
   const [testFrom, setTestFrom] = useState("");
   const [testTo, setTestTo] = useState("");
@@ -143,21 +132,7 @@ function SettingsPanel() {
   const form = draft ?? toInput(saved);
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(toInput(saved));
   const set = (patch: Partial<ConsolidatedSettingsInput>) => setDraft({ ...form, ...patch });
-  const noSchedule = form.enabled && form.scheduleTimes.length === 0 && form.intervalMinutes === null;
   const savedGroupMissing = saved.destinationGroup.trim().length === 0;
-
-  const setTimes = (times: string[]) => set({ scheduleTimes: [...new Set(times)].sort() });
-  const toggleTime = (t: string, on: boolean) =>
-    setTimes(on ? [...form.scheduleTimes, t] : form.scheduleTimes.filter((x) => x !== t));
-  const customTimes = form.scheduleTimes.filter((t) => !(SCHEDULE_TIMES as readonly string[]).includes(t));
-  const customValid = SCHEDULE_TIME_PATTERN.test(customTime);
-  const customDuplicate = customValid && form.scheduleTimes.includes(customTime);
-  const tooManyTimes = form.scheduleTimes.length >= MAX_SCHEDULE_TIMES;
-  const addCustomTime = () => {
-    if (!customValid || customDuplicate || tooManyTimes) return;
-    setTimes([...form.scheduleTimes, customTime]);
-    setCustomTime("");
-  };
 
   const onSave = () =>
     save.mutate(form, {
@@ -230,9 +205,9 @@ function SettingsPanel() {
           <div className="min-w-0">
             <h2 className="text-subheading text-foreground">Automated WhatsApp reports</h2>
             <p className="text-caption text-muted-foreground">
-              One consolidated report of the field reports received in each reporting period. The TEXT report is sent
-              automatically to the WhatsApp destination group by the OKB Bridge phone, also at 12:00 AM with nobody at
-              the phone. The PDF is prepared on the phone for the operator to send manually.
+              One consolidated report for each entry of the report schedule below. The TEXT report is sent automatically
+              to the WhatsApp destination group by the OKB Bridge phone, also at 12:00 AM with nobody at the phone. The
+              PDF is prepared on the phone for the operator to send manually.
             </p>
           </div>
         </div>
@@ -277,94 +252,6 @@ function SettingsPanel() {
           </p>
         </Row>
 
-        <Row label="Schedule">
-          <p className="text-caption text-muted-foreground">Daily report times (Asia/Manila). Tick a preset or add your own.</p>
-          <div className="grid gap-1 sm:grid-cols-3">
-            {SCHEDULE_TIMES.map((t) => (
-              <Checkbox
-                key={t}
-                id={`okb-auto-time-${t}`}
-                checked={form.scheduleTimes.includes(t)}
-                onChange={(e) => toggleTime(t, e.target.checked)}
-                label={timeLabel(t)}
-                className="min-h-11 rounded-lg px-2 hover:bg-muted/40"
-              />
-            ))}
-          </div>
-          {customTimes.length > 0 ? (
-            <ul className="flex flex-wrap gap-2" aria-label="Custom report times">
-              {customTimes.map((t) => (
-                <li key={t} className="flex h-11 items-center gap-1 rounded-lg border border-border bg-card pl-3 text-body text-foreground">
-                  {timeLabel(t)}
-                  <button
-                    type="button"
-                    onClick={() => toggleTime(t, false)}
-                    aria-label={`Remove ${timeLabel(t)}`}
-                    className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <X className="size-4" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          <div className="flex gap-2">
-            <div className="min-w-0 flex-1 sm:max-w-48">
-              <Input
-                id="okb-auto-custom-time"
-                type="time"
-                value={customTime}
-                onChange={(e) => setCustomTime(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomTime();
-                  }
-                }}
-                aria-label="Custom report time (hour and minute)"
-                invalid={customDuplicate}
-                className="h-11"
-              />
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={addCustomTime}
-              disabled={!customValid || customDuplicate || tooManyTimes}
-              leftIcon={<Plus className="size-4" aria-hidden />}
-              className="h-11 justify-center"
-            >
-              Add time
-            </Button>
-          </div>
-          {customDuplicate ? <p className="text-caption text-danger">{timeLabel(customTime)} is already in the schedule.</p> : null}
-          {tooManyTimes ? <p className="text-caption text-muted-foreground">At most {MAX_SCHEDULE_TIMES} report times.</p> : null}
-        </Row>
-
-        <Row label="Report interval">
-          <div className="grid grid-cols-5 gap-1.5" role="radiogroup" aria-label="Report interval">
-            {([null, ...REPORT_INTERVALS] as (ReportInterval | null)[]).map((m) => {
-              const active = form.intervalMinutes === m;
-              return (
-                <button
-                  key={m ?? "off"}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => set({ intervalMinutes: m })}
-                  className={cn(
-                    "h-11 rounded-lg border text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-muted/40",
-                  )}
-                >
-                  {m === null ? "Off" : `${m} min`}
-                </button>
-              );
-            })}
-          </div>
-          {noSchedule ? <p className="text-caption text-danger">Choose at least one schedule time or an interval.</p> : null}
-        </Row>
-
         <Row label="Reporting timezone">
           <p className="text-body text-foreground">Asia/Manila (Philippine Time, UTC+8)</p>
         </Row>
@@ -374,7 +261,7 @@ function SettingsPanel() {
             id="okb-auto-only-if"
             checked={form.sendOnlyIfReports}
             onCheckedChange={(sendOnlyIfReports) => set({ sendOnlyIfReports })}
-            label={form.sendOnlyIfReports ? "Yes — skip periods with no new reports" : "No — also send an empty report"}
+            label={form.sendOnlyIfReports ? "Yes — nothing is sent for a period with no reports" : "No — still prepare an empty PDF (never a text)"}
             className="min-h-11"
           />
         </Row>
@@ -455,7 +342,7 @@ function SettingsPanel() {
             size="lg"
             onClick={onSave}
             isLoading={save.isPending}
-            disabled={!dirty || noSchedule || (form.enabled && savedGroupMissing)}
+            disabled={!dirty || (form.enabled && savedGroupMissing)}
             className="justify-center"
           >
             Save Settings
@@ -747,6 +634,7 @@ export function AutomatedReports() {
       {() => (
         <div className="space-y-6">
           <SettingsPanel />
+          <ReportSchedule />
           <section className="space-y-3">
             <h2 className="text-subheading text-foreground">Report history</h2>
             <History />

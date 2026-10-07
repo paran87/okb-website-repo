@@ -1,21 +1,11 @@
 /**
  * Automated consolidated WhatsApp reports. Generated and stored by the OKB Bridge backend
- * (okb-bridge-cloud-backend, lib/consolidated); the Command Center only configures them and shows history.
+ * (okb-bridge-cloud-backend, lib/consolidated); the Command Center configures them, keeps the report schedule
+ * and shows history.
  */
-
-/** Preset daily cut-offs; any other "HH:MM" (24-hour, Asia/Manila) can be added as a custom time. */
-export const SCHEDULE_TIMES = ["06:00", "18:00", "00:00"] as const;
-/** A daily cut-off "HH:MM", 24-hour, Asia/Manila. */
-export type ScheduleTime = string;
-export const MAX_SCHEDULE_TIMES = 24;
-export const SCHEDULE_TIME_PATTERN = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
-export const REPORT_INTERVALS = [15, 30, 60, 120] as const;
-export type ReportInterval = (typeof REPORT_INTERVALS)[number];
 
 export interface ConsolidatedSettings {
   enabled: boolean;
-  scheduleTimes: ScheduleTime[];
-  intervalMinutes: ReportInterval | null;
   sendOnlyIfReports: boolean;
   /**
    * WhatsApp group consolidated reports go to: the TEXT report is sent there automatically by the OKB Bridge
@@ -40,10 +30,41 @@ export interface TestPeriod {
 /** Longest test reporting period the backend accepts. */
 export const MAX_TEST_PERIOD_DAYS = 31;
 
-export type ConsolidatedSettingsInput = Pick<
-  ConsolidatedSettings,
-  "enabled" | "scheduleTimes" | "intervalMinutes" | "sendOnlyIfReports"
->;
+export type ConsolidatedSettingsInput = Pick<ConsolidatedSettings, "enabled" | "sendOnlyIfReports">;
+
+/**
+ * One entry of the report schedule: the flood reports received in the MONITORING PERIOD
+ * [periodStart, periodEnd) are put into one consolidated report at the DATE OF SENDING (sendAt), and the
+ * bridge phone sends its TEXT to the destination group automatically.
+ *   pending     waiting for its date of sending (or for the bridge phone's next check)
+ *   generated   the report was prepared: [report].textDelivery has Sent / Failed / retrying
+ *   no_reports  nothing was received in the period, so nothing was sent
+ *   missed      not prepared within 24 hours of its date of sending (e.g. the bridge phone was offline)
+ */
+export type ScheduleStatus = "pending" | "generated" | "no_reports" | "missed";
+
+export interface ScheduleEntry {
+  id: string;
+  periodStart: string;
+  periodEnd: string;
+  sendAt: string;
+  status: ScheduleStatus;
+  reportId: string | null;
+  report: ConsolidatedReport | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Times of a schedule entry (ISO, UTC). */
+export interface ScheduleInput {
+  periodStart: string;
+  periodEnd: string;
+  sendAt: string;
+}
+
+/** Longest monitoring period the backend accepts. */
+export const MAX_SCHEDULE_PERIOD_DAYS = 31;
 
 /**
  * Legacy PDF status (older backends): pending: waiting for the bridge phone · notified: on the phone ·
