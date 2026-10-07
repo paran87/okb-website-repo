@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { useMapContext } from "@/features/map/context/map-context";
-import { useMapStore } from "@/features/map/store/map.store";
+import { makeRemovedMapInert, useMapStore } from "@/features/map/store/map.store";
 import { mapService } from "@/features/map/services/map.service";
 import { layerService } from "@/features/map/services/layer.service";
 import { MapLayerRenderer } from "@/features/map/components/map-layer-renderer";
@@ -162,7 +162,12 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
       cancelled = true;
       isReadyRef.current = false;
       resizeObserver?.disconnect();
-      mapRef.current?.remove();
+      const removed = mapRef.current;
+      if (removed) {
+        removed.remove();
+        // Overlays of the page being left may still call it once: make that harmless.
+        makeRemovedMapInert(removed);
+      }
       mapRef.current = null;
       setMap(null);
       setStatus("idle");

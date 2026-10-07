@@ -86,3 +86,37 @@ export const selectViewport = (s: MapStore) => s.viewport;
 export const selectMapStatus = (s: MapStore) => s.status;
 export const selectLayers = (s: MapStore) => s.layers;
 export const selectPopup = (s: MapStore) => s.popup;
+
+/**
+ * True when [map] is the map the page currently shows. After a client-side navigation a component can
+ * still hold the previous page's map (already removed) for one effect run; calling it then throws
+ * ("Cannot read properties of undefined (reading 'getLayer')").
+ */
+export function isLiveMap(map: MapLibreMap | null | undefined): map is MapLibreMap {
+  if (!map || useMapStore.getState().map !== map) return false;
+  return Boolean((map as unknown as { style?: unknown }).style);
+}
+
+const INERT_METHODS: Record<string, (...args: unknown[]) => unknown> = {
+  getLayer: () => undefined,
+  getSource: () => undefined,
+  getStyle: () => undefined,
+  isStyleLoaded: () => false,
+  queryRenderedFeatures: () => [],
+  querySourceFeatures: () => [],
+};
+const INERT_NOOPS = [
+  "addLayer", "addSource", "removeLayer", "removeSource", "moveLayer", "setFilter", "setLayoutProperty",
+  "setPaintProperty", "setStyle", "addImage", "removeImage", "fitBounds", "flyTo", "easeTo", "jumpTo",
+  "resize", "setFeatureState", "removeFeatureState",
+];
+
+/**
+ * Makes a removed map harmless: late calls from components that still hold it (see [isLiveMap]) do
+ * nothing instead of throwing and taking the page down.
+ */
+export function makeRemovedMapInert(map: MapLibreMap): void {
+  const target = map as unknown as Record<string, unknown>;
+  for (const [name, impl] of Object.entries(INERT_METHODS)) target[name] = impl;
+  for (const name of INERT_NOOPS) target[name] = () => map;
+}

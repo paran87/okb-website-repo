@@ -5,7 +5,7 @@ import type { Feature, FeatureCollection, MultiLineString, Point, Position } fro
 import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from "maplibre-gl";
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
-import { useMapStore } from "@/features/map/store/map.store";
+import { isLiveMap, useMapStore } from "@/features/map/store/map.store";
 
 export interface FloodLineProps {
   key: string;
@@ -123,7 +123,7 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
   );
 
   useEffect(() => {
-    if (!map || status !== "ready") return;
+    if (!isLiveMap(map) || status !== "ready") return;
     const rebuild = () => {
       applied.current.clear();
       setStyleVersion((v) => v + 1);
@@ -135,9 +135,10 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
   }, [map, status]);
 
   useEffect(() => {
-    if (!map || status !== "ready") return;
+    if (!isLiveMap(map) || status !== "ready") return;
     const apply = () => {
       // Another part of the page may still be adding its layers (Dashboard): wait until the style is ready.
+      if (!isLiveMap(map)) return true;
       if (!map.isStyleLoaded()) return false;
       sync(map);
       map.setFilter("fm-selected", expr(["==", ["get", "key"], selectedKey ?? ""]));
@@ -163,7 +164,7 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
 
   // Tap a flooded road or point to select it.
   useEffect(() => {
-    if (!map || status !== "ready") return;
+    if (!isLiveMap(map) || status !== "ready") return;
     const pick = (event: MapMouseEvent) => {
       const { x, y } = event.point;
       const layers = ["fm-point", "fm-line"].filter((id) => map.getLayer(id));
@@ -188,7 +189,7 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
   }, [map, status, onSelect]);
 
   useEffect(() => {
-    if (!map || status !== "ready" || !focus || focus.positions.length === 0) return;
+    if (!isLiveMap(map) || status !== "ready" || !focus || focus.positions.length === 0) return;
     let [w, s, e, n] = [Infinity, Infinity, -Infinity, -Infinity];
     for (const [x = 0, y = 0] of focus.positions) {
       w = Math.min(w, x);

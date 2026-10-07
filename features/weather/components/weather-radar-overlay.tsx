@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { CloudRain } from "lucide-react";
 import { reloadOperationalLayers } from "@/features/map/services/map.service";
-import { useMapStore } from "@/features/map/store/map.store";
+import { isLiveMap, useMapStore } from "@/features/map/store/map.store";
 import { cn } from "@/utils/cn";
 
 const RADAR_SOURCE_ID = "weather-radar-source";
@@ -76,7 +76,7 @@ export function WeatherRadarOverlay({
   }, []);
 
   const applyRadar = useCallback(() => {
-    if (!map) return;
+    if (!isLiveMap(map)) return;
 
     if (map.getLayer(RADAR_LAYER_ID)) map.removeLayer(RADAR_LAYER_ID);
     if (map.getSource(RADAR_SOURCE_ID)) map.removeSource(RADAR_SOURCE_ID);
@@ -109,7 +109,7 @@ export function WeatherRadarOverlay({
   }, [map, enabled, tileUrl]);
 
   useEffect(() => {
-    if (!map || status !== "ready") return;
+    if (!isLiveMap(map) || status !== "ready") return;
 
     applyRadar();
 
