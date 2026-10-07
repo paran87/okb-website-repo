@@ -6,6 +6,7 @@ import type {
   ConsolidatedReport,
   ConsolidatedSettings,
   ConsolidatedSettingsInput,
+  TestPeriod,
 } from "@/features/consolidated-reports/types";
 
 interface Envelope<T> {
@@ -75,7 +76,8 @@ export function useConsolidatedHistory(enabled = true) {
 export function useTestSend() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api<ConsolidatedReport>("/api/reports/consolidated/test", { method: "POST", body: "{}" }),
+    mutationFn: (period: TestPeriod = {}) =>
+      api<ConsolidatedReport>("/api/reports/consolidated/test", { method: "POST", body: JSON.stringify(period) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
   });
 }

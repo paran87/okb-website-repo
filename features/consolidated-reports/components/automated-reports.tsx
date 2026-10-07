@@ -25,9 +25,10 @@ import {
   useSaveConsolidatedSettings,
   useTestSend,
 } from "@/features/consolidated-reports/hooks";
-import { formatShort, periodText, timeLabel } from "@/features/consolidated-reports/format";
+import { formatDate, formatShort, manilaInputToIso, manilaInputValue, periodText, timeLabel } from "@/features/consolidated-reports/format";
 import {
   MAX_SCHEDULE_TIMES,
+  MAX_TEST_PERIOD_DAYS,
   REPORT_INTERVALS,
   SCHEDULE_TIME_PATTERN,
   SCHEDULE_TIMES,
@@ -36,9 +37,20 @@ import {
   type ConsolidatedSettingsInput,
   type PdfDeliveryStatus,
   type ReportInterval,
+  type TestPeriod,
   type TextDeliveryStatus,
   type WhatsAppStatus,
 } from "@/features/consolidated-reports/types";
+
+// Reporting period of a TEST REPORT: the last N hours, or a custom From–To (Asia/Manila).
+const TEST_RANGES = [
+  { key: "6", label: "Last 6 h", hours: 6 },
+  { key: "12", label: "Last 12 h", hours: 12 },
+  { key: "24", label: "Last 24 h", hours: 24 },
+  { key: "custom", label: "Custom", hours: null },
+] as const;
+type TestRange = (typeof TEST_RANGES)[number]["key"];
+const HOUR_MS = 60 * 60 * 1000;
 
 // TEXT: sent automatically to the destination group by the bridge phone (no operator action).
 const TEXT_STATUS: Record<TextDeliveryStatus, { label: string; variant: BadgeVariant }> = {
@@ -102,6 +114,9 @@ function SettingsPanel() {
   const test = useTestSend();
   const [draft, setDraft] = useState<ConsolidatedSettingsInput | null>(null);
   const [customTime, setCustomTime] = useState("");
+  const [testRange, setTestRange] = useState<TestRange>("24");
+  const [testFrom, setTestFrom] = useState("");
+  const [testTo, setTestTo] = useState("");
 
   if (settings.isPending) {
     return (
@@ -155,8 +170,46 @@ function SettingsPanel() {
       onError: (e) => toast.error({ title: "Settings not saved", description: errorMessage(e) }),
     });
 
+  // Custom test period: both ends required, From before To, To not in the future, at most MAX_TEST_PERIOD_DAYS.
+  const fromIso = manilaInputToIso(testFrom);
+  const toIso = manilaInputToIso(testTo);
+  const customPeriodError =
+    testRange !== "custom" || (!testFrom && !testTo)
+      ? null
+      : !fromIso || !toIso
+        ? "Choose both From and To."
+        : Date.parse(fromIso) >= Date.parse(toIso)
+          ? "From must be before To."
+          : Date.parse(toIso) > Date.now() + 60_000
+            ? "To cannot be in the future."
+            : Date.parse(toIso) - Date.parse(fromIso) > MAX_TEST_PERIOD_DAYS * 24 * HOUR_MS
+              ? `The period can be at most ${MAX_TEST_PERIOD_DAYS} days.`
+              : null;
+  const customPeriodReady = testRange !== "custom" || (fromIso !== null && toIso !== null && customPeriodError === null);
+  const chooseRange = (key: TestRange) => {
+    setTestRange(key);
+    // Start the custom inputs from the last 24 hours, so only the part that changes needs editing.
+    if (key === "custom" && !testFrom && !testTo) {
+      const now = new Date();
+      setTestFrom(manilaInputValue(new Date(now.getTime() - 24 * HOUR_MS)));
+      setTestTo(manilaInputValue(now));
+    }
+  };
+  const testPeriod = (): TestPeriod => {
+    if (testRange === "custom") return { periodStart: fromIso ?? undefined, periodEnd: toIso ?? undefined };
+    const hours = TEST_RANGES.find((r) => r.key === testRange)?.hours ?? 24;
+    const end = new Date();
+    return { periodStart: new Date(end.getTime() - hours * HOUR_MS).toISOString(), periodEnd: end.toISOString() };
+  };
+  const customPreview = (() => {
+    if (testRange !== "custom" || !fromIso || !toIso || customPeriodError) return null;
+    const p = periodText(fromIso, toIso);
+    // One day: "October 7, 2026 · 06:00 AM – 09:30 AM"; longer periods already name both dates.
+    return formatDate(fromIso) === formatDate(toIso) ? `${p.date} · ${p.time}` : p.time;
+  })();
+
   const onTest = () =>
-    test.mutate(undefined, {
+    test.mutate(testPeriod(), {
       onSuccess: (r) =>
         toast.success({
           title: "TEST REPORT prepared",
@@ -330,13 +383,73 @@ function SettingsPanel() {
           />
         </Row>
 
+        <Row label="Test reporting period">
+          <p className="text-caption text-muted-foreground">
+            Which flood reports go into a Test Send (Asia/Manila). Regular reports always cover the time since the
+            previous scheduled report.
+          </p>
+          <div className="grid grid-cols-4 gap-1.5" role="radiogroup" aria-label="Test reporting period">
+            {TEST_RANGES.map((r) => {
+              const active = testRange === r.key;
+              return (
+                <button
+                  key={r.key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => chooseRange(r.key)}
+                  className={cn(
+                    "h-11 rounded-lg border px-1 text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-muted/40",
+                  )}
+                >
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+          {testRange === "custom" ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Field label="From" htmlFor="okb-test-from">
+                <Input
+                  id="okb-test-from"
+                  type="datetime-local"
+                  value={testFrom}
+                  max={testTo || undefined}
+                  onChange={(e) => setTestFrom(e.target.value)}
+                  invalid={customPeriodError !== null}
+                  className="h-11"
+                />
+              </Field>
+              <Field label="To" htmlFor="okb-test-to">
+                <Input
+                  id="okb-test-to"
+                  type="datetime-local"
+                  value={testTo}
+                  min={testFrom || undefined}
+                  max={manilaInputValue(new Date())}
+                  onChange={(e) => setTestTo(e.target.value)}
+                  invalid={customPeriodError !== null}
+                  className="h-11"
+                />
+              </Field>
+            </div>
+          ) : null}
+          {customPeriodError ? <p className="text-caption text-danger">{customPeriodError}</p> : null}
+          {customPreview ? (
+            <p className="text-caption text-muted-foreground">
+              Reporting period: <PeriodTime text={customPreview} />
+            </p>
+          ) : null}
+        </Row>
+
         <div className="flex flex-col-reverse gap-2 border-t border-border/60 pt-4 sm:flex-row sm:justify-between">
           <Button
             variant="outline"
             size="lg"
             onClick={onTest}
             isLoading={test.isPending}
-            disabled={dirty || savedGroupMissing}
+            disabled={dirty || savedGroupMissing || !customPeriodReady}
             leftIcon={<Send className="size-4" aria-hidden />}
             className="justify-center"
           >
@@ -360,12 +473,24 @@ function SettingsPanel() {
         ) : null}
         <p className="text-caption text-muted-foreground">
           {dirty ? "Save your changes before a test send. " : ""}
-          Test Send prepares a TEST REPORT from recent reports; it does not affect the regular reports. The bridge
+          Test Send prepares a TEST REPORT from the reports in the test reporting period; it does not affect the
+          regular reports. The bridge
           phone checks just after each scheduled time and every 15 minutes, sends the TEXT report on its own and
           marks it Sent only after it sees the message in the destination group. {PDF_INSTRUCTION}
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+/** "Oct 6, 09:15 AM – Oct 7, 09:15 AM": breaks only between the two ends, never inside one. */
+function PeriodTime({ text }: { text: string }) {
+  const [start, end] = text.split(" – ");
+  if (end === undefined) return <>{text}</>;
+  return (
+    <>
+      <span className="whitespace-nowrap">{start}</span> – <span className="whitespace-nowrap">{end}</span>
+    </>
   );
 }
 
@@ -542,7 +667,9 @@ function History() {
               </div>
               <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5">
                 <dt className="text-muted-foreground">Reporting period</dt>
-                <dd className="text-foreground">{p.time}</dd>
+                <dd className="text-foreground">
+                  <PeriodTime text={p.time} />
+                </dd>
                 <dt className="text-muted-foreground">Reports</dt>
                 <dd className="text-foreground">{count(r)}</dd>
                 <dt className="text-muted-foreground">Prepared at</dt>
@@ -589,7 +716,9 @@ function History() {
                       {p.date}
                       {r.kind === "test" ? <Badge variant="warning" className="ml-1.5">TEST</Badge> : null}
                     </td>
-                    <td className="px-3 py-2.5 text-foreground">{p.time}</td>
+                    <td className="px-3 py-2.5 text-foreground">
+                      <PeriodTime text={p.time} />
+                    </td>
                     <td className="px-3 py-2.5 text-foreground">{count(r)}</td>
                     <td className="max-w-56 px-3 py-2.5">
                       <TextStatus r={r} />

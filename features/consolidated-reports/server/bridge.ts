@@ -7,6 +7,7 @@ import type {
   ConsolidatedReport,
   ConsolidatedSettings,
   ConsolidatedSettingsInput,
+  TestPeriod,
 } from "@/features/consolidated-reports/types";
 
 /**
@@ -72,8 +73,8 @@ export async function saveSettings(settings: ConsolidatedSettingsInput, updatedB
 }
 
 /** Rendering a PDF with photos can take a while on a cold backend. */
-export async function testSend(createdBy: string): Promise<ConsolidatedReport> {
-  return json(await call("/test", { method: "POST", body: JSON.stringify({ createdBy }) }, 55_000));
+export async function testSend(createdBy: string, period: TestPeriod = {}): Promise<ConsolidatedReport> {
+  return json(await call("/test", { method: "POST", body: JSON.stringify({ createdBy, ...period }) }, 55_000));
 }
 
 export async function listHistory(limit = 50): Promise<ConsolidatedReport[]> {

@@ -30,6 +30,15 @@ export interface ConsolidatedSettings {
   updatedBy: string | null;
 }
 
+/** Reporting period of a TEST REPORT (ISO). Without it the backend uses the last 24 hours. */
+export interface TestPeriod {
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+/** Longest test reporting period the backend accepts. */
+export const MAX_TEST_PERIOD_DAYS = 31;
+
 export type ConsolidatedSettingsInput = Pick<
   ConsolidatedSettings,
   "enabled" | "scheduleTimes" | "intervalMinutes" | "sendOnlyIfReports" | "destinationGroup"
