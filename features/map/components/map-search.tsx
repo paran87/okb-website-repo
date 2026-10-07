@@ -7,7 +7,7 @@ import { useMap } from "@/features/map/hooks/use-map";
 import type { SearchResult } from "@/features/map/types";
 import { cn } from "@/utils/cn";
 
-/** Mock map search — roads, barangays, cities, coordinates, projects, equipment. */
+/** Mock map search — roads, barangays, cities, coordinates, projects. */
 export function GisMapSearch({ className }: { className?: string }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<readonly SearchResult[]>([]);

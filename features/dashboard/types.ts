@@ -12,7 +12,6 @@ export type AlertSeverity = "critical" | "warning" | "info" | "resolved";
 /** Activity event categories. */
 export type ActivityCategory =
   | "flood"
-  | "equipment"
   | "weather"
   | "water"
   | "road"
@@ -56,14 +55,6 @@ export interface WeatherSummary {
   stormStatus: string;
   stormTone: KpiStatus;
   updatedAt: string;
-}
-
-export interface EquipmentSummary {
-  total: number;
-  available: number;
-  deployed: number;
-  maintenance: number;
-  utilizationPercent: number;
 }
 
 export interface SystemHealthItem {

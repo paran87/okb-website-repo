@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
 import { AppProviders } from "@/providers/app-providers";
+import { DARK_ON_NEW_VISIT_SCRIPT } from "@/providers/theme-config";
 import { APP } from "@/lib/constants";
 import "@/styles/globals.css";
 import "@/styles/okb-folio.css";
@@ -52,6 +53,9 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${okbDisplay.variable} ${okbSans.variable}`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: DARK_ON_NEW_VISIT_SCRIPT }} />
+      </head>
       <body className="min-h-dvh antialiased">
         <AppProviders>{children}</AppProviders>
       </body>

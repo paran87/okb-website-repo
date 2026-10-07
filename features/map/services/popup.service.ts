@@ -124,7 +124,6 @@ export const markerService = {
       default: "#3b82f6",
       flood: "#ef4444",
       critical: "#dc2626",
-      equipment: "#8b5cf6",
       warning: "#f59e0b",
       success: "#22c55e",
       offline: "#6b7280",

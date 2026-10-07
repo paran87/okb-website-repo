@@ -73,7 +73,6 @@ function WeatherPlaceholder() {
 /** Command-center header with situational awareness controls. */
 export function Header() {
   const openMobileSidebar = useUiStore((state) => state.openMobileSidebar);
-  const toggleUtilityPanel = useUiStore((state) => state.toggleUtilityPanel);
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   return (
@@ -120,15 +119,6 @@ export function Header() {
           ) : (
             <AppIcons.fullscreen className="size-4" aria-hidden />
           )}
-        </button>
-
-        <button
-          type="button"
-          onClick={toggleUtilityPanel}
-          aria-label="Toggle utility panel"
-          className="hidden size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:flex"
-        >
-          <AppIcons.utilityPanelOpen className="size-4" aria-hidden />
         </button>
       </div>
     </header>

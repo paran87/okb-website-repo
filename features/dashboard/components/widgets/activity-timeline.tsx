@@ -5,7 +5,6 @@ import {
   FileText,
   Route,
   Settings,
-  Truck,
   Waves,
 } from "lucide-react";
 import { HoverLift } from "@/components/ui/motion";
@@ -19,7 +18,6 @@ const CATEGORY_META: Record<
   { icon: typeof Waves; tone: string }
 > = {
   flood: { icon: Waves, tone: "text-danger bg-danger/15" },
-  equipment: { icon: Truck, tone: "text-primary bg-primary/15" },
   weather: { icon: CloudRain, tone: "text-info bg-info/15" },
   water: { icon: Waves, tone: "text-warning bg-warning/15" },
   road: { icon: Route, tone: "text-warning bg-warning/15" },

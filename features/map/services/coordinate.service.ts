@@ -58,13 +58,6 @@ const MOCK_SEARCH_INDEX: readonly SearchResult[] = [
     category: "project",
     coordinates: [121.085, 14.652],
   },
-  {
-    id: "sr-eq-1",
-    label: "Pump Station QC-3",
-    subtitle: "Equipment depot",
-    category: "equipment",
-    coordinates: [121.025, 14.62],
-  },
 ];
 
 /** Mock geocoder — future: wire to Nominatim / internal geocoder API. */

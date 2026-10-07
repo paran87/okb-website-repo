@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { SessionProvider } from "next-auth/react";
+import { THEME_STORAGE_KEY } from "@/providers/theme-config";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { AuthProvider } from "@/providers/auth-provider";
@@ -22,7 +23,8 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
-      enableSystem
+      enableSystem={false}
+      storageKey={THEME_STORAGE_KEY}
       disableTransitionOnChange
     >
       <ErrorProvider>

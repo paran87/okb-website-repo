@@ -107,13 +107,6 @@ export const NAV_ITEMS: readonly NavEntry[] = [
       },
       {
         type: "link",
-        label: "Equipment",
-        href: ROUTES.equipment,
-        icon: AppIcons.equipment,
-        permission: Permission.EQUIPMENT_VIEW,
-      },
-      {
-        type: "link",
         label: "Weather",
         href: ROUTES.weather,
         icon: AppIcons.weather,

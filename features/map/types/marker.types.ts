@@ -6,7 +6,6 @@ export type MarkerTone =
   | "default"
   | "flood"
   | "critical"
-  | "equipment"
   | "warning"
   | "success"
   | "offline";

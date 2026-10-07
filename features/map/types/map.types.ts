@@ -24,7 +24,6 @@ export type LayerCategory =
   | "flood-prone"
   | "roads"
   | "waterways"
-  | "equipment"
   | "sensors"
   | "weather"
   | "projects"

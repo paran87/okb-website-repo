@@ -7,7 +7,6 @@ export type SearchCategory =
   | "city"
   | "coordinates"
   | "project"
-  | "equipment"
   | "incident"
   | "sensor";
 

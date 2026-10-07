@@ -6,7 +6,6 @@ export type MapMarkerTone =
   | "default"
   | "flood"
   | "critical"
-  | "equipment"
   | "warning"
   | "offline";
 
@@ -14,7 +13,6 @@ const TONE_CLASSES: Record<MapMarkerTone, string> = {
   default: "bg-map-marker border-map-marker",
   flood: "bg-flood-moderate border-flood-moderate",
   critical: "bg-risk-severe border-risk-severe",
-  equipment: "bg-equipment-deployed border-equipment-deployed",
   warning: "bg-warning border-warning",
   offline: "bg-equipment-offline border-equipment-offline",
 };

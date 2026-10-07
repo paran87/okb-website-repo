@@ -29,7 +29,6 @@ const legacyCommandPaths = [
   "river-basin",
   "waterways",
   "pumping-stations",
-  "equipment",
   "weather",
   "reports",
   "analytics",
@@ -83,6 +82,17 @@ const nextConfig: NextConfig = {
       {
         source: "/operations",
         destination: "/command/pumping-stations",
+        permanent: false,
+      },
+      {
+        // The Equipment tab was removed.
+        source: "/equipment",
+        destination: "/command",
+        permanent: false,
+      },
+      {
+        source: "/command/equipment",
+        destination: "/command",
         permanent: false,
       },
       {

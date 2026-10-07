@@ -11,8 +11,8 @@ interface UtilityPanelProps {
 }
 
 /**
- * Collapsible right utility panel for weather, equipment, notifications,
- * and live events. Empty by default — content lands in later phases.
+ * Collapsible right utility panel for weather, notifications and live
+ * events. Empty by default — content lands in later phases.
  */
 export function UtilityPanel({ className, children }: UtilityPanelProps) {
   const open = useUiStore((state) => state.utilityPanelOpen);
@@ -61,8 +61,8 @@ export function UtilityPanel({ className, children }: UtilityPanelProps) {
                 Utility Panel
               </p>
               <p className="mt-1 text-label text-muted-foreground">
-                Weather, equipment, notifications, and live events will
-                appear here.
+                Weather, notifications, and live events will appear
+                here.
               </p>
             </div>
           )}

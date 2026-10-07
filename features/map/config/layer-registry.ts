@@ -8,8 +8,7 @@ export type MockGeoJsonKey =
   | "deos-flood-prone-areas"
   | "floodwatch-areas"
   | "roads"
-  | "sensors"
-  | "equipment";
+  | "sensors";
 
 /** Default operational layer registry (mock data, no API). */
 export function createDefaultLayerRegistry(): LayerConfig[] {
@@ -74,27 +73,6 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
       ],
     },
     {
-      id: "equipment",
-      sourceId: "source-equipment",
-      label: "Equipment",
-      kind: "cluster",
-      category: "equipment",
-      visible: true,
-      opacity: 1,
-      order: 50,
-      dataKey: "equipment",
-      layerIds: [
-        "equipment-clusters",
-        "equipment-cluster-count",
-        "equipment-points",
-      ],
-      interactive: true,
-      cluster: true,
-      legend: [
-        { id: "eq1", label: "Deployed equipment", color: "#8b5cf6", shape: "circle" },
-      ],
-    },
-    {
       id: "incidents",
       sourceId: "source-incidents",
       label: "Flood Incidents",
@@ -125,7 +103,7 @@ export function createDefaultLayerRegistry(): LayerConfig[] {
 export function createFloodOverviewLayerRegistry(): LayerConfig[] {
   const base = createDefaultLayerRegistry().filter(
     (layer) =>
-      !["roads", "sensors", "equipment", "incidents", "flood-zones"].includes(
+      !["roads", "sensors", "incidents", "flood-zones"].includes(
         layer.id,
       ),
   );

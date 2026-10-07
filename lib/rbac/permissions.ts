@@ -20,9 +20,6 @@ export const Permission = {
   FLOOD_PRONE_VIEW: "flood-prone:view",
   FLOOD_PRONE_MANAGE: "flood-prone:manage",
 
-  EQUIPMENT_VIEW: "equipment:view",
-  EQUIPMENT_MANAGE: "equipment:manage",
-
   PROJECT_VIEW: "project:view",
   PROJECT_MANAGE: "project:manage",
 
@@ -54,7 +51,6 @@ const VIEW_PERMISSIONS: readonly Permission[] = [
   Permission.MAP_VIEW,
   Permission.INCIDENT_VIEW,
   Permission.FLOOD_PRONE_VIEW,
-  Permission.EQUIPMENT_VIEW,
   Permission.PROJECT_VIEW,
   Permission.WEATHER_VIEW,
   Permission.REPORT_VIEW,
@@ -71,7 +67,6 @@ const FIELD_ENGINEER_PERMISSIONS: readonly Permission[] = [
 
 const DISTRICT_ENGINEER_PERMISSIONS: readonly Permission[] = [
   ...FIELD_ENGINEER_PERMISSIONS,
-  Permission.EQUIPMENT_MANAGE,
   Permission.PROJECT_MANAGE,
   Permission.FLOOD_PRONE_MANAGE,
   Permission.REPORT_GENERATE,

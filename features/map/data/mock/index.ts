@@ -255,53 +255,6 @@ export const MOCK_SENSORS: FeatureCollection = {
   ],
 };
 
-/** Mock equipment GPS points (clustered at scale). */
-export const MOCK_EQUIPMENT: FeatureCollection = {
-  type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      properties: {
-        id: "eq-001",
-        title: "Amphibious Excavator A1",
-        status: "Deployed",
-        category: "equipment",
-      },
-      geometry: { type: "Point", coordinates: [121.083, 14.651] },
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "eq-002",
-        title: "Mobile Pump Unit P3",
-        status: "Deployed",
-        category: "equipment",
-      },
-      geometry: { type: "Point", coordinates: [121.044, 14.635] },
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "eq-003",
-        title: "Dump Truck Convoy",
-        status: "En Route",
-        category: "equipment",
-      },
-      geometry: { type: "Point", coordinates: [121.04, 14.488] },
-    },
-    {
-      type: "Feature",
-      properties: {
-        id: "eq-004",
-        title: "Generator Set G7",
-        status: "Standby",
-        category: "equipment",
-      },
-      geometry: { type: "Point", coordinates: [121.025, 14.62] },
-    },
-  ],
-};
-
 /** Filled at runtime from the Floodwatch (Flood Prone Areas) API. */
 const FLOODWATCH_AREAS_PLACEHOLDER: FeatureCollection = {
   type: "FeatureCollection",
@@ -315,7 +268,6 @@ export const MOCK_GEOJSON_REGISTRY = {
   "floodwatch-areas": FLOODWATCH_AREAS_PLACEHOLDER,
   roads: MOCK_ROADS,
   sensors: MOCK_SENSORS,
-  equipment: MOCK_EQUIPMENT,
   "weather-advisory-zones": MOCK_WEATHER_ADVISORY_ZONES,
   "weather-stations": MOCK_WEATHER_STATIONS,
 } as const;
