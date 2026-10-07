@@ -172,8 +172,11 @@ export function buildLayerSpecs(config: LayerConfig) {
             source: sourceId,
             layout: {
               "icon-image": ["concat", CLOUD_ICON_PREFIX, ["get", "condition"]],
-              "icon-size": ["interpolate", ["linear"], ["zoom"], 4, 0.42, 7, 0.55, 10, 0.68, 14, 0.86],
-              "icon-allow-overlap": true,
+              // Small at the national view and growing as you zoom in (64 px icon: ~10 px at z4, ~38 px at z10);
+              // colliding icons are left out until there is room, so cities do not pile up.
+              "icon-size": ["interpolate", ["exponential", 1.5], ["zoom"], 4, 0.16, 6, 0.25, 8, 0.4, 10, 0.6, 13, 0.8],
+              "icon-allow-overlap": false,
+              "icon-padding": 1,
               "text-field": [
                 "format",
                 ["get", "name"],
@@ -183,9 +186,9 @@ export function buildLayerSpecs(config: LayerConfig) {
                 ["concat", ["to-string", ["get", "temperature"]], "°C"],
                 { "font-scale": 0.9 },
               ],
-              "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 9, 9, 11, 13, 13],
+              "text-size": ["interpolate", ["linear"], ["zoom"], 5.5, 8, 9, 10, 13, 12],
               "text-font": [...MAP_LABEL_FONT],
-              "text-offset": [0, 1.4],
+              "text-offset": ["interpolate", ["linear"], ["zoom"], 5.5, ["literal", [0, 0.9]], 10, ["literal", [0, 1.6]], 13, ["literal", [0, 2]]],
               "text-anchor": "top",
               "text-max-width": 7,
               "text-optional": true,

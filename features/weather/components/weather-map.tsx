@@ -46,7 +46,7 @@ export function WeatherMap() {
         </div>
       </header>
 
-      <div className="relative h-[calc(100dvh-14rem)] min-h-[560px] w-full">
+      <div className="relative h-[52dvh] min-h-[300px] w-full sm:h-[58dvh] lg:h-[min(60dvh,600px)] lg:min-h-[420px]">
         <MapEngine
           initialView={PHILIPPINES_MAP_VIEW}
           initialStyleId="light"
