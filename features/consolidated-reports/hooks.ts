@@ -97,3 +97,12 @@ export function useRetryText() {
     onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
   });
 }
+
+export function useCancelText() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<ConsolidatedReport>(`/api/reports/consolidated/${encodeURIComponent(id)}/text-cancel`, { method: "POST", body: "{}" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: consolidatedKeys.history }),
+  });
+}

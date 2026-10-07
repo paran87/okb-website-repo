@@ -89,6 +89,11 @@ export async function retryText(id: string): Promise<ConsolidatedReport> {
   return json(await call(`/${encodeURIComponent(id)}/text-retry`, { method: "POST" }));
 }
 
+/** Stops a scheduled or retrying automatic TEXT delivery (the backend refuses one that was already sent). */
+export async function cancelText(id: string): Promise<ConsolidatedReport> {
+  return json(await call(`/${encodeURIComponent(id)}/text-cancel`, { method: "POST" }));
+}
+
 export async function fetchPdf(id: string): Promise<{ bytes: ArrayBuffer; fileName: string }> {
   const res = await call(`/${encodeURIComponent(id)}/pdf`, {}, 55_000);
   const disposition = res.headers.get("content-disposition") ?? "";

@@ -72,6 +72,8 @@ export interface TextDelivery extends DeliveryBase {
   ref: string | null;
   /** How the phone confirmed the message in the chat. */
   verification: string | null;
+  /** Failed because an operator cancelled it in the Command Center (older backends: absent). */
+  cancelled?: boolean;
 }
 
 /** The consolidated PDF, sent manually by the operator from the bridge phone. */

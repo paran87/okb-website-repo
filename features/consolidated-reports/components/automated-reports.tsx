@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Download, Eye, FileText, MessageSquareText, Plus, RotateCcw, Send, Smartphone, X } from "lucide-react";
+import { Ban, Download, Eye, FileText, MessageSquareText, Plus, RotateCcw, Send, Smartphone, X } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Field } from "@/components/ui/field";
@@ -18,6 +19,7 @@ import { cn } from "@/utils/cn";
 import {
   useConsolidatedHistory,
   useConsolidatedSettings,
+  useCancelText,
   useResend,
   useRetryText,
   useSaveConsolidatedSettings,
@@ -371,9 +373,12 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
   const toast = useToast();
   const resend = useResend();
   const retry = useRetryText();
+  const cancel = useCancelText();
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const base = `/api/reports/consolidated/${encodeURIComponent(r.id)}/pdf`;
   const hasPdf = r.pdfStatus === "generated";
   const textFailed = r.textDelivery?.status === "failed";
+  const textActive = r.textDelivery?.status === "scheduled" || r.textDelivery?.status === "sending";
   const size = compact ? "h-10" : "h-11 flex-1";
   const link = cn(
     "inline-flex items-center justify-center gap-1.5 rounded-lg border border-border px-3 text-caption font-semibold text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -381,6 +386,39 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
   );
   return (
     <div className={cn("flex flex-wrap gap-2", compact ? "justify-end" : "")}>
+      {textActive ? (
+        <Button
+          variant="outline"
+          size="md"
+          onClick={() => setConfirmCancel(true)}
+          className={cn("justify-center text-caption font-semibold", size)}
+          leftIcon={<Ban className="size-4" aria-hidden />}
+        >
+          Cancel text
+        </Button>
+      ) : null}
+      <ConfirmDialog
+        open={confirmCancel}
+        title="Cancel the automatic text report?"
+        description={`The bridge phone stops trying to send it to ${r.textDelivery?.destinationGroup ?? "the destination group"}. If it was already sent, it stays in the group. The PDF is not affected. You can use Retry text later or prepare a new report.`}
+        confirmLabel="Cancel text report"
+        cancelLabel="Keep it"
+        confirmVariant="danger"
+        isLoading={cancel.isPending}
+        onCancel={() => setConfirmCancel(false)}
+        onConfirm={() =>
+          cancel.mutate(r.id, {
+            onSuccess: () => {
+              setConfirmCancel(false);
+              toast.success({ title: "Text report cancelled", description: "The bridge phone stops at its next check." });
+            },
+            onError: (e) => {
+              setConfirmCancel(false);
+              toast.error({ title: "Not cancelled", description: errorMessage(e) });
+            },
+          })
+        }
+      />
       {textFailed ? (
         <Button
           variant="outline"
@@ -440,12 +478,18 @@ function TextStatus({ r }: { r: ConsolidatedReport }) {
   const status = TEXT_STATUS[t.status];
   return (
     <div className="space-y-1">
-      <Badge variant={retrying ? "warning" : status.variant} dot>
-        {retrying ? `Scheduled · retrying (${t.attempts}/${t.maxAttempts})` : status.label}
-      </Badge>
+      {t.cancelled ? (
+        <Badge variant="default" dot>
+          Cancelled
+        </Badge>
+      ) : (
+        <Badge variant={retrying ? "warning" : status.variant} dot>
+          {retrying ? `Scheduled · retrying (${t.attempts}/${t.maxAttempts})` : status.label}
+        </Badge>
+      )}
       {t.destinationGroup ? <p className="break-words text-muted-foreground">→ {t.destinationGroup}</p> : null}
       {t.status === "sent" ? <p className="text-foreground">Sent {formatShort(t.sentAt)}</p> : null}
-      {t.errorMessage && t.status !== "sent" ? <p className="break-words text-danger">{t.errorMessage}</p> : null}
+      {t.errorMessage && t.status !== "sent" && !t.cancelled ? <p className="break-words text-danger">{t.errorMessage}</p> : null}
     </div>
   );
 }
