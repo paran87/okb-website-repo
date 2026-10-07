@@ -56,12 +56,12 @@ const TEXT_STATUS: Record<TextDeliveryStatus, { label: string; variant: BadgeVar
   failed: { label: "Failed", variant: "danger" },
 };
 
-// PDF: manual. The operator taps "Send as PDF" on the phone and sends it from WhatsApp's share screen.
+// PDF: sent automatically by the bridge phone (app 1.5.0+); when it cannot, the operator taps "Send as PDF" there.
 const PDF_STATUS: Record<PdfDeliveryStatus, { label: string; variant: BadgeVariant }> = {
   ready: { label: "PDF Ready · waiting for bridge phone", variant: "warning" },
-  notified: { label: "PDF Ready · on bridge phone", variant: "info" },
+  notified: { label: "On bridge phone · sending", variant: "info" },
   opened: { label: "Opened in WhatsApp", variant: "info" },
-  sent: { label: "Sent (operator confirmed)", variant: "success" },
+  sent: { label: "Sent", variant: "success" },
   failed: { label: "Failed", variant: "danger" },
 };
 
@@ -78,7 +78,7 @@ const pdfStatusOf = (r: ConsolidatedReport): PdfDeliveryStatus | null =>
   r.pdfDelivery?.status ?? (r.pdfStatus === "generated" ? (LEGACY_PDF_STATUS[r.whatsappStatus] ?? "ready") : null);
 
 const PDF_INSTRUCTION =
-  "PDF: the bridge phone shows “PDF Ready”; the operator taps “Send as PDF”, selects the destination group in WhatsApp and presses Send.";
+  "PDF: the bridge phone sends it to the destination group automatically. If it cannot, it shows “PDF Ready” and the operator taps “Send as PDF”.";
 
 /** The bridge phone checks in every ~30 s while monitoring (older app versions: every 15 minutes). */
 const PHONE_STALE_MS = 20 * 60 * 1000;
@@ -209,7 +209,7 @@ function SettingsPanel() {
             <p className="text-caption text-muted-foreground">
               One consolidated report for each entry of the report schedule below. The TEXT report is sent automatically
               to the WhatsApp destination group by the OKB Bridge phone, also at 12:00 AM with nobody at the phone. The
-              PDF is prepared on the phone for the operator to send manually.
+              PDF is sent there automatically too (app 1.5.0 or later); if the phone cannot, the operator sends it.
             </p>
           </div>
         </div>
@@ -249,7 +249,7 @@ function SettingsPanel() {
           )}
           <p className="text-caption text-muted-foreground">
             Set on the bridge phone only: OKB Bridge app → Settings → WhatsApp Report Groups → Destination Group. The
-            TEXT report is sent to this group automatically; the PDF is sent to it manually. To change it, change it
+            TEXT and PDF reports are sent to this group automatically. To change it, change it
             on the phone; it shows here within a minute.
           </p>
         </Row>
@@ -466,7 +466,7 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
             onClick={() =>
               resend.mutate(r.id, {
                 onSuccess: () =>
-                  toast.success({ title: "PDF ready on the phone again", description: `Shown at the next check. ${PDF_INSTRUCTION}` }),
+                  toast.success({ title: "PDF queued for the phone again", description: `Picked up at the next check. ${PDF_INSTRUCTION}` }),
                 onError: (e) => toast.error({ title: "Not queued", description: errorMessage(e) }),
               })
             }
@@ -564,6 +564,7 @@ function PdfStatus({ r }: { r: ConsolidatedReport }) {
         {PDF_STATUS[status].label}
       </Badge>
       {status === "sent" && sentAt ? <p className="text-foreground">Sent {formatShort(sentAt)}</p> : null}
+      {status === "notified" && r.pdfDelivery?.errorMessage ? <p className="break-words text-warning">{r.pdfDelivery.errorMessage}</p> : null}
     </div>
   );
 }
@@ -616,7 +617,7 @@ function History() {
                   <TextStatus r={r} />
                 </dd>
                 <dt className="flex items-start gap-1 text-muted-foreground">
-                  <FileText className="mt-0.5 size-3.5 shrink-0" aria-hidden /> PDF (manual)
+                  <FileText className="mt-0.5 size-3.5 shrink-0" aria-hidden /> PDF
                 </dt>
                 <dd className="min-w-0">
                   <PdfStatus r={r} />
@@ -637,7 +638,7 @@ function History() {
                 <th className="px-3 py-2.5 font-semibold">Reporting period</th>
                 <th className="px-3 py-2.5 font-semibold">Reports</th>
                 <th className="px-3 py-2.5 font-semibold">Automatic text</th>
-                <th className="px-3 py-2.5 font-semibold">PDF (manual)</th>
+                <th className="px-3 py-2.5 font-semibold">PDF</th>
                 <th className="px-3 py-2.5 font-semibold">Prepared at</th>
                 <th className="px-4 py-2.5 text-right font-semibold">Actions</th>
               </tr>

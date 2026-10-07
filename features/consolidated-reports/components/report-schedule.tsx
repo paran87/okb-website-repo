@@ -49,7 +49,7 @@ const EMPTY: Draft = { from: "", to: "", send: "", as: "TEXT" };
 
 const SEND_AS: { value: ScheduleDeliveryType; label: string; hint: string }[] = [
   { value: "TEXT", label: "Send report as text", hint: "Sent automatically to the group. No PDF goes to the bridge phone." },
-  { value: "PDF", label: "Send report as PDF", hint: "The PDF goes to the bridge phone (“PDF Ready”) to send manually. No automatic text." },
+  { value: "PDF", label: "Send report as PDF", hint: "The bridge phone sends the PDF to the group automatically. No text message." },
 ];
 
 /** Entries a new period may not be confused with: only those not yet prepared can still change. */
@@ -113,7 +113,7 @@ function Stamp({ iso }: { iso: string }) {
   );
 }
 
-/** SEND AS: Text (automatic) or PDF (manual, from the bridge phone). */
+/** SEND AS: Text or PDF, both sent automatically by the bridge phone. */
 function SendAs({ type }: { type: ScheduleDeliveryType }) {
   return type === "PDF" ? (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-foreground">
@@ -305,10 +305,12 @@ function PdfEntryStatus({ r, count }: { r: NonNullable<ScheduleEntry["report"]>;
   const note = (text: string, tone = "text-muted-foreground") => <p className={cn("break-words", tone)}>{text}</p>;
   let body;
   if (!p) body = <>{badge("danger", "PDF not generated")}</>;
-  else if (p.status === "sent") body = <>{badge("success", "SENT")}{note(`Sent ${formatShort(p.sentAt)} (operator confirmed)`, "text-foreground")}</>;
+  else if (p.status === "sent") body = <>{badge("success", "SENT")}{note(`Sent ${formatShort(p.sentAt)}`, "text-foreground")}</>;
   else if (p.status === "failed") body = <>{badge("danger", "FAILED")}{p.errorMessage ? note(p.errorMessage, "text-danger") : null}</>;
   else if (p.status === "opened") body = <>{badge("info", "Opened in WhatsApp")}{note("Waiting for the operator to confirm it was sent.")}</>;
-  else if (p.status === "notified") body = <>{badge("info", "PDF Ready on the phone")}{note("The operator taps “Send as PDF” on the bridge phone.")}</>;
+  else if (p.status === "notified" && p.errorMessage)
+    body = <>{badge("warning", "Needs the operator")}{note(p.errorMessage, "text-warning")}{note("Tap “Send as PDF” on the bridge phone to send it now.")}</>;
+  else if (p.status === "notified") body = <>{badge("info", "Sending from the phone")}{note("The bridge phone sends the PDF to the group automatically.")}</>;
   else body = <>{badge("warning", "PDF ready")}{note("Goes to the bridge phone at its next check.")}</>;
   return (
     <div className="flex flex-col items-start gap-1">
@@ -320,7 +322,7 @@ function PdfEntryStatus({ r, count }: { r: NonNullable<ScheduleEntry["report"]>;
           isLoading={resend.isPending}
           onClick={() =>
             resend.mutate(r.id, {
-              onSuccess: () => toast.success({ title: "PDF ready on the phone again", description: "Shown at the bridge phone's next check." }),
+              onSuccess: () => toast.success({ title: "PDF queued for the phone again", description: "The bridge phone sends it at its next check." }),
               onError: (err) => toast.error({ title: "Not queued", description: errorMessage(err) }),
             })
           }

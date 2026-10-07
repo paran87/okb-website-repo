@@ -6,7 +6,7 @@ import { resend } from "@/features/consolidated-reports/server/bridge";
 
 export const dynamic = "force-dynamic";
 
-/** Queues the same PDF for the bridge phone again ("PDF Ready"; the operator sends it manually). */
+/** Queues the same PDF for the bridge phone again (it sends it automatically, else shows "PDF Ready"). */
 export const POST = withApiHandler(async (request: NextRequest, { params }) => {
   await requireReportsAccess(request, { mutating: true });
   return ok(await resend((await params).id ?? ""));

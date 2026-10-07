@@ -8,8 +8,8 @@ export interface ConsolidatedSettings {
   enabled: boolean;
   sendOnlyIfReports: boolean;
   /**
-   * WhatsApp group consolidated reports go to: the TEXT report is sent there automatically by the OKB Bridge
-   * phone; the PDF is sent there manually by the operator. Read-only: it is set only on the bridge phone
+   * WhatsApp group consolidated reports go to: the TEXT and PDF reports are sent there automatically by the OKB
+   * Bridge phone (the operator sends a PDF the phone could not). Read-only: it is set only on the bridge phone
    * (Settings → WhatsApp Report Groups), so there is one place to change it. Empty until a phone has set it.
    */
   destinationGroup: string;
@@ -81,13 +81,16 @@ export const MAX_SCHEDULE_PERIOD_DAYS = 31;
 
 /**
  * Legacy PDF status (older backends): pending: waiting for the bridge phone · notified: on the phone ·
- * opened: share screen opened · sent: operator confirmed · failed: could not reach the phone.
+ * opened: share screen opened · sent: sent by the phone or operator confirmed · failed: could not reach the phone.
  */
 export type WhatsAppStatus = "pending" | "notified" | "opened" | "sent" | "failed";
 
 /** TEXT (automatic): scheduled → sending → sent | failed (retried with backoff until the attempts run out). */
 export type TextDeliveryStatus = "scheduled" | "sending" | "sent" | "failed";
-/** PDF (manual): ready → notified (on the phone) → opened (share screen) → sent (operator confirmed) | failed. */
+/**
+ * PDF: ready → notified (on the phone, sent automatically from there; errorMessage says why it needs the operator)
+ * → [opened (share screen)] → sent (by the phone, or operator confirmed) | failed.
+ */
 export type PdfDeliveryStatus = "ready" | "notified" | "opened" | "sent" | "failed";
 
 interface DeliveryBase {
@@ -120,7 +123,7 @@ export interface TextDelivery extends DeliveryBase {
   cancelled?: boolean;
 }
 
-/** The consolidated PDF, sent manually by the operator from the bridge phone. */
+/** The consolidated PDF, sent automatically by the bridge phone (or by the operator when it could not). */
 export interface PdfDelivery extends DeliveryBase {
   deliveryType: "PDF";
   status: PdfDeliveryStatus;
