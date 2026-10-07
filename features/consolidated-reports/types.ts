@@ -15,8 +15,13 @@ export interface ConsolidatedSettings {
   destinationGroup: string;
   timezone: "Asia/Manila";
   enabledAt: string | null;
-  /** Last time the OKB Bridge phone checked in (every ~15 minutes). */
+  /** Last time the OKB Bridge phone checked in (every ~30 seconds while monitoring; older apps: 15 minutes). */
   lastDeviceCheckAt: string | null;
+  /**
+   * Last quick 30-second check by the phone (app 1.4.0+). Null: the phone does not run it (older app, or not
+   * since the backend restarted). Absent on older backends.
+   */
+  lastDevicePollAt?: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
 }

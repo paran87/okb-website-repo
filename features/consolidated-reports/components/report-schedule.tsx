@@ -139,7 +139,17 @@ function Period({ e }: { e: ScheduleEntry }) {
 /**
  * STATUS: SENT (with the time sent), FAILED (with Retry), retrying (with Cancel), or why nothing was sent.
  */
-function EntryStatus({ e, enabled, lastCheckAt }: { e: ScheduleEntry; enabled: boolean; lastCheckAt: string | null }) {
+function EntryStatus({
+  e,
+  enabled,
+  lastCheckAt,
+  lastPollAt,
+}: {
+  e: ScheduleEntry;
+  enabled: boolean;
+  lastCheckAt: string | null;
+  lastPollAt: string | null | undefined;
+}) {
   const toast = useToast();
   const retry = useRetryText();
   const cancel = useCancelText();
@@ -156,13 +166,15 @@ function EntryStatus({ e, enabled, lastCheckAt }: { e: ScheduleEntry; enabled: b
     if (!enabled) return <div className="space-y-1">{badge("default", "Paused")}{note("Automated reports are disabled.")}</div>;
     const offline = !lastCheckAt || Date.now() - Date.parse(lastCheckAt) > PHONE_OFFLINE_MS;
     if (due && offline) {
+      // null (not undefined): the backend knows the quick check but the phone has not used it.
+      const noQuickCheck = lastPollAt === null;
       return (
         <div className="space-y-1">
           {badge("danger", "Waiting for the bridge phone")}
           {note(
-            lastCheckAt
-              ? `The bridge phone has not checked in since ${formatShort(lastCheckAt)}. Open the OKB Bridge app, check Background Monitoring is ON and the phone is online.`
-              : "The bridge phone has not checked in yet. Open the OKB Bridge app and check Background Monitoring is ON.",
+            noQuickCheck
+              ? `The bridge phone is not running the 30-second check${lastCheckAt ? ` (last check ${formatShort(lastCheckAt)})` : ""}, so it only checks every 15 minutes. Install the latest OKB Bridge app (1.4.1 or newer), open it once and keep Background Monitoring ON.`
+              : `The bridge phone has not checked in since ${lastCheckAt ? formatShort(lastCheckAt) : "—"}. It is asleep, offline or closed: keep it charging and online, set OKB Bridge's battery usage to No restrictions, and open the app.`,
             "text-danger",
           )}
         </div>
@@ -362,6 +374,7 @@ export function ReportSchedule() {
   const entries = schedules.data ?? [];
   const enabled = settings.data?.enabled ?? true;
   const lastCheckAt = settings.data?.lastDeviceCheckAt ?? null;
+  const lastPollAt = settings.data?.lastDevicePollAt;
   const check = checkDraft(draft, entries, editing?.id ?? null);
   const saving = create.isPending || update.isPending;
 
@@ -530,7 +543,7 @@ export function ReportSchedule() {
                     </dd>
                     <dt className="text-muted-foreground">Status</dt>
                     <dd className="min-w-0">
-                      <EntryStatus e={e} enabled={enabled} lastCheckAt={lastCheckAt} />
+                      <EntryStatus e={e} enabled={enabled} lastCheckAt={lastCheckAt} lastPollAt={lastPollAt} />
                     </dd>
                   </dl>
                   <EntryActions e={e} onEdit={() => startEdit(e)} onDelete={() => setDeleting(e)} />
@@ -565,7 +578,7 @@ export function ReportSchedule() {
                         <EntryActions e={e} onEdit={() => startEdit(e)} onDelete={() => setDeleting(e)} compact />
                       </td>
                       <td className="max-w-80 px-4 py-3">
-                        <EntryStatus e={e} enabled={enabled} lastCheckAt={lastCheckAt} />
+                        <EntryStatus e={e} enabled={enabled} lastCheckAt={lastCheckAt} lastPollAt={lastPollAt} />
                       </td>
                     </tr>
                   ))}
