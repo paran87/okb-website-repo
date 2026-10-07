@@ -19,7 +19,8 @@ export interface ConsolidatedSettings {
   sendOnlyIfReports: boolean;
   /**
    * WhatsApp group consolidated reports go to: the TEXT report is sent there automatically by the OKB Bridge
-   * phone; the PDF is sent there manually by the operator. Required to enable automated reports.
+   * phone; the PDF is sent there manually by the operator. Read-only: it is set only on the bridge phone
+   * (Settings → WhatsApp Report Groups), so there is one place to change it. Empty until a phone has set it.
    */
   destinationGroup: string;
   timezone: "Asia/Manila";
@@ -41,7 +42,7 @@ export const MAX_TEST_PERIOD_DAYS = 31;
 
 export type ConsolidatedSettingsInput = Pick<
   ConsolidatedSettings,
-  "enabled" | "scheduleTimes" | "intervalMinutes" | "sendOnlyIfReports" | "destinationGroup"
+  "enabled" | "scheduleTimes" | "intervalMinutes" | "sendOnlyIfReports"
 >;
 
 /**

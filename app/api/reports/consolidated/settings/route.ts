@@ -17,12 +17,8 @@ const settingsSchema = z
       .pipe(z.array(z.string()).max(MAX_SCHEDULE_TIMES, `At most ${MAX_SCHEDULE_TIMES} schedule times`)),
     intervalMinutes: z.union([z.literal(15), z.literal(30), z.literal(60), z.literal(120), z.null()]),
     sendOnlyIfReports: z.boolean(),
-    destinationGroup: z.string().trim().max(100),
   })
-  .refine((s) => !s.enabled || s.destinationGroup.length > 0, {
-    message: "Enter the WhatsApp destination group before enabling automated reports",
-    path: ["destinationGroup"],
-  })
+  // The destination group is set on the bridge phone, not here; the backend refuses enabling until it is.
   .refine((s) => !s.enabled || s.scheduleTimes.length > 0 || s.intervalMinutes !== null, {
     message: "Choose at least one schedule time or an interval",
     path: ["scheduleTimes"],

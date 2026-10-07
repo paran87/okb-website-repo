@@ -92,7 +92,6 @@ function toInput(s: ConsolidatedSettings): ConsolidatedSettingsInput {
     scheduleTimes: s.scheduleTimes,
     intervalMinutes: s.intervalMinutes,
     sendOnlyIfReports: s.sendOnlyIfReports,
-    destinationGroup: s.destinationGroup,
   };
 }
 
@@ -145,7 +144,6 @@ function SettingsPanel() {
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(toInput(saved));
   const set = (patch: Partial<ConsolidatedSettingsInput>) => setDraft({ ...form, ...patch });
   const noSchedule = form.enabled && form.scheduleTimes.length === 0 && form.intervalMinutes === null;
-  const groupMissing = form.destinationGroup.trim().length === 0;
   const savedGroupMissing = saved.destinationGroup.trim().length === 0;
 
   const setTimes = (times: string[]) => set({ scheduleTimes: [...new Set(times)].sort() });
@@ -264,21 +262,19 @@ function SettingsPanel() {
         </Row>
 
         <Row label="Destination group">
-          <Field
-            htmlFor="okb-auto-group"
-            error={groupMissing ? "No destination group is configured. Enter the WhatsApp group name." : undefined}
-            description="The consolidated TEXT report is sent to this group automatically by the bridge phone. The PDF is sent to it manually. Enter the name exactly as it appears in WhatsApp; it must not be the source group."
-          >
-            <Input
-              id="okb-auto-group"
-              value={form.destinationGroup}
-              onChange={(e) => set({ destinationGroup: e.target.value })}
-              maxLength={100}
-              placeholder="e.g. NCR Flood Monitoring"
-              invalid={groupMissing}
-              className="h-11"
-            />
-          </Field>
+          {savedGroupMissing ? (
+            <p className="text-body font-semibold text-warning">Not set on the bridge phone</p>
+          ) : (
+            <p className="flex items-start gap-2 break-words text-body text-foreground">
+              <MessageSquareText className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="min-w-0">{saved.destinationGroup}</span>
+            </p>
+          )}
+          <p className="text-caption text-muted-foreground">
+            Set on the bridge phone only: OKB Bridge app → Settings → WhatsApp Report Groups → Destination Group. The
+            TEXT report is sent to this group automatically; the PDF is sent to it manually. To change it, change it
+            on the phone; it shows here after the phone&apos;s next check (within 15 minutes).
+          </p>
         </Row>
 
         <Row label="Schedule">
@@ -459,7 +455,7 @@ function SettingsPanel() {
             size="lg"
             onClick={onSave}
             isLoading={save.isPending}
-            disabled={!dirty || noSchedule || (form.enabled && groupMissing)}
+            disabled={!dirty || noSchedule || (form.enabled && savedGroupMissing)}
             className="justify-center"
           >
             Save Settings
@@ -467,8 +463,8 @@ function SettingsPanel() {
         </div>
         {savedGroupMissing ? (
           <p role="alert" className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-caption font-semibold text-warning">
-            No destination group is configured. Reports are not prepared and Test Send is unavailable until a
-            WhatsApp destination group is saved.
+            No destination group is set on the bridge phone. Reports are not prepared and Test Send is unavailable
+            until it is set in the OKB Bridge app (Settings → WhatsApp Report Groups → Destination Group).
           </p>
         ) : null}
         <p className="text-caption text-muted-foreground">
