@@ -18,6 +18,7 @@ import { INCIDENT_STATUS_META, incidentTypeLabel, platformLabel, SEVERITY_META }
 import { useIncident, useIncidents, useReportDetail } from "@/features/reports/hooks/use-reports";
 import { InfoRow, OpsSection, PlatformBadge } from "@/features/reports/components/report-ui";
 import { ReportsGate } from "@/features/reports/components/reports-gate";
+import { FloodMapPanel } from "@/features/incident/components/flood-map-panel";
 
 function SourceReport({ reportId }: { reportId: string }) {
   const detail = useReportDetail(reportId);
@@ -227,5 +228,14 @@ function IncidentList() {
 }
 
 export function IncidentsView() {
-  return <ReportsGate>{() => <IncidentList />}</ReportsGate>;
+  return (
+    <ReportsGate>
+      {() => (
+        <div className="space-y-4">
+          <FloodMapPanel />
+          <IncidentList />
+        </div>
+      )}
+    </ReportsGate>
+  );
 }

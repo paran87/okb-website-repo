@@ -40,7 +40,7 @@ interface Envelope<T> {
   error?: { code: string; message: string; details?: { reason?: string } };
 }
 
-async function api<T>(path: string, init?: RequestInit): Promise<{ data: T; dataSource: ReportDataSource | null }> {
+export async function api<T>(path: string, init?: RequestInit): Promise<{ data: T; dataSource: ReportDataSource | null }> {
   let res: Response;
   try {
     res = await fetch(path, {
