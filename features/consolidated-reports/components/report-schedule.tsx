@@ -390,7 +390,10 @@ export function ReportSchedule() {
   const [deleting, setDeleting] = useState<ScheduleEntry | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const entries = schedules.data ?? [];
+  // Newest added first (then the later date of sending): a new entry appears at the top.
+  const entries = [...(schedules.data ?? [])].sort(
+    (a, b) => b.createdAt.localeCompare(a.createdAt) || b.sendAt.localeCompare(a.sendAt),
+  );
   const enabled = settings.data?.enabled ?? true;
   const lastCheckAt = settings.data?.lastDeviceCheckAt ?? null;
   const lastPollAt = settings.data?.lastDevicePollAt;
