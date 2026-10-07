@@ -160,3 +160,12 @@ export function useDeleteSchedule() {
     onSuccess: () => invalidateReports(qc),
   });
 }
+
+export function useDeleteReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<{ id: string; deleted: boolean }>(`/api/reports/consolidated/${encodeURIComponent(id)}`, { method: "DELETE" }),
+    onSuccess: () => invalidateReports(qc),
+  });
+}

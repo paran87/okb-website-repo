@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Ban, Download, Eye, FileText, MessageSquareText, RotateCcw, Send, Smartphone } from "lucide-react";
+import { Ban, Download, Eye, FileText, MessageSquareText, RotateCcw, Send, Smartphone, Trash2 } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import {
   useConsolidatedHistory,
   useConsolidatedSettings,
   useCancelText,
+  useDeleteReport,
   useResend,
   useRetryText,
   useSaveConsolidatedSettings,
@@ -382,7 +383,9 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
   const resend = useResend();
   const retry = useRetryText();
   const cancel = useCancelText();
+  const remove = useDeleteReport();
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const base = `/api/reports/consolidated/${encodeURIComponent(r.id)}/pdf`;
   const hasPdf = r.pdfStatus === "generated";
   const textFailed = r.textDelivery?.status === "failed";
@@ -472,6 +475,44 @@ function ReportActions({ r, compact = false }: { r: ConsolidatedReport; compact?
           </Button>
         </>
       ) : null}
+      <Button
+        variant="outline"
+        size="md"
+        onClick={() => setConfirmDelete(true)}
+        className={cn("justify-center text-caption font-semibold text-danger", size)}
+        leftIcon={<Trash2 className="size-4" aria-hidden />}
+        aria-label="Delete report"
+      >
+        Delete
+      </Button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title={r.kind === "test" ? "Delete this TEST REPORT?" : "Delete this report?"}
+        description={
+          `The report, its PDF and its delivery history are removed. ` +
+          (textActive
+            ? "Its text has not been sent yet: the bridge phone will not send it. "
+            : "Messages already sent stay in the WhatsApp group. ") +
+          "This cannot be undone."
+        }
+        confirmLabel="Delete report"
+        cancelLabel="Keep it"
+        confirmVariant="danger"
+        isLoading={remove.isPending}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() =>
+          remove.mutate(r.id, {
+            onSuccess: () => {
+              setConfirmDelete(false);
+              toast.success("Report deleted");
+            },
+            onError: (e) => {
+              setConfirmDelete(false);
+              toast.error({ title: "Not deleted", description: errorMessage(e) });
+            },
+          })
+        }
+      />
     </div>
   );
 }

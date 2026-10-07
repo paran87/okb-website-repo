@@ -144,6 +144,9 @@ function EntryStatus({ e, enabled }: { e: ScheduleEntry; enabled: boolean }) {
     );
   }
 
+  if (!e.reportId) {
+    return <div className="space-y-1">{badge("default", "Report deleted")}{note("Its report was deleted from the report history.")}</div>;
+  }
   const r = e.report;
   const t = r?.textDelivery ?? null;
   const count = r ? `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}` : null;

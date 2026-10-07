@@ -97,6 +97,11 @@ export async function cancelText(id: string): Promise<ConsolidatedReport> {
   return json(await call(`/${encodeURIComponent(id)}/text-cancel`, { method: "POST" }));
 }
 
+/** Removes a report from the history with its deliveries and PDF (409 while the phone is sending its text). */
+export async function deleteReport(id: string): Promise<{ id: string; deleted: boolean }> {
+  return json(await call(`/${encodeURIComponent(id)}`, { method: "DELETE" }));
+}
+
 /** The report schedule, by date of sending. */
 export async function listSchedules(): Promise<ScheduleEntry[]> {
   return (await json<{ schedules: ScheduleEntry[] }>(await call("/schedules"))).schedules;
