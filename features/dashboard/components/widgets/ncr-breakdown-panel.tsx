@@ -10,6 +10,8 @@ interface NcrBreakdownPanelProps {
   /** Bar fill color (defaults to the incident red). */
   barColor?: string;
   className?: string;
+  /** Shown when there are no rows. */
+  emptyText?: string;
 }
 
 /** Ranked bars of active incidents (NCR Critical Areas) per group. */
@@ -20,6 +22,7 @@ export function NcrBreakdownPanel({
   rows,
   barColor = "#dc2626",
   className,
+  emptyText,
 }: NcrBreakdownPanelProps) {
   const max = Math.max(...rows.map((r) => r.count), 1);
   return (
@@ -31,6 +34,7 @@ export function NcrBreakdownPanel({
       compact
       bodyClassName="min-h-0 flex-1 space-y-1.5 overflow-y-auto"
     >
+      {rows.length === 0 && emptyText ? <p className="text-[11px] text-muted-foreground">{emptyText}</p> : null}
       {rows.map((row) => (
         <div key={row.label}>
           <div className="flex items-baseline justify-between gap-2 text-[11px] leading-tight">

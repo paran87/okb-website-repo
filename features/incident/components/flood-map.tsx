@@ -17,7 +17,7 @@ export interface FloodLineProps {
 export type FloodLineFeature = Feature<MultiLineString, FloodLineProps>;
 export type FloodPointFeature = Feature<Point, FloodLineProps>;
 
-interface FloodMapProps {
+export interface FloodMapProps {
   lines: FloodLineFeature[];
   points: FloodPointFeature[];
   selectedKey: string | null;
@@ -49,7 +49,8 @@ export function FloodMap(props: FloodMapProps) {
   );
 }
 
-function FloodLayers({ lines, points, selectedKey, focus, onSelect }: FloodMapProps) {
+/** The flooded-road layers, on whichever map the page shows (Incidents map or Dashboard map). */
+export function FloodLayers({ lines, points, selectedKey, focus, onSelect }: FloodMapProps) {
   const map = useMapStore((s) => s.map);
   const status = useMapStore((s) => s.status);
   const [styleVersion, setStyleVersion] = useState(0);
@@ -132,9 +133,27 @@ function FloodLayers({ lines, points, selectedKey, focus, onSelect }: FloodMapPr
   }, [map, status]);
 
   useEffect(() => {
-    if (!map || status !== "ready" || !map.isStyleLoaded()) return;
-    sync(map);
-    map.setFilter("fm-selected", expr(["==", ["get", "key"], selectedKey ?? ""]));
+    if (!map || status !== "ready") return;
+    const apply = () => {
+      // Another part of the page may still be adding its layers (Dashboard): wait until the style is ready.
+      if (!map.isStyleLoaded()) return false;
+      sync(map);
+      map.setFilter("fm-selected", expr(["==", ["get", "key"], selectedKey ?? ""]));
+      return true;
+    };
+    if (apply()) return;
+    const retry = () => {
+      if (apply()) {
+        map.off("styledata", retry);
+        map.off("idle", retry);
+      }
+    };
+    map.on("styledata", retry);
+    map.on("idle", retry);
+    return () => {
+      map.off("styledata", retry);
+      map.off("idle", retry);
+    };
   }, [map, status, styleVersion, sync, selectedKey]);
 
   // Tap a flooded road or point to select it.

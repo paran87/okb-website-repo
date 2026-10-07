@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { Position } from "geojson";
@@ -11,45 +11,15 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
 import { formatDateTime, formatMeters, formatRelative } from "@/features/reports/lib/format";
-import { loadRoads } from "@/features/road-network/lib/data";
-import type { RoadFeature } from "@/features/road-network/types";
-import { useFloodMap } from "@/features/incident/hooks/use-flood-map";
-import { FLOOD_SEVERITY, SEVERITY_ORDER, type FloodSeverity } from "@/features/incident/lib/flood-severity";
-import { buildRoadIndex, resolveLocation, type ResolvedLocation } from "@/features/incident/lib/road-match";
-import type { FloodMapData, FloodMapLocation } from "@/features/incident/types";
-import type { FloodLineFeature, FloodPointFeature } from "@/features/incident/components/flood-map";
+import { positionsOf, useFloodSituation, type PlacedLocation } from "@/features/incident/hooks/use-flood-situation";
+import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
+import type { FloodMapData } from "@/features/incident/types";
 import { cn } from "@/utils/cn";
 
 const FloodMap = dynamic(() => import("@/features/incident/components/flood-map").then((m) => m.FloodMap), {
   ssr: false,
   loading: () => <Skeleton className="absolute inset-0 rounded-none" />,
 });
-
-const RANK: Record<FloodSeverity, number> = { unmeasured: 0, low: 1, medium: 2, high: 3 };
-
-interface Placed {
-  location: FloodMapLocation;
-  resolved: ResolvedLocation;
-}
-
-function useRoads() {
-  const [roads, setRoads] = useState<RoadFeature[] | null>(null);
-  const [failed, setFailed] = useState(false);
-  useEffect(() => {
-    let live = true;
-    loadRoads()
-      .then((r) => live && setRoads(r))
-      .catch(() => live && setFailed(true));
-    return () => {
-      live = false;
-    };
-  }, []);
-  return { roads, failed };
-}
-
-function positionsOf(p: Placed): Position[] {
-  return [...p.resolved.lines.flat(), ...(p.resolved.point ? [p.resolved.point] : [])];
-}
 
 function WeatherStatus({ data }: { data: FloodMapData }) {
   const w = data.weather;
@@ -142,7 +112,7 @@ function SeverityTable() {
   );
 }
 
-function placeText(p: Placed): string {
+function placeText(p: PlacedLocation): string {
   const r = p.resolved;
   if (r.basis === "intersection") {
     return `Shown where ${r.matched.join(" and ")} meet${r.places > 1 ? ` (${r.places} places have these road names)` : ""}`;
@@ -153,7 +123,7 @@ function placeText(p: Placed): string {
   return "Not on the map: the road is not in the DPWH road network";
 }
 
-function LocationCard({ p, selected, onSelect }: { p: Placed; selected: boolean; onSelect: () => void }) {
+function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: boolean; onSelect: () => void }) {
   const l = p.location;
   const meta = FLOOD_SEVERITY[l.severity];
   const depth = formatMeters(l.heightM);
@@ -202,54 +172,18 @@ function LocationCard({ p, selected, onSelect }: { p: Placed; selected: boolean;
 
 /** Incidents tab: flooded roads from the received reports, by depth, back to normal as the weather clears. */
 export function FloodMapPanel() {
-  const query = useFloodMap();
-  const { roads, failed } = useRoads();
-  const index = useMemo(() => (roads ? buildRoadIndex(roads) : null), [roads]);
+  const { query, data, placed, lines, points, counts: bySeverity, ready, roadsFailed: failed } = useFloodSituation();
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ id: number; positions: Position[] } | null>(null);
   const framed = useRef(false);
-  const data = query.data;
-
-  const placed = useMemo<Placed[]>(() => {
-    if (!data || !index) return [];
-    return data.locations
-      .map((location) => ({ location, resolved: resolveLocation(index, location) }))
-      .sort(
-        (a, b) =>
-          RANK[b.location.severity] - RANK[a.location.severity] || Date.parse(b.location.reportedAt) - Date.parse(a.location.reportedAt),
-      );
-  }, [data, index]);
-
-  const lines = useMemo<FloodLineFeature[]>(
-    () =>
-      placed
-        .filter((p) => p.resolved.lines.length)
-        .map((p) => ({
-          type: "Feature",
-          geometry: { type: "MultiLineString", coordinates: p.resolved.lines },
-          properties: { key: p.location.key, color: FLOOD_SEVERITY[p.location.severity].color, rank: RANK[p.location.severity] },
-        })),
-    [placed],
-  );
-  const points = useMemo<FloodPointFeature[]>(
-    () =>
-      placed
-        .filter((p) => p.resolved.point && (p.resolved.basis === "point" || p.resolved.basis === "coordinates" || p.resolved.basis === "intersection"))
-        .map((p) => ({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: p.resolved.point as Position },
-          properties: { key: p.location.key, color: FLOOD_SEVERITY[p.location.severity].color, rank: RANK[p.location.severity] },
-        })),
-    [placed],
-  );
 
   // Frame all flooded roads once they are known.
   useEffect(() => {
-    if (framed.current || !index || !data) return;
+    if (framed.current || !ready) return;
     framed.current = true;
     const all = placed.flatMap(positionsOf);
     if (all.length) setFocus({ id: Date.now(), positions: all });
-  }, [index, data, placed]);
+  }, [ready, placed]);
 
   const select = useCallback(
     (key: string | null) => {
@@ -260,7 +194,7 @@ export function FloodMapPanel() {
     [placed],
   );
 
-  const counts = SEVERITY_ORDER.map((s) => ({ s, n: placed.filter((p) => p.location.severity === s).length })).filter((c) => c.n > 0);
+  const counts = SEVERITY_ORDER.map((s) => ({ s, n: bySeverity[s] })).filter((c) => c.n > 0);
   const offMap = placed.filter((p) => p.resolved.basis === "none").length;
 
   return (
@@ -284,7 +218,7 @@ export function FloodMapPanel() {
       <div className="relative h-[340px] overflow-hidden rounded-lg border border-border sm:h-[420px] lg:h-[480px]">
         <FloodMap lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} />
         <MapKey className="pointer-events-auto absolute left-2 top-2 z-10 hidden max-w-[11.5rem] sm:block" />
-        {data && index && placed.length === 0 ? (
+        {ready && placed.length === 0 ? (
           <div className="pointer-events-none absolute inset-x-2 bottom-2 z-10 flex justify-center">
             <span className="rounded-full border border-border bg-card/95 px-3 py-1.5 text-caption font-semibold text-success shadow-sm">
               No flooded roads reported — normal conditions
