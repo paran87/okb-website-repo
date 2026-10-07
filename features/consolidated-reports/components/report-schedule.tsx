@@ -49,7 +49,7 @@ const EMPTY: Draft = { from: "", to: "", send: "", as: "TEXT" };
 
 const SEND_AS: { value: ScheduleDeliveryType; label: string; hint: string }[] = [
   { value: "TEXT", label: "Send report as text", hint: "Sent automatically to the group. No PDF goes to the bridge phone." },
-  { value: "PDF", label: "Send report as PDF", hint: "The bridge phone sends the PDF to the group automatically. No text message." },
+  { value: "PDF", label: "Send report as PDF + text", hint: "The bridge phone sends the PDF with a caption, then the text report, to the group." },
 ];
 
 /** Entries a new period may not be confused with: only those not yet prepared can still change. */
@@ -113,11 +113,11 @@ function Stamp({ iso }: { iso: string }) {
   );
 }
 
-/** SEND AS: Text or PDF, both sent automatically by the bridge phone. */
+/** SEND AS: Text, or PDF (+ the text report after it), sent automatically by the bridge phone. */
 function SendAs({ type }: { type: ScheduleDeliveryType }) {
   return type === "PDF" ? (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-foreground">
-      <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden /> PDF
+      <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden /> PDF + text
     </span>
   ) : (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-foreground">
@@ -204,7 +204,8 @@ function EntryStatus({
   const r = e.report;
   const t = r?.textDelivery ?? null;
   const count = r ? `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}` : null;
-  if (e.deliveryType === "PDF" && r) return <PdfEntryStatus r={r} count={count} />;
+  // Older PDF entries have no text report.
+  if (e.deliveryType === "PDF" && r && !t) return <PdfEntryStatus r={r} count={count} />;
   if (!r || !t) {
     return <div className="space-y-1">{badge("default", "PDF only")}{note(count ? `${count}; no text for an empty period.` : "Report not found.")}</div>;
   }
@@ -279,6 +280,22 @@ function EntryStatus({
           }
         />
       </>
+    );
+  }
+  if (e.deliveryType === "PDF") {
+    // The PDF (with its caption) first, then the text report.
+    const label = (text: string) => <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{text}</p>;
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-col items-start gap-1">
+          {label("PDF")}
+          <PdfEntryStatus r={r} count={count} />
+        </div>
+        <div className="flex flex-col items-start gap-1">
+          {label("Text report")}
+          {body}
+        </div>
+      </div>
     );
   }
   return (
