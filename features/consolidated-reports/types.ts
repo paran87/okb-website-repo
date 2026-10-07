@@ -3,8 +3,12 @@
  * (okb-bridge-cloud-backend, lib/consolidated); the Command Center only configures them and shows history.
  */
 
+/** Preset daily cut-offs; any other "HH:MM" (24-hour, Asia/Manila) can be added as a custom time. */
 export const SCHEDULE_TIMES = ["06:00", "18:00", "00:00"] as const;
-export type ScheduleTime = (typeof SCHEDULE_TIMES)[number];
+/** A daily cut-off "HH:MM", 24-hour, Asia/Manila. */
+export type ScheduleTime = string;
+export const MAX_SCHEDULE_TIMES = 24;
+export const SCHEDULE_TIME_PATTERN = /^([01][0-9]|2[0-3]):[0-5][0-9]$/;
 export const REPORT_INTERVALS = [15, 30, 60, 120] as const;
 export type ReportInterval = (typeof REPORT_INTERVALS)[number];
 

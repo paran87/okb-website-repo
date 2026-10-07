@@ -24,4 +24,8 @@ export function periodText(startIso: string, endIso: string): { date: string; ti
   return { date: formatDate(endIso), time: `${formatShort(startIso)} – ${formatShort(endIso)}` };
 }
 
-export const SCHEDULE_LABELS: Record<string, string> = { "06:00": "6:00 AM", "18:00": "6:00 PM", "00:00": "12:00 AM" };
+/** "07:30" → "7:30 AM", "00:00" → "12:00 AM", "18:05" → "6:05 PM". */
+export function timeLabel(hhmm: string): string {
+  const [h = 0, m = 0] = hhmm.split(":").map(Number);
+  return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
+}

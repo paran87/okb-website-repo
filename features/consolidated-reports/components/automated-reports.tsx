@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Download, Eye, FileText, MessageSquareText, RotateCcw, Send, Smartphone } from "lucide-react";
+import { Download, Eye, FileText, MessageSquareText, Plus, RotateCcw, Send, Smartphone, X } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,9 +23,11 @@ import {
   useSaveConsolidatedSettings,
   useTestSend,
 } from "@/features/consolidated-reports/hooks";
-import { formatShort, periodText, SCHEDULE_LABELS } from "@/features/consolidated-reports/format";
+import { formatShort, periodText, timeLabel } from "@/features/consolidated-reports/format";
 import {
+  MAX_SCHEDULE_TIMES,
   REPORT_INTERVALS,
+  SCHEDULE_TIME_PATTERN,
   SCHEDULE_TIMES,
   type ConsolidatedReport,
   type ConsolidatedSettings,
@@ -97,6 +99,7 @@ function SettingsPanel() {
   const save = useSaveConsolidatedSettings();
   const test = useTestSend();
   const [draft, setDraft] = useState<ConsolidatedSettingsInput | null>(null);
+  const [customTime, setCustomTime] = useState("");
 
   if (settings.isPending) {
     return (
@@ -128,8 +131,18 @@ function SettingsPanel() {
   const groupMissing = form.destinationGroup.trim().length === 0;
   const savedGroupMissing = saved.destinationGroup.trim().length === 0;
 
-  const toggleTime = (t: (typeof SCHEDULE_TIMES)[number], on: boolean) =>
-    set({ scheduleTimes: SCHEDULE_TIMES.filter((x) => (x === t ? on : form.scheduleTimes.includes(x))) });
+  const setTimes = (times: string[]) => set({ scheduleTimes: [...new Set(times)].sort() });
+  const toggleTime = (t: string, on: boolean) =>
+    setTimes(on ? [...form.scheduleTimes, t] : form.scheduleTimes.filter((x) => x !== t));
+  const customTimes = form.scheduleTimes.filter((t) => !(SCHEDULE_TIMES as readonly string[]).includes(t));
+  const customValid = SCHEDULE_TIME_PATTERN.test(customTime);
+  const customDuplicate = customValid && form.scheduleTimes.includes(customTime);
+  const tooManyTimes = form.scheduleTimes.length >= MAX_SCHEDULE_TIMES;
+  const addCustomTime = () => {
+    if (!customValid || customDuplicate || tooManyTimes) return;
+    setTimes([...form.scheduleTimes, customTime]);
+    setCustomTime("");
+  };
 
   const onSave = () =>
     save.mutate(form, {
@@ -214,6 +227,7 @@ function SettingsPanel() {
         </Row>
 
         <Row label="Schedule">
+          <p className="text-caption text-muted-foreground">Daily report times (Asia/Manila). Tick a preset or add your own.</p>
           <div className="grid gap-1 sm:grid-cols-3">
             {SCHEDULE_TIMES.map((t) => (
               <Checkbox
@@ -221,11 +235,59 @@ function SettingsPanel() {
                 id={`okb-auto-time-${t}`}
                 checked={form.scheduleTimes.includes(t)}
                 onChange={(e) => toggleTime(t, e.target.checked)}
-                label={SCHEDULE_LABELS[t]}
+                label={timeLabel(t)}
                 className="min-h-11 rounded-lg px-2 hover:bg-muted/40"
               />
             ))}
           </div>
+          {customTimes.length > 0 ? (
+            <ul className="flex flex-wrap gap-2" aria-label="Custom report times">
+              {customTimes.map((t) => (
+                <li key={t} className="flex h-11 items-center gap-1 rounded-lg border border-border bg-card pl-3 text-body text-foreground">
+                  {timeLabel(t)}
+                  <button
+                    type="button"
+                    onClick={() => toggleTime(t, false)}
+                    aria-label={`Remove ${timeLabel(t)}`}
+                    className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="size-4" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1 sm:max-w-48">
+              <Input
+                id="okb-auto-custom-time"
+                type="time"
+                value={customTime}
+                onChange={(e) => setCustomTime(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomTime();
+                  }
+                }}
+                aria-label="Custom report time (hour and minute)"
+                invalid={customDuplicate}
+                className="h-11"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={addCustomTime}
+              disabled={!customValid || customDuplicate || tooManyTimes}
+              leftIcon={<Plus className="size-4" aria-hidden />}
+              className="h-11 justify-center"
+            >
+              Add time
+            </Button>
+          </div>
+          {customDuplicate ? <p className="text-caption text-danger">{timeLabel(customTime)} is already in the schedule.</p> : null}
+          {tooManyTimes ? <p className="text-caption text-muted-foreground">At most {MAX_SCHEDULE_TIMES} report times.</p> : null}
         </Row>
 
         <Row label="Report interval">
