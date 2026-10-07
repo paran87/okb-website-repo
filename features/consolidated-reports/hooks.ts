@@ -56,10 +56,12 @@ const invalidateReports = (qc: ReturnType<typeof useQueryClient>) =>
 const retry = (count: number, error: Error) =>
   !(error instanceof ReportsApiError && [400, 401, 403, 404, 409, 422, 503].includes(error.status)) && count < 1;
 
-export function useConsolidatedSettings() {
+/** [refetchMs]: keep the phone's last check-in fresh (the report schedule shows whether the phone is online). */
+export function useConsolidatedSettings(refetchMs?: number) {
   return useQuery({
     queryKey: consolidatedKeys.settings,
     queryFn: () => api<ConsolidatedSettings>("/api/reports/consolidated/settings"),
+    refetchInterval: refetchMs,
     retry,
   });
 }
@@ -119,11 +121,21 @@ export function useCancelText() {
   });
 }
 
+/** Something is about to happen: a due entry, or a text being sent / retried. */
+const isBusy = (entries: ScheduleEntry[] | undefined) =>
+  (entries ?? []).some((e) => {
+    if (e.status === "pending") return Date.parse(e.sendAt) - Date.now() < 2 * 60_000;
+    const t = e.report?.textDelivery?.status;
+    const p = e.report?.pdfDelivery?.status;
+    return t === "scheduled" || t === "sending" || p === "ready";
+  });
+
+/** Refreshes every 5 s while a report is due or being sent (results and errors show at once), else every 30 s. */
 export function useSchedules(enabled = true) {
   return useQuery({
     queryKey: consolidatedKeys.schedules,
     queryFn: () => api<ScheduleEntry[]>("/api/reports/consolidated/schedules"),
-    refetchInterval: 60_000,
+    refetchInterval: (query) => (isBusy(query.state.data) ? 5_000 : 30_000),
     enabled,
     retry,
   });

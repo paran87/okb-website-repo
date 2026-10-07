@@ -80,7 +80,8 @@ const pdfStatusOf = (r: ConsolidatedReport): PdfDeliveryStatus | null =>
 const PDF_INSTRUCTION =
   "PDF: the bridge phone shows “PDF Ready”; the operator taps “Send as PDF”, selects the destination group in WhatsApp and presses Send.";
 
-const PHONE_STALE_MS = 45 * 60 * 1000;
+/** The bridge phone checks in every ~30 s while monitoring (older app versions: every 15 minutes). */
+const PHONE_STALE_MS = 20 * 60 * 1000;
 
 function toInput(s: ConsolidatedSettings): ConsolidatedSettingsInput {
   return { enabled: s.enabled, sendOnlyIfReports: s.sendOnlyIfReports };
@@ -187,7 +188,7 @@ function SettingsPanel() {
       onSuccess: (r) =>
         toast.success({
           title: "TEST REPORT prepared",
-          description: `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}. The bridge phone sends the TEST text automatically to ${r.destinationGroup ?? "the destination group"} at its next check (within 15 minutes). ${PDF_INSTRUCTION}`,
+          description: `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}. The bridge phone sends the TEST text automatically to ${r.destinationGroup ?? "the destination group"} within seconds. ${PDF_INSTRUCTION}`,
           duration: 10_000,
         }),
       onError: (e) => toast.error({ title: "TEST REPORT not prepared", description: errorMessage(e) }),
@@ -249,7 +250,7 @@ function SettingsPanel() {
           <p className="text-caption text-muted-foreground">
             Set on the bridge phone only: OKB Bridge app → Settings → WhatsApp Report Groups → Destination Group. The
             TEXT report is sent to this group automatically; the PDF is sent to it manually. To change it, change it
-            on the phone; it shows here after the phone&apos;s next check (within 15 minutes).
+            on the phone; it shows here within a minute.
           </p>
         </Row>
 
@@ -359,7 +360,7 @@ function SettingsPanel() {
           {dirty ? "Save your changes before a test send. " : ""}
           Test Send prepares a TEST REPORT from the reports in the test reporting period; it does not affect the
           regular reports. The bridge
-          phone checks just after each scheduled time and every 15 minutes, sends the TEXT report on its own and
+          phone picks it up within seconds, sends the TEXT report on its own and
           marks it Sent only after it sees the message in the destination group. {PDF_INSTRUCTION}
         </p>
       </CardContent>

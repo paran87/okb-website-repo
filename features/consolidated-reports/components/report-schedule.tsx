@@ -32,6 +32,8 @@ import {
 } from "@/features/consolidated-reports/types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** The bridge phone asks the backend every ~30 s; no check-in for this long means it is offline or closed. */
+const PHONE_OFFLINE_MS = 3 * 60 * 1000;
 /** Same grace as the backend: a date of sending a few minutes ago is still accepted. */
 const PAST_GRACE_MS = 5 * 60 * 1000;
 
@@ -137,7 +139,7 @@ function Period({ e }: { e: ScheduleEntry }) {
 /**
  * STATUS: SENT (with the time sent), FAILED (with Retry), retrying (with Cancel), or why nothing was sent.
  */
-function EntryStatus({ e, enabled }: { e: ScheduleEntry; enabled: boolean }) {
+function EntryStatus({ e, enabled, lastCheckAt }: { e: ScheduleEntry; enabled: boolean; lastCheckAt: string | null }) {
   const toast = useToast();
   const retry = useRetryText();
   const cancel = useCancelText();
@@ -152,8 +154,22 @@ function EntryStatus({ e, enabled }: { e: ScheduleEntry; enabled: boolean }) {
   if (e.status === "pending") {
     const due = Date.parse(e.sendAt) <= Date.now();
     if (!enabled) return <div className="space-y-1">{badge("default", "Paused")}{note("Automated reports are disabled.")}</div>;
+    const offline = !lastCheckAt || Date.now() - Date.parse(lastCheckAt) > PHONE_OFFLINE_MS;
+    if (due && offline) {
+      return (
+        <div className="space-y-1">
+          {badge("danger", "Waiting for the bridge phone")}
+          {note(
+            lastCheckAt
+              ? `The bridge phone has not checked in since ${formatShort(lastCheckAt)}. Open the OKB Bridge app, check Background Monitoring is ON and the phone is online.`
+              : "The bridge phone has not checked in yet. Open the OKB Bridge app and check Background Monitoring is ON.",
+            "text-danger",
+          )}
+        </div>
+      );
+    }
     return due ? (
-      <div className="space-y-1">{badge("warning", "Due")}{note("Prepared at the bridge phone's next check (within 15 minutes).")}</div>
+      <div className="space-y-1">{badge("warning", "Preparing")}{note("The bridge phone picks it up within seconds.")}</div>
     ) : (
       <div className="space-y-1">{badge("info", "Scheduled")}{note(`Sends ${formatShort(e.sendAt)}`)}</div>
     );
@@ -334,7 +350,7 @@ function EntryActions({ e, onEdit, onDelete, compact = false }: { e: ScheduleEnt
 export function ReportSchedule() {
   const toast = useToast();
   const schedules = useSchedules();
-  const settings = useConsolidatedSettings();
+  const settings = useConsolidatedSettings(15_000);
   const create = useCreateSchedule();
   const update = useUpdateSchedule();
   const remove = useDeleteSchedule();
@@ -345,6 +361,7 @@ export function ReportSchedule() {
 
   const entries = schedules.data ?? [];
   const enabled = settings.data?.enabled ?? true;
+  const lastCheckAt = settings.data?.lastDeviceCheckAt ?? null;
   const check = checkDraft(draft, entries, editing?.id ?? null);
   const saving = create.isPending || update.isPending;
 
@@ -513,7 +530,7 @@ export function ReportSchedule() {
                     </dd>
                     <dt className="text-muted-foreground">Status</dt>
                     <dd className="min-w-0">
-                      <EntryStatus e={e} enabled={enabled} />
+                      <EntryStatus e={e} enabled={enabled} lastCheckAt={lastCheckAt} />
                     </dd>
                   </dl>
                   <EntryActions e={e} onEdit={() => startEdit(e)} onDelete={() => setDeleting(e)} />
@@ -548,7 +565,7 @@ export function ReportSchedule() {
                         <EntryActions e={e} onEdit={() => startEdit(e)} onDelete={() => setDeleting(e)} compact />
                       </td>
                       <td className="max-w-80 px-4 py-3">
-                        <EntryStatus e={e} enabled={enabled} />
+                        <EntryStatus e={e} enabled={enabled} lastCheckAt={lastCheckAt} />
                       </td>
                     </tr>
                   ))}
