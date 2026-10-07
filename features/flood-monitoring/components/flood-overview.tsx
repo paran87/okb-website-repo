@@ -1,17 +1,23 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useState } from "react";
-import { BarChart3, Layers, Radio, Waves, X } from "lucide-react";
-import { getNcrSummary } from "@/features/dashboard/lib/ncr-summary";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Position } from "geojson";
+import { BarChart3, CloudRain, Layers, Radio, Waves, X } from "lucide-react";
 import { FloodwatchAreasOverlay } from "@/features/floodwatch/components/floodwatch-areas-overlay";
 import { useFloodwatchSummary } from "@/features/floodwatch/hooks/use-floodwatch-summary";
-import { InsightsPanel } from "@/features/flood-monitoring/components/insights-panel";
+import { InsightsPanel, ncrAdvisories } from "@/features/flood-monitoring/components/insights-panel";
 import { LayerToggleCard } from "@/features/flood-monitoring/components/layer-toggle-card";
+import { FloodLayers } from "@/features/incident/components/flood-map";
+import { FloodLocationCard } from "@/features/incident/components/flood-location-card";
+import { positionsOf, useFloodSituation } from "@/features/incident/hooks/use-flood-situation";
+import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
 import { createFloodOverviewLayerRegistry } from "@/features/map/config/layer-registry";
 import { layerService } from "@/features/map/services/layer.service";
 import { selectLayers, useMapStore } from "@/features/map/store/map.store";
+import { WeatherRadarOverlay } from "@/features/weather/components/weather-radar-overlay";
+import { usePagasaWeather } from "@/features/weather/hooks/use-pagasa-weather";
 import { cn } from "@/utils/cn";
 
 const MapEngine = dynamic(
@@ -22,25 +28,40 @@ const MapEngine = dynamic(
   { ssr: false },
 );
 
-const LAYERS = createFloodOverviewLayerRegistry();
-const INCIDENT_LAYER = "ncr-incidents";
+/** Flood-prone areas stay as reference; flooding comes from the received reports (no static incident list). */
+const LAYERS = createFloodOverviewLayerRegistry().filter((layer) => layer.id !== "ncr-incidents");
 const AREA_LAYER = "floodwatch-areas";
-const INCIDENT_COLOR = "#dc2626";
 const AREA_COLOR = "#7c3aed";
+const RAIN_COLOR = "#0284c7";
+const NORMAL_COLOR = "#16a34a";
 
-/** Flood Monitoring overview — full-bleed map with floating, interactive summaries. */
+/**
+ * Flood Monitoring overview — full-bleed map of the current situation: flooded roads from the received
+ * reports (normal when none), PAGASA weather with the live rain radar, and flood-prone areas.
+ */
 export function FloodOverview() {
-  const summary = useMemo(() => getNcrSummary(), []);
+  const situation = useFloodSituation();
+  const { placed, counts, ready, lines, points } = situation;
+  const flood = situation.data;
+  const weather = usePagasaWeather();
+  const bulletin = weather.data;
+  const ncr = bulletin?.ncrObservation;
   const floodwatch = useFloodwatchSummary();
   const fw = floodwatch.data;
+
   const [insightsOpen, setInsightsOpen] = useState(false);
+  const [floodVisible, setFloodVisible] = useState(true);
+  const [radarOn, setRadarOn] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [focus, setFocus] = useState<{ id: number; positions: Position[] } | null>(null);
+  const framed = useRef(false);
+  const radarAuto = useRef(false);
 
   const layers = useMapStore(selectLayers);
   const map = useMapStore((s) => s.map);
   const toggleLayerVisibility = useMapStore((s) => s.toggleLayerVisibility);
 
-  const isVisible = (id: string) =>
-    layers.find((l) => l.id === id)?.visible ?? true;
+  const isVisible = (id: string) => layers.find((l) => l.id === id)?.visible ?? true;
 
   const toggle = useCallback(
     (id: string) => {
@@ -51,6 +72,60 @@ export function FloodOverview() {
     },
     [map, toggleLayerVisibility],
   );
+
+  // Frame the flooded roads once they are known.
+  useEffect(() => {
+    if (framed.current || !ready) return;
+    framed.current = true;
+    const all = placed.flatMap(positionsOf);
+    if (all.length) setFocus({ id: Date.now(), positions: all });
+  }, [ready, placed]);
+
+  // Rain radar on by itself while it rains or a warning is in effect (the operator can switch it off).
+  useEffect(() => {
+    if (radarAuto.current || !flood) return;
+    radarAuto.current = true;
+    if (flood.weather.state === "wet") setRadarOn(true);
+  }, [flood]);
+
+  const select = useCallback(
+    (key: string | null) => {
+      setSelected(key);
+      const p = key ? placed.find((x) => x.location.key === key) : null;
+      if (p) {
+        setFloodVisible(true);
+        setFocus({ id: Date.now(), positions: positionsOf(p) });
+      }
+    },
+    [placed],
+  );
+  const current = selected ? (placed.find((p) => p.location.key === selected) ?? null) : null;
+
+  const worst = SEVERITY_ORDER.find((s) => counts[s] > 0) ?? null;
+  const floodColor = worst ? FLOOD_SEVERITY[worst].color : NORMAL_COLOR;
+  const breakdown = SEVERITY_ORDER.filter((s) => counts[s] > 0)
+    .map((s) => `${counts[s]} ${s === "unmeasured" ? "no depth" : FLOOD_SEVERITY[s].label.toLowerCase()}`)
+    .join(" · ");
+  const advisories = ncrAdvisories(bulletin?.advisories ?? []).length;
+
+  const status = !ready
+    ? { text: "Loading reports…", className: "bg-muted text-muted-foreground" }
+    : placed.length
+      ? { text: `${placed.length} flooded`, className: "bg-danger/15 text-danger" }
+      : { text: "Normal", className: "bg-success/15 text-success" };
+
+  const insights = {
+    placed,
+    flood,
+    ready,
+    weather: bulletin,
+    byRegion: fw?.byRegion ?? [],
+    regionsLoading: floodwatch.isLoading,
+    onSelect: (key: string) => {
+      select(key);
+      setInsightsOpen(false);
+    },
+  };
 
   return (
     <div className="relative h-full min-h-[560px] flex-1 overflow-hidden bg-muted/20">
@@ -66,89 +141,119 @@ export function FloodOverview() {
         className="absolute inset-0 h-full w-full"
       />
       <FloodwatchAreasOverlay />
+      <WeatherRadarOverlay enabled={radarOn} onEnabledChange={setRadarOn} hideButton />
+      <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} visible={floodVisible} />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-2 p-2 sm:p-3 lg:max-w-[560px]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col gap-2 p-2 sm:p-3 lg:max-w-[600px]">
         <header className="glass pointer-events-auto flex items-center justify-between gap-3 rounded-xl border border-border/60 px-3 py-2 shadow-panel">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
               <Waves className="size-4" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h1 className="truncate text-sm font-semibold leading-tight text-foreground">
-                Flood Monitoring
-              </h1>
+              <h1 className="truncate text-sm font-semibold leading-tight text-foreground">Flood Monitoring</h1>
               <p className="truncate text-[11px] leading-tight text-muted-foreground">
-                National Capital Region · live overview
+                National Capital Region · current situation
               </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <span className="hidden items-center gap-1.5 rounded-full bg-success/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success sm:inline-flex">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                status.className,
+              )}
+            >
               <Radio className="size-3 animate-pulse" aria-hidden />
-              Live
+              {status.text}
             </span>
             <button
               type="button"
               onClick={() => setInsightsOpen((v) => !v)}
               aria-expanded={insightsOpen}
-              className="inline-flex items-center gap-1 rounded-lg border border-border/60 px-2 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/60 lg:hidden"
+              className="inline-flex min-h-10 items-center gap-1 rounded-lg border border-border/60 px-2 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/60 lg:hidden"
             >
-              {insightsOpen ? (
-                <X className="size-3.5" aria-hidden />
-              ) : (
-                <BarChart3 className="size-3.5" aria-hidden />
-              )}
-              Insights
+              {insightsOpen ? <X className="size-3.5" aria-hidden /> : <BarChart3 className="size-3.5" aria-hidden />}
+              Details
             </button>
           </div>
         </header>
 
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <LayerToggleCard
-            label="Active incidents"
-            value={summary.total.toLocaleString()}
-            caption={`${summary.located} located · ${summary.needsReview} to review`}
-            color={INCIDENT_COLOR}
+            label="Flooded roads"
+            value={ready ? placed.length.toLocaleString() : "—"}
+            caption={!ready ? "Loading reports…" : placed.length ? breakdown : "Normal — no flood reports"}
+            color={floodColor}
             icon={Waves}
-            visible={isVisible(INCIDENT_LAYER)}
-            onToggle={() => toggle(INCIDENT_LAYER)}
-            split={summary.total ? summary.located / summary.total : 0}
+            visible={floodVisible}
+            onToggle={() => setFloodVisible((v) => !v)}
+            className="min-w-0"
+          />
+          <LayerToggleCard
+            label="Rain · PAGASA"
+            value={ncr ? `${ncr.rainfall} mm/h` : "—"}
+            caption={
+              ncr
+                ? `${ncr.condition}${advisories ? ` · ${advisories} NCR warning${advisories === 1 ? "" : "s"}` : ""}`
+                : weather.isError
+                  ? "PAGASA unavailable"
+                  : "Loading PAGASA…"
+            }
+            color={RAIN_COLOR}
+            icon={CloudRain}
+            visible={radarOn}
+            onToggle={() => setRadarOn((v) => !v)}
+            className="min-w-0"
           />
           <LayerToggleCard
             label="Flood-prone areas"
             value={fw ? fw.totalAreas.toLocaleString() : "—"}
-            caption={
-              fw
-                ? `${fw.byRegion.length} regions · ${fw.pendingLocationReviews} to review`
-                : floodwatch.isError
-                  ? "Floodwatch unavailable"
-                  : "Loading Floodwatch…"
-            }
+            caption={fw ? `${fw.byRegion.length} regions · Floodwatch` : floodwatch.isError ? "Floodwatch unavailable" : "Loading Floodwatch…"}
             color={AREA_COLOR}
             icon={Layers}
             visible={isVisible(AREA_LAYER)}
             onToggle={() => toggle(AREA_LAYER)}
+            className="col-span-2 min-w-0 sm:col-span-1"
           />
         </div>
 
-        {insightsOpen ? (
-          <InsightsPanel
-            byDeo={summary.byDeo}
-            byRegion={fw?.byRegion ?? []}
-            regionsLoading={floodwatch.isLoading}
-            className="max-h-[48dvh] lg:hidden"
-          />
+        <ul
+          aria-label="Map legend"
+          className="glass pointer-events-none flex flex-wrap gap-x-3 gap-y-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-foreground shadow-panel"
+        >
+          {SEVERITY_ORDER.map((s) => (
+            <li key={s} className="flex items-center gap-1.5">
+              <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: FLOOD_SEVERITY[s].color }} aria-hidden />
+              {s === "unmeasured" ? "Depth not given" : `${FLOOD_SEVERITY[s].label} · ${FLOOD_SEVERITY[s].range.split(" (")[0]}`}
+            </li>
+          ))}
+          <li className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-[#7c3aed]" aria-hidden />
+            Flood-prone area
+          </li>
+        </ul>
+
+        {ready && placed.length === 0 ? (
+          <p className="glass pointer-events-none self-start rounded-full px-3 py-1.5 text-[11px] font-semibold text-success shadow-panel">
+            Normal — no flooded roads in the received reports
+          </p>
         ) : null}
+
+        {insightsOpen ? <InsightsPanel {...insights} className="max-h-[52dvh] bg-card lg:hidden" /> : null}
       </div>
 
-      <InsightsPanel
-        byDeo={summary.byDeo}
-        byRegion={fw?.byRegion ?? []}
-        regionsLoading={floodwatch.isLoading}
-        className={cn(
-          "absolute right-3 top-3 z-20 hidden max-h-[calc(100%-7rem)] w-72 lg:flex",
-        )}
-      />
+      <InsightsPanel {...insights} className="absolute right-3 top-3 z-20 hidden max-h-[calc(100%-7rem)] w-80 lg:flex" />
+
+
+
+      {current ? (
+        <FloodLocationCard
+          location={current.location}
+          onClose={() => setSelected(null)}
+          className="absolute inset-x-2 bottom-2 z-40 sm:bottom-10 sm:left-auto sm:right-14 sm:w-72 lg:right-[22rem]"
+        />
+      ) : null}
     </div>
   );
 }

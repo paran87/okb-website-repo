@@ -1,19 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import type { Position } from "geojson";
-import { X } from "lucide-react";
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
 import { createFloodOverviewLayerRegistry } from "@/features/map/config/layer-registry";
 import { FloodwatchAreasOverlay } from "@/features/floodwatch/components/floodwatch-areas-overlay";
 import { FloodLayers } from "@/features/incident/components/flood-map";
+import { FloodLocationCard } from "@/features/incident/components/flood-location-card";
 import { positionsOf, type PlacedLocation } from "@/features/incident/hooks/use-flood-situation";
 import type { FloodLineFeature, FloodPointFeature } from "@/features/incident/components/flood-map";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
-import { formatMeters, formatRelative } from "@/features/reports/lib/format";
-import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 
 /** Flood-prone areas (Floodwatch) stay as background; incidents come from the received reports. */
@@ -84,31 +81,11 @@ export function DashboardMapPanel({ className, placed, lines, points, ready }: D
       ) : null}
 
       {current ? (
-        <div className="glass absolute inset-x-2 bottom-10 z-30 rounded-lg p-2.5 text-[11px] shadow-panel sm:left-auto sm:right-14 sm:w-72">
-          <div className="flex items-start gap-2">
-            <span className="mt-1 size-2.5 shrink-0 rounded-full" style={{ backgroundColor: FLOOD_SEVERITY[current.location.severity].color }} aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="font-semibold text-foreground">
-                {FLOOD_SEVERITY[current.location.severity].label}
-                {current.location.heightM !== null ? ` · ${formatMeters(current.location.heightM)}` : ""}
-                <span className="font-normal text-muted-foreground"> · {formatRelative(current.location.reportedAt)}</span>
-              </p>
-              <p className="break-words text-foreground">{current.location.label}</p>
-              {current.location.roadStatus ? <p className="break-words text-muted-foreground">Road: {current.location.roadStatus}</p> : null}
-              <Link href={ROUTES.incidents} className="mt-1 inline-flex min-h-10 items-center font-semibold text-primary hover:underline">
-                Open in Incidents
-              </Link>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelected(null)}
-              className="-m-1 flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted"
-              aria-label="Close"
-            >
-              <X className="size-4" aria-hidden />
-            </button>
-          </div>
-        </div>
+        <FloodLocationCard
+          location={current.location}
+          onClose={() => setSelected(null)}
+          className="absolute inset-x-2 bottom-10 z-30 sm:left-auto sm:right-14 sm:w-72"
+        />
       ) : null}
     </div>
   );

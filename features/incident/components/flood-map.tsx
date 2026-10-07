@@ -24,6 +24,8 @@ export interface FloodMapProps {
   /** Frame these positions (changes of [focus.id] move the map). */
   focus: { id: number; positions: Position[] } | null;
   onSelect: (key: string | null) => void;
+  /** Show the flooded-road layers (default true). */
+  visible?: boolean;
 }
 
 const expr = (e: unknown) => e as ExpressionSpecification;
@@ -50,7 +52,7 @@ export function FloodMap(props: FloodMapProps) {
 }
 
 /** The flooded-road layers, on whichever map the page shows (Incidents map or Dashboard map). */
-export function FloodLayers({ lines, points, selectedKey, focus, onSelect }: FloodMapProps) {
+export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visible = true }: FloodMapProps) {
   const map = useMapStore((s) => s.map);
   const status = useMapStore((s) => s.status);
   const [styleVersion, setStyleVersion] = useState(0);
@@ -139,6 +141,9 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect }: Flo
       if (!map.isStyleLoaded()) return false;
       sync(map);
       map.setFilter("fm-selected", expr(["==", ["get", "key"], selectedKey ?? ""]));
+      for (const id of ["fm-selected", "fm-casing", "fm-line", "fm-point"]) {
+        map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
+      }
       return true;
     };
     if (apply()) return;
@@ -154,7 +159,7 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect }: Flo
       map.off("styledata", retry);
       map.off("idle", retry);
     };
-  }, [map, status, styleVersion, sync, selectedKey]);
+  }, [map, status, styleVersion, sync, selectedKey, visible]);
 
   // Tap a flooded road or point to select it.
   useEffect(() => {

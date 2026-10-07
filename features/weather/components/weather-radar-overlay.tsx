@@ -39,12 +39,15 @@ async function fetchLatestRadarTiles(): Promise<string | null> {
 interface WeatherRadarOverlayProps {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
+  /** The page shows its own radar switch (Flood Monitoring overview). */
+  hideButton?: boolean;
 }
 
 /** Live global precipitation radar tiles (RainViewer) over the weather map. */
 export function WeatherRadarOverlay({
   enabled,
   onEnabledChange,
+  hideButton = false,
 }: WeatherRadarOverlayProps) {
   const map = useMapStore((s) => s.map);
   const status = useMapStore((s) => s.status);
@@ -88,9 +91,8 @@ export function WeatherRadarOverlay({
       attribution: "© RainViewer",
     });
 
-    const beforeLayer = map.getLayer("weather-stations-circle")
-      ? "weather-stations-circle"
-      : undefined;
+    // Under the stations (Weather tab) and under flooded roads (Flood Monitoring overview).
+    const beforeLayer = ["weather-stations-circle", "fm-selected"].find((id) => map.getLayer(id));
 
     map.addLayer(
       {
@@ -121,7 +123,7 @@ export function WeatherRadarOverlay({
     };
   }, [map, status, applyRadar]);
 
-  if (status !== "ready") return null;
+  if (status !== "ready" || hideButton) return null;
 
   return (
     <div className="pointer-events-none absolute left-3 top-14 z-20">
