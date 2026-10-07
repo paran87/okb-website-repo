@@ -8,6 +8,6 @@ export const dynamic = "force-dynamic";
 
 /** Stops a scheduled or retrying automatic TEXT delivery; the bridge phone stops at its next check. */
 export const POST = withApiHandler(async (request: NextRequest, { params }) => {
-  await requireReportsAccess(request, { mutating: true });
+  await requireReportsAccess(request, { mutating: true, area: "settings" });
   return ok(await cancelText((await params).id ?? ""));
 });

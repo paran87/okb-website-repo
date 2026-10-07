@@ -25,11 +25,18 @@ import type { ReportStore } from "@/features/reports/server/store";
  */
 
 /**
- * Operator access check for the Reports pages, Settings → Automated WhatsApp
- * reports and every /api/reports/* route. When false, report data is served to
- * anyone who opens the pages and OKB_REPORTS_ACCESS_KEY is ignored.
+ * Where operator access is checked:
+ *  - "settings": Settings → Automated WhatsApp reports and its /api/reports/consolidated/* routes.
+ *  - "reports": the Reports and Incidents pages and the other /api/reports/* and /api/incidents/* routes.
+ * Only the areas listed here ask for the access key; in the others report data is served to anyone who
+ * opens the pages (an operator who signed in is still named on reviews and incidents).
  */
-const ACCESS_GATE_ENABLED = true;
+export type AccessArea = "reports" | "settings";
+const GATED_AREAS: ReadonlySet<AccessArea> = new Set<AccessArea>(["settings"]);
+
+export function accessArea(value: string | null | undefined): AccessArea {
+  return value === "settings" ? "settings" : "reports";
+}
 
 const COOKIE = "okb_reports_access";
 const MAX_AGE_S = 12 * 60 * 60;
@@ -100,14 +107,14 @@ async function sessionOperator(): Promise<string | null> {
 }
 
 /** Public, data-free description of the access state (for the gate UI). */
-export async function getAccessState(request: NextRequest): Promise<ReportsAccessState> {
+export async function getAccessState(request: NextRequest, area: AccessArea = "reports"): Promise<ReportsAccessState> {
   const cfg = getReportsConfig();
   const store = getReportStore();
   const dataSource = store ? store.kind : "not_configured";
   const session = await sessionOperator();
   const grant = verify(cfg, request.cookies.get(COOKIE)?.value);
   const devOpen = store?.kind === "fixtures" && !cfg.accessKey;
-  const gateOff = !ACCESS_GATE_ENABLED && store !== null;
+  const gateOff = !GATED_AREAS.has(area) && store !== null;
   return {
     dataSource,
     accessConfigured: Boolean(cfg.accessKey) || devOpen || gateOff,
@@ -140,7 +147,7 @@ export function assertSameOrigin(request: NextRequest): void {
 /** Resolves the store and operator, or throws a typed 401/403/503. */
 export async function requireReportsAccess(
   request: NextRequest,
-  opts: { mutating?: boolean } = {},
+  opts: { mutating?: boolean; area?: AccessArea } = {},
 ): Promise<ReportsContext> {
   if (opts.mutating) assertSameOrigin(request);
   const store = getReportStore();
@@ -152,7 +159,7 @@ export async function requireReportsAccess(
       { reason: "not_configured" },
     );
   }
-  const state = await getAccessState(request);
+  const state = await getAccessState(request, opts.area);
   if (!state.granted || !state.operatorName) {
     if (!state.accessConfigured) {
       throw new ApiError(403, "FORBIDDEN", "Operator access to reports is not configured on the server.", {

@@ -8,6 +8,6 @@ export const dynamic = "force-dynamic";
 
 /** Retries a failed automatic TEXT delivery; the bridge phone sends it at its next check. Never re-sends a sent one. */
 export const POST = withApiHandler(async (request: NextRequest, { params }) => {
-  await requireReportsAccess(request, { mutating: true });
+  await requireReportsAccess(request, { mutating: true, area: "settings" });
   return ok(await retryText((await params).id ?? ""));
 });

@@ -8,6 +8,6 @@ export const dynamic = "force-dynamic";
 
 /** Consolidated report history (newest first), read from the OKB Bridge backend. */
 export const GET = withApiHandler(async (request: NextRequest) => {
-  await requireReportsAccess(request);
+  await requireReportsAccess(request, { area: "settings" });
   return ok(await listHistory(50));
 });

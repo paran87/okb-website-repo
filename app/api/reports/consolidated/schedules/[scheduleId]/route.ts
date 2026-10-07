@@ -9,12 +9,12 @@ export const dynamic = "force-dynamic";
 
 /** Edits an entry that is still waiting for its date of sending. */
 export const PATCH = withApiHandler(async (request: NextRequest, { params }) => {
-  await requireReportsAccess(request, { mutating: true });
+  await requireReportsAccess(request, { mutating: true, area: "settings" });
   return ok(await updateSchedule((await params).scheduleId ?? "", scheduleSchema.parse(await request.json())));
 });
 
 /** Removes an entry; a prepared report not yet sent is cancelled first. */
 export const DELETE = withApiHandler(async (request: NextRequest, { params }) => {
-  await requireReportsAccess(request, { mutating: true });
+  await requireReportsAccess(request, { mutating: true, area: "settings" });
   return ok(await deleteSchedule((await params).scheduleId ?? ""));
 });

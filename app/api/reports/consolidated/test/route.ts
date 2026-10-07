@@ -36,7 +36,7 @@ const periodSchema = z
  * the PDF waits on the phone for the operator ("Send as PDF").
  */
 export const POST = withApiHandler(async (request: NextRequest) => {
-  const { operatorName } = await requireReportsAccess(request, { mutating: true });
+  const { operatorName } = await requireReportsAccess(request, { mutating: true, area: "settings" });
   const { periodStart, periodEnd } = periodSchema.parse(await request.json().catch(() => ({})));
   return created(await testSend(operatorName, { periodStart, periodEnd }));
 });

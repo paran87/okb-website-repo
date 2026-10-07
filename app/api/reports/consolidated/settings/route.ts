@@ -14,12 +14,12 @@ const settingsSchema = z.object({
 });
 
 export const GET = withApiHandler(async (request: NextRequest) => {
-  await requireReportsAccess(request);
+  await requireReportsAccess(request, { area: "settings" });
   return ok(await getSettings());
 });
 
 export const PUT = withApiHandler(async (request: NextRequest) => {
-  const { operatorName } = await requireReportsAccess(request, { mutating: true });
+  const { operatorName } = await requireReportsAccess(request, { mutating: true, area: "settings" });
   const settings = settingsSchema.parse(await request.json());
   return ok(await saveSettings(settings, operatorName));
 });

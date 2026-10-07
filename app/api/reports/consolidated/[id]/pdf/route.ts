@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 /** View (inline) or download (?download=1) a generated consolidated report PDF. */
 export const GET = withApiHandler(async (request: NextRequest, { params }) => {
-  await requireReportsAccess(request);
+  await requireReportsAccess(request, { area: "settings" });
   const { bytes, fileName } = await fetchPdf((await params).id ?? "");
   const disposition = request.nextUrl.searchParams.get("download") === "1" ? "attachment" : "inline";
   return new NextResponse(bytes, {

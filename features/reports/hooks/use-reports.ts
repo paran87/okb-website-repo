@@ -82,7 +82,7 @@ const retry = (count: number, error: Error): boolean =>
 
 export const reportKeys = {
   all: ["reports"] as const,
-  access: ["reports", "access"] as const,
+  access: (area: "reports" | "settings") => ["reports", "access", area] as const,
   list: (q: ReportListQuery) => ["reports", "list", q] as const,
   facets: ["reports", "facets"] as const,
   detail: (id: string) => ["reports", "detail", id] as const,
@@ -92,10 +92,11 @@ export const reportKeys = {
   incidents: (page: number) => ["reports", "incidents", page] as const,
 };
 
-export function useReportsAccess() {
+/** Operator access for [area]: only Settings asks for the access key. */
+export function useReportsAccess(area: "reports" | "settings" = "reports") {
   return useQuery({
-    queryKey: reportKeys.access,
-    queryFn: async () => (await api<ReportsAccessState>("/api/reports/access")).data,
+    queryKey: reportKeys.access(area),
+    queryFn: async () => (await api<ReportsAccessState>(`/api/reports/access?area=${area}`)).data,
     staleTime: 60_000,
     retry,
   });

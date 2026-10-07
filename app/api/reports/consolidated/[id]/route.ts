@@ -8,6 +8,6 @@ export const dynamic = "force-dynamic";
 
 /** Removes a report from the history (with its PDF); a text not yet sent is dropped, so it is never sent. */
 export const DELETE = withApiHandler(async (request: NextRequest, { params }) => {
-  await requireReportsAccess(request, { mutating: true });
+  await requireReportsAccess(request, { mutating: true, area: "settings" });
   return ok(await deleteReport((await params).id ?? ""));
 });

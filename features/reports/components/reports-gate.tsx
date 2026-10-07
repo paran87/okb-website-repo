@@ -129,7 +129,7 @@ export function ReportsContextBar({ state }: { state: ReportsAccessState }) {
         </span>
         {!state.reviewEnabled ? <span className="text-warning">Review actions unavailable (bridge API not configured)</span> : null}
         {state.accessGateDisabled ? (
-          <span className="font-semibold text-warning">Operator access check is disabled — anyone with the link can view reports</span>
+          <span>Open view · no access key needed here</span>
         ) : null}
         {state.dataSource === "supabase" && !state.accessGateDisabled ? (
           <button
@@ -147,8 +147,15 @@ export function ReportsContextBar({ state }: { state: ReportsAccessState }) {
 }
 
 /** Renders children only for an authorized operator with a connected backend. */
-export function ReportsGate({ children }: { children: (state: ReportsAccessState) => ReactNode }) {
-  const access = useReportsAccess();
+export function ReportsGate({
+  children,
+  area = "reports",
+}: {
+  children: (state: ReportsAccessState) => ReactNode;
+  /** "settings" asks for the operator access key; the report pages are open. */
+  area?: "reports" | "settings";
+}) {
+  const access = useReportsAccess(area);
   if (access.isPending) {
     return (
       <div className="space-y-3" aria-busy="true">

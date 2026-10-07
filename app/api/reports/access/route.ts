@@ -5,6 +5,7 @@ import { withApiHandler } from "@/lib/api/handler";
 import { ok } from "@/lib/api/response";
 import { getReportsConfig } from "@/features/reports/server/config";
 import {
+  accessArea,
   assertSameOrigin,
   clearAccessCookie,
   getAccessState,
@@ -14,8 +15,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
-/** Access state for the gate UI. Contains no report data. */
-export const GET = withApiHandler(async (request: NextRequest) => ok(await getAccessState(request)));
+/** Access state for the gate UI (?area=settings for Settings). Contains no report data. */
+export const GET = withApiHandler(async (request: NextRequest) =>
+  ok(await getAccessState(request, accessArea(request.nextUrl.searchParams.get("area")))),
+);
 
 const grantSchema = z.object({
   accessKey: z.string().min(1).max(500),

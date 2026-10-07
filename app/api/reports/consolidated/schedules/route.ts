@@ -9,11 +9,11 @@ export const dynamic = "force-dynamic";
 
 /** The report schedule: monitoring period + date of sending, as many entries as needed. */
 export const GET = withApiHandler(async (request: NextRequest) => {
-  await requireReportsAccess(request);
+  await requireReportsAccess(request, { area: "settings" });
   return ok(await listSchedules());
 });
 
 export const POST = withApiHandler(async (request: NextRequest) => {
-  const { operatorName } = await requireReportsAccess(request, { mutating: true });
+  const { operatorName } = await requireReportsAccess(request, { mutating: true, area: "settings" });
   return created(await createSchedule(scheduleSchema.parse(await request.json()), operatorName));
 });

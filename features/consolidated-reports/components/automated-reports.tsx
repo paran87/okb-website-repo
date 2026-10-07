@@ -683,7 +683,7 @@ function History() {
  */
 export function AutomatedReports() {
   return (
-    <ReportsGate>
+    <ReportsGate area="settings">
       {() => (
         <div className="space-y-6">
           <SettingsPanel />
