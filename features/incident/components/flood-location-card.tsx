@@ -12,10 +12,13 @@ import { cn } from "@/utils/cn";
 export function FloodLocationCard({
   location,
   onClose,
+  link = { href: ROUTES.incidents, label: "Open in Incidents" },
   className,
 }: {
   location: FloodMapLocation;
   onClose: () => void;
+  /** Where the card leads (default: the Incidents tab). */
+  link?: { href: string; label: string };
   className?: string;
 }) {
   const meta = FLOOD_SEVERITY[location.severity];
@@ -31,8 +34,8 @@ export function FloodLocationCard({
           </p>
           <p className="break-words text-foreground">{location.label}</p>
           {location.roadStatus ? <p className="break-words text-muted-foreground">Road: {location.roadStatus}</p> : null}
-          <Link href={ROUTES.incidents} className="mt-1 inline-flex min-h-10 items-center font-semibold text-primary hover:underline">
-            Open in Incidents
+          <Link href={link.href} className="mt-1 inline-flex min-h-10 items-center font-semibold text-primary hover:underline">
+            {link.label}
           </Link>
         </div>
         <button

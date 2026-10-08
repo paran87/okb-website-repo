@@ -30,8 +30,8 @@ interface AppShellProps {
   header?: ReactNode;
   utilityPanel?: ReactNode;
   statusBar?: ReactNode;
-  /** Remove max-width padding for map-first pages. */
-  fullBleed?: boolean;
+  /** Remove max-width padding for map-first pages ("mobile": on phones only). */
+  fullBleed?: boolean | "mobile";
   /** Hide the shell utility panel (dashboard has its own side widgets). */
   hideUtilityPanel?: boolean;
   className?: string;

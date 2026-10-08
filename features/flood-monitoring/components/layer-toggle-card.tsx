@@ -10,8 +10,11 @@ interface LayerToggleCardProps {
   caption: string;
   color: string;
   icon: LucideIcon;
-  visible: boolean;
+  /** Layer shown or hidden; leave out for a card that opens something instead of switching a layer. */
+  visible?: boolean;
   onToggle: () => void;
+  /** Accessible name when [visible] is left out (e.g. "Open the incident list"). */
+  actionLabel?: string;
   /** Optional 0–1 split shown as a thin two-tone bar (e.g. located share). */
   split?: number;
   className?: string;
@@ -26,18 +29,20 @@ export function LayerToggleCard({
   icon: Icon,
   visible,
   onToggle,
+  actionLabel,
   split,
   className,
 }: LayerToggleCardProps) {
+  const isToggle = visible !== undefined;
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-pressed={visible}
-      aria-label={`${visible ? "Hide" : "Show"} ${label} on map`}
+      aria-pressed={isToggle ? visible : undefined}
+      aria-label={isToggle ? `${visible ? "Hide" : "Show"} ${label} on map` : (actionLabel ?? label)}
       className={cn(
         "glass pointer-events-auto group relative flex min-h-11 flex-1 items-center gap-2 overflow-hidden rounded-lg border border-border/60 py-1 pl-2.5 pr-1.5 text-left shadow-panel transition-all hover:-translate-y-px hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-[148px] sm:gap-2.5 sm:rounded-xl sm:px-3 sm:py-2",
-        !visible && "opacity-60",
+        visible === false && "opacity-60",
         className,
       )}
     >
@@ -75,7 +80,7 @@ export function LayerToggleCard({
           </span>
         ) : null}
       </span>
-      {visible ? (
+      {!isToggle ? null : visible ? (
         <Eye className="hidden size-3.5 shrink-0 text-muted-foreground sm:block" aria-hidden />
       ) : (
         <EyeOff className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />

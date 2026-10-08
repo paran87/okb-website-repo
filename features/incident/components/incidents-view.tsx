@@ -19,6 +19,8 @@ import { useIncident, useIncidents, useReportDetail } from "@/features/reports/h
 import { InfoRow, OpsSection, PlatformBadge } from "@/features/reports/components/report-ui";
 import { ReportsGate } from "@/features/reports/components/reports-gate";
 import { FloodMapPanel } from "@/features/incident/components/flood-map-panel";
+import { IncidentsMobile } from "@/features/incident/components/incidents-mobile";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 function SourceReport({ reportId }: { reportId: string }) {
   const detail = useReportDetail(reportId);
@@ -227,7 +229,19 @@ function IncidentList() {
   );
 }
 
+/** Phones: the full-screen map layout (one map per page, so only one of the two layouts is mounted). */
+function PhoneIncidents() {
+  const total = useIncidents(1).data?.data;
+  const count = total && total.storage !== "not_configured" ? total.total : null;
+  return <IncidentsMobile incidents={<IncidentList />} incidentCount={count} />;
+}
+
 export function IncidentsView() {
+  const phone = useMediaQuery("(max-width: 639px)");
+  if (phone === null) return <Skeleton className="h-64 w-full flex-1" />;
+  if (phone) {
+    return <ReportsGate bare>{() => <PhoneIncidents />}</ReportsGate>;
+  }
   return (
     <ReportsGate>
       {() => (

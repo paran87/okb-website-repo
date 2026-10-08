@@ -11,9 +11,11 @@ export const metadata: Metadata = { title: "Incidents" };
 /** Operator-confirmed incidents, each traceable to its source report. */
 export default function IncidentsPage() {
   return (
-    <div className="space-y-3 sm:space-y-5">
+    // Phones: the map fills the screen (its own floating header); from sm up the page header and panels.
+    <div className="flex min-h-0 flex-1 flex-col sm:block sm:space-y-5">
       <PageHeader
         compact
+        className="hidden sm:block"
         title="Incidents"
         description="Live flood map from the received reports, and operator-confirmed incidents from reviewed WhatsApp and Viber reports."
         breadcrumbs={[{ label: "Dashboard", href: ROUTES.dashboard }, { label: "Incidents" }]}
@@ -24,7 +26,7 @@ export default function IncidentsPage() {
           </span>
         }
       />
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+      <Suspense fallback={<Skeleton className="h-64 w-full flex-1" />}>
         <IncidentsView />
       </Suspense>
     </div>

@@ -18,17 +18,21 @@ export function CommandShell({ children }: { children: ReactNode }) {
     pathname === ROUTES.waterways ||
     pathname === ROUTES.pumpingStations ||
     pathname.startsWith(`${ROUTES.riverBasin}/`);
+  // Incidents: a full-screen map on phones (like the overview), the scrolling page from sm up.
+  const isFullBleedMobile = pathname === ROUTES.incidents;
 
   return (
     <AppShell
-      fullBleed={isFullBleed}
+      fullBleed={isFullBleed || (isFullBleedMobile && "mobile")}
       hideUtilityPanel={isFullBleed}
       mainClassName={
         isFullBleed
           ? pathname === ROUTES.drainages || pathname === ROUTES.pumpingStations
             ? "flex min-h-0 flex-col overflow-hidden"
             : "flex min-h-0 flex-col overflow-y-auto xl:overflow-hidden"
-          : undefined
+          : isFullBleedMobile
+            ? "flex min-h-0 flex-col overflow-hidden sm:block sm:overflow-y-auto"
+            : undefined
       }
     >
       {children}

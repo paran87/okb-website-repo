@@ -150,10 +150,13 @@ export function ReportsContextBar({ state }: { state: ReportsAccessState }) {
 export function ReportsGate({
   children,
   area = "reports",
+  bare = false,
 }: {
   children: (state: ReportsAccessState) => ReactNode;
   /** "settings" asks for the operator access key; the report pages are open. */
   area?: "reports" | "settings";
+  /** Without the source / operator strip (full-screen map layouts). */
+  bare?: boolean;
 }) {
   const access = useReportsAccess(area);
   if (access.isPending) {
@@ -179,6 +182,7 @@ export function ReportsGate({
   const state = access.data;
   if (state.dataSource === "not_configured") return <NotConnected />;
   if (!state.granted) return <AccessForm state={state} />;
+  if (bare) return <>{children(state)}</>;
   return (
     <div className="space-y-3 sm:space-y-4">
       <ReportsContextBar state={state} />
