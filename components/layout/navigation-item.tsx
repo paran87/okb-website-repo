@@ -29,10 +29,30 @@ export function LiveDot({ className }: { className?: string }) {
   );
 }
 
-/** "● LIVE · 4": the flooded locations on the map right now (same data and refresh as the Incidents map). */
+/** Flooded locations on the map right now (same data and refresh as the Incidents map); undefined until known. */
+function useLiveFloodCount() {
+  return useFloodMap().data?.locations.length;
+}
+
+/** Count badge of a group with live data: the flooded locations now, hidden when there are none. */
+export function LiveCountBadge() {
+  const count = useLiveFloodCount();
+  if (!count) return null;
+  return (
+    <Badge
+      variant="danger"
+      // Explicit size: tailwind-merge would take the text-label utility for a color and drop the red.
+      className="ml-auto h-5 min-w-5 justify-center bg-danger px-1.5 text-[11px] font-bold leading-4 tabular-nums text-white"
+      title={`${count} flooded location${count === 1 ? "" : "s"} now`}
+    >
+      {count}
+    </Badge>
+  );
+}
+
+/** "● LIVE · 4": the flooded locations on the map right now. */
 function LiveTag() {
-  const flood = useFloodMap();
-  const count = flood.data?.locations.length;
+  const count = useLiveFloodCount();
   return (
     <span
       className="ml-auto inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full border border-danger/40 bg-danger/12 px-1.5 text-[10px] font-bold uppercase tracking-wider text-danger"

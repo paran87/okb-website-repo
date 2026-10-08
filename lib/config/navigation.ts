@@ -26,6 +26,8 @@ export interface NavGroupItem extends NavItemBase {
   /** Primary route when the group label is clicked. */
   href?: string;
   children: readonly NavLinkItem[];
+  /** Badge with the current flooded-location count (live, hidden when there are none). */
+  live?: boolean;
 }
 
 export type NavEntry = NavLinkItem | NavGroupItem;
@@ -49,7 +51,7 @@ export const NAV_ITEMS: readonly NavEntry[] = [
     href: ROUTES.floodMonitoring,
     icon: AppIcons.floodMonitoring,
     permission: Permission.MAP_VIEW,
-    badge: 3,
+    live: true,
     children: [
       {
         type: "link",

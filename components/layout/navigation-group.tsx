@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
-import { LiveDot, NavigationItem } from "@/components/layout/navigation-item";
+import { LiveCountBadge, LiveDot, NavigationItem } from "@/components/layout/navigation-item";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 
@@ -22,6 +22,8 @@ export interface NavigationGroupProps {
   icon: LucideIcon;
   href?: string;
   badge?: string | number;
+  /** Show the live flooded-location count as the badge. */
+  live?: boolean;
   children: readonly NavigationChild[];
   expanded: boolean;
   collapsed: boolean;
@@ -38,6 +40,7 @@ export function NavigationGroup({
   icon: Icon,
   href,
   badge,
+  live = false,
   children,
   expanded,
   collapsed,
@@ -86,7 +89,8 @@ export function NavigationGroup({
           >
             <Icon className="size-[18px] shrink-0" aria-hidden />
             <span className="truncate">{label}</span>
-            {badge !== undefined ? (
+            {live ? <LiveCountBadge /> : null}
+            {!live && badge !== undefined ? (
               <Badge
                 variant="default"
                 className="ml-auto h-5 min-w-5 justify-center px-1.5 text-label"
@@ -104,7 +108,8 @@ export function NavigationGroup({
           >
             <Icon className="size-[18px] shrink-0" aria-hidden />
             <span className="truncate">{label}</span>
-            {badge !== undefined ? (
+            {live ? <LiveCountBadge /> : null}
+            {!live && badge !== undefined ? (
               <Badge
                 variant="default"
                 className="ml-auto h-5 min-w-5 justify-center px-1.5 text-label"

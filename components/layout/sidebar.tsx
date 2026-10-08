@@ -86,6 +86,7 @@ function NavTree({
               icon={item.icon}
               href={item.href}
               badge={item.badge}
+              live={item.live}
               children={item.children}
               expanded={expanded}
               collapsed={collapsed}
