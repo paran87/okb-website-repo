@@ -18,7 +18,9 @@ import {
 /**
  * Operations galleries show only the files listed in
  * lib/config/operations-media.json, checked by hand:
- *  - Photos: geotagged ones (a GPS map stamp on the photo, or GPS in its EXIF).
+ *  - Photos: geotagged ones (a GPS map stamp on the photo, or GPS in its EXIF),
+ *    with the position read from the stamp (or, when the stamp prints only an
+ *    address, looked up from that address and marked approximate).
  *  - Videos: ones showing declogging / clearing / cleaning work.
  * Files are also listed from the bucket, so a deleted or missing file is not
  * shown. Deleting moves the file to the bucket's TRASH_PREFIX folder, so it
@@ -32,6 +34,9 @@ interface CuratedEntry {
   key: string;
   lat?: number;
   lng?: number;
+  place?: string;
+  /** Located from the stamp's printed address (the stamp shows no coordinates). */
+  approx?: boolean;
   note?: string;
 }
 
@@ -45,7 +50,11 @@ function toItem(cfg: R2Config, obj: R2Object, kind: OperationsMediaKind, entry: 
     url: presign(cfg, "GET", obj.key, { expiresIn: LINK_TTL_S }),
     size: obj.size,
     lastModified: obj.lastModified,
-    geotag: entry.lat !== undefined && entry.lng !== undefined ? { lat: entry.lat, lng: entry.lng } : null,
+    geotag:
+      entry.lat !== undefined && entry.lng !== undefined
+        ? { lat: entry.lat, lng: entry.lng, approx: entry.approx === true }
+        : null,
+    place: entry.place ?? null,
     note: entry.note ?? null,
   };
 }

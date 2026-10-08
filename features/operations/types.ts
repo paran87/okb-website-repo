@@ -8,7 +8,10 @@ export interface OperationsMediaItem {
   url: string;
   size: number;
   lastModified: string;
-  geotag: { lat: number; lng: number } | null;
+  /** Where the photo was taken; `approx` when located from the address printed on its stamp. */
+  geotag: { lat: number; lng: number; approx: boolean } | null;
+  /** Barangay / city of the geotag (reverse geocoded). */
+  place: string | null;
   note: string | null;
 }
 

@@ -1,15 +1,12 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
-import { format } from "date-fns";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CheckSquare,
   ExternalLink,
   FolderOpen,
   ImageIcon,
   KeyRound,
-  MapPin,
-  PlayCircle,
   PlugZap,
   Square,
   Trash2,
@@ -43,6 +40,16 @@ import {
 } from "@/features/operations/hooks/use-operations-media";
 import type { OperationsMediaItem } from "@/features/operations/types";
 import { ReportsApiError, useGrantAccess } from "@/features/reports/hooks/use-reports";
+import {
+  itemTitle,
+  mapsUrl,
+  MediaThumb,
+  PlaceLine,
+  uploadedAt,
+  useLayoutMode,
+  ViewToggle,
+} from "@/features/operations/components/media-parts";
+import { PhotoDetail } from "@/features/operations/components/photo-detail";
 
 /** Cards rendered at a time; more are added with "Show more". */
 const PAGE_SIZE = 60;
@@ -51,15 +58,6 @@ const KINDS: { id: OperationsMediaKind; label: string; icon: typeof ImageIcon }[
   { id: "photos", label: "Photos", icon: ImageIcon },
   { id: "videos", label: "Videos", icon: Video },
 ];
-
-function uploadedAt(item: OperationsMediaItem): string {
-  const date = new Date(item.lastModified);
-  return Number.isNaN(date.getTime()) ? "" : format(date, "MMM d, yyyy · h:mm a");
-}
-
-function mapsUrl(item: OperationsMediaItem): string | null {
-  return item.geotag ? `https://www.google.com/maps?q=${item.geotag.lat},${item.geotag.lng}` : null;
-}
 
 /** Operator name + access key, asked for the first time media is deleted. */
 function AccessDialog({ open, onClose, onGranted }: { open: boolean; onClose: () => void; onGranted: () => void }) {
@@ -139,26 +137,11 @@ function MediaCard({
       <button
         type="button"
         onClick={selecting ? onToggle : onOpen}
-        aria-label={selecting ? `Select ${item.name}` : `Open ${item.name}`}
+        aria-label={selecting ? `Select ${itemTitle(item)}` : `Open ${itemTitle(item)}`}
         aria-pressed={selecting ? selected : undefined}
         className="relative block aspect-square w-full bg-muted"
       >
-        {item.kind === "photo" ? (
-          // Signed R2 links: shown as-is (the image optimizer would need every link allow-listed).
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.url} alt={item.name} loading="lazy" decoding="async" className="size-full object-cover" />
-        ) : (
-          <>
-            <video
-              src={`${item.url}#t=0.5`}
-              preload="metadata"
-              muted
-              playsInline
-              className="pointer-events-none size-full object-cover"
-            />
-            <PlayCircle className="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2 text-white drop-shadow" aria-hidden />
-          </>
-        )}
+        <MediaThumb item={item} />
         {selecting ? (
           <span className="absolute left-2 top-2 flex size-7 items-center justify-center rounded-md bg-black/55 text-white">
             {selected ? <CheckSquare className="size-5" aria-hidden /> : <Square className="size-5" aria-hidden />}
@@ -169,24 +152,77 @@ function MediaCard({
         <button
           type="button"
           onClick={onDelete}
-          aria-label={`Delete ${item.name}`}
+          aria-label={`Delete ${itemTitle(item)}`}
           className="absolute right-1.5 top-1.5 flex size-10 items-center justify-center rounded-lg bg-black/55 text-white transition-colors hover:bg-danger"
         >
           <Trash2 className="size-4" aria-hidden />
         </button>
       ) : null}
       <div className="space-y-0.5 px-2.5 py-2">
+        <p className="truncate text-caption font-semibold text-foreground">{itemTitle(item)}</p>
         <p className="truncate text-[11px] text-muted-foreground">{uploadedAt(item)}</p>
-        {item.geotag ? (
-          <p className="flex items-center gap-1 truncate text-[11px] font-medium text-primary">
-            <MapPin className="size-3 shrink-0" aria-hidden />
-            {item.geotag.lat.toFixed(5)}, {item.geotag.lng.toFixed(5)}
-          </p>
-        ) : item.note ? (
-          <p className="truncate text-[11px] text-foreground">{item.note}</p>
-        ) : null}
+        {item.place ? <PlaceLine item={{ ...item, place: null }} /> : null}
       </div>
     </Card>
+  );
+}
+
+function MediaRow({
+  item,
+  selecting,
+  selected,
+  onOpen,
+  onToggle,
+  onDelete,
+}: {
+  item: OperationsMediaItem;
+  selecting: boolean;
+  selected: boolean;
+  onOpen: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li
+      className={cn(
+        "flex items-center gap-2 rounded-card border bg-card p-2 shadow-sm",
+        selected ? "border-primary ring-2 ring-primary" : "border-border",
+      )}
+    >
+      <button
+        type="button"
+        onClick={selecting ? onToggle : onOpen}
+        aria-label={selecting ? `Select ${itemTitle(item)}` : `Open ${itemTitle(item)}`}
+        aria-pressed={selecting ? selected : undefined}
+        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+      >
+        {selecting ? (
+          selected ? (
+            <CheckSquare className="size-5 shrink-0 text-primary" aria-hidden />
+          ) : (
+            <Square className="size-5 shrink-0 text-muted-foreground" aria-hidden />
+          )
+        ) : null}
+        <span className="block h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-20 sm:w-28">
+          <MediaThumb item={item} />
+        </span>
+        <span className="min-w-0 flex-1 space-y-0.5">
+          <span className="block truncate text-caption font-semibold text-foreground sm:text-body">{itemTitle(item)}</span>
+          <span className="block truncate text-[11px] text-muted-foreground">{uploadedAt(item)}</span>
+          {item.place ? <PlaceLine item={{ ...item, place: null }} /> : null}
+        </span>
+      </button>
+      {!selecting ? (
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label={`Delete ${itemTitle(item)}`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-danger/10 hover:text-danger"
+        >
+          <Trash2 className="size-4" aria-hidden />
+        </button>
+      ) : null}
+    </li>
   );
 }
 
@@ -205,7 +241,7 @@ function MediaViewer({
       {item ? (
         <div className="-mx-5 -my-4 flex max-h-[90dvh] flex-col overflow-hidden rounded-card">
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-            <p className="min-w-0 truncate text-caption text-muted-foreground">{item.name}</p>
+            <p className="min-w-0 truncate text-caption font-semibold text-foreground">{itemTitle(item)}</p>
             <button
               type="button"
               onClick={onClose}
@@ -218,7 +254,7 @@ function MediaViewer({
           <div className="flex min-h-0 flex-1 items-center justify-center bg-black">
             {item.kind === "photo" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={item.url} alt={item.name} className="max-h-[65dvh] w-auto max-w-full object-contain" />
+              <img src={item.url} alt={itemTitle(item)} className="max-h-[65dvh] w-auto max-w-full object-contain" />
             ) : (
               <video src={item.url} controls autoPlay playsInline className="max-h-[65dvh] w-auto max-w-full">
                 <track kind="captions" />
@@ -228,13 +264,7 @@ function MediaViewer({
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 space-y-0.5 text-caption">
               <p className="text-muted-foreground">Uploaded {uploadedAt(item)}</p>
-              {item.geotag ? (
-                <p className="flex items-center gap-1 font-medium text-foreground">
-                  <MapPin className="size-3.5 text-primary" aria-hidden />
-                  {item.geotag.lat.toFixed(6)}, {item.geotag.lng.toFixed(6)}
-                </p>
-              ) : null}
-              {item.note ? <p className="text-foreground">{item.note}</p> : null}
+              <PlaceLine item={item} className="text-caption" />
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">
               {map ? (
@@ -286,12 +316,39 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
   const [accessKeys, setAccessKeys] = useState<string[] | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [shown, setShown] = useState(PAGE_SIZE);
+  const [layout, setLayout] = useLayoutMode();
+  const [detail, setDetail] = useState<number | null>(null);
+  const top = useRef<HTMLDivElement>(null);
 
   const items = useMemo(() => {
     const list = media.data?.items ?? [];
     return order === "newest" ? list : [...list].reverse();
   }, [media.data, order]);
   const visible = items.slice(0, shown);
+
+  // Photos open the location view; the phone's Back button returns to the gallery.
+  const openDetail = useCallback((index: number) => {
+    setDetail(index);
+    window.history.pushState({ okbOperationsDetail: true }, "");
+    top.current?.scrollIntoView({ block: "start" });
+  }, []);
+  const closeDetail = useCallback(() => {
+    if (window.history.state?.okbOperationsDetail) window.history.back();
+    else setDetail(null);
+  }, []);
+  useEffect(() => {
+    const onPop = () => setDetail(null);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  // Keep the open photo valid after deletions or a re-sort.
+  useEffect(() => {
+    if (detail === null) return;
+    if (items.length === 0) closeDetail();
+    else if (detail >= items.length) setDetail(items.length - 1);
+  }, [detail, items.length, closeDetail]);
+  const open = (item: OperationsMediaItem, index: number) =>
+    item.kind === "photo" ? openDetail(index) : setViewing(item);
   const allVisibleSelected = visible.length > 0 && visible.every((i) => selected.has(i.key));
 
   const noun = kind === "photos" ? "photo" : "video";
@@ -367,101 +424,130 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
     );
   }
 
+  const toggle = (item: OperationsMediaItem) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.key)) next.delete(item.key);
+      else next.add(item.key);
+      return next;
+    });
+
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-caption text-muted-foreground">
-          {items.length} {items.length === 1 ? noun : `${noun}s`}
-          {kind === "photos" ? " · geotagged only" : " · operations footage"}
-        </p>
-        {items.length > 0 ? (
-          <div className="flex items-center gap-2">
-            <select
-              value={order}
-              onChange={(e) => setOrder(e.target.value as "newest" | "oldest")}
-              aria-label="Sort order"
-              className="h-10 rounded-lg border border-border bg-background px-2 text-caption text-foreground"
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-            <Button
-              variant={selecting ? "secondary" : "outline"}
-              onClick={() => {
-                setSelecting((s) => !s);
-                setSelected(new Set());
-              }}
-            >
-              {selecting ? "Cancel" : "Select"}
-            </Button>
-          </div>
-        ) : null}
-      </div>
-
-      {selecting ? (
-        <div className="sticky top-2 z-10 flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(visible.map((i) => i.key)))}
-            className="h-10 rounded-lg px-2 text-caption font-medium text-primary hover:bg-muted"
-          >
-            {allVisibleSelected ? "Clear all" : "Select all shown"}
-          </button>
-          <Button
-            variant="danger"
-            disabled={selected.size === 0}
-            leftIcon={<Trash2 className="size-4" aria-hidden />}
-            onClick={() => setConfirmKeys([...selected])}
-          >
-            Delete {selected.size > 0 ? selected.size : ""}
-          </Button>
-        </div>
-      ) : null}
-
-      {items.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={kind === "photos" ? ImageIcon : Video}
-            title={`No ${kind} to show`}
-            description={
-              kind === "photos"
-                ? "Only geotagged photos from this folder are shown."
-                : "Only videos showing declogging, clearing or cleaning work are shown."
-            }
-          />
-        </Card>
+    <div ref={top} className="scroll-mt-4 space-y-3">
+      {detail !== null && items[detail] ? (
+        <PhotoDetail
+          items={items}
+          index={detail}
+          sectionLabel={operationsSection(section).label}
+          onIndexChange={setDetail}
+          onClose={closeDetail}
+          onDelete={(item) => setConfirmKeys([item.key])}
+        />
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {visible.map((item) => (
-            <MediaCard
-              key={item.key}
-              item={item}
-              selecting={selecting}
-              selected={selected.has(item.key)}
-              onOpen={() => setViewing(item)}
-              onToggle={() =>
-                setSelected((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(item.key)) next.delete(item.key);
-                  else next.add(item.key);
-                  return next;
-                })
-              }
-              onDelete={() => setConfirmKeys([item.key])}
-            />
-          ))}
-        </div>
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-caption text-muted-foreground">
+              {items.length} {items.length === 1 ? noun : `${noun}s`}
+              {kind === "photos" ? " · geotagged only" : " · operations footage"}
+            </p>
+            {items.length > 0 ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <ViewToggle value={layout} onChange={setLayout} />
+                <select
+                  value={order}
+                  onChange={(e) => setOrder(e.target.value as "newest" | "oldest")}
+                  aria-label="Sort order"
+                  className="h-10 rounded-lg border border-border bg-background px-2 text-caption text-foreground"
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                </select>
+                <Button
+                  variant={selecting ? "secondary" : "outline"}
+                  onClick={() => {
+                    setSelecting((s) => !s);
+                    setSelected(new Set());
+                  }}
+                >
+                  {selecting ? "Cancel" : "Select"}
+                </Button>
+              </div>
+            ) : null}
+          </div>
+
+          {selecting ? (
+            <div className="sticky top-2 z-10 flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setSelected(allVisibleSelected ? new Set() : new Set(visible.map((i) => i.key)))}
+                className="h-10 rounded-lg px-2 text-caption font-medium text-primary hover:bg-muted"
+              >
+                {allVisibleSelected ? "Clear all" : "Select all shown"}
+              </button>
+              <Button
+                variant="danger"
+                disabled={selected.size === 0}
+                leftIcon={<Trash2 className="size-4" aria-hidden />}
+                onClick={() => setConfirmKeys([...selected])}
+              >
+                Delete {selected.size > 0 ? selected.size : ""}
+              </Button>
+            </div>
+          ) : null}
+
+          {items.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={kind === "photos" ? ImageIcon : Video}
+                title={`No ${kind} to show`}
+                description={
+                  kind === "photos"
+                    ? "Only geotagged photos from this folder are shown."
+                    : "Only videos showing declogging, clearing or cleaning work are shown."
+                }
+              />
+            </Card>
+          ) : layout === "grid" ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {visible.map((item, i) => (
+                <MediaCard
+                  key={item.key}
+                  item={item}
+                  selecting={selecting}
+                  selected={selected.has(item.key)}
+                  onOpen={() => open(item, i)}
+                  onToggle={() => toggle(item)}
+                  onDelete={() => setConfirmKeys([item.key])}
+                />
+              ))}
+            </div>
+          ) : (
+            <ul className="grid gap-2 lg:grid-cols-2">
+              {visible.map((item, i) => (
+                <MediaRow
+                  key={item.key}
+                  item={item}
+                  selecting={selecting}
+                  selected={selected.has(item.key)}
+                  onOpen={() => open(item, i)}
+                  onToggle={() => toggle(item)}
+                  onDelete={() => setConfirmKeys([item.key])}
+                />
+              ))}
+            </ul>
+          )}
+          {items.length > visible.length ? (
+            <div className="flex flex-col items-center gap-1 pt-1">
+              <Button variant="outline" onClick={() => setShown((n) => n + PAGE_SIZE)}>
+                Show more
+              </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Showing {visible.length} of {items.length}
+              </p>
+            </div>
+          ) : null}
+        </>
       )}
-      {items.length > visible.length ? (
-        <div className="flex flex-col items-center gap-1 pt-1">
-          <Button variant="outline" onClick={() => setShown((n) => n + PAGE_SIZE)}>
-            Show more
-          </Button>
-          <p className="text-[11px] text-muted-foreground">
-            Showing {visible.length} of {items.length}
-          </p>
-        </div>
-      ) : null}
 
       <MediaViewer item={viewing} onClose={() => setViewing(null)} onDelete={(item) => setConfirmKeys([item.key])} />
       <ConfirmDialog
