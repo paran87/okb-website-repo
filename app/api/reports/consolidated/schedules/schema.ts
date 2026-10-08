@@ -10,6 +10,8 @@ export const scheduleSchema = z
     periodEnd: z.string().datetime(),
     sendAt: z.string().datetime(),
     deliveryType: z.enum(["TEXT", "PDF"]).default("TEXT"),
+    /** Weekdays it repeats on (0 Sunday … 6 Saturday); null or absent: once. */
+    repeatDays: z.array(z.number().int().min(0).max(6)).max(7).nullable().optional(),
   })
   .refine((s) => Date.parse(s.periodStart) < Date.parse(s.periodEnd), {
     message: "The monitoring period must start before it ends",

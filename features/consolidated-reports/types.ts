@@ -60,6 +60,11 @@ export interface ScheduleEntry {
   periodEnd: string;
   sendAt: string;
   deliveryType: ScheduleDeliveryType;
+  /**
+   * Weekdays it repeats on (0 Sunday … 6 Saturday, Asia/Manila, of the date of sending; all seven = daily), or
+   * null when sent once. When it is processed the backend adds the next occurrence. Absent on older backends.
+   */
+  repeatDays?: number[] | null;
   status: ScheduleStatus;
   reportId: string | null;
   report: ConsolidatedReport | null;
@@ -74,6 +79,8 @@ export interface ScheduleInput {
   periodEnd: string;
   sendAt: string;
   deliveryType: ScheduleDeliveryType;
+  /** null: once; otherwise the weekdays it repeats on (see ScheduleEntry.repeatDays). */
+  repeatDays?: number[] | null;
 }
 
 /** Longest monitoring period the backend accepts. */

@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ArrowRight, Ban, CalendarClock, FileText, MessageSquareText, Pencil, Plus, RotateCcw, Send, Trash2, TriangleAlert, X } from "lucide-react";
+import { ArrowRight, Ban, CalendarClock, Check, FileText, MessageSquareText, Pencil, Plus, Repeat, RotateCcw, Send, Trash2, TriangleAlert, X } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Field } from "@/components/ui/field";
@@ -46,8 +47,32 @@ interface Draft {
   to: string;
   send: string;
   as: ScheduleDeliveryType;
+  /** null: once; otherwise the weekdays it repeats on. */
+  repeat: number[] | null;
 }
-const EMPTY: Draft = { from: "", to: "", send: "", as: "TEXT" };
+const EMPTY: Draft = { from: "", to: "", send: "", as: "TEXT", repeat: null };
+
+/** Weekdays as the backend numbers them (0 Sunday … 6 Saturday), listed Monday first. */
+const WEEK = [
+  { day: 1, short: "Mon", label: "Monday" },
+  { day: 2, short: "Tue", label: "Tuesday" },
+  { day: 3, short: "Wed", label: "Wednesday" },
+  { day: 4, short: "Thu", label: "Thursday" },
+  { day: 5, short: "Fri", label: "Friday" },
+  { day: 6, short: "Sat", label: "Saturday" },
+  { day: 0, short: "Sun", label: "Sunday" },
+];
+const DAILY = [0, 1, 2, 3, 4, 5, 6];
+const sameDays = (a: number[], b: number[]) => a.length === b.length && a.every((d) => b.includes(d));
+
+/** "Once", "Daily", "Weekdays", "Weekends" or "Mon, Wed, Fri". */
+function repeatText(days: number[] | null | undefined): string {
+  if (!days?.length) return "Once";
+  if (days.length === 7) return "Daily";
+  if (sameDays(days, [1, 2, 3, 4, 5])) return "Weekdays (Mon–Fri)";
+  if (sameDays(days, [0, 6])) return "Weekends";
+  return WEEK.filter((w) => days.includes(w.day)).map((w) => w.short).join(", ");
+}
 
 const SEND_AS: { value: ScheduleDeliveryType; label: string; hint: string }[] = [
   { value: "TEXT", label: "Send report as text", hint: "Sent automatically to the group. No PDF goes to the bridge phone." },
@@ -67,7 +92,7 @@ function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null
   const start = manilaInputToIso(d.from);
   const end = manilaInputToIso(d.to);
   const send = manilaInputToIso(d.send);
-  if (!d.from && !d.to && !d.send) return { errors, warnings, input: null };
+  if (!d.from && !d.to && !d.send && !d.repeat) return { errors, warnings, input: null };
   if (!start || !end) errors.push("Enter both the start and the end of the monitoring period.");
   if (!send) errors.push("Enter the date of sending.");
   if (start && end && Date.parse(start) >= Date.parse(end)) {
@@ -94,7 +119,9 @@ function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null
     warnings.push("The date of sending is more than a day after the monitoring period ends.");
   }
   const input: ScheduleInput | null =
-    errors.length === 0 && start && end && send ? { periodStart: start, periodEnd: end, sendAt: send, deliveryType: d.as } : null;
+    errors.length === 0 && start && end && send
+      ? { periodStart: start, periodEnd: end, sendAt: send, deliveryType: d.as, repeatDays: d.repeat }
+      : null;
   return { errors, warnings, input };
 }
 
@@ -112,6 +139,92 @@ function Stamp({ iso }: { iso: string }) {
       <span className="whitespace-nowrap">{p.date}</span>
       <span className="whitespace-nowrap text-muted-foreground">{p.time}</span>
     </span>
+  );
+}
+
+/** "every day", "every weekday (Mon–Fri)", "every Mon, Wed and Fri". */
+function repeatPhrase(days: number[]): string {
+  if (days.length === 7) return "every day";
+  if (sameDays(days, [1, 2, 3, 4, 5])) return "every weekday (Mon–Fri)";
+  const names = WEEK.filter((w) => days.includes(w.day)).map((w) => w.short);
+  return `every ${names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0]}`;
+}
+
+/** "↻ Daily" under the date of sending of a repeating entry. */
+function RepeatTag({ days }: { days: number[] | null | undefined }) {
+  if (!days?.length) return null;
+  return (
+    <span className="mt-1 flex w-fit items-center gap-1 rounded-full bg-info/12 px-2 py-0.5 text-[11px] font-semibold text-info">
+      <Repeat className="size-3 shrink-0" aria-hidden />
+      {repeatText(days)}
+    </span>
+  );
+}
+
+/** Weekday picker for "Customize" (like a phone alarm): tap the days, then OK. */
+function RepeatDaysDialog({
+  open,
+  initial,
+  onCancel,
+  onSave,
+}: {
+  open: boolean;
+  initial: number[] | null;
+  onCancel: () => void;
+  onSave: (days: number[] | null) => void;
+}) {
+  const [days, setDays] = useState<number[]>(initial ?? []);
+  const [shownFor, setShownFor] = useState(open);
+  // Start from the current choice each time it opens.
+  if (open !== shownFor) {
+    setShownFor(open);
+    if (open) setDays(initial ?? []);
+  }
+  const toggle = (day: number) => setDays((d) => (d.includes(day) ? d.filter((x) => x !== day) : [...d, day]));
+  return (
+    <Modal
+      open={open}
+      onClose={onCancel}
+      title="Customize"
+      description="Repeat on these days, with the same monitoring period and time of sending."
+      size="sm"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button onClick={() => onSave(days.length ? [...days].sort((a, b) => a - b) : null)}>OK</Button>
+        </>
+      }
+    >
+      <ul className="-mx-1 divide-y divide-border/60" aria-label="Repeat on">
+        {WEEK.map((w) => {
+          const on = days.includes(w.day);
+          return (
+            <li key={w.day}>
+              <button
+                type="button"
+                role="checkbox"
+                aria-checked={on}
+                onClick={() => toggle(w.day)}
+                className="flex min-h-12 w-full items-center justify-between rounded-lg px-1 text-left text-body text-foreground hover:bg-muted/40"
+              >
+                {w.label}
+                <span
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-full border-2 transition-colors",
+                    on ? "border-primary bg-primary text-primary-foreground" : "border-border",
+                  )}
+                  aria-hidden
+                >
+                  {on ? <Check className="size-3.5" strokeWidth={3} /> : null}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </Modal>
   );
 }
 
@@ -389,6 +502,7 @@ export function ReportSchedule() {
   const remove = useDeleteSchedule();
   const removeMany = useDeleteSchedules();
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [customizing, setCustomizing] = useState(false);
   const [editing, setEditing] = useState<ScheduleEntry | null>(null);
   const [deleting, setDeleting] = useState<ScheduleEntry | null>(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
@@ -423,6 +537,7 @@ export function ReportSchedule() {
       to: manilaInputValue(new Date(e.periodEnd)),
       send: manilaInputValue(new Date(e.sendAt)),
       as: e.deliveryType,
+      repeat: e.repeatDays?.length ? e.repeatDays : null,
     });
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
@@ -530,6 +645,53 @@ export function ReportSchedule() {
               })}
             </div>
           </div>
+          <div className="space-y-1.5">
+            <p className="text-caption font-medium text-foreground">Repeat</p>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Repeat">
+              {(
+                [
+                  ["once", "Once", !draft.repeat],
+                  ["daily", "Daily", draft.repeat?.length === 7],
+                  ["custom", "Customize", !!draft.repeat && draft.repeat.length < 7],
+                ] as const
+              ).map(([key, label, active]) => (
+                <button
+                  key={key}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => {
+                    if (key === "once") setDraft((d) => ({ ...d, repeat: null }));
+                    else if (key === "daily") setDraft((d) => ({ ...d, repeat: DAILY }));
+                    else setCustomizing(true);
+                  }}
+                  className={cn(
+                    "min-h-11 rounded-lg border px-2 py-1.5 text-center text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    active ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-muted/40",
+                  )}
+                >
+                  {label}
+                  {key === "custom" && active ? (
+                    <span className="block truncate text-[11px] font-medium text-muted-foreground">{repeatText(draft.repeat)}</span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              {draft.repeat
+                ? `After each sending the next one is added ${repeatPhrase(draft.repeat)}, with the same monitoring period and time of sending.`
+                : "Sent once, at the date of sending."}
+            </p>
+            <RepeatDaysDialog
+              open={customizing}
+              initial={draft.repeat}
+              onCancel={() => setCustomizing(false)}
+              onSave={(days) => {
+                setDraft((d) => ({ ...d, repeat: days }));
+                setCustomizing(false);
+              }}
+            />
+          </div>
           {check.errors.length > 0 ? (
             <div role="alert" className="space-y-1 rounded-lg border border-danger/50 bg-danger/10 px-3 py-2 text-caption text-danger">
               {check.errors.map((m) => (
@@ -595,6 +757,7 @@ export function ReportSchedule() {
                     <dt className="text-muted-foreground">Date of sending</dt>
                     <dd className="text-foreground">
                       <Stamp iso={e.sendAt} />
+                      <RepeatTag days={e.repeatDays} />
                     </dd>
                     <dt className="text-muted-foreground">Send as</dt>
                     <dd>
@@ -635,6 +798,7 @@ export function ReportSchedule() {
                       </td>
                       <td className="px-3 py-3 text-foreground">
                         <Stamp iso={e.sendAt} />
+                        <RepeatTag days={e.repeatDays} />
                       </td>
                       <td className="px-3 py-3">
                         <SendAs type={e.deliveryType} />
@@ -681,7 +845,8 @@ export function ReportSchedule() {
                   ? "Its report has not been sent yet: deleting cancels it. It stays in the report history."
                   : deleting.reportId
                     ? "Its report stays in the report history."
-                    : "It will not be prepared or sent.")
+                    : "It will not be prepared or sent.") +
+                (deleting.status === "pending" && deleting.repeatDays?.length ? " This also stops it repeating." : "")
               : ""
           }
           confirmLabel="Delete"
