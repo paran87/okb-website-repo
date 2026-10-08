@@ -52,7 +52,7 @@ export const ROUTES = {
   reportsAiSummary: "/command/reports/ai-summary",
   reportsArchive: "/command/reports/archive",
   analytics: "/command/analytics",
-  users: "/command/users",
+  operations: "/command/operations",
   settings: "/command/settings",
 } as const;
 

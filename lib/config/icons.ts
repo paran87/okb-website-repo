@@ -30,6 +30,7 @@ import {
   Inbox,
   BrainCircuit,
   Archive,
+  HardHat,
   type LucideIcon,
 } from "lucide-react";
 
@@ -54,6 +55,7 @@ export const AppIcons = {
   riverBasin: Mountain,
   waterways: GitBranch,
   users: Users,
+  operations: HardHat,
   settings: Settings,
   notifications: Bell,
   success: CircleCheck,

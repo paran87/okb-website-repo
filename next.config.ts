@@ -32,7 +32,7 @@ const legacyCommandPaths = [
   "weather",
   "reports",
   "analytics",
-  "users",
+  "operations",
   "settings",
 ] as const;
 
@@ -80,11 +80,6 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
-        source: "/operations",
-        destination: "/command/pumping-stations",
-        permanent: false,
-      },
-      {
         // The Equipment tab was removed.
         source: "/equipment",
         destination: "/command",
@@ -96,8 +91,14 @@ const nextConfig: NextConfig = {
         permanent: false,
       },
       {
-        source: "/command/operations",
-        destination: "/command/pumping-stations",
+        // The Users tab was replaced by Operations.
+        source: "/command/users",
+        destination: "/command/operations",
+        permanent: false,
+      },
+      {
+        source: "/users",
+        destination: "/command/operations",
         permanent: false,
       },
       ...legacyCommandPaths.map((path) => ({

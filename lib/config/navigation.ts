@@ -159,10 +159,10 @@ export const NAV_ITEMS: readonly NavEntry[] = [
   },
   {
     type: "link",
-    label: "Users",
-    href: ROUTES.users,
-    icon: AppIcons.users,
-    permission: Permission.USER_VIEW,
+    label: "Operations",
+    href: ROUTES.operations,
+    icon: AppIcons.operations,
+    permission: Permission.REPORT_VIEW,
   },
   {
     type: "link",
