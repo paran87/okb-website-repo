@@ -150,4 +150,5 @@ export const DATE_PRESET_OPTIONS = [
   { value: "30d", label: "Last 30 days" },
   { value: "all", label: "All time" },
   { value: "custom", label: "Custom range" },
+  { value: "period", label: "Monitoring period" },
 ];

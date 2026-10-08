@@ -25,6 +25,7 @@ import { platformLabel, reportTypeLabel, statusMeta } from "@/features/reports/l
 import { floodMetrics, isClear, isFlooded, observeReport, observeWeather, provided } from "@/features/reports/lib/observations";
 import { buildSeries, clusterSeries, locationHistory, messageTime, SERIES_WINDOW_HOURS } from "@/features/reports/lib/series";
 import type { LightRow, ReportStore, ResolvedListQuery } from "@/features/reports/server/store";
+import { monitoringPeriodRange, type MonitoringPeriodId } from "@/features/reports/lib/monitoring-period";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -72,9 +73,11 @@ const listQuerySchema = z.object({
   municipality: optionalText,
   office: optionalText,
   location: optionalText,
-  datePreset: z.enum(["today", "yesterday", "7d", "30d", "all", "custom"]).optional().default("all"),
+  datePreset: z.enum(["today", "yesterday", "7d", "30d", "all", "custom", "period"]).optional().default("all"),
   from: z.string().optional(),
   to: z.string().optional(),
+  day: z.string().optional(),
+  period: z.enum(["am", "pm", "eve", "night"]).optional(),
   page: z.coerce.number().int().min(1).max(10_000).optional().default(1),
   pageSize: z.coerce.number().int().refine((n) => [25, 50, 100].includes(n), "pageSize must be 25, 50 or 100").optional().default(25),
 });
@@ -100,6 +103,13 @@ export function resolveListQuery(params: URLSearchParams, now = new Date()): Res
     case "30d":
       from = new Date(now.getTime() - 30 * DAY);
       break;
+    case "period": {
+      const range = p.day && p.period ? monitoringPeriodRange(p.day, p.period) : null;
+      if (!range) throw new ValidationError("A monitoring period needs a day (YYYY-MM-DD) and a period");
+      from = range.from;
+      to = range.to;
+      break;
+    }
     case "custom": {
       from = p.from ? manilaDayStart(p.from) : null;
       const end = p.to ? manilaDayStart(p.to) : null;
@@ -292,16 +302,25 @@ function buckets(rows: LightRow[], keyOf: (r: LightRow) => string | null, labelO
 const PROCESSED = new Set(["extracted", "needs_review", "approved", "rejected"]);
 const LIGHT_CAP = 5000;
 
-export async function getSituationSummary(store: ReportStore, hours: number): Promise<SituationSummary> {
-  return cached(`summary:${store.kind}:${hours}`, 30_000, async () => {
-    const to = new Date();
-    const from = new Date(to.getTime() - hours * HOUR);
-    const [light, floodReports, incidents] = await Promise.all([
+/** Last [hours], or one monitoring period ([from, to) of a monitoring day). */
+export type SummaryWindow = { hours: number } | { day: string; period: MonitoringPeriodId; from: Date; to: Date };
+
+export async function getSituationSummary(store: ReportStore, window: SummaryWindow): Promise<SituationSummary> {
+  const key = "hours" in window ? `${window.hours}` : `${window.day}:${window.period}`;
+  return cached(`summary:${store.kind}:${key}`, 30_000, async () => {
+    const now = new Date();
+    const to = "hours" in window ? now : window.to;
+    const from = "hours" in window ? new Date(now.getTime() - window.hours * HOUR) : window.from;
+    const ended = to.getTime() < now.getTime();
+    const [light, floodReports, incidentsSince, incidentsAfter] = await Promise.all([
       store.listLight({ from, limit: LIGHT_CAP }),
       store.listFloodReports({ from, to, limit: 300 }),
       store.countIncidentsSince(from),
+      // A period that has ended: incidents created after it are not counted.
+      ended ? store.countIncidentsSince(to) : Promise.resolve(0),
     ]);
-    const rows = light.filter((r) => r.status !== "ignored");
+    const incidents = incidentsSince === null || incidentsAfter === null ? incidentsSince : incidentsSince - incidentsAfter;
+    const rows = light.filter((r) => r.status !== "ignored" && Date.parse(r.createdAt) < to.getTime());
     const series = clusterSeries(floodReports).slice(0, 12);
     const latestAiSummaries = floodReports
       .filter((r) => r.summary)
@@ -314,7 +333,10 @@ export async function getSituationSummary(store: ReportStore, hours: number): Pr
         summary: r.summary as string,
       }));
     return {
-      window: { hours, from: from.toISOString(), to: to.toISOString() },
+      window:
+        "hours" in window
+          ? { hours: window.hours, from: from.toISOString(), to: to.toISOString() }
+          : { hours: 0, from: from.toISOString(), to: to.toISOString(), day: window.day, period: window.period },
       totals: {
         reports: rows.length,
         aiProcessed: rows.filter((r) => PROCESSED.has(r.status)).length,

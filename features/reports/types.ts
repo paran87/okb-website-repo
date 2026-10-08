@@ -375,7 +375,7 @@ export type IncidentStorageState = "ready" | "not_configured";
 
 export type ReportDataSource = "supabase" | "fixtures" | "not_configured";
 
-export type DatePreset = "today" | "yesterday" | "7d" | "30d" | "all" | "custom";
+export type DatePreset = "today" | "yesterday" | "7d" | "30d" | "all" | "custom" | "period";
 
 /** UI status filter values (backend statuses plus "confirmed" = has incident). */
 export type ReportStatusFilter = BridgeReportStatus | "confirmed" | "all";
@@ -395,6 +395,9 @@ export interface ReportListQuery {
   /** YYYY-MM-DD (Asia/Manila) — used with datePreset "custom". */
   from?: string;
   to?: string;
+  /** Monitoring day YYYY-MM-DD and one of its four periods — used with datePreset "period". */
+  day?: string;
+  period?: "am" | "pm" | "eve" | "night";
   page?: number;
   pageSize?: number;
 }
@@ -471,7 +474,8 @@ export interface CountBucket {
 }
 
 export interface SituationSummary {
-  window: { hours: number; from: string; to: string };
+  /** hours: 0 when the window is a monitoring period ([period] then names it). */
+  window: { hours: number; from: string; to: string; day?: string; period?: string };
   totals: {
     reports: number;
     aiProcessed: number;

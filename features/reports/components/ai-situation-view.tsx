@@ -11,10 +11,12 @@ import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import type { SeriesComparison } from "@/features/reports/types";
 import { parseAiSummary } from "@/features/reports/lib/ai-summary";
-import { formatDateTime, formatShortDateTime } from "@/features/reports/lib/format";
+import { formatDate, formatDateTime, formatShortDateTime } from "@/features/reports/lib/format";
 import { useSituationSummary } from "@/features/reports/hooks/use-reports";
 import { AiPanel, CountBars, MetricTile, OpsSection } from "@/features/reports/components/report-ui";
 import { LocationHistoryDrawer, SeriesChangePanel } from "@/features/reports/components/situation-change";
+import { MonitoringPeriodFilter, type MonitoringPeriodValue } from "@/features/reports/components/monitoring-period-filter";
+import { monitoringPeriodLabel } from "@/features/reports/lib/monitoring-period";
 
 const WINDOWS = [
   { hours: 6, label: "6 h" },
@@ -43,7 +45,8 @@ function SeriesCard({ s }: { s: SeriesComparison }) {
 
 export function AiSituationView() {
   const [hours, setHours] = useState(24);
-  const summary = useSituationSummary(hours);
+  const [period, setPeriod] = useState<MonitoringPeriodValue | null>(null);
+  const summary = useSituationSummary(period ?? { hours });
   const data = summary.data?.data;
 
   return (
@@ -55,11 +58,14 @@ export function AiSituationView() {
               key={w.hours}
               type="button"
               role="radio"
-              aria-checked={hours === w.hours}
-              onClick={() => setHours(w.hours)}
+              aria-checked={!period && hours === w.hours}
+              onClick={() => {
+                setHours(w.hours);
+                setPeriod(null);
+              }}
               className={cn(
                 "min-h-9 whitespace-nowrap rounded-md px-1.5 py-1 text-[12px] font-semibold transition-colors sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-caption",
-                hours === w.hours ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                !period && hours === w.hours ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
               Last {w.label}
@@ -67,7 +73,11 @@ export function AiSituationView() {
           ))}
         </div>
         <span className="flex w-full items-center justify-between gap-2 text-[10px] text-muted-foreground sm:w-auto sm:justify-start sm:text-[11px]">
-          {data ? `Window: ${formatDateTime(data.window.from)} – ${formatDateTime(data.window.to)}` : null}
+          {period
+            ? `Monitoring period: ${formatDate(`${period.day}T12:00:00+08:00`)} · ${monitoringPeriodLabel(period.period)}`
+            : data
+              ? `Window: ${formatDateTime(data.window.from)} – ${formatDateTime(data.window.to)}`
+              : null}
           <Button
             size="sm"
             variant="ghost"
@@ -78,6 +88,8 @@ export function AiSituationView() {
           </Button>
         </span>
       </div>
+
+      <MonitoringPeriodFilter value={period} onChange={setPeriod} />
 
       {summary.isPending ? (
         <div className="space-y-3" aria-busy="true">

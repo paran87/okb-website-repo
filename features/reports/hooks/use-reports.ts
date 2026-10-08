@@ -86,7 +86,7 @@ export const reportKeys = {
   list: (q: ReportListQuery) => ["reports", "list", q] as const,
   facets: ["reports", "facets"] as const,
   detail: (id: string) => ["reports", "detail", id] as const,
-  summary: (hours: number) => ["reports", "summary", hours] as const,
+  summary: (window: SummaryWindowQuery) => ["reports", "summary", window] as const,
   analytics: ["reports", "analytics"] as const,
   history: (reportId: string, key: string) => ["reports", "history", reportId, key] as const,
   incidents: (page: number) => ["reports", "incidents", page] as const,
@@ -153,10 +153,14 @@ export function useReportDetail(id: string | null) {
   });
 }
 
-export function useSituationSummary(hours: number, enabled = true) {
+/** Last N hours, or one monitoring period of a monitoring day. */
+export type SummaryWindowQuery = { hours: number } | { day: string; period: string };
+
+export function useSituationSummary(window: SummaryWindowQuery, enabled = true) {
+  const qs = "hours" in window ? `hours=${window.hours}` : `day=${window.day}&period=${window.period}`;
   return useQuery({
-    queryKey: reportKeys.summary(hours),
-    queryFn: async () => api<SituationSummary>(`/api/reports/summary?hours=${hours}`),
+    queryKey: reportKeys.summary(window),
+    queryFn: async () => api<SituationSummary>(`/api/reports/summary?${qs}`),
     enabled,
     retry,
     refetchInterval: 60_000,

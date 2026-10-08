@@ -9,6 +9,8 @@ import { Select, type SelectOption } from "@/components/ui/select";
 import { cn } from "@/utils/cn";
 import type { ReportFacets, ReportListQuery } from "@/features/reports/types";
 import { useReportFacets } from "@/features/reports/hooks/use-reports";
+import { MonitoringPeriodFilter } from "@/features/reports/components/monitoring-period-filter";
+import { currentMonitoringPeriod } from "@/features/reports/lib/monitoring-period";
 import {
   DATE_PRESET_OPTIONS,
   platformLabel,
@@ -137,13 +139,30 @@ export function ReportFilters({ value, onChange, onReset, variant }: ReportFilte
         </Button>
       </div>
 
+      {/* Always visible (also on phones): the four daily monitoring periods. */}
+      <MonitoringPeriodFilter
+        value={value.datePreset === "period" && value.day && value.period ? { day: value.day, period: value.period } : null}
+        onChange={(v) =>
+          set(
+            v
+              ? { datePreset: "period", day: v.day, period: v.period }
+              : { datePreset: variant === "incoming" ? "7d" : "all", day: undefined, period: undefined },
+          )
+        }
+      />
+
       <div className={cn("space-y-3", mobileOpen ? "block" : "hidden lg:block")}>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Select options={groupOpts} value={value.group ?? "all"} onChange={(group) => set({ group })} placeholder="All Groups" />
           <Select
             options={DATE_PRESET_OPTIONS}
             value={value.datePreset ?? "all"}
-            onChange={(datePreset) => set({ datePreset: datePreset as ReportListQuery["datePreset"] })}
+            onChange={(datePreset) => {
+              if (datePreset === "period") {
+                const now = currentMonitoringPeriod();
+                set({ datePreset: "period", day: value.day ?? now.day, period: value.period ?? now.period });
+              } else set({ datePreset: datePreset as ReportListQuery["datePreset"], day: undefined, period: undefined });
+            }}
           />
           <Select
             options={STATUS_FILTER_OPTIONS}
