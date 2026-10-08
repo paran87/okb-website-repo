@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { cn } from "@/utils/cn";
 import { formatDateTime } from "@/features/reports/lib/format";
 import { useReportAnalytics } from "@/features/reports/hooks/use-reports";
@@ -22,6 +23,8 @@ const pct = (v: number | null) => (v === null ? "—" : `${v}%`);
 export function ReportAnalyticsView() {
   const analytics = useReportAnalytics();
   const a = analytics.data?.data;
+  // Phones: shorter charts, so more of the page fits on the screen.
+  const chartHeight = useMediaQuery("(max-width: 639px)") ? 170 : 240;
 
   if (analytics.isPending) {
     return (
@@ -52,8 +55,8 @@ export function ReportAnalyticsView() {
   const hasFlood = a.floodDaily.some((d) => d.flooded + d.clear + d.unknown > 0);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+    <div className="space-y-2.5 sm:space-y-4">
+      <div className="flex items-center justify-between gap-2 text-[10px] leading-snug text-muted-foreground sm:text-[11px]">
         <span>
           Last {a.window.days} days (Philippine time) · generated {formatDateTime(a.generatedAt)} · messages classified as not
           flood reports are excluded
@@ -68,7 +71,7 @@ export function ReportAnalyticsView() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 xl:grid-cols-6">
         <MetricTile label="Received today" value={a.received.today} tone="info" />
         <MetricTile label="This week" value={a.received.week} tone="info" />
         <MetricTile label="Last 30 days" value={a.received.month} tone="info" />
@@ -82,16 +85,16 @@ export function ReportAnalyticsView() {
       </div>
       {a.truncated ? <p className="text-[11px] text-warning">Aggregates cover the most recent 5,000 reports.</p> : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-2.5 sm:gap-4 xl:grid-cols-2">
         <OpsSection title="Report frequency over time" icon={CalendarDays}>
-          <BarChart data={daily} xKey="day" series={[{ dataKey: "Reports", color: "var(--primary)" }]} height={240} showLegend={false} />
+          <BarChart data={daily} xKey="day" series={[{ dataKey: "Reports", color: "var(--primary)" }]} height={chartHeight} showLegend={false} />
         </OpsSection>
         <OpsSection title="Flood conditions over time · location observations" icon={Waves}>
           {hasFlood ? (
             <BarChart
               data={flood}
               xKey="day"
-              height={240}
+              height={chartHeight}
               series={[
                 { dataKey: "Flooded", color: "var(--warning)", stackId: "a" },
                 { dataKey: "No flooding", color: "var(--success)", stackId: "a" },
@@ -99,16 +102,16 @@ export function ReportAnalyticsView() {
               ]}
             />
           ) : (
-            <p className="py-10 text-center text-caption text-muted-foreground">No AI-processed flood reports in the last 14 days.</p>
+            <p className="py-6 text-center text-[11px] text-muted-foreground sm:py-10 sm:text-caption">No AI-processed flood reports in the last 14 days.</p>
           )}
-          <p className="mt-2 text-[11px] text-muted-foreground">
+          <p className="mt-2 text-[10px] text-muted-foreground sm:text-[11px]">
             Each bar counts monitored-location observations in that day&apos;s flood reports (last 14 days, {a.floodSampleSize} reports).
             A location reported several times in a day is counted each time.
           </p>
         </OpsSection>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
         <OpsSection title="Reports by source" icon={Radio}>
           <CountBars items={a.bySource} />
         </OpsSection>
@@ -125,7 +128,7 @@ export function ReportAnalyticsView() {
           <CountBars items={a.byStatus} />
         </OpsSection>
         <OpsSection title="Not available" icon={BarChart3}>
-          <p className="text-caption text-muted-foreground">
+          <p className="text-[11px] text-muted-foreground sm:text-caption">
             Breakdowns by severity and incident type are not shown: the OKB Bridge extraction does not assign them, and they
             are not inferred. Severity is recorded only on operator-created incidents.
           </p>

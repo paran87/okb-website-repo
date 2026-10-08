@@ -63,16 +63,16 @@ function ArchiveTable({ items, onOpen }: { items: ReportListItem[]; onOpen: (id:
             <button
               type="button"
               onClick={() => onOpen(it.id)}
-              className="w-full space-y-2 rounded-card border border-border bg-card p-3 text-left text-caption outline-none hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring"
+              className="w-full space-y-1.5 rounded-card border border-border bg-card p-2.5 text-left text-[11px] outline-none hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-ring sm:space-y-2 sm:p-3 sm:text-caption"
             >
               <div className="flex flex-wrap items-center gap-1.5">
                 <PlatformBadge platform={it.platform} />
                 <StatusBadge status={it.status} />
                 {it.incidents[0] ? <span className="font-mono text-[11px] text-success">{it.incidents[0].code}</span> : null}
               </div>
-              {it.title ? <p className="text-body font-semibold text-foreground">{it.title}</p> : null}
-              <p className="text-muted-foreground">{truncate(it.aiSummary ? parseAiSummary(it.aiSummary).overall : it.preview, 160)}</p>
-              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+              {it.title ? <p className="text-[13px] font-semibold leading-snug text-foreground sm:text-body">{it.title}</p> : null}
+              <p className="line-clamp-2 text-muted-foreground sm:line-clamp-none">{truncate(it.aiSummary ? parseAiSummary(it.aiSummary).overall : it.preview, 160)}</p>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 sm:gap-y-1">
                 <dt className="text-muted-foreground">Received</dt>
                 <dd className="text-foreground">
                   {formatDateTime(it.messageTime ?? it.receivedAt)} <span className="font-mono text-[11px] text-muted-foreground">{it.reference}</span>
@@ -186,7 +186,7 @@ export function ReportListView({ variant, access }: { variant: "incoming" | "arc
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5 sm:space-y-4">
       <ReportFilters
         variant={variant}
         value={query}
@@ -205,7 +205,7 @@ export function ReportListView({ variant, access }: { variant: "incoming" | "arc
         </button>
       ) : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 text-caption text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground sm:text-caption">
         <span>
           {result ? (
             <>
@@ -261,7 +261,7 @@ export function ReportListView({ variant, access }: { variant: "incoming" | "arc
           )}
         </Card>
       ) : (
-        <div className={cn("space-y-3 transition-opacity", list.isPlaceholderData && "opacity-60")}>
+        <div className={cn("space-y-2 transition-opacity sm:space-y-3", list.isPlaceholderData && "opacity-60")}>
           {variant === "incoming" ? (
             result.items.map((item) => (
               <ReportCard

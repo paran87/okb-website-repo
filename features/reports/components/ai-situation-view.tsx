@@ -47,9 +47,9 @@ export function AiSituationView() {
   const data = summary.data?.data;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="radiogroup" aria-label="Time window" className="flex rounded-lg border border-border bg-muted/40 p-0.5">
+    <div className="space-y-2.5 sm:space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <div role="radiogroup" aria-label="Time window" className="grid w-full grid-cols-4 rounded-lg border border-border bg-muted/40 p-0.5 sm:flex sm:w-auto">
           {WINDOWS.map((w) => (
             <button
               key={w.hours}
@@ -58,7 +58,7 @@ export function AiSituationView() {
               aria-checked={hours === w.hours}
               onClick={() => setHours(w.hours)}
               className={cn(
-                "rounded-md px-3 py-1.5 text-caption font-semibold transition-colors",
+                "min-h-9 whitespace-nowrap rounded-md px-1.5 py-1 text-[12px] font-semibold transition-colors sm:min-h-0 sm:px-3 sm:py-1.5 sm:text-caption",
                 hours === w.hours ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -66,7 +66,7 @@ export function AiSituationView() {
             </button>
           ))}
         </div>
-        <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <span className="flex w-full items-center justify-between gap-2 text-[10px] text-muted-foreground sm:w-auto sm:justify-start sm:text-[11px]">
           {data ? `Window: ${formatDateTime(data.window.from)} – ${formatDateTime(data.window.to)}` : null}
           <Button
             size="sm"
@@ -95,7 +95,7 @@ export function AiSituationView() {
       ) : data ? (
         <>
           <OpsSection title="Current report status" icon={Activity}>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 xl:grid-cols-6">
               <MetricTile label="Total reports" value={data.totals.reports} tone="info" />
               <MetricTile label="AI processed" value={data.totals.aiProcessed} tone="info" />
               <MetricTile label="Pending review" value={data.totals.pendingReview} tone={data.totals.pendingReview ? "warning" : "muted"} />
@@ -119,7 +119,7 @@ export function AiSituationView() {
               {data.aiSituation.text}
             </AiPanel>
           ) : (
-            <section className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] p-4">
+            <section className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] p-3 sm:p-4">
               <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
                 <Bot className="size-4" aria-hidden />
                 Current AI situation
@@ -132,8 +132,8 @@ export function AiSituationView() {
             </section>
           )}
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <div className="min-w-0 space-y-4">
+          <div className="grid gap-2.5 sm:gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <div className="min-w-0 space-y-2.5 sm:space-y-4">
               <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
                 <MapPinned className="size-4 text-primary" aria-hidden />
                 Flood monitoring changes ({data.series.length} series)
@@ -141,19 +141,19 @@ export function AiSituationView() {
               {data.series.length ? (
                 data.series.map((s) => <SeriesCard key={`${s.seriesKey}-${s.current.id}`} s={s} />)
               ) : (
-                <Card className="p-6 text-center text-body text-muted-foreground">
+                <Card className="p-4 text-center text-[13px] text-muted-foreground sm:p-6 sm:text-body">
                   No AI-processed flood monitoring reports in this window.
                 </Card>
               )}
             </div>
 
-            <div className="min-w-0 space-y-4">
+            <div className="min-w-0 space-y-2.5 sm:space-y-4">
               <OpsSection title="Latest AI report summaries" icon={Bot}>
                 {data.latestAiSummaries.length ? (
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 sm:space-y-3">
                     {data.latestAiSummaries.map((s) => (
                       <li key={s.id} className="border-l-2 border-primary/50 pl-3">
-                        <p className="text-body text-foreground">{parseAiSummary(s.summary).overall}</p>
+                        <p className="text-[12px] leading-snug text-foreground sm:text-body">{parseAiSummary(s.summary).overall}</p>
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
                           AI summary · {s.groupName ?? "Unnamed group"} · {formatShortDateTime(s.messageTime)} ·{" "}
                           <Link href={`${ROUTES.reports}/${s.id}`} className="font-mono text-primary hover:underline">

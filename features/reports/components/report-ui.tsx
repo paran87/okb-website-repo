@@ -80,7 +80,7 @@ export function AiPanel({
   return (
     <section
       className={cn(
-        "relative overflow-hidden rounded-xl border border-primary/30 bg-primary/[0.06] p-4 pl-5",
+        "relative overflow-hidden rounded-xl border border-primary/30 bg-primary/[0.06] p-3 pl-4 sm:p-4 sm:pl-5",
         "before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-primary/70",
         className,
       )}
@@ -91,8 +91,8 @@ export function AiPanel({
         </span>
         <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary">{title}</h3>
       </header>
-      <div className="text-body text-foreground">{children}</div>
-      <footer className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+      <div className="text-[13px] text-foreground sm:text-body">{children}</div>
+      <footer className="mt-2 flex sm:mt-3 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
         <Info className="size-3" aria-hidden />
         <span>AI-assisted — not verified. Check against the source report.</span>
         {footer}
@@ -119,14 +119,14 @@ export function OpsSection({
 }) {
   return (
     <section className={cn("rounded-card border border-border bg-card", className)}>
-      <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
-        <h3 className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+      <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2 sm:px-4 sm:py-2.5">
+        <h3 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground sm:text-[11px]">
           {Icon ? <Icon className="size-3.5 text-primary" aria-hidden /> : null}
           {title}
         </h3>
         {actions}
       </header>
-      <div className={cn("p-4", bodyClassName)}>{children}</div>
+      <div className={cn("p-3 sm:p-4", bodyClassName)}>{children}</div>
     </section>
   );
 }
@@ -177,10 +177,10 @@ export function MetricTile({
     muted: "text-muted-foreground",
   }[tone];
   return (
-    <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
-      <p className={cn("mt-0.5 font-mono text-xl font-semibold leading-tight", toneClass)}>{value}</p>
-      {sub ? <p className="mt-0.5 text-[11px] text-muted-foreground">{sub}</p> : null}
+    <div className="min-w-0 rounded-lg border border-border bg-muted/30 px-2 py-1.5 sm:px-3 sm:py-2.5">
+      <p className="text-[9px] font-semibold uppercase leading-tight tracking-[0.08em] text-muted-foreground sm:text-[10px] sm:tracking-[0.12em]">{label}</p>
+      <p className={cn("mt-0.5 font-mono text-base font-semibold leading-tight sm:text-xl", toneClass)}>{value}</p>
+      {sub ? <p className="mt-0.5 hidden text-[11px] text-muted-foreground sm:block">{sub}</p> : null}
     </div>
   );
 }
@@ -198,16 +198,16 @@ export function CountBars({
   if (!items.length) return <p className="text-caption text-muted-foreground">{emptyText}</p>;
   const max = maxProp ?? Math.max(...items.map((i) => i.count), 1);
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-1.5 sm:space-y-2">
       {items.map((item) => (
         <li key={item.key}>
-          <div className="flex items-baseline justify-between gap-3 text-caption">
+          <div className="flex items-baseline justify-between gap-3 text-[11px] sm:text-caption">
             <span className={cn("truncate", item.key === "__missing__" ? "italic text-muted-foreground" : "text-foreground")}>
               {item.label}
             </span>
             <span className="font-mono text-foreground">{item.count}</span>
           </div>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="mt-0.5 h-1 overflow-hidden rounded-full bg-muted sm:mt-1 sm:h-1.5">
             <div
               className={cn("h-full rounded-full", item.key === "__missing__" ? "bg-muted-foreground/40" : "bg-primary/80")}
               style={{ width: `${Math.max(2, (item.count / max) * 100)}%` }}

@@ -93,8 +93,8 @@ export function ReportFilters({ value, onChange, onReset, variant }: ReportFilte
   ].filter((v) => v && v !== "all").length;
 
   return (
-    <div className="space-y-3 rounded-card border border-border bg-card p-3">
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+    <div className="space-y-2 rounded-card border border-border bg-card p-2 sm:space-y-3 sm:p-3">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 lg:flex-nowrap">
         <DebouncedSearch
           value={value.q ?? ""}
           onCommit={(q) => set({ q })}
@@ -103,7 +103,7 @@ export function ReportFilters({ value, onChange, onReset, variant }: ReportFilte
               ? "Search history: text, sender, group, office, location, RPT-…"
               : "Search reports: text, sender, group, location, report ID"
           }
-          className="flex-1"
+          className="w-full lg:w-auto lg:flex-1"
         />
         <div role="radiogroup" aria-label="Source" className="flex shrink-0 rounded-lg border border-border bg-muted/40 p-0.5">
           {SOURCES.map((s) => {
@@ -116,7 +116,7 @@ export function ReportFilters({ value, onChange, onReset, variant }: ReportFilte
                 aria-checked={active}
                 onClick={() => set({ platform: s.value, group: "all" })}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-caption font-semibold transition-colors",
+                  "rounded-md px-2.5 py-1 text-[12px] font-semibold transition-colors sm:px-3 sm:py-1.5 sm:text-caption",
                   active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -128,7 +128,7 @@ export function ReportFilters({ value, onChange, onReset, variant }: ReportFilte
         <Button
           variant="outline"
           size="sm"
-          className="lg:hidden"
+          className="ml-auto lg:hidden"
           onClick={() => setMobileOpen((v) => !v)}
           leftIcon={<SlidersHorizontal className="size-4" aria-hidden />}
           aria-expanded={mobileOpen}

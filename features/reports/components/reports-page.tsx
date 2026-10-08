@@ -17,8 +17,9 @@ export function ReportsPage({
   children: (access: ReportsAccessState) => ReactNode;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       <PageHeader
+        compact
         title={title}
         description={description}
         breadcrumbs={[
