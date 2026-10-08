@@ -81,8 +81,6 @@ export default function ContactPage() {
             </p>
             <Link
               href={PUBLIC_ROUTES.commandCenter}
-              target="_blank"
-              rel="noopener noreferrer"
               className="okb-public-btn okb-public-btn-primary mt-6 self-start"
             >
               Go to OKB Command Center

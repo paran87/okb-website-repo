@@ -31,6 +31,5 @@ export const PUBLIC_NAV_ITEMS: readonly PublicNavItem[] = [
     href: PUBLIC_ROUTES.commandCenter,
     description: "Live GIS monitoring for authorized personnel",
     emphasis: true,
-    openInNewTab: true,
   },
 ] as const;

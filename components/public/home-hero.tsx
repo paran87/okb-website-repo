@@ -56,8 +56,6 @@ export function HomeHero() {
             </Link>
             <Link
               href={PUBLIC_ROUTES.commandCenter}
-              target="_blank"
-              rel="noopener noreferrer"
               className="okb-public-btn okb-public-btn-accent"
             >
               <Radio className="size-4" aria-hidden />

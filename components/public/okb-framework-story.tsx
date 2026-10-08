@@ -215,8 +215,6 @@ function FrameworkHeroCopy() {
         </a>
         <Link
           href={PUBLIC_ROUTES.commandCenter}
-          target="_blank"
-          rel="noopener noreferrer"
           className="okb-fw-btn okb-fw-btn--ghost"
         >
           <span>Open Command Center</span>

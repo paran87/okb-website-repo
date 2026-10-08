@@ -154,8 +154,6 @@ export function SiteFooter() {
 
             <Link
               href={PUBLIC_ROUTES.commandCenter}
-              target="_blank"
-              rel="noopener noreferrer"
               className="okb-foot-cta"
             >
               <span className="okb-foot-cta__dot" aria-hidden />

@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CloudSun, Menu } from "lucide-react";
+import Link from "next/link";
+import { CloudSun, Globe, Menu } from "lucide-react";
 import { useWeatherSummary } from "@/features/weather/hooks/use-weather-summary";
 import { AppLogo } from "@/components/layout/app-logo";
 import { ConnectionIndicator } from "@/components/layout/connection-indicator";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { AppIcons } from "@/lib/config/icons";
-import { APP } from "@/lib/constants";
+import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 import { useUiStore } from "@/lib/store/ui.store";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 
@@ -91,13 +92,21 @@ export function Header() {
         <AppLogo showText={false} className="hidden sm:flex md:hidden" />
 
         <div className="min-w-0 md:hidden">
-          <h1 className="truncate text-subheading font-semibold text-foreground">
+          <h1 className="truncate text-[15px] font-semibold leading-tight text-foreground sm:text-subheading">
             {APP.name}
           </h1>
         </div>
       </div>
 
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+        {/* The public OKB website, in the same tab. */}
+        <Link
+          href={PUBLIC_ROUTES.home}
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:px-3 sm:text-sm"
+        >
+          <Globe className="size-4 shrink-0 text-primary" aria-hidden />
+          OKB Website
+        </Link>
         <WeatherPlaceholder />
         <LiveClock />
 
