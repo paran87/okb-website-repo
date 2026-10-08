@@ -5,6 +5,7 @@ import { DARK_ON_NEW_VISIT_SCRIPT } from "@/providers/theme-config";
 import { APP } from "@/lib/constants";
 import "@/styles/globals.css";
 import "@/styles/okb-folio.css";
+import "@/styles/okb-home.css";
 
 const okbDisplay = Barlow_Condensed({
   subsets: ["latin"],

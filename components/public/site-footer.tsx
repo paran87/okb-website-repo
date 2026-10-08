@@ -19,6 +19,7 @@ import { SiteFooterAccent } from "@/components/public/site-footer-accent";
 import {
   FRAMEWORK_META,
   OPERATIONAL_CYCLE,
+  PROGRAM_FOOTPRINT,
   RIDGE_TO_REEF_ZONES,
 } from "@/lib/config/okb-framework";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
@@ -28,10 +29,8 @@ const PROGRAM_EMAIL = "okb@dpwh.gov.ph";
 const PROGRAM_HOTLINE = "(02) 165-02";
 const PROGRAM_ADDRESS = "Bonifacio Drive, Port Area, Manila";
 
-/** Official launch cities listed on the program portfolio. */
-const LAUNCH_CITIES = 5;
-/** Soft-launch areas listed on the program portfolio. */
-const SOFT_LAUNCH_AREAS = 11;
+const LAUNCH_CITIES = PROGRAM_FOOTPRINT.launchCities;
+const SOFT_LAUNCH_AREAS = PROGRAM_FOOTPRINT.softLaunchAreas;
 
 const EXPLORE_LINKS: readonly {
   href: string;
