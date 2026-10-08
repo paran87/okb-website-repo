@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 import { ChevronDown } from "lucide-react";
-import { NavigationItem } from "@/components/layout/navigation-item";
+import { LiveDot, NavigationItem } from "@/components/layout/navigation-item";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 
@@ -13,6 +13,7 @@ export interface NavigationChild {
   href: string;
   icon: LucideIcon;
   badge?: string | number;
+  live?: boolean;
 }
 
 export interface NavigationGroupProps {
@@ -46,6 +47,7 @@ export function NavigationGroup({
   onNavigate,
 }: NavigationGroupProps) {
   const childActive = children.some((child) => isChildActive(child.href));
+  const hasLive = children.some((child) => child.live);
 
   if (collapsed) {
     return (
@@ -60,7 +62,10 @@ export function NavigationGroup({
             : "text-sidebar-foreground hover:bg-muted hover:text-foreground",
         )}
       >
-        <Icon className="size-[18px]" aria-hidden />
+        <span className="relative">
+          <Icon className="size-[18px]" aria-hidden />
+          {hasLive ? <LiveDot className="absolute -right-1 -top-1" /> : null}
+        </span>
       </Link>
     );
   }
@@ -144,6 +149,7 @@ export function NavigationGroup({
                   href={child.href}
                   icon={child.icon}
                   badge={child.badge}
+                  live={child.live}
                   nested
                   active={isChildActive(child.href)}
                   onNavigate={onNavigate}

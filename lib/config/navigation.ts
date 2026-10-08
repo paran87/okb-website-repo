@@ -16,6 +16,8 @@ interface NavItemBase {
 export interface NavLinkItem extends NavItemBase {
   type: "link";
   href: string;
+  /** Shows live data: a pulsing LIVE tag with the current flooded-location count. */
+  live?: boolean;
 }
 
 /** Expandable navigation group with nested children. */
@@ -58,6 +60,14 @@ export const NAV_ITEMS: readonly NavEntry[] = [
       },
       {
         type: "link",
+        label: "Incidents",
+        href: ROUTES.incidents,
+        icon: AppIcons.incidents,
+        permission: Permission.INCIDENT_VIEW,
+        live: true,
+      },
+      {
+        type: "link",
         label: "NCR Critical Areas",
         href: ROUTES.floodProne,
         icon: AppIcons.floodProne,
@@ -69,13 +79,6 @@ export const NAV_ITEMS: readonly NavEntry[] = [
         href: ROUTES.drainages,
         icon: AppIcons.drainages,
         permission: Permission.MAP_VIEW,
-      },
-      {
-        type: "link",
-        label: "Incidents",
-        href: ROUTES.incidents,
-        icon: AppIcons.incidents,
-        permission: Permission.INCIDENT_VIEW,
       },
       {
         type: "link",

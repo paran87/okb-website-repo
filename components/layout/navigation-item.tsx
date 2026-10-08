@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useFloodMap } from "@/features/incident/hooks/use-flood-map";
 import { cn } from "@/utils/cn";
 
 export interface NavigationItemProps {
@@ -13,7 +14,35 @@ export interface NavigationItemProps {
   collapsed?: boolean;
   badge?: string | number;
   nested?: boolean;
+  /** Live data behind the link: a pulsing LIVE tag with the current flooded-location count. */
+  live?: boolean;
   onNavigate?: () => void;
+}
+
+/** A pulsing red dot (steady when the user prefers reduced motion). */
+export function LiveDot({ className }: { className?: string }) {
+  return (
+    <span className={cn("relative flex size-2", className)} aria-hidden>
+      <span className="absolute inline-flex size-full rounded-full bg-danger opacity-75 motion-safe:animate-ping" />
+      <span className="relative inline-flex size-2 rounded-full bg-danger" />
+    </span>
+  );
+}
+
+/** "● LIVE · 4": the flooded locations on the map right now (same data and refresh as the Incidents map). */
+function LiveTag() {
+  const flood = useFloodMap();
+  const count = flood.data?.locations.length;
+  return (
+    <span
+      className="ml-auto inline-flex h-5 shrink-0 items-center gap-1.5 rounded-full border border-danger/40 bg-danger/12 px-1.5 text-[10px] font-bold uppercase tracking-wider text-danger"
+      title={count === undefined ? "Live flood monitoring" : `Live: ${count} flooded location${count === 1 ? "" : "s"} now`}
+    >
+      <LiveDot />
+      Live
+      {count ? <span className="tabular-nums">· {count}</span> : null}
+    </span>
+  );
 }
 
 /** Reusable navigation link with icon, badge, and active state. */
@@ -25,13 +54,14 @@ export function NavigationItem({
   collapsed = false,
   badge,
   nested = false,
+  live = false,
   onNavigate,
 }: NavigationItemProps) {
   return (
     <Link
       href={href}
       onClick={onNavigate}
-      title={label}
+      title={live ? `${label} · live flood monitoring` : label}
       aria-current={active ? "page" : undefined}
       className={cn(
         "group flex items-center gap-3 rounded-lg px-3 py-2 text-body transition-all duration-150",
@@ -42,17 +72,21 @@ export function NavigationItem({
         nested && !collapsed && "ml-2 pl-8",
       )}
     >
-      <Icon
-        className={cn(
-          "size-[18px] shrink-0 transition-transform duration-150",
-          active && "scale-105",
-        )}
-        aria-hidden
-      />
+      <span className="relative shrink-0">
+        <Icon
+          className={cn(
+            "size-[18px] transition-transform duration-150",
+            active && "scale-105",
+          )}
+          aria-hidden
+        />
+        {live && collapsed ? <LiveDot className="absolute -right-1 -top-1" /> : null}
+      </span>
       {!collapsed ? (
         <>
           <span className="min-w-0 flex-1 truncate">{label}</span>
-          {badge !== undefined ? (
+          {live ? <LiveTag /> : null}
+          {!live && badge !== undefined ? (
             <Badge
               variant="default"
               className="ml-auto h-5 min-w-5 justify-center px-1.5 text-label"
