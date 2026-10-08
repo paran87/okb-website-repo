@@ -1,6 +1,6 @@
 "use client";
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CreateIncidentInput,
   IncidentRecord,
@@ -84,6 +84,7 @@ export const reportKeys = {
   all: ["reports"] as const,
   access: (area: "reports" | "settings") => ["reports", "access", area] as const,
   list: (q: ReportListQuery) => ["reports", "list", q] as const,
+  infiniteList: (q: Omit<ReportListQuery, "page">) => ["reports", "list", q, "infinite"] as const,
   facets: ["reports", "facets"] as const,
   detail: (id: string) => ["reports", "detail", id] as const,
   summary: (window: SummaryWindowQuery) => ["reports", "summary", window] as const,
@@ -119,10 +120,14 @@ export function useRevokeAccess() {
   });
 }
 
-export function useReportList(query: ReportListQuery, enabled = true) {
-  return useQuery({
-    queryKey: reportKeys.list(query),
-    queryFn: async () => api<ReportListResult>(`/api/reports?${toParams({ ...query })}`),
+/** Report list loaded page by page as the operator scrolls (infinite scroll). */
+export function useInfiniteReportList(query: Omit<ReportListQuery, "page">, enabled = true) {
+  return useInfiniteQuery({
+    queryKey: reportKeys.infiniteList(query),
+    queryFn: async ({ pageParam }) =>
+      (await api<ReportListResult>(`/api/reports?${toParams({ ...query, page: pageParam })}`)).data,
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page < last.totalPages ? last.page + 1 : undefined),
     placeholderData: keepPreviousData,
     enabled,
     retry,

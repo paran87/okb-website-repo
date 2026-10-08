@@ -1,20 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { BellRing, Inbox, RefreshCw, SearchX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { BellRing, Inbox, Loader2, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Drawer } from "@/components/ui/drawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Pagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
-import type { ReportListItem, ReportListQuery } from "@/features/reports/types";
+import type { ReportListItem, ReportListQuery, ReportListResult } from "@/features/reports/types";
 import { parseAiSummary } from "@/features/reports/lib/ai-summary";
 import { formatDateTime, truncate } from "@/features/reports/lib/format";
 import { reportTypeLabel } from "@/features/reports/lib/labels";
-import { useNewReportsCount, useReportList } from "@/features/reports/hooks/use-reports";
+import { reportKeys, useInfiniteReportList, useNewReportsCount } from "@/features/reports/hooks/use-reports";
 import { CreateIncidentModal } from "@/features/reports/components/create-incident-modal";
 import { ReportCard } from "@/features/reports/components/report-card";
 import { ReportDetailView } from "@/features/reports/components/report-detail";
@@ -22,8 +22,8 @@ import { ReportFilters } from "@/features/reports/components/report-filters";
 import { PlatformBadge, StatusBadge } from "@/features/reports/components/report-ui";
 
 const DEFAULTS: Record<"incoming" | "archive", ReportListQuery> = {
-  incoming: { datePreset: "7d", status: "all", page: 1, pageSize: 25 },
-  archive: { datePreset: "all", status: "all", page: 1, pageSize: 50 },
+  incoming: { datePreset: "7d", status: "all", pageSize: 25 },
+  archive: { datePreset: "all", status: "all", pageSize: 50 },
 };
 
 function hasFilters(q: ReportListQuery, variant: "incoming" | "archive"): boolean {
@@ -166,8 +166,16 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
   const [query, setQuery] = useState<ReportListQuery>(DEFAULTS[variant]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [incidentFor, setIncidentFor] = useState<string | null>(null);
-  const list = useReportList(query);
+  // Pages are loaded by scrolling, so the filters' page number is not part of the list query.
+  const listQuery = useMemo(() => {
+    const { page, ...rest } = query;
+    void page;
+    return rest;
+  }, [query]);
+  const list = useInfiniteReportList(listQuery);
+  const queryClient = useQueryClient();
   const [since, setSince] = useState<string | null>(null);
+  const sentinel = useRef<HTMLDivElement>(null);
 
   // Reference time for the "new reports" notice = when the current list was loaded.
   const loadedAt = list.dataUpdatedAt ? new Date(list.dataUpdatedAt).toISOString() : null;
@@ -175,14 +183,38 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
   const updates = useNewReportsCount(since, variant === "incoming");
   const newCount = updates.data?.count ?? 0;
 
-  const result = list.data?.data;
+  const pages = list.data?.pages;
+  const result = pages?.[0];
+  // Reports arriving while scrolling shift later pages; drop any repeats.
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    return (pages ?? []).flatMap((p) => p.items).filter((it) => !seen.has(it.id) && Boolean(seen.add(it.id)));
+  }, [pages]);
   const filtered = hasFilters(query, variant);
-  const pageSizes = useMemo(() => [25, 50, 100], []);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
+
+  // Load the next page when the end of the list comes into view.
+  useEffect(() => {
+    const el = sentinel.current;
+    if (!el || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting) && !isFetchingNextPage) void fetchNextPage();
+      },
+      { rootMargin: "600px 0px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, items.length]);
 
   const showNew = () => {
     setSince(new Date().toISOString());
-    setQuery((q) => ({ ...q, page: 1 }));
+    // Back to the newest page only (refetching every scrolled page would be slow), then refresh it.
+    queryClient.setQueryData<InfiniteData<ReportListResult, number>>(reportKeys.infiniteList(listQuery), (d) =>
+      d ? { pages: d.pages.slice(0, 1), pageParams: d.pageParams.slice(0, 1) } : d,
+    );
     void list.refetch();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -216,39 +248,15 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
             " "
           )}
         </span>
-        <span className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5">
-            Per page
-            <select
-              value={query.pageSize}
-              onChange={(e) => setQuery((q) => ({ ...q, pageSize: Number(e.target.value), page: 1 }))}
-              className="h-8 rounded-md border border-border bg-card px-2 text-caption text-foreground"
-            >
-              {pageSizes.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => list.refetch()}
-            leftIcon={<RefreshCw className={cn("size-3.5", list.isFetching && "animate-spin")} aria-hidden />}
-          >
-            Refresh
-          </Button>
-        </span>
       </div>
 
       {list.isPending ? (
         <ListSkeleton rows={variant === "incoming" ? 3 : 1} />
-      ) : list.isError ? (
+      ) : list.isError && !list.data ? (
         <Card>
           <ErrorState title="Unable to retrieve reports" description={list.error.message} onRetry={() => list.refetch()} />
         </Card>
-      ) : !result || result.items.length === 0 ? (
+      ) : !result || items.length === 0 ? (
         <Card>
           {filtered ? (
             <EmptyState icon={SearchX} title="No reports match your current filters." description="Adjust the search, date range or filters." />
@@ -263,11 +271,11 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
       ) : (
         <div className={cn("space-y-2 transition-opacity sm:space-y-3", list.isPlaceholderData && "opacity-60")}>
           {variant === "incoming" ? (
-            result.items.map((item) => (
+            items.map((item) => (
               <ReportCard key={item.id} item={item} onOpen={setSelectedId} highlighted={item.id === selectedId} />
             ))
           ) : (
-            <ArchiveTable items={result.items} onOpen={setSelectedId} />
+            <ArchiveTable items={items} onOpen={setSelectedId} />
           )}
           {result.incidentStorage === "not_configured" ? (
             <p className="text-[11px] text-muted-foreground">
@@ -275,18 +283,23 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
               <code>supabase/migrations/20261005000000_okb_command_incidents.sql</code> to the OKB Bridge Supabase project.
             </p>
           ) : null}
-          {result.totalPages > 1 ? (
-            <Pagination
-              page={result.page}
-              totalPages={result.totalPages}
-              pageSize={result.pageSize}
-              totalItems={result.total}
-              onPageChange={(page) => {
-                setQuery((q) => ({ ...q, page }));
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-            />
-          ) : null}
+          <div ref={sentinel} className="flex min-h-12 flex-col items-center justify-center gap-1 py-2 text-[11px] text-muted-foreground sm:text-caption">
+            {isFetchingNextPage ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Loading more reports…
+              </span>
+            ) : hasNextPage ? (
+              <Button size="sm" variant="ghost" onClick={() => void fetchNextPage()}>
+                Load more
+              </Button>
+            ) : items.length > 10 ? (
+              <span>All {items.length.toLocaleString()} reports shown.</span>
+            ) : null}
+            {list.isFetchNextPageError ? (
+              <span className="text-danger">Could not load more reports. Scroll or tap Load more to try again.</span>
+            ) : null}
+          </div>
         </div>
       )}
 
