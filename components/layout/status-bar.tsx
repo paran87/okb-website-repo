@@ -31,8 +31,9 @@ export function StatusBar({ className }: StatusBarProps) {
     <footer
       role="contentinfo"
       aria-label="System status"
+      // text-xs (12 px, as the service labels' text-caption): tailwind-merge would drop a custom text-* size here.
       className={cn(
-        "flex h-8 shrink-0 items-center gap-3 overflow-x-auto border-t border-border bg-sidebar px-3 text-label text-muted-foreground",
+        "flex h-8 shrink-0 items-center gap-3 overflow-x-auto border-t border-border bg-sidebar px-3 text-xs text-muted-foreground",
         className,
       )}
     >
@@ -52,14 +53,13 @@ export function StatusBar({ className }: StatusBarProps) {
         ))}
       </div>
 
-      <div className="ml-auto flex shrink-0 items-center gap-3 whitespace-nowrap">
-        <span className="hidden xl:inline">
-          Connection:{" "}
-          <span className="text-success">Good</span>
+      {/* Phones: first, so it shows without scrolling the bar; the services follow. */}
+      <div className="order-first flex shrink-0 items-center gap-3 whitespace-nowrap sm:order-none sm:ml-auto">
+        <span>
+          Connection: <span className="text-success">Good</span>
         </span>
-        <span className="hidden md:inline">
-          Operator:{" "}
-          <span className="text-foreground">JENER L. BRAGA</span>
+        <span>
+          Operator: <span className="text-foreground">JENER L. BRAGA</span>
         </span>
       </div>
     </footer>
