@@ -85,6 +85,7 @@ export function MapEngine({
   showSearch = true,
   showLegend = true,
   showBasemapSwitcher = false,
+  showStatus = true,
   lockBasemap = false,
   showNorthInControls = true,
   resetViewPreset,
@@ -103,6 +104,7 @@ export function MapEngine({
         showSearch,
         showLegend,
         showBasemapSwitcher,
+        showStatus,
         lockBasemap,
         showNorthInControls,
         resetViewPreset,
@@ -130,7 +132,7 @@ function MapEngineOverlays() {
   return (
     <MapOverlay>
       <div className="pointer-events-none absolute left-3 top-3 flex items-start gap-2">
-        <MapStatusIndicator />
+        {options.showStatus === false ? null : <MapStatusIndicator />}
         {options.showSearch ? <GisMapSearch /> : null}
       </div>
 
@@ -154,7 +156,8 @@ function MapEngineOverlays() {
       ) : null}
 
       {options.showBasemapSwitcher ? (
-        <div className="pointer-events-auto absolute bottom-3 left-3 z-20">
+        // Phones: above the attribution, which spans the bottom there.
+        <div className="pointer-events-auto absolute bottom-14 left-2 z-20 sm:bottom-3 sm:left-3">
           <MapBasemapSwitcher styles={options.basemapStyles} />
         </div>
       ) : null}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Globe2, Layers, Map, Mountain, Satellite } from "lucide-react";
 import {
   getBasemapLabel,
@@ -27,8 +28,11 @@ export function MapBasemapSwitcher({
   className,
 }: MapBasemapSwitcherProps) {
   const { styleId, setStyle, isReady } = useMap();
+  // Phones: collapsed to one button (the current map type) so the map stays clear.
+  const [open, setOpen] = useState(false);
 
   if (!isReady) return null;
+  const CurrentIcon = STYLE_ICONS[styleId] ?? Map;
 
   return (
     <div
@@ -39,7 +43,19 @@ export function MapBasemapSwitcher({
       role="group"
       aria-label="Map type"
     >
-      <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-label={`Map type: ${getBasemapLabel(styleId)}`}
+        className={cn(
+          "flex size-10 items-center justify-center rounded-md text-foreground hover:bg-muted/70 sm:hidden",
+          open && "bg-muted/70",
+        )}
+      >
+        <CurrentIcon className="size-5" aria-hidden />
+      </button>
+      <div className="hidden items-center gap-1.5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:flex">
         <Globe2 className="size-3" aria-hidden />
         Philippines
       </div>
@@ -50,9 +66,13 @@ export function MapBasemapSwitcher({
           <button
             key={id}
             type="button"
-            onClick={() => setStyle(id)}
+            onClick={() => {
+              setStyle(id);
+              setOpen(false);
+            }}
             className={cn(
-              "flex items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors",
+              "min-h-10 items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition-colors sm:flex sm:min-h-0",
+              open ? "flex" : "hidden",
               active
                 ? "bg-primary text-primary-foreground"
                 : "text-foreground hover:bg-muted/70",

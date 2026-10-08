@@ -83,6 +83,8 @@ export interface MapEngineOptions {
   showSearch?: boolean;
   showLegend?: boolean;
   showBasemapSwitcher?: boolean;
+  /** "GIS Online" chip at the top left (default true); off where the page shows its own status there. */
+  showStatus?: boolean;
   /** When set, theme changes do not override the basemap style. */
   lockBasemap?: boolean;
   /** View preset used by the reset-view control. */

@@ -36,7 +36,7 @@ export function LayerToggleCard({
       aria-pressed={visible}
       aria-label={`${visible ? "Hide" : "Show"} ${label} on map`}
       className={cn(
-        "glass pointer-events-auto group relative flex min-w-[148px] flex-1 items-center gap-2.5 overflow-hidden rounded-xl border border-border/60 px-3 py-2 text-left shadow-panel transition-all hover:-translate-y-px hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "glass pointer-events-auto group relative flex min-h-11 flex-1 items-center gap-2 overflow-hidden rounded-lg border border-border/60 py-1 pl-2.5 pr-1.5 text-left shadow-panel transition-all hover:-translate-y-px hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-w-[148px] sm:gap-2.5 sm:rounded-xl sm:px-3 sm:py-2",
         !visible && "opacity-60",
         className,
       )}
@@ -47,19 +47,20 @@ export function LayerToggleCard({
         aria-hidden
       />
       <span
-        className="flex size-9 shrink-0 items-center justify-center rounded-lg"
+        className="hidden size-9 shrink-0 items-center justify-center rounded-lg sm:flex"
         style={{ backgroundColor: `${color}26`, color }}
       >
         <Icon className="size-[18px]" aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
+        <span className="flex items-center gap-1 truncate text-[10px] font-medium uppercase leading-tight tracking-wide text-muted-foreground sm:block sm:text-[11px]">
+          <Icon className="size-3 shrink-0 sm:hidden" style={{ color }} aria-hidden />
+          <span className="truncate">{label}</span>
         </span>
-        <span className="block font-mono text-xl font-semibold leading-tight text-foreground">
+        <span className="block truncate font-mono text-base font-semibold leading-tight text-foreground sm:text-xl">
           {value}
         </span>
-        <span className="block truncate text-[11px] text-muted-foreground">
+        <span className="hidden truncate text-[11px] text-muted-foreground sm:block">
           {caption}
         </span>
         {split !== undefined ? (
@@ -75,7 +76,7 @@ export function LayerToggleCard({
         ) : null}
       </span>
       {visible ? (
-        <Eye className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        <Eye className="hidden size-3.5 shrink-0 text-muted-foreground sm:block" aria-hidden />
       ) : (
         <EyeOff className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       )}

@@ -111,8 +111,8 @@ export function FloodOverview() {
   const status = !ready
     ? { text: "Loading reports…", className: "bg-muted text-muted-foreground" }
     : placed.length
-      ? { text: `${placed.length} flooded`, className: "bg-danger/15 text-danger" }
-      : { text: "Normal", className: "bg-success/15 text-success" };
+      ? { text: `Live · ${placed.length} flooded`, className: "bg-danger/15 text-danger" }
+      : { text: "Live · Normal", className: "bg-success/15 text-success" };
 
   const insights = {
     placed,
@@ -138,26 +138,28 @@ export function FloodOverview() {
         showLayerPanel={false}
         showLegend={false}
         showBasemapSwitcher
+        showStatus={false}
         className="absolute inset-0 h-full w-full"
       />
       <FloodwatchAreasOverlay />
       <WeatherRadarOverlay enabled={radarOn} onEnabledChange={setRadarOn} hideButton />
       <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} visible={floodVisible} />
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col gap-2 p-2 sm:p-3 lg:max-w-[600px]">
-        <header className="glass pointer-events-auto flex items-center justify-between gap-3 rounded-xl border border-border/60 px-3 py-2 shadow-panel">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex flex-col gap-1.5 p-2 sm:gap-2 sm:p-3 lg:max-w-[600px]">
+        <header className="glass pointer-events-auto flex items-center justify-between gap-2 rounded-xl border border-border/60 py-1 pl-2 pr-1 shadow-panel sm:gap-3 sm:px-3 sm:py-2">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+            <span className="hidden size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary sm:flex">
               <Waves className="size-4" aria-hidden />
             </span>
             <div className="min-w-0">
               <h1 className="truncate text-sm font-semibold leading-tight text-foreground">Flood Monitoring</h1>
               <p className="truncate text-[11px] leading-tight text-muted-foreground">
-                National Capital Region · current situation
+                <span className="sm:hidden">NCR · now</span>
+                <span className="hidden sm:inline">National Capital Region · current situation</span>
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <span
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
@@ -179,7 +181,7 @@ export function FloodOverview() {
           </div>
         </header>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
           <LayerToggleCard
             label="Flooded roads"
             value={ready ? placed.length.toLocaleString() : "—"}
@@ -214,23 +216,27 @@ export function FloodOverview() {
             icon={Layers}
             visible={isVisible(AREA_LAYER)}
             onToggle={() => toggle(AREA_LAYER)}
-            className="col-span-2 min-w-0 sm:col-span-1"
+            className="min-w-0"
           />
         </div>
 
         <ul
           aria-label="Map legend"
-          className="glass pointer-events-none flex flex-wrap gap-x-3 gap-y-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-foreground shadow-panel"
+          className="glass pointer-events-none flex flex-wrap gap-x-2.5 gap-y-1 self-start rounded-lg px-2 py-1 text-[10px] font-medium text-foreground shadow-panel sm:gap-x-3 sm:self-auto sm:py-1.5"
         >
           {SEVERITY_ORDER.map((s) => (
-            <li key={s} className="flex items-center gap-1.5">
-              <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: FLOOD_SEVERITY[s].color }} aria-hidden />
-              {s === "unmeasured" ? "Depth not given" : `${FLOOD_SEVERITY[s].label} · ${FLOOD_SEVERITY[s].range.split(" (")[0]}`}
+            <li key={s} className="flex items-center gap-1">
+              <span className="h-1.5 w-3 rounded-full sm:w-4" style={{ backgroundColor: FLOOD_SEVERITY[s].color }} aria-hidden />
+              {/* Phones: the short name; the depth ranges from sm up. */}
+              <span className="sm:hidden">{s === "unmeasured" ? "No depth" : FLOOD_SEVERITY[s].label}</span>
+              <span className="hidden sm:inline">
+                {s === "unmeasured" ? "Depth not given" : `${FLOOD_SEVERITY[s].label} · ${FLOOD_SEVERITY[s].range.split(" (")[0]}`}
+              </span>
             </li>
           ))}
-          <li className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-[#7c3aed]" aria-hidden />
-            Flood-prone area
+          <li className="flex items-center gap-1">
+            <span className="size-2 rounded-full bg-[#7c3aed] sm:size-2.5" aria-hidden />
+            Flood-prone
           </li>
         </ul>
 

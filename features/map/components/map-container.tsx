@@ -114,6 +114,13 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
           }
 
           if (cancelled) return;
+          // Phones: credits start collapsed behind their "i" button, so they do not cover the map controls.
+          if (map.getContainer().offsetWidth <= 640) {
+            map
+              .getContainer()
+              .querySelector(".maplibregl-ctrl-attrib.maplibregl-compact")
+              ?.classList.remove("maplibregl-compact-show");
+          }
           setScaleLabel(mapService.getScaleLabel(map));
           map.resize();
           isReadyRef.current = true;
