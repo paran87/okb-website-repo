@@ -264,11 +264,11 @@ export function OkbFrameworkStory() {
       <section className="okb-fw-hero relative isolate overflow-hidden">
         <FrameworkHeroBackdrop />
 
-        <div className="okb-public-shell okb-fw-hero-copy relative z-10 pt-12 sm:pt-16">
+        <div className="okb-public-shell okb-fw-hero-copy relative z-10 pt-5 sm:pt-8">
           <FrameworkHeroCopy />
         </div>
 
-        <div className="okb-public-shell relative z-10 mt-8 pb-0 sm:mt-10">
+        <div className="okb-public-shell relative z-10 mt-5 pb-0 sm:mt-8">
           <div className="okb-fw-scene-frame overflow-hidden rounded-t-sm border border-white/20 bg-white/10 shadow-lg">
             <FrameworkRidgeToReef />
           </div>
