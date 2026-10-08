@@ -7,6 +7,8 @@ interface PageHeaderProps {
   description?: string;
   breadcrumbs?: BreadcrumbItem[];
   actions?: ReactNode;
+  /** Phones: no breadcrumb or description, actions beside the title (more of the page shows at once). */
+  compact?: boolean;
   className?: string;
 }
 
@@ -16,18 +18,26 @@ export function PageHeader({
   description,
   breadcrumbs,
   actions,
+  compact = false,
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn(compact ? "space-y-1 sm:space-y-3" : "space-y-3", className)}>
       {breadcrumbs && breadcrumbs.length > 0 ? (
-        <Breadcrumb items={breadcrumbs} />
+        <div className={compact ? "hidden sm:block" : undefined}>
+          <Breadcrumb items={breadcrumbs} />
+        </div>
       ) : null}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
+      <div
+        className={cn(
+          "flex gap-3 sm:flex-row sm:items-center sm:justify-between",
+          compact ? "flex-row items-center justify-between" : "flex-col",
+        )}
+      >
+        <div className="min-w-0 space-y-1">
           <h1 className="text-heading text-foreground">{title}</h1>
           {description ? (
-            <p className="text-body text-muted-foreground">{description}</p>
+            <p className={cn("text-body text-muted-foreground", compact && "hidden sm:block")}>{description}</p>
           ) : null}
         </div>
         {actions ? (

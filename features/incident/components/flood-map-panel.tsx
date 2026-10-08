@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
-import { formatDateTime, formatMeters, formatRelative } from "@/features/reports/lib/format";
+import { formatDateTime, formatMeters, formatRelative, formatShortDateTime } from "@/features/reports/lib/format";
 import { positionsOf, useFloodSituation, type PlacedLocation } from "@/features/incident/hooks/use-flood-situation";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import type { FloodMapData } from "@/features/incident/types";
@@ -42,6 +42,7 @@ const FloodMap = dynamic(() => import("@/features/incident/components/flood-map"
 });
 
 function WeatherStatus({ data }: { data: FloodMapData }) {
+  const [ruleOpen, setRuleOpen] = useState(false);
   const w = data.weather;
   const meta: Record<FloodMapData["weather"]["state"], { icon: typeof CloudSun; variant: BadgeVariant; title: string }> = {
     normal: { icon: CloudSun, variant: "success", title: "Weather normal" },
@@ -53,14 +54,23 @@ function WeatherStatus({ data }: { data: FloodMapData }) {
   return (
     <div className="flex items-start gap-2 text-caption">
       <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-      <div className="min-w-0 space-y-0.5">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Badge variant={m.variant} dot>
             {m.title}
           </Badge>
-          <span className="break-words text-muted-foreground">{w.label}</span>
+          <span className="min-w-0 break-words text-muted-foreground">{w.label}</span>
+          <button
+            type="button"
+            onClick={() => setRuleOpen((o) => !o)}
+            aria-expanded={ruleOpen}
+            className="-my-2 ml-auto inline-flex min-h-10 items-center gap-1 px-1 font-semibold text-primary sm:hidden"
+          >
+            <HelpCircle className="size-3.5" aria-hidden />
+            {ruleOpen ? "Hide" : "How it clears"}
+          </button>
         </div>
-        <p className="text-muted-foreground">
+        <p className={cn("text-muted-foreground sm:block", ruleOpen ? "block" : "hidden")}>
           {w.state === "normal"
             ? `Back to normal: a flooded road is cleared ${data.rule.normalHours} h after its latest report.`
             : `Flooded roads stay highlighted ${data.rule.wetHours} h after their latest report${w.state === "unknown" ? " until live weather is back" : " while it rains or a warning is in effect"}.`}{" "}
@@ -149,15 +159,15 @@ function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: 
   const depth = formatMeters(l.heightM);
   const onMap = p.resolved.basis !== "none";
   return (
-    <li data-flood-key={l.key}>
+    <li
+      data-flood-key={l.key}
+      className={cn("overflow-hidden rounded-lg border text-caption", selected ? "border-primary bg-primary/5" : "border-border")}
+    >
       <button
         type="button"
         onClick={onSelect}
         disabled={!onMap}
-        className={cn(
-          "w-full rounded-lg border p-3 text-left text-caption transition-colors disabled:cursor-default",
-          selected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/40",
-        )}
+        className="w-full px-2.5 pb-1 pt-2 text-left transition-colors hover:bg-muted/40 disabled:cursor-default"
       >
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: meta.color }}>
@@ -170,22 +180,29 @@ function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: 
               {depth}
             </span>
           ) : null}
-          <span className="text-muted-foreground">{formatRelative(l.reportedAt)}</span>
+          <span className="text-muted-foreground" title={formatDateTime(l.reportedAt)}>
+            {formatRelative(l.reportedAt)}
+          </span>
         </div>
-        <p className="mt-1 break-words text-body font-medium text-foreground">{l.label}</p>
+        <p className="mt-0.5 break-words text-body font-medium leading-snug text-foreground">{l.label}</p>
         {l.roadStatus ? <p className="break-words text-muted-foreground">Road: {l.roadStatus}</p> : null}
-        <p className={cn("mt-1 flex items-start gap-1 break-words", onMap ? "text-muted-foreground" : "text-warning")}>
+        <p className={cn("flex items-start gap-1 break-words", onMap ? "text-muted-foreground" : "text-warning")}>
           <MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden />
           {placeText(p)}
         </p>
-        <p className="mt-1 text-muted-foreground">
-          {l.reference} · {formatDateTime(l.reportedAt)}
-          {l.deo ? ` · ${l.deo}` : ""} · clears {formatDateTime(l.clearsAt)} unless reported again
-        </p>
       </button>
-      <Link href={`${ROUTES.reports}/${l.reportId}`} className="mt-1 inline-flex min-h-10 items-center px-1 text-caption font-semibold text-primary hover:underline">
-        View report
-      </Link>
+      <div className="flex items-center gap-2 pl-2.5">
+        <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground" title="Cleared at this time unless it is reported again">
+          {l.reference}
+          {l.deo ? ` · ${l.deo}` : ""} · <span className="whitespace-nowrap">clears {formatShortDateTime(l.clearsAt)}</span>
+        </p>
+        <Link
+          href={`${ROUTES.reports}/${l.reportId}`}
+          className="inline-flex min-h-10 shrink-0 items-center px-2.5 font-semibold text-primary hover:underline"
+        >
+          View report
+        </Link>
+      </div>
     </li>
   );
 }
@@ -242,25 +259,56 @@ export function FloodMapPanel() {
   const offMap = placed.filter((p) => p.resolved.basis === "none").length;
 
   return (
-    <Card className={cn("space-y-4 p-4", floating && "pb-[calc(min(55dvh,440px)+3rem)]")}>
+    <Card className={cn("space-y-2.5 p-3 sm:space-y-4 sm:p-4", floating && "pb-[calc(min(55dvh,440px)+3rem)]")}>
       <div className="flex items-start gap-2">
         <Waves className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
         <div className="min-w-0">
           <h2 className="text-subheading text-foreground">Flood map</h2>
-          <p className="text-caption text-muted-foreground">Flooded roads from the received reports, colored by reported flood depth.</p>
+          <p className="hidden text-caption text-muted-foreground sm:block">
+            Flooded roads from the received reports, colored by reported flood depth.
+          </p>
         </div>
       </div>
 
       {query.isPending ? (
-        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-6 w-full" />
       ) : query.isError ? (
         <ErrorState title="Flood map unavailable" description={query.error.message} onRetry={() => query.refetch()} />
       ) : data ? (
         <WeatherStatus data={data} />
       ) : null}
 
+      {data ? (
+        <div className="flex flex-wrap items-center gap-1.5 text-caption">
+          <span className="font-semibold text-foreground">
+            {placed.length ? `${placed.length} flooded location${placed.length === 1 ? "" : "s"}` : "No flooded locations"}
+          </span>
+          {counts.map((c) => (
+            <span
+              key={c.s}
+              className="inline-flex items-center gap-1 rounded-full border border-border px-2 py-0.5 font-semibold"
+              style={{ color: FLOOD_SEVERITY[c.s].color }}
+            >
+              <span className="size-2 rounded-full" style={{ backgroundColor: FLOOD_SEVERITY[c.s].color }} aria-hidden />
+              {c.n} {FLOOD_SEVERITY[c.s].label.toLowerCase()}
+            </span>
+          ))}
+          {offMap ? <span className="text-warning">{offMap} not on the map</span> : null}
+          {data.clearedByReport || data.clearedByWeather ? (
+            <span className="text-muted-foreground">
+              {[
+                data.clearedByReport ? `${data.clearedByReport} cleared by a later report` : null,
+                data.clearedByWeather ? `${data.clearedByWeather} back to normal` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* The same map element floats (no second map: the map store is per page); its place stays reserved. */}
-      <div className="relative h-[340px] sm:h-[420px] lg:h-[480px]">
+      <div className="relative h-[250px] sm:h-[420px] lg:h-[480px]">
         {floating ? (
           <button
             type="button"
@@ -330,20 +378,10 @@ export function FloodMapPanel() {
         </div>
       </div>
 
-      <MapKey className="sm:hidden" />
 
-      {data ? (
-        <p className="text-caption text-muted-foreground">
-          {placed.length
-            ? `${placed.length} flooded location${placed.length === 1 ? "" : "s"}: ${counts.map((c) => `${c.n} ${FLOOD_SEVERITY[c.s].label.toLowerCase()}`).join(", ")}${offMap ? ` · ${offMap} not on the map` : ""}`
-            : "No flooded location in the received reports."}
-          {data.clearedByReport ? ` · ${data.clearedByReport} cleared by a later report` : ""}
-          {data.clearedByWeather ? ` · ${data.clearedByWeather} back to normal (weather)` : ""}
-        </p>
-      ) : null}
 
       {placed.length ? (
-        <ul className="grid gap-2 @container sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid gap-1.5 @container sm:grid-cols-2 sm:gap-2 xl:grid-cols-3">
           {placed.map((p) => (
             <LocationCard key={p.location.key} p={p} selected={selected === p.location.key} onSelect={() => select(p.location.key)} />
           ))}
@@ -352,6 +390,7 @@ export function FloodMapPanel() {
 
       <div className="space-y-2">
         <h3 className="text-caption font-semibold uppercase tracking-wide text-muted-foreground">Severity</h3>
+        <MapKey className="sm:hidden" />
         <SeverityTable />
       </div>
     </Card>

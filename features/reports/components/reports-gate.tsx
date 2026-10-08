@@ -118,7 +118,7 @@ export function ReportsContextBar({ state }: { state: ReportsAccessState }) {
           DEVELOPMENT FIXTURES — example reports for local development only. This is not operational data.
         </div>
       ) : null}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground sm:gap-x-4 sm:gap-y-1">
         <span className="inline-flex items-center gap-1.5">
           <DatabaseZap className="size-3.5 text-primary" aria-hidden />
           Source: {state.dataSource === "supabase" ? "OKB Bridge · Supabase (live)" : "Development fixtures"}
@@ -129,7 +129,7 @@ export function ReportsContextBar({ state }: { state: ReportsAccessState }) {
         </span>
         {!state.reviewEnabled ? <span className="text-warning">Review actions unavailable (bridge API not configured)</span> : null}
         {state.accessGateDisabled ? (
-          <span>Open view · no access key needed here</span>
+          <span className="hidden sm:inline">Open view · no access key needed here</span>
         ) : null}
         {state.dataSource === "supabase" && !state.accessGateDisabled ? (
           <button
@@ -180,7 +180,7 @@ export function ReportsGate({
   if (state.dataSource === "not_configured") return <NotConnected />;
   if (!state.granted) return <AccessForm state={state} />;
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <ReportsContextBar state={state} />
       {children(state)}
     </div>
