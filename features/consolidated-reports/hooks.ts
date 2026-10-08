@@ -181,3 +181,44 @@ export function useDeleteReport() {
     onSuccess: () => invalidateReports(qc),
   });
 }
+
+export interface BulkDeleteResult {
+  deleted: string[];
+  failed: { id: string; message: string }[];
+}
+
+/** Deletes one by one through the single DELETE route (a few at a time); a failure does not stop the others. */
+async function deleteEach(ids: string[], url: (id: string) => string): Promise<BulkDeleteResult> {
+  const result: BulkDeleteResult = { deleted: [], failed: [] };
+  const BATCH = 3;
+  for (let i = 0; i < ids.length; i += BATCH) {
+    await Promise.all(
+      ids.slice(i, i + BATCH).map(async (id) => {
+        try {
+          await api<{ id: string; deleted: boolean }>(url(id), { method: "DELETE" });
+          result.deleted.push(id);
+        } catch (e) {
+          result.failed.push({ id, message: e instanceof Error ? e.message : "The request failed." });
+        }
+      }),
+    );
+  }
+  return result;
+}
+
+export function useDeleteSchedules() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) =>
+      deleteEach(ids, (id) => `/api/reports/consolidated/schedules/${encodeURIComponent(id)}`),
+    onSettled: () => invalidateReports(qc),
+  });
+}
+
+export function useDeleteReports() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => deleteEach(ids, (id) => `/api/reports/consolidated/${encodeURIComponent(id)}`),
+    onSettled: () => invalidateReports(qc),
+  });
+}

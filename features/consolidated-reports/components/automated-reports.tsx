@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ReportsGate } from "@/features/reports/components/reports-gate";
+import { BulkBar, SelectBox, useSelection } from "@/features/consolidated-reports/components/bulk-select";
 import { ReportSchedule } from "@/features/consolidated-reports/components/report-schedule";
 import { cn } from "@/utils/cn";
 import {
@@ -21,6 +22,7 @@ import {
   useConsolidatedSettings,
   useCancelText,
   useDeleteReport,
+  useDeleteReports,
   useResend,
   useRetryText,
   useSaveConsolidatedSettings,
@@ -570,7 +572,11 @@ function PdfStatus({ r }: { r: ConsolidatedReport }) {
 }
 
 function History() {
+  const toast = useToast();
   const history = useConsolidatedHistory();
+  const removeMany = useDeleteReports();
+  const selection = useSelection((history.data ?? []).map((r) => r.id));
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   if (history.isPending) return <Skeleton className="h-32 w-full" />;
   if (history.isError) {
     return (
@@ -589,17 +595,55 @@ function History() {
   }
 
   const count = (r: ConsolidatedReport) => `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}`;
+  const picked = items.filter((r) => selection.isSelected(r.id));
+  const pickedOpen = picked.filter((r) => r.textDelivery?.status === "scheduled" || r.textDelivery?.status === "sending").length;
+  const selectLabel = (r: ConsolidatedReport) => {
+    const p = periodText(r.periodStart, r.periodEnd);
+    return `Select ${r.kind === "test" ? "TEST REPORT " : "report "}${p.date}, ${p.time}`;
+  };
+  const deleteSelected = () => {
+    const ids = picked.map((r) => r.id);
+    if (ids.length === 0) return setBulkDeleting(false);
+    removeMany.mutate(ids, {
+      onSuccess: ({ deleted, failed }) => {
+        setBulkDeleting(false);
+        if (failed.length === 0) {
+          toast.success(`${deleted.length} report${deleted.length === 1 ? "" : "s"} deleted`);
+        } else {
+          toast.error({ title: `${failed.length} of ${ids.length} not deleted`, description: failed[0]?.message });
+        }
+      },
+    });
+  };
 
   return (
-    <div className="@container space-y-3">
+    <div className="@container space-y-2">
+      <BulkBar total={items.length} selection={selection} onDelete={() => setBulkDeleting(true)} />
+      <ConfirmDialog
+        open={bulkDeleting}
+        title={`Delete ${picked.length} report${picked.length === 1 ? "" : "s"}?`}
+        description={
+          "The reports, their PDFs and their delivery history are removed. " +
+          (pickedOpen > 0 ? `${pickedOpen} with a text not sent yet: the bridge phone will not send it. ` : "") +
+          "Messages already sent stay in the WhatsApp group. This cannot be undone."
+        }
+        confirmLabel={`Delete ${picked.length}`}
+        cancelLabel="Keep them"
+        confirmVariant="danger"
+        isLoading={removeMany.isPending}
+        onCancel={() => setBulkDeleting(false)}
+        onConfirm={deleteSelected}
+      />
       <ul className="space-y-2 @3xl:hidden">
         {items.map((r) => {
           const p = periodText(r.periodStart, r.periodEnd);
+          const on = selection.isSelected(r.id);
           return (
-            <li key={r.id} className="space-y-2.5 rounded-card border border-border bg-card p-3 text-caption">
-              <div className="flex flex-wrap items-center gap-1.5">
+            <li key={r.id} className={cn("space-y-2.5 rounded-card border bg-card p-3 text-caption", on ? "border-primary bg-primary/5" : "border-border")}>
+              <div className="-mr-1.5 -mt-1.5 flex items-center gap-1.5">
                 <span className="text-body font-semibold text-foreground">{p.date}</span>
                 {r.kind === "test" ? <Badge variant="warning">TEST</Badge> : null}
+                <SelectBox id={r.id} label={selectLabel(r)} selection={selection} className="ml-auto" />
               </div>
               <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5">
                 <dt className="text-muted-foreground">Reporting period</dt>
@@ -634,6 +678,9 @@ function History() {
           <table className="w-full text-left text-caption">
             <thead className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
               <tr>
+                <th className="w-12 py-1 pl-2">
+                  <span className="sr-only">Select</span>
+                </th>
                 <th className="px-4 py-2.5 font-semibold">Date</th>
                 <th className="px-3 py-2.5 font-semibold">Reporting period</th>
                 <th className="px-3 py-2.5 font-semibold">Reports</th>
@@ -647,7 +694,10 @@ function History() {
               {items.map((r) => {
                 const p = periodText(r.periodStart, r.periodEnd);
                 return (
-                  <tr key={r.id} className="align-top">
+                  <tr key={r.id} className={cn("align-top", selection.isSelected(r.id) ? "bg-primary/5" : "")}>
+                    <td className="py-0.5 pl-2">
+                      <SelectBox id={r.id} label={selectLabel(r)} selection={selection} />
+                    </td>
                     <td className="px-4 py-2.5 text-foreground">
                       {p.date}
                       {r.kind === "test" ? <Badge variant="warning" className="ml-1.5">TEST</Badge> : null}

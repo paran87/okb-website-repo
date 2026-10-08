@@ -18,11 +18,13 @@ import {
   useConsolidatedSettings,
   useCreateSchedule,
   useDeleteSchedule,
+  useDeleteSchedules,
   useResend,
   useRetryText,
   useSchedules,
   useUpdateSchedule,
 } from "@/features/consolidated-reports/hooks";
+import { BulkBar, SelectBox, useSelection } from "@/features/consolidated-reports/components/bulk-select";
 import { dateTimeParts, formatShort, manilaInputToIso, manilaInputValue } from "@/features/consolidated-reports/format";
 import {
   MAX_SCHEDULE_PERIOD_DAYS,
@@ -385,15 +387,18 @@ export function ReportSchedule() {
   const create = useCreateSchedule();
   const update = useUpdateSchedule();
   const remove = useDeleteSchedule();
+  const removeMany = useDeleteSchedules();
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [editing, setEditing] = useState<ScheduleEntry | null>(null);
   const [deleting, setDeleting] = useState<ScheduleEntry | null>(null);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
   // Newest added first (then the later date of sending): a new entry appears at the top.
   const entries = [...(schedules.data ?? [])].sort(
     (a, b) => b.createdAt.localeCompare(a.createdAt) || b.sendAt.localeCompare(a.sendAt),
   );
+  const selection = useSelection(entries.map((e) => e.id));
   const enabled = settings.data?.enabled ?? true;
   const lastCheckAt = settings.data?.lastDeviceCheckAt ?? null;
   const lastPollAt = settings.data?.lastDevicePollAt;
@@ -434,7 +439,30 @@ export function ReportSchedule() {
     else create.mutate(check.input, done);
   };
 
-  const deletingOpen = deleting?.report?.textDelivery && ["scheduled", "sending"].includes(deleting.report.textDelivery.status);
+  const isOpen = (e: ScheduleEntry) => !!e.report?.textDelivery && ["scheduled", "sending"].includes(e.report.textDelivery.status);
+  const deletingOpen = deleting ? isOpen(deleting) : false;
+  const picked = entries.filter((e) => selection.isSelected(e.id));
+  const pickedPending = picked.filter((e) => e.status === "pending").length;
+  const pickedOpen = picked.filter(isOpen).length;
+  const pickedWithReport = picked.filter((e) => e.reportId).length;
+  const deleteSelected = () => {
+    const ids = picked.map((e) => e.id);
+    if (ids.length === 0) return setBulkDeleting(false);
+    removeMany.mutate(ids, {
+      onSuccess: ({ deleted, failed }) => {
+        if (editing && deleted.includes(editing.id)) reset();
+        setBulkDeleting(false);
+        if (failed.length === 0) {
+          toast.success(`${deleted.length} removed from the schedule`);
+        } else {
+          toast.error({
+            title: `${failed.length} of ${ids.length} not deleted`,
+            description: failed[0]?.message,
+          });
+        }
+      },
+    });
+  };
 
   return (
     <Card>
@@ -547,10 +575,19 @@ export function ReportSchedule() {
           <EmptyState icon={CalendarClock} title="No scheduled reports" description="Add a monitoring period and a date of sending above." />
         ) : (
           <div className="@container">
-            <ul className="space-y-2 @xl:hidden" aria-label="Scheduled reports">
+            <BulkBar total={entries.length} selection={selection} onDelete={() => setBulkDeleting(true)} />
+            <ul className="mt-2 space-y-2 @xl:hidden" aria-label="Scheduled reports">
               {entries.map((e) => (
-                <li key={e.id} className={cn("space-y-2.5 rounded-card border bg-card p-3 text-caption", editing?.id === e.id ? "border-primary" : "border-border")}>
-                  <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2">
+                <li
+                  key={e.id}
+                  className={cn(
+                    "relative space-y-2.5 rounded-card border bg-card p-3 text-caption",
+                    editing?.id === e.id || selection.isSelected(e.id) ? "border-primary" : "border-border",
+                    selection.isSelected(e.id) ? "bg-primary/5" : "",
+                  )}
+                >
+                  <SelectBox id={e.id} label={`Select ${periodLabel(e.periodStart, e.periodEnd)}`} selection={selection} className="absolute right-1 top-1" />
+                  <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2 pr-9">
                     <dt className="text-muted-foreground">Monitoring period</dt>
                     <dd className="text-foreground">
                       <Period e={e} />
@@ -573,10 +610,13 @@ export function ReportSchedule() {
               ))}
             </ul>
 
-            <div className="hidden overflow-hidden rounded-card border border-border @xl:block">
+            <div className="mt-2 hidden overflow-hidden rounded-card border border-border @xl:block">
               <table className="w-full text-left text-caption">
                 <thead className="border-b border-border bg-muted/30 text-[10px] uppercase tracking-wider text-muted-foreground">
                   <tr>
+                    <th className="w-12 py-1 pl-2">
+                      <span className="sr-only">Select</span>
+                    </th>
                     <th className="px-4 py-2.5 font-semibold">Monitoring period</th>
                     <th className="px-3 py-2.5 font-semibold">Date of sending</th>
                     <th className="px-3 py-2.5 font-semibold">Send as</th>
@@ -586,7 +626,10 @@ export function ReportSchedule() {
                 </thead>
                 <tbody className="divide-y divide-border/60">
                   {entries.map((e) => (
-                    <tr key={e.id} className={cn("align-top", editing?.id === e.id ? "bg-primary/5" : "")}>
+                    <tr key={e.id} className={cn("align-top", editing?.id === e.id || selection.isSelected(e.id) ? "bg-primary/5" : "")}>
+                      <td className="py-1.5 pl-2">
+                        <SelectBox id={e.id} label={`Select ${periodLabel(e.periodStart, e.periodEnd)}`} selection={selection} />
+                      </td>
                       <td className="px-4 py-3 text-foreground">
                         <Period e={e} />
                       </td>
@@ -609,6 +652,24 @@ export function ReportSchedule() {
             </div>
           </div>
         )}
+
+        <ConfirmDialog
+          open={bulkDeleting}
+          title={`Delete ${picked.length} scheduled report${picked.length === 1 ? "" : "s"}?`}
+          description={[
+            pickedPending > 0 ? `${pickedPending} not prepared yet will not be prepared or sent.` : "",
+            pickedOpen > 0 ? `${pickedOpen} not sent yet will be cancelled.` : "",
+            pickedWithReport > 0 ? "Prepared reports stay in the report history." : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          confirmLabel={`Delete ${picked.length}`}
+          cancelLabel="Keep them"
+          confirmVariant="danger"
+          isLoading={removeMany.isPending}
+          onCancel={() => setBulkDeleting(false)}
+          onConfirm={deleteSelected}
+        />
 
         <ConfirmDialog
           open={deleting !== null}
