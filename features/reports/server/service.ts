@@ -158,13 +158,17 @@ export function resolveListQuery(params: URLSearchParams, now = new Date()): Res
 // Report list & detail
 // ---------------------------------------------------------------------------
 
-function preview(record: BridgeReportRecord): string {
+function messageText(record: BridgeReportRecord): string {
   const text = record.source.messageText;
   if (!text || !text.trim()) {
     const media = record.source.mediaIndicator?.mediaType;
     return media && media !== "TEXT" ? `[${media.toLowerCase()} message without text]` : "[no message text]";
   }
-  return truncate(text, 240);
+  return text.trim();
+}
+
+function preview(record: BridgeReportRecord): string {
+  return truncate(messageText(record), 240);
 }
 
 function toListItem(record: BridgeReportRecord, incidents: IncidentSummary[]): ReportListItem {
@@ -181,6 +185,7 @@ function toListItem(record: BridgeReportRecord, incidents: IncidentSummary[]): R
     status: record.status,
     reportType: record.reportType,
     preview: preview(record),
+    message: messageText(record),
     aiSummary: record.summary,
     title: provided(ex?.reportTitle),
     office: provided(ex?.administrative.districtEngineeringOffice) ?? provided(ex?.preparedBy.office),

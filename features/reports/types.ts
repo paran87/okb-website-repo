@@ -413,6 +413,8 @@ export interface ReportListItem {
   status: BridgeReportStatus;
   reportType: BridgeReportType | null;
   preview: string;
+  /** Whole message text (line breaks kept), for the expandable card. */
+  message: string;
   aiSummary: string | null;
   title: string | null;
   office: string | null;

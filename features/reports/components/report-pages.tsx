@@ -11,7 +11,7 @@ import { ReportsPage } from "@/features/reports/components/reports-page";
 export function IncomingReportsPage() {
   return (
     <ReportsPage title="Incoming Reports" description="Monitor and review operational reports received from WhatsApp and Viber.">
-      {(access) => <ReportListView variant="incoming" access={access} />}
+      {() => <ReportListView variant="incoming" />}
     </ReportsPage>
   );
 }
@@ -22,7 +22,7 @@ export function ReportsArchivePage() {
       title="Reports Archive"
       description="Search the full history of WhatsApp and Viber reports by text, source, office, location and date."
     >
-      {(access) => <ReportListView variant="archive" access={access} />}
+      {() => <ReportListView variant="archive" />}
     </ReportsPage>
   );
 }

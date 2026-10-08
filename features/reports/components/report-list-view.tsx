@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/utils/cn";
-import type { ReportListItem, ReportListQuery, ReportsAccessState } from "@/features/reports/types";
+import type { ReportListItem, ReportListQuery } from "@/features/reports/types";
 import { parseAiSummary } from "@/features/reports/lib/ai-summary";
 import { formatDateTime, truncate } from "@/features/reports/lib/format";
 import { reportTypeLabel } from "@/features/reports/lib/labels";
@@ -162,7 +162,7 @@ function ArchiveTable({ items, onOpen }: { items: ReportListItem[]; onOpen: (id:
   );
 }
 
-export function ReportListView({ variant, access }: { variant: "incoming" | "archive"; access: ReportsAccessState }) {
+export function ReportListView({ variant }: { variant: "incoming" | "archive" }) {
   const [query, setQuery] = useState<ReportListQuery>(DEFAULTS[variant]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [incidentFor, setIncidentFor] = useState<string | null>(null);
@@ -264,15 +264,7 @@ export function ReportListView({ variant, access }: { variant: "incoming" | "arc
         <div className={cn("space-y-2 transition-opacity sm:space-y-3", list.isPlaceholderData && "opacity-60")}>
           {variant === "incoming" ? (
             result.items.map((item) => (
-              <ReportCard
-                key={item.id}
-                item={item}
-                reviewEnabled={access.reviewEnabled}
-                incidentsEnabled={result.incidentStorage === "ready"}
-                onOpen={setSelectedId}
-                onCreateIncident={setIncidentFor}
-                highlighted={item.id === selectedId}
-              />
+              <ReportCard key={item.id} item={item} onOpen={setSelectedId} highlighted={item.id === selectedId} />
             ))
           ) : (
             <ArchiveTable items={result.items} onOpen={setSelectedId} />

@@ -1,30 +1,65 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Eye, FilePlus2, MapPin, Siren, UserRound, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Eye, UserRound, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import type { ReportListItem } from "@/features/reports/types";
 import { formatDateTime, formatFull, formatRelative } from "@/features/reports/lib/format";
-import { parseAiSummary } from "@/features/reports/lib/ai-summary";
 import { reportTypeLabel } from "@/features/reports/lib/labels";
-import { useReviewReport } from "@/features/reports/hooks/use-reports";
-import { AiTag, PlatformBadge, StatusBadge } from "@/features/reports/components/report-ui";
+import { PlatformBadge, StatusBadge } from "@/features/reports/components/report-ui";
 
 interface ReportCardProps {
   item: ReportListItem;
-  reviewEnabled: boolean;
-  incidentsEnabled: boolean;
   onOpen: (id: string) => void;
-  onCreateIncident: (id: string) => void;
   highlighted?: boolean;
 }
 
-export function ReportCard({ item, reviewEnabled, incidentsEnabled, onOpen, onCreateIncident, highlighted }: ReportCardProps) {
-  const review = useReviewReport(item.id);
-  const reviewable = item.status === "extracted" || item.status === "needs_review";
+/** Message text clamped to a few lines, with Show more / Show less when it does not fit. */
+function MessageText({ text }: { text: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [overflows, setOverflows] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || expanded) return;
+    const measure = () => setOverflows(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, expanded]);
+
+  return (
+    <div className="mt-1.5 sm:mt-2">
+      <p
+        ref={ref}
+        className={cn(
+          "whitespace-pre-line break-words font-mono text-[11px] leading-snug text-foreground/85 sm:text-[12.5px] sm:leading-relaxed",
+          !expanded && "line-clamp-4 sm:line-clamp-3",
+        )}
+      >
+        {text}
+      </p>
+      {overflows || expanded ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="-ml-1 mt-0.5 inline-flex min-h-10 items-center gap-1 rounded-md px-1 text-[11px] font-semibold text-primary hover:bg-primary/10 sm:text-caption"
+        >
+          {expanded ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function ReportCard({ item, onOpen, highlighted }: ReportCardProps) {
   const time = item.messageTime ?? item.receivedAt;
-  const ai = item.aiSummary ? parseAiSummary(item.aiSummary) : null;
 
   return (
     <article
@@ -45,7 +80,7 @@ export function ReportCard({ item, reviewEnabled, incidentsEnabled, onOpen, onCr
               Confirmed · {item.incidents[0]?.code}
             </Badge>
           ) : null}
-          {/* Phones: no "Needs review" badge (the review actions are on larger screens and in the report). */}
+          {/* Phones: no "Needs review" badge (reviewing happens in the opened report). */}
           <StatusBadge
             status={item.status}
             className={cn("px-2 text-[10px] sm:px-2.5 sm:text-caption", item.status === "needs_review" && "hidden sm:inline-flex")}
@@ -70,7 +105,6 @@ export function ReportCard({ item, reviewEnabled, incidentsEnabled, onOpen, onCr
         <time dateTime={time} title={formatFull(time)}>
           {formatDateTime(time)} <span className="opacity-70">({formatRelative(time)})</span>
         </time>
-        <span className="font-mono text-[10px] sm:text-[11px]">{item.reference}</span>
       </div>
 
       <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:mt-3 sm:gap-2">
@@ -79,81 +113,14 @@ export function ReportCard({ item, reviewEnabled, incidentsEnabled, onOpen, onCr
         </span>
         {item.office ? <Badge variant="outline" className="px-2 py-0 text-[10px] sm:px-2.5 sm:py-0.5 sm:text-caption">{item.office}</Badge> : null}
         {item.region ? <Badge variant="outline" className="px-2 py-0 text-[10px] sm:px-2.5 sm:py-0.5 sm:text-caption">{item.region}</Badge> : null}
-        {item.locationCount ? (
-          <span className="inline-flex flex-wrap items-center gap-x-1 text-[11px] text-muted-foreground sm:text-caption">
-            <MapPin className="size-3.5" aria-hidden />
-            {item.locationCount} location{item.locationCount === 1 ? "" : "s"}
-            {" · "}
-            <span className={item.floodedCount ? "font-semibold text-warning" : ""}>{item.floodedCount} with flooding</span>
-            {" · "}
-            <span className={item.clearCount ? "text-success" : ""}>{item.clearCount} no flooding</span>
-          </span>
-        ) : null}
-        {item.warningCount ? (
-          <span className="inline-flex items-center gap-1 text-[11px] text-warning sm:text-caption" title="Missing, ambiguous or flagged values">
-            <AlertTriangle className="size-3.5" aria-hidden />
-            {item.warningCount} flag{item.warningCount === 1 ? "" : "s"}
-          </span>
-        ) : null}
       </div>
 
-      <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words font-mono text-[11px] leading-snug text-foreground/85 sm:mt-2 sm:line-clamp-none sm:text-[12.5px] sm:leading-relaxed">
-        {item.preview}
-      </p>
-
-      {item.aiSummary ? (
-        <div className="mt-2 rounded-lg border border-primary/25 bg-primary/[0.06] px-2.5 py-1.5 sm:mt-3 sm:px-3 sm:py-2">
-          <div className="mb-0.5 flex items-center gap-2 sm:mb-1">
-            <AiTag label="AI Summary" />
-            <span className="text-[10px] text-muted-foreground">Not verified</span>
-          </div>
-          <p className="line-clamp-4 text-[12px] leading-snug text-foreground sm:line-clamp-none sm:text-body">{ai?.overall}</p>
-          {ai?.locationCount ? (
-            <p className="mt-0.5 text-[10px] text-muted-foreground sm:mt-1 sm:text-[11px]">
-              Covers {ai.locationCount} location{ai.locationCount === 1 ? "" : "s"} — open the report for the full per-location summary.
-            </p>
-          ) : null}
-        </div>
-      ) : item.status === "processing" ? (
-        <p className="mt-2 text-[11px] text-primary sm:mt-3 sm:text-caption">AI analysis is in progress.</p>
-      ) : item.status === "received" ? (
-        <p className="mt-2 text-[11px] text-muted-foreground sm:mt-3 sm:text-caption">Waiting for AI processing.</p>
-      ) : item.status !== "ignored" ? (
-        <p className="mt-2 text-[11px] text-muted-foreground sm:mt-3 sm:text-caption">AI summary is not available for this report.</p>
-      ) : null}
+      <MessageText text={item.message} />
 
       <footer className="mt-3 hidden flex-wrap items-center gap-2 border-t border-border pt-3 sm:flex">
         <Button size="sm" variant="primary" onClick={() => onOpen(item.id)} leftIcon={<Eye className="size-4" aria-hidden />}>
           View Report
         </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => onCreateIncident(item.id)}
-          disabled={!incidentsEnabled || item.status === "processing"}
-          title={!incidentsEnabled ? "Incident storage is not set up" : "Operator decision — reports never become incidents automatically"}
-          leftIcon={item.incidents.length ? <Siren className="size-4" aria-hidden /> : <FilePlus2 className="size-4" aria-hidden />}
-        >
-          {item.incidents.length ? "Add Incident" : "Create Incident"}
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => review.mutate({ action: "approve" })}
-          disabled={!reviewEnabled || !reviewable}
-          isLoading={review.isPending}
-          title={
-            !reviewEnabled
-              ? "Review actions require the OKB Bridge API to be configured"
-              : !reviewable
-                ? "Only AI-processed reports awaiting review can be marked reviewed"
-                : undefined
-          }
-          leftIcon={<CheckCircle2 className="size-4" aria-hidden />}
-        >
-          Mark Reviewed
-        </Button>
-        {review.isError ? <span className="text-caption text-danger">{review.error.message}</span> : null}
       </footer>
     </article>
   );
