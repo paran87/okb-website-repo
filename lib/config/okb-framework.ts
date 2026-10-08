@@ -12,12 +12,6 @@ export const FRAMEWORK_META = {
   wasteLaw: "Republic Act No. 9003",
 } as const;
 
-/** Program footprint as listed on the program portfolio (footer and home page). */
-export const PROGRAM_FOOTPRINT = {
-  launchCities: 5,
-  softLaunchAreas: 11,
-} as const;
-
 export const RIDGE_TO_REEF_ZONES = [
   {
     id: "ridge",

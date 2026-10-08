@@ -1,7 +1,9 @@
 import { BarChart3, MapPin, Table2, TrendingUp } from "lucide-react";
 import { PublicPageHero } from "@/components/public";
 import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
+import { CoverageExplorer } from "@/components/public/coverage-explorer";
 import { AccomplishmentHeroArt } from "@/components/public/accomplishment-hero-art";
+import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
 import { APP } from "@/lib/constants";
 
 export const metadata = {
@@ -10,8 +12,8 @@ export const metadata = {
 };
 
 const HERO_BANNER = {
-  src: "/accomplishment/accomplishment-hero-progress.webp",
-  alt: "A dredged and newly walled river channel running through a lowland city at blue hour, with equipment barges moored along the completed embankment.",
+  src: "/photos/excavator-loading-truck.webp",
+  alt: "An Oplan Kontra Baha excavator loads dredged river silt and gravel into a dump truck beside a riprap embankment.",
 } as const;
 
 const HERO_CHIPS = [
@@ -20,6 +22,8 @@ const HERO_CHIPS = [
   { icon: MapPin, label: "Regions and areas" },
   { icon: Table2, label: "Source tables" },
 ] as const;
+
+const coverageLine = `${COVERAGE_TOTALS.waterways} waterways and ${COVERAGE_TOTALS.drainage} drainage lines in ${COVERAGE_TOTALS.regions} regions`;
 
 export default function AccomplishmentPage() {
   return (
@@ -44,6 +48,20 @@ export default function AccomplishmentPage() {
       <section className="okb-public-section border-t py-6 sm:py-8">
         <div className="okb-public-shell max-w-[90rem]">
           <AccomplishmentDashboard />
+        </div>
+      </section>
+
+      <section id="coverage" className="okb-home-section okb-home-section--alt scroll-mt-28">
+        <div className="okb-public-shell max-w-[90rem]">
+          <p className="okb-home-kicker">Program coverage</p>
+          <h2 className="okb-home-h2">Every waterway and drainage line</h2>
+          <p className="okb-home-body mt-1.5">
+            {coverageLine}: dredging and desilting of rivers, creeks and esteros, and declogging of drainage along
+            national and local roads. Search by name or pick a region.
+          </p>
+          <div className="mt-4">
+            <CoverageExplorer />
+          </div>
         </div>
       </section>
     </>

@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, ArrowUpRight, BarChart3, FileText, Images, Radio, Shield, Siren, Waves, type LucideIcon } from "lucide-react";
-import { OPERATIONAL_CYCLE } from "@/lib/config/okb-framework";
+import { ArrowRight, ArrowUpRight, BarChart3, Droplets, FileText, Images, Radio, Shield, Siren, Waves, type LucideIcon } from "lucide-react";
+import { COVERAGE, COVERAGE_AS_OF, COVERAGE_TOTALS, regionDrainage, regionWaterways } from "@/lib/config/okb-coverage";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 
 function Reveal({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -187,8 +187,8 @@ const EXPLORE: { href: string; title: string; body: string; image: string; posit
     href: PUBLIC_ROUTES.accomplishment,
     title: "Accomplishment",
     body: "Live progress, accomplishment types, regions and source tables.",
-    image: "/accomplishment/accomplishment-hero-progress.webp",
-    position: "center",
+    image: "/photos/excavator-loading-truck.webp",
+    position: "center 45%",
     icon: BarChart3,
     tag: "Results",
   },
@@ -248,28 +248,62 @@ export function HomeExplore() {
   );
 }
 
-/** The eight stages of the operational cycle, in order. */
-export function HomeCycle() {
+/** Where the program works: every region with its waterways and drainage lines, over a dredging photo. */
+export function HomeCoverage() {
   return (
-    <section className="okb-home-section">
-      <div className="okb-public-shell">
+    <section className="okb-home-coverage relative isolate overflow-hidden">
+      <div
+        aria-hidden
+        className="okb-home-coverage__image pointer-events-none absolute inset-0"
+        style={{ backgroundImage: "url(/photos/amphibious-excavator.webp)" }}
+      />
+      <div aria-hidden className="okb-home-coverage__veil pointer-events-none absolute inset-0" />
+      <div className="okb-public-shell relative z-10 py-7 sm:py-10">
         <Reveal>
-          <SectionHead kicker="How it works" title="The operational cycle">
-            Every intervention follows the same eight stages, from identifying the problem to keeping the area maintained.
-          </SectionHead>
+          <p className="okb-home-kicker okb-home-kicker--light">Where we work</p>
+          <h2 className="okb-home-h2 okb-home-h2--light">
+            {COVERAGE_TOTALS.waterways} waterways · {COVERAGE_TOTALS.drainage} drainage lines
+          </h2>
+          <p className="okb-home-body okb-home-body--light mt-1.5">
+            Dredging and desilting of rivers, creeks and esteros, and declogging of drainage lines, in{" "}
+            {COVERAGE_TOTALS.regions} regions and {COVERAGE_TOTALS.areas} provinces and cities.
+          </p>
         </Reveal>
-        <ol className="okb-home-cycle mt-4">
-          {OPERATIONAL_CYCLE.map((stage, i) => (
-            <li key={stage.id} className="okb-home-step">
-              <span className="okb-home-step__num">{String(i + 1).padStart(2, "0")}</span>
-              <span className="okb-home-step__title">{stage.title}</span>
+        <ul className="okb-home-regions mt-4">
+          {COVERAGE.map((r, i) => (
+            <li key={r.id}>
+              <Reveal delay={Math.min(i, 8) * 0.03} className="h-full">
+                <Link href={`${PUBLIC_ROUTES.accomplishment}#coverage-${r.id}`} className="okb-home-region">
+                  <span className="okb-home-region__code">{r.code}</span>
+                  <span className="okb-home-region__name">{r.name}</span>
+                  <span className="okb-home-region__places">{r.areas.map((a) => a.name).join(" · ")}</span>
+                  <span className="okb-home-region__nums">
+                    {regionWaterways(r) ? (
+                      <span>
+                        <Waves className="size-3" aria-hidden /> {regionWaterways(r)}
+                      </span>
+                    ) : null}
+                    {regionDrainage(r) ? (
+                      <span>
+                        <Droplets className="size-3" aria-hidden /> {regionDrainage(r)}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </Reveal>
             </li>
           ))}
-        </ol>
-        <Link href={`${PUBLIC_ROUTES.framework}`} className="okb-home-link mt-3">
-          Read each stage in the framework
-          <ArrowRight className="size-4" aria-hidden />
-        </Link>
+        </ul>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[11px] text-white/60">
+            <Waves className="inline size-3" aria-hidden /> waterways · <Droplets className="inline size-3" aria-hidden />{" "}
+            drainage lines · as of {COVERAGE_AS_OF}
+          </p>
+          <Link href={`${PUBLIC_ROUTES.accomplishment}#coverage`} className="okb-home-link okb-home-link--light">
+            See every waterway and drainage line
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </div>
       </div>
     </section>
   );

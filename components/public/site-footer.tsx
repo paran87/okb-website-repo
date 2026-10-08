@@ -18,10 +18,8 @@ import { OkbLogo } from "@/components/brand/okb-logo";
 import { SiteFooterAccent } from "@/components/public/site-footer-accent";
 import {
   FRAMEWORK_META,
-  OPERATIONAL_CYCLE,
-  PROGRAM_FOOTPRINT,
-  RIDGE_TO_REEF_ZONES,
 } from "@/lib/config/okb-framework";
+import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 
 const DPWH_SITE = "https://www.dpwh.gov.ph";
@@ -29,8 +27,6 @@ const PROGRAM_EMAIL = "okb@dpwh.gov.ph";
 const PROGRAM_HOTLINE = "(02) 165-02";
 const PROGRAM_ADDRESS = "Bonifacio Drive, Port Area, Manila";
 
-const LAUNCH_CITIES = PROGRAM_FOOTPRINT.launchCities;
-const SOFT_LAUNCH_AREAS = PROGRAM_FOOTPRINT.softLaunchAreas;
 
 const EXPLORE_LINKS: readonly {
   href: string;
@@ -50,27 +46,14 @@ const EXPLORE_LINKS: readonly {
   { href: PUBLIC_ROUTES.contact, label: "Contact", icon: Mail },
 ];
 
+const COVERAGE_HREF = `${PUBLIC_ROUTES.accomplishment}#coverage`;
+
+/** Program coverage from the accomplishment reports (places, not progress). */
 const FOOTER_FACTS = [
-  {
-    value: String(LAUNCH_CITIES),
-    label: "Official launch cities",
-    href: PUBLIC_ROUTES.profile,
-  },
-  {
-    value: String(SOFT_LAUNCH_AREAS),
-    label: "Soft-launch areas",
-    href: PUBLIC_ROUTES.profile,
-  },
-  {
-    value: String(RIDGE_TO_REEF_ZONES.length),
-    label: "Ridge-to-reef zones",
-    href: PUBLIC_ROUTES.framework,
-  },
-  {
-    value: String(OPERATIONAL_CYCLE.length),
-    label: "Operational cycle stages",
-    href: PUBLIC_ROUTES.framework,
-  },
+  { value: String(COVERAGE_TOTALS.regions), label: "Regions", href: COVERAGE_HREF },
+  { value: String(COVERAGE_TOTALS.areas), label: "Provinces & cities", href: COVERAGE_HREF },
+  { value: String(COVERAGE_TOTALS.waterways), label: "Waterways", href: COVERAGE_HREF },
+  { value: String(COVERAGE_TOTALS.drainage), label: "Drainage lines", href: COVERAGE_HREF },
 ] as const;
 
 export function SiteFooter() {

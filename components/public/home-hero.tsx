@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { ArrowRight, Radio } from "lucide-react";
-import { FRAMEWORK_META, OPERATIONAL_CYCLE, PROGRAM_FOOTPRINT, RIDGE_TO_REEF_ZONES } from "@/lib/config/okb-framework";
+import { COVERAGE, COVERAGE_AS_OF, COVERAGE_TOTALS, regionDrainage, regionWaterways } from "@/lib/config/okb-coverage";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 
 const HOME_HERO_BANNER = {
-  src: "/home/metro-manila-flood-mitigation-banner.png",
-  alt: "Oplan Kontra Baha Metro Manila flood mitigation and control project — drainage, dredging, pumping stations, floodgates, waste management, and relocation.",
+  src: "/photos/aerial-river-dredging.webp",
+  alt: "Aerial view of an Oplan Kontra Baha dredging site: excavators and dump trucks on a newly reinforced riverbank where a wide river meets a tributary, with farmland and hills beyond.",
 } as const;
+
+const COVERAGE_HREF = `${PUBLIC_ROUTES.accomplishment}#coverage`;
 
 const container: Variants = {
   hidden: {},
@@ -20,13 +22,18 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 };
 
-/** Program figures from the portfolio and the operational framework (never invented). */
+/** Program coverage from the accomplishment reports (counts of places, never progress figures). */
 const FACTS = [
-  { value: PROGRAM_FOOTPRINT.launchCities, label: "Official launch cities", href: PUBLIC_ROUTES.profile },
-  { value: PROGRAM_FOOTPRINT.softLaunchAreas, label: "Soft-launch areas", href: PUBLIC_ROUTES.profile },
-  { value: RIDGE_TO_REEF_ZONES.length, label: "Ridge-to-reef zones", href: PUBLIC_ROUTES.framework },
-  { value: OPERATIONAL_CYCLE.length, label: "Operational cycle stages", href: PUBLIC_ROUTES.framework },
+  { value: COVERAGE_TOTALS.regions, label: "Regions" },
+  { value: COVERAGE_TOTALS.areas, label: "Provinces & cities" },
+  { value: COVERAGE_TOTALS.waterways, label: "Waterways" },
+  { value: COVERAGE_TOTALS.drainage, label: "Drainage lines" },
 ] as const;
+
+/** The regions with the most work sites, for the desktop "Where we work" card. */
+const TOP_REGIONS = [...COVERAGE]
+  .sort((a, b) => regionWaterways(b) + regionDrainage(b) - (regionWaterways(a) + regionDrainage(a)))
+  .slice(0, 6);
 
 /** Home intro: the Metro Manila flood-mitigation illustration under a poster headline, with the program in brief. */
 export function HomeHero() {
@@ -70,7 +77,7 @@ export function HomeHero() {
           <motion.ul className="okb-home-facts" variants={item} aria-label="The program in figures">
             {FACTS.map((f) => (
               <li key={f.label}>
-                <Link href={f.href} className="okb-home-fact">
+                <Link href={COVERAGE_HREF} className="okb-home-fact">
                   <span className="okb-home-fact__value">{f.value}</span>
                   <span className="okb-home-fact__label">{f.label}</span>
                 </Link>
@@ -79,29 +86,35 @@ export function HomeHero() {
           </motion.ul>
         </motion.div>
 
-        {/* Ridge to reef at a glance (desktop): the five zones the program works through. */}
+        {/* Where we work (desktop): the regions with the most waterways and drainage lines. */}
         <motion.aside
           className="okb-home-zones hidden lg:block"
           initial={reduce ? false : { opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          aria-label="Ridge to reef"
+          aria-label="Where we work"
         >
-          <p className="okb-home-zones__kicker">Ridge to reef</p>
-          <ol className="mt-2 space-y-1.5">
-            {RIDGE_TO_REEF_ZONES.map((z, i) => (
-              <li key={z.id} className="okb-home-zone">
-                <span className="okb-home-zone__num">{i + 1}</span>
-                <span className="min-w-0">
-                  <span className="okb-home-zone__label">{z.label}</span>
-                  <span className="okb-home-zone__lead">{z.lead}</span>
-                </span>
+          <p className="okb-home-zones__kicker">Where we work</p>
+          <ol className="mt-2 space-y-1">
+            {TOP_REGIONS.map((r) => (
+              <li key={r.id}>
+                <Link href={`${PUBLIC_ROUTES.accomplishment}#coverage-${r.id}`} className="okb-home-zone">
+                  <span className="okb-home-zone__num okb-home-zone__num--code">{r.code.replace("Region ", "")}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="okb-home-zone__label">{r.name}</span>
+                    <span className="okb-home-zone__lead">{r.areas.map((a) => a.name).join(" · ")}</span>
+                  </span>
+                  <span className="okb-home-zone__count">
+                    {regionWaterways(r) + regionDrainage(r)}
+                    <span>sites</span>
+                  </span>
+                </Link>
               </li>
             ))}
           </ol>
-          <p className="okb-home-zones__foot">
-            {FRAMEWORK_META.specialOrder} · issued {FRAMEWORK_META.dateIssued}
-          </p>
+          <Link href={COVERAGE_HREF} className="okb-home-zones__foot okb-home-zones__foot--link">
+            All {COVERAGE_TOTALS.regions} regions · as of {COVERAGE_AS_OF} →
+          </Link>
         </motion.aside>
       </div>
 

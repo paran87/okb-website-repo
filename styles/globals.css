@@ -1988,9 +1988,9 @@
    several banners carry baked-in captions that would otherwise show through. */
 .okb-public-hero-band--with-image .okb-public-hero-bg-image {
   background-size: cover;
-  background-position: center 62%;
-  opacity: 0.55;
-  filter: saturate(1.06) contrast(1.04);
+  background-position: center 48%;
+  opacity: 0.9;
+  filter: saturate(1.08) contrast(1.05);
   -webkit-mask-image: linear-gradient(
     102deg,
     transparent 0%,
@@ -2050,9 +2050,9 @@
     ),
     linear-gradient(
       135deg,
-      rgba(0, 42, 130, 0.7) 0%,
-      rgba(0, 32, 74, 0.7) 55%,
-      rgba(0, 48, 100, 0.62) 100%
+      rgba(0, 42, 130, 0.55) 0%,
+      rgba(0, 32, 74, 0.38) 55%,
+      rgba(0, 48, 100, 0.3) 100%
     );
 }
 
