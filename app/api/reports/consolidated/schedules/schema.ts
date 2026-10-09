@@ -3,7 +3,7 @@ import { MAX_SCHEDULE_PERIOD_DAYS } from "@/features/consolidated-reports/types"
 
 const MAX_PERIOD_MS = MAX_SCHEDULE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
 
-/** A report schedule entry (ISO, UTC); the backend checks it again, including "not in the past". */
+/** A report schedule entry (ISO, UTC); the backend checks it again, including "not more than a day in the past". */
 export const scheduleSchema = z
   .object({
     periodStart: z.string().datetime(),

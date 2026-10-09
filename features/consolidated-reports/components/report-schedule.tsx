@@ -37,8 +37,8 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** The bridge phone asks the backend every ~30 s; no check-in for this long means it is offline or closed. */
 const PHONE_OFFLINE_MS = 3 * 60 * 1000;
-/** Same grace as the backend: a date of sending a few minutes ago is still accepted. */
-const PAST_GRACE_MS = 5 * 60 * 1000;
+/** Same as the backend: a date of sending that already passed is sent at once, up to a day late. */
+const PAST_LIMIT_MS = DAY_MS;
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "The request failed.");
 
@@ -104,7 +104,11 @@ function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null
   if (end && send && Date.parse(send) < Date.parse(end)) {
     errors.push("The date of sending must be at or after the end of the monitoring period; reports received after it would be missing.");
   }
-  if (send && Date.parse(send) < Date.now() - PAST_GRACE_MS) errors.push("The date of sending is in the past.");
+  if (send && Date.parse(send) < Date.now() - PAST_LIMIT_MS) {
+    errors.push("The date of sending is more than a day in the past.");
+  } else if (send && Date.parse(send) < Date.now()) {
+    warnings.push("The date of sending has already passed: this report is sent right away once you add it.");
+  }
   const others = entries.filter((e) => e.id !== editingId);
   if (start && end && send && others.some((e) => e.periodStart === start && e.periodEnd === end && e.sendAt === send && e.deliveryType === d.as)) {
     errors.push("This exact entry is already in the schedule.");
