@@ -19,7 +19,7 @@ export function mapsUrl(item: OperationsMediaItem): string | null {
 
 /** Card / row heading: the place, else the note, else a generic label. */
 export function itemTitle(item: OperationsMediaItem): string {
-  return item.place ?? item.note ?? (item.kind === "photo" ? "Geotagged photo" : "Operations video");
+  return item.place ?? item.note ?? (item.kind === "photo" ? (item.geotag ? "Geotagged photo" : "Field photo") : "Operations video");
 }
 
 /** Short place for compact cards ("San Roque, Manila" → "San Roque"). */

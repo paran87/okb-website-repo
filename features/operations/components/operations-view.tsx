@@ -318,7 +318,9 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
   const [deleting, setDeleting] = useState(false);
   const [shown, setShown] = useState(PAGE_SIZE);
   const [layout, setLayout] = useLayoutMode();
-  const [detail, setDetail] = useState<number | null>(null);
+  // The open photo, by key: it stays open while the list refreshes, and a deleted one moves on to its neighbour.
+  const [detailKey, setDetailKey] = useState<string | null>(null);
+  const detailIndex = useRef(0);
   const top = useRef<HTMLDivElement>(null);
 
   const items = useMemo(() => {
@@ -326,30 +328,32 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
     return order === "newest" ? list : [...list].reverse();
   }, [media.data, order]);
   const visible = items.slice(0, shown);
+  const found = detailKey === null ? -1 : items.findIndex((i) => i.key === detailKey);
+  const detail = detailKey === null || items.length === 0 ? null : found >= 0 ? found : Math.min(detailIndex.current, items.length - 1);
 
   // Photos open the location view; the phone's Back button returns to the gallery.
-  const openDetail = useCallback((index: number) => {
-    setDetail(index);
+  const openDetail = useCallback((key: string) => {
+    setDetailKey(key);
     window.history.pushState({ okbOperationsDetail: true }, "");
     top.current?.scrollIntoView({ block: "start" });
   }, []);
   const closeDetail = useCallback(() => {
     if (window.history.state?.okbOperationsDetail) window.history.back();
-    else setDetail(null);
+    else setDetailKey(null);
   }, []);
   useEffect(() => {
-    const onPop = () => setDetail(null);
+    const onPop = () => setDetailKey(null);
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
-  // Keep the open photo valid after deletions or a re-sort.
+  // Keep the open photo valid after deletions (here or in the bucket).
   useEffect(() => {
-    if (detail === null) return;
-    if (items.length === 0) closeDetail();
-    else if (detail >= items.length) setDetail(items.length - 1);
-  }, [detail, items.length, closeDetail]);
-  const open = (item: OperationsMediaItem, index: number) =>
-    item.kind === "photo" ? openDetail(index) : setViewing(item);
+    if (detailKey === null) return;
+    if (found >= 0) detailIndex.current = found;
+    else if (items.length === 0) closeDetail();
+    else setDetailKey(items[Math.min(detailIndex.current, items.length - 1)]!.key);
+  }, [detailKey, found, items, closeDetail]);
+  const open = (item: OperationsMediaItem) => (item.kind === "photo" ? openDetail(item.key) : setViewing(item));
   const allVisibleSelected = visible.length > 0 && visible.every((i) => selected.has(i.key));
 
   const noun = kind === "photos" ? "photo" : "video";
@@ -440,7 +444,7 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
           items={items}
           index={detail}
           sectionLabel={operationsSection(section).label}
-          onIndexChange={setDetail}
+          onIndexChange={(i) => setDetailKey(items[i]?.key ?? null)}
           onClose={closeDetail}
           onDelete={(item) => setConfirmKeys([item.key])}
         />
@@ -449,7 +453,7 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-caption text-muted-foreground">
               {items.length} {items.length === 1 ? noun : `${noun}s`}
-              {kind === "photos" ? " · geotagged only" : " · operations footage"}
+              {" · updates automatically"}
             </p>
             {items.length > 0 ? (
               <div className="flex flex-wrap items-center gap-2">
@@ -503,20 +507,20 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
                 title={`No ${kind} to show`}
                 description={
                   kind === "photos"
-                    ? "Only geotagged photos from this folder are shown."
-                    : "Only videos showing declogging, clearing or cleaning work are shown."
+                    ? "Photos added to this folder in the storage bucket appear here automatically."
+                    : "Videos added to this folder in the storage bucket appear here automatically."
                 }
               />
             </Card>
           ) : layout === "grid" ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {visible.map((item, i) => (
+              {visible.map((item) => (
                 <MediaCard
                   key={item.key}
                   item={item}
                   selecting={selecting}
                   selected={selected.has(item.key)}
-                  onOpen={() => open(item, i)}
+                  onOpen={() => open(item)}
                   onToggle={() => toggle(item)}
                   onDelete={() => setConfirmKeys([item.key])}
                 />
@@ -524,13 +528,13 @@ function MediaGallery({ section, kind }: { section: OperationsSectionId; kind: O
             </div>
           ) : (
             <ul className="grid gap-2 lg:grid-cols-2">
-              {visible.map((item, i) => (
+              {visible.map((item) => (
                 <MediaRow
                   key={item.key}
                   item={item}
                   selecting={selecting}
                   selected={selected.has(item.key)}
-                  onOpen={() => open(item, i)}
+                  onOpen={() => open(item)}
                   onToggle={() => toggle(item)}
                   onDelete={() => setConfirmKeys([item.key])}
                 />

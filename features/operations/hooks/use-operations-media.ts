@@ -48,13 +48,27 @@ export const operationsKeys = {
   list: (section: OperationsSectionId, kind: OperationsMediaKind) => ["operations-media", section, kind] as const,
 };
 
+/** How often an open gallery checks the bucket: files added or deleted in R2 show up within this time. */
+const REFRESH_MS = 30_000;
+/** Deleted here: kept out of the list for a while, in case a refresh still returns a listing from before. */
+const DELETED_HIDE_MS = 60_000;
+const recentlyDeleted = new Map<string, number>();
+
+function withoutDeleted(list: OperationsMediaList): OperationsMediaList {
+  const now = Date.now();
+  for (const [key, at] of recentlyDeleted) if (now - at > DELETED_HIDE_MS) recentlyDeleted.delete(key);
+  if (recentlyDeleted.size === 0) return list;
+  return { ...list, items: list.items.filter((i) => !recentlyDeleted.has(i.key)) };
+}
+
 export function useOperationsMedia(section: OperationsSectionId, kind: OperationsMediaKind) {
   return useQuery({
     queryKey: operationsKeys.list(section, kind),
-    queryFn: () => api<OperationsMediaList>(`/api/operations/media?section=${section}&kind=${kind}`),
-    // File links are signed for 6 hours; refresh well before they lapse.
-    staleTime: 5 * 60_000,
-    refetchInterval: 60 * 60_000,
+    queryFn: async () => withoutDeleted(await api<OperationsMediaList>(`/api/operations/media?section=${section}&kind=${kind}`)),
+    // Follows the R2 bucket while the page is open (paused in a background tab, refreshed on return).
+    staleTime: REFRESH_MS / 2,
+    refetchInterval: REFRESH_MS,
+    refetchOnWindowFocus: true,
     retry: 1,
   });
 }
@@ -69,6 +83,7 @@ export function useDeleteOperationsMedia(section: OperationsSectionId, kind: Ope
         body: JSON.stringify({ section, key }),
       }),
     onSuccess: (_data, key) => {
+      recentlyDeleted.set(key, Date.now());
       qc.setQueryData<OperationsMediaList>(queryKey, (prev) =>
         prev ? { ...prev, items: prev.items.filter((i) => i.key !== key) } : prev,
       );

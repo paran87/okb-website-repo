@@ -57,11 +57,12 @@ export function presign(
   cfg: R2Config,
   method: "GET" | "PUT" | "DELETE" | "HEAD",
   key: string | null,
-  opts: { query?: Record<string, string>; headers?: Record<string, string>; expiresIn?: number } = {},
+  opts: { query?: Record<string, string>; headers?: Record<string, string>; expiresIn?: number; at?: Date } = {},
 ): string {
   const host = `${cfg.accountId}.r2.cloudflarestorage.com`;
   const path = `/${encode(cfg.bucket)}${key !== null ? `/${encode(key, true)}` : ""}`;
-  const now = new Date();
+  // A fixed signing time gives the same link on every request (the browser keeps the image cached).
+  const now = opts.at ?? new Date();
   const amzDate = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const day = amzDate.slice(0, 8);
   const scope = `${day}/auto/s3/aws4_request`;
@@ -143,6 +144,13 @@ export async function listObjects(cfg: R2Config, prefix: string): Promise<R2Obje
     token = xmlValue(xml, "IsTruncated") === "true" ? xmlValue(xml, "NextContinuationToken") || null : null;
   } while (token);
   return objects;
+}
+
+/** The first [bytes] bytes of an object (for reading a photo's EXIF without downloading it). */
+export async function readStart(cfg: R2Config, key: string, bytes: number): Promise<Uint8Array> {
+  const range = `bytes=0-${bytes - 1}`;
+  const res = await send(presign(cfg, "GET", key), { headers: { Range: range }, signal: AbortSignal.timeout(8000) });
+  return new Uint8Array(await res.arrayBuffer());
 }
 
 /** Moves an object to another key (copy, then delete the original). */

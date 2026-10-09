@@ -227,7 +227,7 @@ export function PhotoDetail({
             <div className="min-w-0">
               <p className="text-subheading text-foreground">Photo location</p>
               <p className="truncate text-caption text-muted-foreground">
-                {item.place ?? "Location from GPS stamp"}
+                {item.place ?? (item.geotag ? "Location from the photo's GPS" : "Location not available")}
                 {item.geotag?.approx ? " · approximate" : ""}
               </p>
             </div>
