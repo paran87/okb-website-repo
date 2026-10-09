@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import type { Position } from "geojson";
 import { CloudRain, CloudSun, HelpCircle, Map as MapIcon, MapPin, Waves, X } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -11,6 +10,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
 import { formatDateTime, formatMeters, formatRelative, formatShortDateTime } from "@/features/reports/lib/format";
+import { FloodAlertPanel, placeText } from "@/features/incident/components/flood-alert-panel";
+import type { FloodMapProps } from "@/features/incident/components/flood-map";
 import { positionsOf, useFloodSituation, type PlacedLocation } from "@/features/incident/hooks/use-flood-situation";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import type { FloodMapData } from "@/features/incident/types";
@@ -142,17 +143,6 @@ function SeverityTable() {
   );
 }
 
-function placeText(p: PlacedLocation): string {
-  const r = p.resolved;
-  if (r.basis === "intersection") {
-    return `Shown where ${r.matched.join(" and ")} meet${r.places > 1 ? ` (${r.places} places have these road names)` : ""}`;
-  }
-  if (r.basis === "coordinates") return `Shown on ${r.matched.join(", ")} at the reported coordinates`;
-  if (r.basis === "road") return `Shown along ${r.matched[0]}`;
-  if (r.basis === "point") return "Shown at the reported coordinates";
-  return "Not on the map: the road is not in the DPWH road network";
-}
-
 function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: boolean; onSelect: () => void }) {
   const l = p.location;
   const meta = FLOOD_SEVERITY[l.severity];
@@ -211,7 +201,7 @@ function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: 
 export function FloodMapPanel() {
   const { query, data, placed, lines, points, counts: bySeverity, ready, roadsFailed: failed } = useFloodSituation();
   const [selected, setSelected] = useState<string | null>(null);
-  const [focus, setFocus] = useState<{ id: number; positions: Position[] } | null>(null);
+  const [focus, setFocus] = useState<FloodMapProps["focus"]>(null);
   const [floating, setFloating] = useState(false);
   const framed = useRef(false);
 
@@ -245,7 +235,8 @@ export function FloodMapPanel() {
     (key: string | null) => {
       setSelected(key);
       const p = key ? placed.find((x) => x.location.key === key) : null;
-      if (p) setFocus({ id: Date.now(), positions: positionsOf(p) });
+      // Clear of the flood alert panel at the right of the map.
+      if (p) setFocus({ id: Date.now(), positions: positionsOf(p), padding: isPhone() ? undefined : { right: 352 } });
       if (!p || !isPhone()) return;
       setFloating(true);
       // Keep its card in sight above the floating map (also when it was picked on the map).
@@ -332,6 +323,13 @@ export function FloodMapPanel() {
         >
           <FloodMap lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} alerts />
           <MapKey className="pointer-events-auto absolute left-2 top-2 z-10 hidden max-w-[11.5rem] sm:block" />
+          {current && !floating ? (
+            <FloodAlertPanel
+              placed={current}
+              onClose={() => setSelected(null)}
+              className="absolute right-2 top-2 z-20 max-h-[calc(100%-1rem)] w-[min(20rem,calc(100%-1rem))]"
+            />
+          ) : null}
           {ready && placed.length === 0 ? (
             <div className="pointer-events-none absolute inset-x-2 bottom-2 z-10 flex justify-center">
               <span className="rounded-full border border-border bg-card/95 px-3 py-1.5 text-caption font-semibold text-success shadow-sm">

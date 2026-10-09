@@ -21,8 +21,8 @@ export interface FloodMapProps {
   lines: FloodLineFeature[];
   points: FloodPointFeature[];
   selectedKey: string | null;
-  /** Frame these positions (changes of [focus.id] move the map). */
-  focus: { id: number; positions: Position[] } | null;
+  /** Frame these positions (changes of [focus.id] move the map), clear of panels over the map ([padding]). */
+  focus: { id: number; positions: Position[]; padding?: Partial<Record<"top" | "right" | "bottom" | "left", number>> } | null;
   onSelect: (key: string | null) => void;
   /** Show the flooded-road layers (default true). */
   visible?: boolean;
@@ -276,12 +276,16 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
       e = Math.max(e, x);
       n = Math.max(n, y);
     }
+    // Room for a panel over the map, when the map is big enough for it.
+    const pad = { top: 48, right: 48, bottom: 48, left: 48, ...focus.padding };
+    const { clientWidth: cw, clientHeight: ch } = map.getContainer();
+    const fits = pad.left + pad.right < cw - 40 && pad.top + pad.bottom < ch - 40;
     map.fitBounds(
       [
         [w, s],
         [e, n],
       ],
-      { padding: 48, maxZoom: 16, duration: 600 },
+      { padding: fits ? pad : 48, maxZoom: 16, duration: 600 },
     );
   }, [map, status, focus]);
 

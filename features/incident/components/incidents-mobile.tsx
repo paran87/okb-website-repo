@@ -2,17 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import type { Position } from "geojson";
 import { CloudRain, List, Radio, Siren, Waves, X } from "lucide-react";
 import { LayerToggleCard } from "@/features/flood-monitoring/components/layer-toggle-card";
-import { FloodLayers } from "@/features/incident/components/flood-map";
-import { FloodLocationCard } from "@/features/incident/components/flood-location-card";
+import { FloodLayers, type FloodMapProps } from "@/features/incident/components/flood-map";
+import { FloodAlertPanel } from "@/features/incident/components/flood-alert-panel";
 import { positionsOf, useFloodSituation } from "@/features/incident/hooks/use-flood-situation";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
 import { formatMeters, formatRelative } from "@/features/reports/lib/format";
 import { WeatherRadarOverlay } from "@/features/weather/components/weather-radar-overlay";
-import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 
 const MapEngine = dynamic(() => import("@/features/map/components/map-engine").then((m) => ({ default: m.MapEngine })), {
@@ -36,7 +34,7 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
   const [floodVisible, setFloodVisible] = useState(true);
   const [radarOn, setRadarOn] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
-  const [focus, setFocus] = useState<{ id: number; positions: Position[] } | null>(null);
+  const [focus, setFocus] = useState<FloodMapProps["focus"]>(null);
   const framed = useRef(false);
   const radarAuto = useRef(false);
 
@@ -61,7 +59,8 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
       const p = key ? placed.find((x) => x.location.key === key) : null;
       if (p) {
         setFloodVisible(true);
-        setFocus({ id: Date.now(), positions: positionsOf(p) });
+        // Between the summaries at the top and the flood alert panel at the bottom.
+        setFocus({ id: Date.now(), positions: positionsOf(p), padding: { top: 210, bottom: 340 } });
       }
     },
     [placed],
@@ -238,12 +237,7 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
       </div>
 
       {current && !panel ? (
-        <FloodLocationCard
-          location={current.location}
-          onClose={() => setSelected(null)}
-          link={{ href: `${ROUTES.reports}/${current.location.reportId}`, label: "View report" }}
-          className="absolute inset-x-2 bottom-2 z-40 bg-card"
-        />
+        <FloodAlertPanel placed={current} onClose={() => setSelected(null)} className="absolute inset-x-2 bottom-2 z-40 max-h-[60%]" />
       ) : null}
     </div>
   );
