@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { Position } from "geojson";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CloudRain, List, Radio, Siren, Waves, X } from "lucide-react";
 import { LayerToggleCard } from "@/features/flood-monitoring/components/layer-toggle-card";
@@ -54,13 +55,13 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
   }, [flood]);
 
   const select = useCallback(
-    (key: string | null) => {
+    (key: string | null, area?: Position[]) => {
       setSelected(key);
       const p = key ? placed.find((x) => x.location.key === key) : null;
       if (p) {
         setFloodVisible(true);
         // Between the summaries at the top and the flood alert panel at the bottom.
-        setFocus({ id: Date.now(), positions: positionsOf(p), padding: { top: 210, bottom: 340 } });
+        setFocus({ id: Date.now(), positions: area ?? positionsOf(p), padding: { top: 210, bottom: 340 } });
       }
     },
     [placed],
@@ -220,7 +221,7 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
                           flood.weather.state === "normal"
                             ? `A flooded road is cleared ${flood.rule.normalHours} h after its latest report.`
                             : `Flooded roads stay ${flood.rule.wetHours} h after their latest report.`
-                        } A subsided / no-flooding report clears a road at once.`
+                        } A report of subsided / no flooding or a receding time clears the road.`
                       : null
                   }
                   onSelect={(key) => {

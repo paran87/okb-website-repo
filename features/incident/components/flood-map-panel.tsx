@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import type { Position } from "geojson";
 import Link from "next/link";
 import { CloudRain, CloudSun, HelpCircle, Map as MapIcon, MapPin, Waves, X } from "lucide-react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
@@ -75,7 +76,7 @@ function WeatherStatus({ data }: { data: FloodMapData }) {
           {w.state === "normal"
             ? `Back to normal: a flooded road is cleared ${data.rule.normalHours} h after its latest report.`
             : `Flooded roads stay highlighted ${data.rule.wetHours} h after their latest report${w.state === "unknown" ? " until live weather is back" : " while it rains or a warning is in effect"}.`}{" "}
-          A report that says subsided or no flooding clears a place at once.
+          A report that says subsided or no flooding, or gives the time the flood receded, clears the place (the same road and cross street, however it is worded).
         </p>
       </div>
     </div>
@@ -232,11 +233,11 @@ export function FloodMapPanel() {
   }, [ready, placed]);
 
   const select = useCallback(
-    (key: string | null) => {
+    (key: string | null, area?: Position[]) => {
       setSelected(key);
       const p = key ? placed.find((x) => x.location.key === key) : null;
-      // Clear of the flood alert panel at the right of the map.
-      if (p) setFocus({ id: Date.now(), positions: positionsOf(p), padding: isPhone() ? undefined : { right: 352 } });
+      // The tapped place (or the whole location), clear of the flood alert panel at the right of the map.
+      if (p) setFocus({ id: Date.now(), positions: area ?? positionsOf(p), padding: isPhone() ? undefined : { right: 352 } });
       if (!p || !isPhone()) return;
       setFloating(true);
       // Keep its card in sight above the floating map (also when it was picked on the map).

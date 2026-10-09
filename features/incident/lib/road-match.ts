@@ -56,16 +56,35 @@ export function normalizeRoad(name: string | null | undefined): string {
 
 const SPLIT = /\s+(?:cor\.?|corner|crnr|kanto|and|at|near|along|going\s+to|to)\s+|\s*[&/,;]\s*/i;
 
+const CORNER = /^\s*(?:(?:limit\s*\/\s*)?landmark\s*:\s*)?(?:at\s+the\s+)?(?:corner(?:\s+of)?|cor\.?|crnr\.?|kanto(?:\s+ng)?|intersection(?:\s+of|\s+with)?|junction(?:\s+of|\s+with)?)\s+/i;
+const LANDMARK_LABEL = /^\s*(?:limit\s*\/\s*)?landmark\s*:\s*/i;
+
 /**
- * Road names mentioned for a location: the extracted road name and the parts of the location text
- * ("1. Taft Ave cor. Pedro Gil (in front of PGH) - knee deep" → ["Taft Ave", "Pedro Gil"]).
+ * The cross street a landmark names: "corner Edsa to Ayala Malls" → "Edsa", "P. Margal St." → "P. Margal St.";
+ * null for a landmark that is not a road ("in front of Goodyear").
  */
-export function roadCandidates(roadName: string | null, label: string | null): string[] {
+export function crossStreet(landmark: string | null | undefined): string | null {
+  if (!landmark) return null;
+  const corner = CORNER.test(landmark);
+  const name = (landmark.replace(CORNER, "").replace(LANDMARK_LABEL, "").split(SPLIT)[0] ?? "").replace(/\([^)]*\)/g, " ").trim();
+  const key = normalizeRoad(name);
+  if (key.length < 3 || !/[a-z]/.test(key)) return null;
+  const isRoad = corner || SUFFIXES.has(key.split(" ").at(-1) ?? "") || Object.values(ALIASES).includes(key);
+  return isRoad ? name : null;
+}
+
+/**
+ * Road names mentioned for a location: the extracted road name, the cross street its landmark names, and the
+ * parts of the location text ("1. Taft Ave cor. Pedro Gil (in front of PGH) - knee deep" → ["Taft Ave", "Pedro Gil"]).
+ */
+export function roadCandidates(roadName: string | null, label: string | null, landmark: string | null = null): string[] {
   const parts: string[] = [];
   if (roadName) parts.push(roadName);
+  const cross = crossStreet(landmark);
+  if (cross) parts.push(cross);
   if (label) {
     const head = (label.replace(/^\s*\d{1,3}\s*[.)\-:]\s*/, "").split(/\s[-–—:]\s|\n/)[0] ?? "").replace(/\([^)]*\)/g, " ");
-    parts.push(...head.split(SPLIT));
+    parts.push(...head.split(SPLIT).map((p) => p.replace(LANDMARK_LABEL, "")));
   }
   const out: string[] = [];
   const keys = new Set<string>();

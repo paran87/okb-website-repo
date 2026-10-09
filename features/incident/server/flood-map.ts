@@ -7,7 +7,7 @@ import { reportReference } from "@/features/reports/lib/format";
 import { getPagasaWeatherBulletin } from "@/features/weather/services/pagasa.service";
 import type { FloodMapData, FloodMapLocation, FloodMapWeather } from "@/features/incident/types";
 import { floodSeverity } from "@/features/incident/lib/flood-severity";
-import { roadCandidates } from "@/features/incident/lib/road-match";
+import { crossStreet, normalizeRoad, roadCandidates } from "@/features/incident/lib/road-match";
 
 const HOUR = 3_600_000;
 
@@ -16,7 +16,8 @@ const HOUR = 3_600_000;
  *  - while it rains or a PAGASA rainfall / cyclone warning is in effect (or the weather is unknown): 24 h;
  *  - once the weather is normal (no rain, no warning): 3 h — floodwater on roads usually recedes within
  *    hours after the rain stops, so older highlights are cleared and the map is back to normal.
- * A newer report that says "subsided" or "no flooding" clears a location at once, whatever the weather.
+ * A newer report that says "subsided" or "no flooding" clears a location at once, whatever the weather, and a
+ * report that gives the time the flood receded clears it at that time.
  */
 export const FLOOD_MAP_RULE = { wetHours: 24, normalHours: 3 } as const;
 
@@ -67,9 +68,55 @@ function num(field: ExtractedField<number> | null | undefined): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
+/** A place on the road network as reports name it: the road and, when given, the cross street. */
+interface Place {
+  road: string;
+  cross: string | null;
+}
+
 /**
- * Flooded locations for the map from processed reports (newest first): the latest report of each location
- * decides. Flooded → highlighted while recent enough for the weather; subsided / no flooding → cleared.
+ * The place a report location names, from its extracted road and landmark (else its location text), so the
+ * same place matches however it is worded: "Blumentritt Rd., Manila City" with landmark "P. Margal St." is
+ * the same place as "Blumentritt Rd., Manila City Limit/Landmark: P. Margal St.".
+ */
+function placeOf(loc: ExtractedLocation, label: string): Place | null {
+  const road = normalizeRoad(text(loc.roadName)) || locationKey(label);
+  if (!road) return null;
+  const cross = normalizeRoad(crossStreet(text(loc.landmark))) || null;
+  return { road, cross: cross === road ? null : cross };
+}
+
+/** Same place: the same road, at the same cross street (or one of the two reports names none). */
+function samePlace(a: Place, b: Place): boolean {
+  return a.road === b.road && (!a.cross || !b.cross || a.cross === b.cross);
+}
+
+const PARTIAL = /\b(partial(?:ly)?|subsiding|receding|slowly|still)\b/i;
+const MANILA_OFFSET = 8 * HOUR;
+
+/**
+ * When the flood receded, from the report's "Time of Receding" ("21:40" on the report's Manila date; a time
+ * well after the report is from the evening before). Null when not given or only partly receded.
+ */
+function recededAt(loc: ExtractedLocation, reportedAt: number): number | null {
+  const value = provided(loc.flood.floodSubsidedAt);
+  const raw = loc.flood.floodSubsidedAt.raw ?? "";
+  if (typeof value !== "string" || !value.trim() || PARTIAL.test(raw) || !Number.isFinite(reportedAt)) return null;
+  const clock = value.trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!clock) {
+    const t = Date.parse(value);
+    return Number.isFinite(t) ? t : null;
+  }
+  const day = new Date(reportedAt + MANILA_OFFSET);
+  let t = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), Number(clock[1]), Number(clock[2])) - MANILA_OFFSET;
+  if (t > reportedAt + 6 * HOUR) t -= 24 * HOUR;
+  return t;
+}
+
+/**
+ * Flooded locations for the map from processed reports (newest first): the latest report of each place
+ * decides, whatever its wording. Flooded → highlighted while recent enough for the weather, until the time it
+ * receded when the report gives one; subsided / no flooding → cleared.
  */
 export function buildFloodMap(
   reports: BridgeReportRecord[],
@@ -79,6 +126,7 @@ export function buildFloodMap(
   const activeHours = weather.state === "normal" ? FLOOD_MAP_RULE.normalHours : FLOOD_MAP_RULE.wetHours;
   const since = now.getTime() - activeHours * HOUR;
   const seen = new Set<string>();
+  const decided: Place[] = [];
   const locations: FloodMapLocation[] = [];
   let clearedByReport = 0;
   let clearedByWeather = 0;
@@ -91,23 +139,35 @@ export function buildFloodMap(
     for (const o of observeReport(record)) {
       const loc: ExtractedLocation | undefined = record.extraction?.locations?.[o.index];
       if (!loc) continue;
-      const key = o.key ?? locationKey(o.label) ?? `${record.id}:${o.index}`;
-      if (seen.has(key)) continue; // a newer report of this place already decided
-      if (isClear(o.condition)) {
+      const place = placeOf(loc, o.label);
+      const key = place ? `${place.road}${place.cross ? ` cor ${place.cross}` : ""}` : (o.key ?? `${record.id}:${o.index}`);
+      // A newer report of this place already decided.
+      if (seen.has(key) || (place && decided.some((d) => samePlace(d, place)))) continue;
+      const decide = () => {
         seen.add(key);
+        if (place) decided.push(place);
+      };
+      if (isClear(o.condition)) {
+        decide();
         clearedByReport++;
         continue;
       }
       if (!isFlooded(o.condition)) continue; // nothing said about flooding here
-      seen.add(key);
+      decide();
+      const receded = recededAt(loc, at);
+      if (receded !== null && receded <= now.getTime()) {
+        clearedByReport++;
+        continue;
+      }
       if (!Number.isFinite(at) || at < since) {
         clearedByWeather++;
         continue;
       }
+      const clearsAt = Math.min(at + activeHours * HOUR, receded ?? Infinity);
       locations.push({
         key,
         label: o.label,
-        roads: roadCandidates(text(loc.roadName), o.label),
+        roads: roadCandidates(text(loc.roadName), o.label, text(loc.landmark)),
         landmark: text(loc.landmark),
         barangay: text(loc.barangay) ?? text(admin?.barangay),
         municipality: text(loc.municipality) ?? text(admin?.municipality),
@@ -124,7 +184,7 @@ export function buildFloodMap(
         reference: reportReference(record.id, record.createdAt),
         reportedAt,
         groupName: record.source?.groupName ?? null,
-        clearsAt: new Date(at + activeHours * HOUR).toISOString(),
+        clearsAt: new Date(clearsAt).toISOString(),
       });
     }
   }

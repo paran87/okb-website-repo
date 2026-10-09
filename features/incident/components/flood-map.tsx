@@ -23,7 +23,8 @@ export interface FloodMapProps {
   selectedKey: string | null;
   /** Frame these positions (changes of [focus.id] move the map), clear of panels over the map ([padding]). */
   focus: { id: number; positions: Position[]; padding?: Partial<Record<"top" | "right" | "bottom" | "left", number>> } | null;
-  onSelect: (key: string | null) => void;
+  /** A location was tapped; [area] is the place tapped when the location is drawn in more than one. */
+  onSelect: (key: string | null, area?: Position[]) => void;
   /** Show the flooded-road layers (default true). */
   visible?: boolean;
   /** A pulsing red alert on each flooded location (Incidents map). */
@@ -51,17 +52,61 @@ function halfway(line: Position[]): Position | null {
   return line[0] ?? null;
 }
 
-/** Where a location's alert sits: halfway along its longest flooded road line, else at its point. */
-function alertAnchors(lines: FloodLineFeature[], points: FloodPointFeature[]): Map<string, Position> {
-  const anchors = new Map<string, Position>();
-  for (const l of lines) {
-    if (anchors.has(l.properties.key)) continue;
-    const longest = l.geometry.coordinates.reduce<Position[]>((a, b) => (lengthOf(b) > lengthOf(a) ? b : a), []);
-    const at = halfway(longest);
-    if (at) anchors.set(l.properties.key, at);
+/** Lines of one location this far apart (degrees, ~550 m) are separate places, each with its own alert. */
+const PLACE_GAP = 0.005;
+
+type Box = [number, number, number, number];
+const boxOf = (line: Position[]): Box =>
+  line.reduce<Box>(
+    ([w, s, e, n], [x = 0, y = 0]) => [Math.min(w, x), Math.min(s, y), Math.max(e, x), Math.max(n, y)],
+    [Infinity, Infinity, -Infinity, -Infinity],
+  );
+const near = (a: Box, b: Box, gap = PLACE_GAP) =>
+  a[0] - gap <= b[2] && b[0] - gap <= a[2] && a[1] - gap <= b[3] && b[1] - gap <= a[3];
+
+export interface AlertSpot {
+  key: string;
+  /** Where the alert sits. */
+  at: Position;
+  /** The flooded road lines of this place (what a tap frames). */
+  area: Position[];
+}
+
+/**
+ * One alert per separate place of each location: a location drawn in two places (the same road names in two
+ * cities) gets an alert at each. The alert sits where the roads meet when that is in the place, else halfway
+ * along the place's longest flooded line; a location with only a point gets its alert there.
+ */
+export function alertSpots(lines: FloodLineFeature[], points: FloodPointFeature[]): AlertSpot[] {
+  const pointOf = new Map(points.map((p) => [p.properties.key, p.geometry.coordinates]));
+  const byKey = new Map<string, Position[][]>();
+  for (const l of lines) byKey.set(l.properties.key, [...(byKey.get(l.properties.key) ?? []), ...l.geometry.coordinates]);
+  const spots: AlertSpot[] = [];
+  for (const [key, parts] of byKey) {
+    // Group the lines into places (lines whose extents are within PLACE_GAP of each other).
+    const groups: { box: Box; parts: Position[][] }[] = [];
+    for (const part of parts.filter((x) => x.length > 1)) {
+      let box = boxOf(part);
+      let members = [part];
+      for (let i = groups.length - 1; i >= 0; i--) {
+        const g = groups[i];
+        if (!g || !near(g.box, box)) continue;
+        box = [Math.min(g.box[0], box[0]), Math.min(g.box[1], box[1]), Math.max(g.box[2], box[2]), Math.max(g.box[3], box[3])];
+        members = [...g.parts, ...members];
+        groups.splice(i, 1);
+      }
+      groups.push({ box, parts: members });
+    }
+    const point = pointOf.get(key);
+    for (const g of groups) {
+      const longest = g.parts.reduce<Position[]>((a, b) => (lengthOf(b) > lengthOf(a) ? b : a), []);
+      const crossing = point && near(g.box, boxOf([point]), 0) ? point : null;
+      const at = crossing ?? halfway(longest);
+      if (at) spots.push({ key, at, area: g.parts.flat() });
+    }
   }
-  for (const p of points) if (!anchors.has(p.properties.key)) anchors.set(p.properties.key, p.geometry.coordinates);
-  return anchors;
+  for (const [key, at] of pointOf) if (!byKey.has(key)) spots.push({ key, at, area: [at] });
+  return spots;
 }
 
 /** The alert: a red disc with a white "!" and a pulsing ring, in a 40 px tap target. */
@@ -254,8 +299,8 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
     const markers: Marker[] = [];
     void import("maplibre-gl").then(({ default: maplibregl }) => {
       if (cancelled || !isLiveMap(map)) return;
-      for (const [key, at] of alertAnchors(lines, points)) {
-        const marker = new maplibregl.Marker({ element: alertElement(() => onSelect(key)), anchor: "center" })
+      for (const { key, at, area } of alertSpots(lines, points)) {
+        const marker = new maplibregl.Marker({ element: alertElement(() => onSelect(key, area)), anchor: "center" })
           .setLngLat([at[0] ?? 0, at[1] ?? 0])
           .addTo(map);
         markers.push(marker);

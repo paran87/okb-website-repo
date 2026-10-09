@@ -160,7 +160,7 @@ export function InsightsPanel({ placed, flood, ready, weather, byRegion, regions
             {flood.weather.state === "normal"
               ? `Weather normal: the map goes back to normal ${flood.rule.normalHours} h after a road's latest flood report.`
               : `Rain, a warning or unknown weather: flooded roads stay ${flood.rule.wetHours} h after their latest report.`}{" "}
-            A subsided / no-flooding report clears a road at once.
+            A report of subsided / no flooding or a receding time clears the road.
           </p>
         ) : null}
       </section>
