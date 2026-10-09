@@ -16,7 +16,7 @@ import type {
   CollectorPlatformSnapshot,
   CollectorStatus,
 } from "@/features/media-collector/types";
-import { ReportsGate } from "@/features/reports/components/reports-gate";
+import { useReportsAccess } from "@/features/reports/hooks/use-reports";
 import { formatRelative } from "@/features/reports/lib/format";
 
 /** A collector that has not reported for this long is shown as offline. */
@@ -258,11 +258,13 @@ function CollectorStatusSection() {
   return <StatusCard status={status.data} />;
 }
 
-/** Settings → OKB Media Collector (operator access key required, like the automated reports). */
+/**
+ * Settings → OKB Media Collector. Shown only once the operator has access: the sign-in form above (automated
+ * reports) is the single place to enter the access key, so this card never renders a second form.
+ */
 export function CollectorSettings() {
-  return (
-    <ReportsGate area="settings" bare>
-      {() => <CollectorStatusSection />}
-    </ReportsGate>
-  );
+  const access = useReportsAccess("settings");
+  if (!access.data?.granted || access.data.dataSource === "not_configured")
+    return null;
+  return <CollectorStatusSection />;
 }
