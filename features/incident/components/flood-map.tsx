@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Feature, FeatureCollection, MultiLineString, Point, Position } from "geojson";
-import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap, MapMouseEvent } from "maplibre-gl";
+import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Marker } from "maplibre-gl";
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
 import { isLiveMap, useMapStore } from "@/features/map/store/map.store";
@@ -26,10 +26,65 @@ export interface FloodMapProps {
   onSelect: (key: string | null) => void;
   /** Show the flooded-road layers (default true). */
   visible?: boolean;
+  /** A pulsing red alert on each flooded location (Incidents map). */
+  alerts?: boolean;
 }
 
 const expr = (e: unknown) => e as ExpressionSpecification;
 const width = (scale: number) => expr(["interpolate", ["linear"], ["zoom"], 9, 2.5 * scale, 13, 5 * scale, 17, 10 * scale]);
+
+const span = (a: Position, b: Position) => Math.hypot((b[0] ?? 0) - (a[0] ?? 0), (b[1] ?? 0) - (a[1] ?? 0));
+const lengthOf = (line: Position[]) => line.reduce((sum, p, i) => (i ? sum + span(line[i - 1] ?? p, p) : 0), 0);
+
+/** The point halfway along a line. */
+function halfway(line: Position[]): Position | null {
+  let rest = lengthOf(line) / 2;
+  for (let i = 1; i < line.length; i++) {
+    const [a = [0, 0], b = [0, 0]] = [line[i - 1], line[i]];
+    const d = span(a, b);
+    if (d >= rest && d > 0) {
+      const t = rest / d;
+      return [(a[0] ?? 0) + ((b[0] ?? 0) - (a[0] ?? 0)) * t, (a[1] ?? 0) + ((b[1] ?? 0) - (a[1] ?? 0)) * t];
+    }
+    rest -= d;
+  }
+  return line[0] ?? null;
+}
+
+/** Where a location's alert sits: halfway along its longest flooded road line, else at its point. */
+function alertAnchors(lines: FloodLineFeature[], points: FloodPointFeature[]): Map<string, Position> {
+  const anchors = new Map<string, Position>();
+  for (const l of lines) {
+    if (anchors.has(l.properties.key)) continue;
+    const longest = l.geometry.coordinates.reduce<Position[]>((a, b) => (lengthOf(b) > lengthOf(a) ? b : a), []);
+    const at = halfway(longest);
+    if (at) anchors.set(l.properties.key, at);
+  }
+  for (const p of points) if (!anchors.has(p.properties.key)) anchors.set(p.properties.key, p.geometry.coordinates);
+  return anchors;
+}
+
+/** The alert: a red disc with a white "!" and a pulsing ring, in a 40 px tap target. */
+function alertElement(onTap: () => void): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.floodAlert = "";
+  button.setAttribute("aria-label", "Flooded road: show details");
+  button.className = "grid size-10 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0";
+  const ring = document.createElement("span");
+  ring.className = "col-start-1 row-start-1 size-7 rounded-full bg-[#ef1c1c] opacity-60 motion-safe:animate-ping";
+  const disc = document.createElement("span");
+  disc.className =
+    "col-start-1 row-start-1 grid size-7 place-items-center rounded-full bg-[#e41b1b] text-[18px] font-black leading-none text-white shadow-[0_0_0_2px_#fff,0_1px_5px_rgba(0,0,0,0.4)]";
+  disc.textContent = "!";
+  disc.setAttribute("aria-hidden", "true");
+  button.append(ring, disc);
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    onTap();
+  });
+  return button;
+}
 
 /** Map of flooded roads (MapLibre). One map per page: it uses the shared map store. */
 export function FloodMap(props: FloodMapProps) {
@@ -52,7 +107,7 @@ export function FloodMap(props: FloodMapProps) {
 }
 
 /** The flooded-road layers, on whichever map the page shows (Incidents map or Dashboard map). */
-export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visible = true }: FloodMapProps) {
+export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visible = true, alerts = false }: FloodMapProps) {
   const map = useMapStore((s) => s.map);
   const status = useMapStore((s) => s.status);
   const [styleVersion, setStyleVersion] = useState(0);
@@ -176,7 +231,11 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
         { layers },
       )[0];
     };
-    const onClick = (event: MapMouseEvent) => onSelect((pick(event)?.properties?.key as string | undefined) ?? null);
+    const onClick = (event: MapMouseEvent) => {
+      // A tap on an alert selects its location (the alert's own handler).
+      if ((event.originalEvent.target as Element | null)?.closest?.("[data-flood-alert]")) return;
+      onSelect((pick(event)?.properties?.key as string | undefined) ?? null);
+    };
     const onMove = (event: MapMouseEvent) => {
       map.getCanvas().style.cursor = pick(event) ? "pointer" : "";
     };
@@ -187,6 +246,26 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
       map.off("mousemove", onMove);
     };
   }, [map, status, onSelect]);
+
+  // Pulsing red alerts on the flooded locations (HTML markers, above the roads).
+  useEffect(() => {
+    if (!alerts || !visible || !isLiveMap(map) || status !== "ready") return;
+    let cancelled = false;
+    const markers: Marker[] = [];
+    void import("maplibre-gl").then(({ default: maplibregl }) => {
+      if (cancelled || !isLiveMap(map)) return;
+      for (const [key, at] of alertAnchors(lines, points)) {
+        const marker = new maplibregl.Marker({ element: alertElement(() => onSelect(key)), anchor: "center" })
+          .setLngLat([at[0] ?? 0, at[1] ?? 0])
+          .addTo(map);
+        markers.push(marker);
+      }
+    });
+    return () => {
+      cancelled = true;
+      for (const m of markers) m.remove();
+    };
+  }, [map, status, alerts, visible, lines, points, onSelect]);
 
   useEffect(() => {
     if (!isLiveMap(map) || status !== "ready" || !focus || focus.positions.length === 0) return;

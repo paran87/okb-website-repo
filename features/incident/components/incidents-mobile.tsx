@@ -93,7 +93,7 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
         className="absolute inset-0 h-full w-full"
       />
       <WeatherRadarOverlay enabled={radarOn} onEnabledChange={setRadarOn} hideButton />
-      <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} visible={floodVisible} />
+      <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} visible={floodVisible} alerts />
 
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col gap-1.5 p-2">
         <header className="glass pointer-events-auto flex items-center justify-between gap-2 rounded-xl border border-border/60 py-1 pl-2 pr-1 shadow-panel">

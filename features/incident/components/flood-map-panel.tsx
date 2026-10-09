@@ -330,7 +330,7 @@ export function FloodMapPanel() {
           role={floating ? "dialog" : undefined}
           aria-label={floating ? "Flood map" : undefined}
         >
-          <FloodMap lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} />
+          <FloodMap lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} alerts />
           <MapKey className="pointer-events-auto absolute left-2 top-2 z-10 hidden max-w-[11.5rem] sm:block" />
           {ready && placed.length === 0 ? (
             <div className="pointer-events-none absolute inset-x-2 bottom-2 z-10 flex justify-center">
