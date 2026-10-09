@@ -13,7 +13,9 @@ import { requireReportsAccess } from "@/features/reports/server/access";
 
 export const dynamic = "force-dynamic";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// A collector item id, or "b-<id>" for a file uploaded by the Android bridge.
+const FILE_REF =
+  /^(b-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Opens (or with ?download=1 downloads) an original collected file: checks operator access, then redirects to a
@@ -22,7 +24,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const GET = withApiHandler(async (request: NextRequest, { params }) => {
   const { store } = await requireReportsAccess(request, { area: "settings" });
   const id = (await params).id ?? "";
-  if (store.kind === "fixtures" || !UUID.test(id))
+  if (store.kind === "fixtures" || !FILE_REF.test(id))
     throw new NotFoundError("File not found");
   const file = await collectedFile(id);
   if (!file) throw new NotFoundError("No stored file for this item");

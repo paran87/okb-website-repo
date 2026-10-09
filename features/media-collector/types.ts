@@ -1,4 +1,7 @@
-/** OKB Media Collector data shown in the Command Center (okb_ingested_media + collector status). */
+/**
+ * Media shown in the Command Center: files from the OKB Media Collector (okb_ingested_media + collector status) and
+ * files uploaded by the Android bridge (okb_bridge_media_items view).
+ */
 
 export type MediaSource = "whatsapp" | "viber";
 export type MediaStatus =
@@ -12,8 +15,15 @@ export type MediaStatus =
 export type MediaKind =
   "image" | "video" | "document" | "audio" | "sticker" | "other";
 
+/** Which OKB component captured the file. */
+export type MediaChannel = "collector" | "android_bridge";
+
 export interface CollectedMediaItem {
+  /** Unique per listed item (an Android-bridge photo sent in two messages is two items). */
   id: string;
+  /** Path segment for /api/media-collector/[ref]/file when it differs from id (Android bridge: "b-<media id>"). */
+  fileRef?: string;
+  channel: MediaChannel;
   source: MediaSource;
   conversationType: "group" | "direct";
   groupName: string | null;
@@ -61,7 +71,7 @@ export interface MediaListResult {
   limit: number;
   /** Group names seen so far (filter options). */
   groups: string[];
-  /** False when the collector tables do not exist yet. */
+  /** False when neither the collector tables nor the Android-bridge media view exist yet. */
   configured: boolean;
 }
 

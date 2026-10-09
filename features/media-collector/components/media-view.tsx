@@ -300,7 +300,7 @@ function MediaCard({ item }: { item: CollectedMediaItem }) {
       toast.error({ title: "Could not copy", description: item.reference });
     }
   };
-  const fileUrl = `/api/media-collector/${encodeURIComponent(item.id)}/file`;
+  const fileUrl = `/api/media-collector/${encodeURIComponent(item.fileRef ?? item.id)}/file`;
   return (
     <Card className="flex flex-col overflow-hidden">
       <div className="bg-muted relative aspect-video w-full sm:aspect-[4/3]">
@@ -342,6 +342,14 @@ function MediaCard({ item }: { item: CollectedMediaItem }) {
             <span className="break-words">
               {item.statusReason.replace(/_/g, " ")}
             </span>
+          </p>
+        ) : null}
+        {item.channel === "android_bridge" ? (
+          <p className="text-muted-foreground flex items-center gap-1.5 text-[11px]">
+            <Smartphone className="size-3.5 shrink-0" aria-hidden />
+            {item.status === "duplicate"
+              ? "Android bridge · same file as an earlier message"
+              : "Captured by the Android bridge"}
           </p>
         ) : null}
         {item.duplicateOfAndroidMessage ? (
@@ -469,8 +477,8 @@ function Gallery() {
       <Card>
         <EmptyState
           icon={PlugZap}
-          title="The media collector is not set up yet"
-          description='Apply the "OKB Media Collector" section of supabase-schema.sql in the OKB Bridge Supabase project and deploy the collector.'
+          title="Media storage is not set up yet"
+          description="Apply migrations/20261009_okb_media_collector.sql and migrations/20261010_okb_bridge_media_items.sql (okb-bridge-cloud-backend) in the OKB Bridge Supabase project."
         />
       </Card>
     );
@@ -528,7 +536,7 @@ export function MediaView() {
     <div className="space-y-4 sm:space-y-6">
       <PageHeader
         title="OKB Media"
-        description="Photos and documents from authorized WhatsApp and Viber reporting channels (OKB Media Collector)."
+        description="Photos and documents from authorized WhatsApp and Viber reporting channels (Android bridge and OKB Media Collector)."
         breadcrumbs={[
           { label: "Dashboard", href: ROUTES.dashboard },
           { label: "OKB Media" },

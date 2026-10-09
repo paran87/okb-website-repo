@@ -12,6 +12,7 @@ import type {
  */
 
 const base = {
+  channel: "collector" as const,
   conversationType: "group" as const,
   groupId: "120363025555555555@g.us",
   senderId: "639170000001",
@@ -119,6 +120,28 @@ const ITEMS: CollectedMediaItem[] = [
     previewUrl: null,
     reference: "okb-media:f5",
     messageText: null,
+  },
+  {
+    ...base,
+    id: "b-f6",
+    fileRef: "b-f6",
+    channel: "android_bridge",
+    source: "whatsapp",
+    groupId: null,
+    senderId: null,
+    groupName: "OKB NCR Flood Reports",
+    senderName: "Field reporter",
+    receivedAt: "2026-10-09T11:20:00Z",
+    createdAt: "2026-10-09T11:20:40Z",
+    kind: "image",
+    mimeType: "image/jpeg",
+    fileName: null,
+    fileSizeBytes: 182_311,
+    status: "stored",
+    hasFile: true,
+    previewUrl: null,
+    reference: "okb-bridge-media:f6",
+    messageText: "Flood at the corner, knee deep",
   },
 ];
 

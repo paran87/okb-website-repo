@@ -45,9 +45,10 @@ export function useCollectedMedia(q: MediaListQuery) {
         ? last.offset + last.items.length
         : undefined,
     placeholderData: keepPreviousData,
-    // Preview links are signed for 10 minutes.
-    staleTime: 60_000,
-    refetchInterval: 5 * 60_000,
+    // New files appear without a reload: checked every minute while the page is open (and on focus).
+    // Preview links are signed for 10 minutes, so refreshed pages always carry valid links.
+    staleTime: 30_000,
+    refetchInterval: 60_000,
     retry: 1,
   });
 }
