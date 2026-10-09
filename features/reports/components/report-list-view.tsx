@@ -19,15 +19,18 @@ import { CreateIncidentModal } from "@/features/reports/components/create-incide
 import { ReportCard } from "@/features/reports/components/report-card";
 import { ReportDetailView } from "@/features/reports/components/report-detail";
 import { ReportFilters } from "@/features/reports/components/report-filters";
+import { currentMonitoringPeriod } from "@/features/reports/lib/monitoring-period";
 import { PlatformBadge, StatusBadge } from "@/features/reports/components/report-ui";
 
-const DEFAULTS: Record<"incoming" | "archive", ReportListQuery> = {
-  incoming: { datePreset: "7d", status: "all", pageSize: 25 },
-  archive: { datePreset: "all", status: "all", pageSize: 50 },
-};
+/** Incoming opens on the current monitoring period (Asia/Manila); the archive on everything. */
+function defaults(variant: "incoming" | "archive"): ReportListQuery {
+  return variant === "incoming"
+    ? { datePreset: "period", ...currentMonitoringPeriod(), status: "all", pageSize: 25 }
+    : { datePreset: "all", status: "all", pageSize: 50 };
+}
 
 function hasFilters(q: ReportListQuery, variant: "incoming" | "archive"): boolean {
-  const d = DEFAULTS[variant];
+  const d = defaults(variant);
   return Boolean(
     q.q ||
       (q.platform && q.platform !== "all") ||
@@ -39,7 +42,8 @@ function hasFilters(q: ReportListQuery, variant: "incoming" | "archive"): boolea
       (q.municipality && q.municipality !== "all") ||
       (q.office && q.office !== "all") ||
       q.location ||
-      q.datePreset !== d.datePreset,
+      q.datePreset !== d.datePreset ||
+      (d.datePreset === "period" && (q.day !== d.day || q.period !== d.period)),
   );
 }
 
@@ -163,7 +167,7 @@ function ArchiveTable({ items, onOpen }: { items: ReportListItem[]; onOpen: (id:
 }
 
 export function ReportListView({ variant }: { variant: "incoming" | "archive" }) {
-  const [query, setQuery] = useState<ReportListQuery>(DEFAULTS[variant]);
+  const [query, setQuery] = useState<ReportListQuery>(() => defaults(variant));
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [incidentFor, setIncidentFor] = useState<string | null>(null);
   // Pages are loaded by scrolling, so the filters' page number is not part of the list query.
@@ -227,7 +231,7 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
         variant={variant}
         value={query}
         onChange={(patch) => setQuery((q) => ({ ...q, ...patch }))}
-        onReset={() => setQuery(DEFAULTS[variant])}
+        onReset={() => setQuery(defaults(variant))}
       />
 
       {variant === "incoming" && newCount > 0 ? (
@@ -288,10 +292,21 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
             />
           ) : filtered ? (
             <EmptyState icon={SearchX} title="No reports match your current filters." description="Adjust the search, date range or filters." />
+          ) : variant === "incoming" ? (
+            <EmptyState
+              icon={Inbox}
+              title="No reports in the current monitoring period yet."
+              description="Reports appear here as the OKB Bridge receives them from WhatsApp and Viber groups. Pick another period above, or see the last 7 days."
+              action={
+                <Button variant="outline" onClick={() => setQuery((q) => ({ ...q, datePreset: "7d", day: undefined, period: undefined, page: 1 }))}>
+                  Show the last 7 days
+                </Button>
+              }
+            />
           ) : (
             <EmptyState
               icon={Inbox}
-              title={variant === "incoming" ? "No incoming reports yet." : "No reports in the archive yet."}
+              title="No reports in the archive yet."
               description="Reports appear here as the OKB Bridge receives them from WhatsApp and Viber groups."
             />
           )}
