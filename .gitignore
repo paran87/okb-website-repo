@@ -54,3 +54,6 @@ Thumbs.db
 *.tsbuildinfo
 __pycache__/
 *.pyc
+
+# operations photo download cache (scripts/operations-media)
+.cache/
