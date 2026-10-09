@@ -95,7 +95,7 @@ function repeatText(days: number[] | null | undefined): string {
 
 const SEND_AS: { value: ScheduleDeliveryType; label: string; hint: string }[] = [
   { value: "TEXT", label: "Send report as text", hint: "Sent automatically to the group. No PDF goes to the bridge phone." },
-  { value: "PDF", label: "Send report as PDF + text", hint: "The bridge phone sends the PDF with a caption, then the text report, to the group." },
+  { value: "PDF", label: "Send report as PDF + text", hint: "The bridge phone sends the PDF to the group with the text report as its caption." },
 ];
 
 /** Entries a new period may not be confused with: only those not yet prepared can still change. */
@@ -260,7 +260,7 @@ function RepeatDaysDialog({
   );
 }
 
-/** SEND AS: Text, or PDF (+ the text report after it), sent automatically by the bridge phone. */
+/** SEND AS: Text, or PDF (with the text report as its caption), sent automatically by the bridge phone. */
 function SendAs({ type }: { type: ScheduleDeliveryType }) {
   return type === "PDF" ? (
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-foreground">
@@ -351,7 +351,7 @@ function EntryStatus({
   const r = e.report;
   const t = r?.textDelivery ?? null;
   const count = r ? `${r.reportCount} report${r.reportCount === 1 ? "" : "s"}` : null;
-  // Older PDF entries have no text report.
+  // The text report is the PDF's caption: no separate text message.
   if (e.deliveryType === "PDF" && r && !t) return <PdfEntryStatus r={r} count={count} />;
   if (!r || !t) {
     return <div className="space-y-1">{badge("default", "PDF only")}{note(count ? `${count}; no text for an empty period.` : "Report not found.")}</div>;
@@ -430,7 +430,8 @@ function EntryStatus({
     );
   }
   if (e.deliveryType === "PDF") {
-    // The PDF (with its caption) first, then the text report.
+    // The PDF first, then a text message: older entries, the further parts of a very long report, or the whole
+    // text report when the PDF could not be made.
     const label = (text: string) => <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{text}</p>;
     return (
       <div className="flex flex-col items-start gap-3">
@@ -623,8 +624,8 @@ export function ReportSchedule() {
             <p className="text-caption text-muted-foreground">
               Add as many reports as you need. At each date of sending, only the flood reports received in its
               monitoring period (AI-analyzed and summarized) go into one consolidated report. Sent as text, the bridge
-              phone sends it to the destination group automatically; sent as PDF, it waits on the phone as “PDF Ready”
-              for the operator. Times are Asia/Manila.
+              phone sends it to the destination group automatically; sent as PDF, the phone sends the PDF with the text
+              report as its caption. Times are Asia/Manila.
             </p>
           </div>
         </div>
