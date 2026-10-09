@@ -39,6 +39,25 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const PHONE_OFFLINE_MS = 3 * 60 * 1000;
 /** Same as the backend: a date of sending that already passed is sent at once, up to a day late. */
 const PAST_LIMIT_MS = DAY_MS;
+/** Asia/Manila is UTC+8 all year. */
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * Same as the backend: a repeating entry works whatever date it is entered with. Its first occurrence is moved by
+ * whole days onto a chosen weekday and, when the date of sending is more than a day old, onto the next sending time
+ * from now. Returns the number of days it moves.
+ */
+function firstOccurrenceShift(sendIso: string, days: number[]): number {
+  const send = Date.parse(sendIso);
+  const now = Date.now();
+  const from = send >= now - PAST_LIMIT_MS ? now - PAST_LIMIT_MS : now;
+  const k = Math.max(0, Math.ceil((from - send) / DAY_MS));
+  for (let i = k; i < k + 7; i++) {
+    if (days.includes(new Date(send + i * DAY_MS + MANILA_OFFSET_MS).getUTCDay())) return i;
+  }
+  return 0;
+}
+const shiftIso = (iso: string, days: number) => new Date(Date.parse(iso) + days * DAY_MS).toISOString();
 
 const errorMessage = (e: unknown) => (e instanceof Error ? e.message : "The request failed.");
 
@@ -89,9 +108,9 @@ const overlaps = (a: { start: number; end: number }, e: ScheduleEntry) =>
 function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null) {
   const errors: string[] = [];
   const warnings: string[] = [];
-  const start = manilaInputToIso(d.from);
-  const end = manilaInputToIso(d.to);
-  const send = manilaInputToIso(d.send);
+  let start = manilaInputToIso(d.from);
+  let end = manilaInputToIso(d.to);
+  let send = manilaInputToIso(d.send);
   if (!d.from && !d.to && !d.send && !d.repeat) return { errors, warnings, input: null };
   if (!start || !end) errors.push("Enter both the start and the end of the monitoring period.");
   if (!send) errors.push("Enter the date of sending.");
@@ -104,7 +123,16 @@ function checkDraft(d: Draft, entries: ScheduleEntry[], editingId: string | null
   if (end && send && Date.parse(send) < Date.parse(end)) {
     errors.push("The date of sending must be at or after the end of the monitoring period; reports received after it would be missing.");
   }
-  if (send && Date.parse(send) < Date.now() - PAST_LIMIT_MS) {
+  if (d.repeat && start && end && send && errors.length === 0) {
+    const shift = firstOccurrenceShift(send, d.repeat);
+    if (shift > 0) {
+      [start, end, send] = [shiftIso(start, shift), shiftIso(end, shift), shiftIso(send, shift)];
+      warnings.push(
+        `Repeats ${repeatPhrase(d.repeat)}, so only the times of day count: the first report covers ${periodLabel(start, end)} and is sent ${formatShort(send)}.`,
+      );
+    }
+  }
+  if (!d.repeat && send && Date.parse(send) < Date.now() - PAST_LIMIT_MS) {
     errors.push("The date of sending is more than a day in the past.");
   } else if (send && Date.parse(send) < Date.now()) {
     warnings.push("The date of sending has already passed: this report is sent right away once you add it.");
@@ -683,7 +711,7 @@ export function ReportSchedule() {
             </div>
             <p className="text-[11px] leading-snug text-muted-foreground">
               {draft.repeat
-                ? `After each sending the next one is added ${repeatPhrase(draft.repeat)}, with the same monitoring period and time of sending.`
+                ? `After each sending the next one is added ${repeatPhrase(draft.repeat)}, with the same monitoring period and time of sending. Any date works: it keeps repeating.`
                 : "Sent once, at the date of sending."}
             </p>
             <RepeatDaysDialog
