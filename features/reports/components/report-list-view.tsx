@@ -191,6 +191,10 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
     return (pages ?? []).flatMap((p) => p.items).filter((it) => !seen.has(it.id) && Boolean(seen.add(it.id)));
   }, [pages]);
   const filtered = hasFilters(query, variant);
+  // Messages the same filters match that were classified as not a flood report (hidden under "All statuses").
+  const hidden = query.status === "all" ? (result?.hiddenNotFlood ?? 0) : 0;
+  const showHidden = () => setQuery((q) => ({ ...q, status: "ignored", page: 1 }));
+  const hiddenText = `${hidden.toLocaleString()} message${hidden === 1 ? "" : "s"} classified as not a flood report`;
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
 
   // Load the next page when the end of the list comes into view.
@@ -242,7 +246,20 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
           {result ? (
             <>
               <span className="font-semibold text-foreground">{result.total.toLocaleString()}</span> report{result.total === 1 ? "" : "s"}
-              {query.status === "all" ? " (excluding messages classified as not flood reports)" : ""}
+              {query.status !== "all" ? null : hidden > 0 ? (
+                <>
+                  {` · ${hiddenText} hidden `}
+                  <button
+                    type="button"
+                    onClick={showHidden}
+                    className="-my-2 inline-flex min-h-10 items-center rounded px-1 font-semibold text-primary hover:underline"
+                  >
+                    Show
+                  </button>
+                </>
+              ) : (
+                " (excluding messages classified as not flood reports)"
+              )}
             </>
           ) : (
             " "
@@ -258,7 +275,18 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
         </Card>
       ) : !result || items.length === 0 ? (
         <Card>
-          {filtered ? (
+          {hidden > 0 ? (
+            <EmptyState
+              icon={SearchX}
+              title="No flood reports match your current filters."
+              description={`${hiddenText} matched and ${hidden === 1 ? "is" : "are"} hidden under "All statuses".`}
+              action={
+                <Button variant="outline" onClick={showHidden}>
+                  Show {hidden === 1 ? "it" : "them"}
+                </Button>
+              }
+            />
+          ) : filtered ? (
             <EmptyState icon={SearchX} title="No reports match your current filters." description="Adjust the search, date range or filters." />
           ) : (
             <EmptyState

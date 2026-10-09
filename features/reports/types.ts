@@ -433,6 +433,11 @@ export interface ReportListResult {
   pageSize: number;
   totalPages: number;
   incidentStorage: IncidentStorageState;
+  /**
+   * With "All statuses": messages matching the same filters that were classified as not a flood report (hidden
+   * from the list). Counted on the first page only; absent otherwise.
+   */
+  hiddenNotFlood?: number;
 }
 
 export interface ReportDetail {

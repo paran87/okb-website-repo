@@ -199,9 +199,16 @@ function toListItem(record: BridgeReportRecord, incidents: IncidentSummary[]): R
 }
 
 export async function listReports(store: ReportStore, q: ResolvedListQuery): Promise<ReportListResult> {
-  const { records, total } = await store.listReports(q);
+  // "All statuses" hides messages classified as not a flood report; say how many the same filters hide.
+  const [{ records, total }, hidden] = await Promise.all([
+    store.listReports(q),
+    q.status === "all" && q.offset === 0
+      ? store.listReports({ ...q, status: "ignored", offset: 0, limit: 1 }).then((r) => r.total).catch(() => undefined)
+      : Promise.resolve(undefined),
+  ]);
   const incidents = await store.incidentsForReports(records.map((r) => r.id));
   return {
+    ...(hidden === undefined ? {} : { hiddenNotFlood: hidden }),
     items: records.map((r) => toListItem(r, incidents ?? [])),
     total,
     page: Math.floor(q.offset / q.limit) + 1,
