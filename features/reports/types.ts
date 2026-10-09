@@ -532,6 +532,9 @@ export interface ReportFacets {
   offices: string[];
 }
 
+/** Where operator access is checked; see features/reports/server/access.ts. */
+export type AccessArea = "reports" | "settings" | "operations";
+
 export interface ReportsAccessState {
   dataSource: ReportDataSource;
   /** Operator access key configured on the server. */

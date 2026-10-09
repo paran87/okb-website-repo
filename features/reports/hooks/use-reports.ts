@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
+  AccessArea,
   CreateIncidentInput,
   IncidentRecord,
   LocationHistory,
@@ -82,7 +83,7 @@ const retry = (count: number, error: Error): boolean =>
 
 export const reportKeys = {
   all: ["reports"] as const,
-  access: (area: "reports" | "settings") => ["reports", "access", area] as const,
+  access: (area: AccessArea) => ["reports", "access", area] as const,
   list: (q: ReportListQuery) => ["reports", "list", q] as const,
   infiniteList: (q: Omit<ReportListQuery, "page">) => ["reports", "list", q, "infinite"] as const,
   facets: ["reports", "facets"] as const,
@@ -93,8 +94,8 @@ export const reportKeys = {
   incidents: (page: number) => ["reports", "incidents", page] as const,
 };
 
-/** Operator access for [area]: only Settings asks for the access key. */
-export function useReportsAccess(area: "reports" | "settings" = "reports") {
+/** Operator access for [area]: only Settings and Operations ask for the access key. */
+export function useReportsAccess(area: AccessArea = "reports") {
   return useQuery({
     queryKey: reportKeys.access(area),
     queryFn: async () => (await api<ReportsAccessState>(`/api/reports/access?area=${area}`)).data,

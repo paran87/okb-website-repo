@@ -22,8 +22,19 @@ function storageError(err: unknown): never {
   throw err;
 }
 
+/** Operations media is only served to operators who entered the access key (same as Settings). */
+async function requireOperationsAccess(request: NextRequest, action: string): Promise<void> {
+  const state = await getAccessState(request, "operations");
+  if (!state.granted) {
+    throw new ApiError(401, "UNAUTHORIZED", `Enter the operator access key to ${action}.`, {
+      reason: state.accessConfigured ? "access_required" : "access_not_configured",
+    });
+  }
+}
+
 /** Geotagged photos or operation videos of one section (?section=ncr-daily&kind=photos|videos). */
 export const GET = withApiHandler(async (request: NextRequest) => {
+  await requireOperationsAccess(request, "view operations media");
   const params = request.nextUrl.searchParams;
   const section = params.get("section");
   const kind = params.get("kind") === "videos" ? "videos" : "photos";
@@ -42,12 +53,7 @@ const deleteSchema = z.object({
 /** Removes a file from the gallery (moved to the bucket's trash folder). Operator access key required. */
 export const DELETE = withApiHandler(async (request: NextRequest) => {
   assertSameOrigin(request);
-  const state = await getAccessState(request, "settings");
-  if (!state.granted) {
-    throw new ApiError(401, "UNAUTHORIZED", "Enter the operator access key to delete media.", {
-      reason: state.accessConfigured ? "access_required" : "access_not_configured",
-    });
-  }
+  await requireOperationsAccess(request, "delete media");
   const body = deleteSchema.parse(await request.json());
   if (!isOperationsSection(body.section)) throw new NotFoundError("Unknown operations section");
   const removed = await deleteOperationsMedia(body.section, body.key).catch(storageError);

@@ -4,7 +4,7 @@ import type { NextRequest, NextResponse } from "next/server";
 import { ApiError, ForbiddenError } from "@/lib/api/errors";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { hasPermission, Permission } from "@/lib/rbac/permissions";
-import type { ReportsAccessState } from "@/features/reports/types";
+import type { AccessArea, ReportsAccessState } from "@/features/reports/types";
 import { getReportsConfig, type ReportsConfig } from "@/features/reports/server/config";
 import { getReportStore } from "@/features/reports/server/index";
 import type { ReportStore } from "@/features/reports/server/store";
@@ -27,15 +27,16 @@ import type { ReportStore } from "@/features/reports/server/store";
 /**
  * Where operator access is checked:
  *  - "settings": Settings → Automated WhatsApp reports and its /api/reports/consolidated/* routes.
+ *  - "operations": the Operations photo/video galleries and /api/operations/*.
  *  - "reports": the Reports and Incidents pages and the other /api/reports/* and /api/incidents/* routes.
  * Only the areas listed here ask for the access key; in the others report data is served to anyone who
  * opens the pages (an operator who signed in is still named on reviews and incidents).
  */
-export type AccessArea = "reports" | "settings";
-const GATED_AREAS: ReadonlySet<AccessArea> = new Set<AccessArea>(["settings"]);
+export type { AccessArea };
+const GATED_AREAS: ReadonlySet<AccessArea> = new Set<AccessArea>(["settings", "operations"]);
 
 export function accessArea(value: string | null | undefined): AccessArea {
-  return value === "settings" ? "settings" : "reports";
+  return value === "settings" || value === "operations" ? value : "reports";
 }
 
 const COOKIE = "okb_reports_access";

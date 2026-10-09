@@ -8,7 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ReportsAccessState } from "@/features/reports/types";
+import type { AccessArea, ReportsAccessState } from "@/features/reports/types";
 import { ReportsApiError, useGrantAccess, useReportsAccess, useRevokeAccess } from "@/features/reports/hooks/use-reports";
 
 function NotConnected() {
@@ -30,7 +30,7 @@ function NotConnected() {
   );
 }
 
-function AccessForm({ state }: { state: ReportsAccessState }) {
+function AccessForm({ state, area }: { state: ReportsAccessState; area: AccessArea }) {
   const grant = useGrantAccess();
   const [name, setName] = useState("");
   const [key, setKey] = useState("");
@@ -69,7 +69,9 @@ function AccessForm({ state }: { state: ReportsAccessState }) {
           <div>
             <p className="text-subheading text-foreground">Operator access</p>
             <p className="text-caption text-muted-foreground">
-              Reports contain WhatsApp/Viber message content. Your name is recorded on reviews and incidents you create.
+              {area === "operations"
+                ? "Operations photos and videos are only shown to authorized operators."
+                : "Reports contain WhatsApp/Viber message content. Your name is recorded on reviews and incidents you create."}
             </p>
           </div>
         </div>
@@ -153,8 +155,8 @@ export function ReportsGate({
   bare = false,
 }: {
   children: (state: ReportsAccessState) => ReactNode;
-  /** "settings" asks for the operator access key; the report pages are open. */
-  area?: "reports" | "settings";
+  /** "settings" and "operations" ask for the operator access key; the report pages are open. */
+  area?: AccessArea;
   /** Without the source / operator strip (full-screen map layouts). */
   bare?: boolean;
 }) {
@@ -180,8 +182,9 @@ export function ReportsGate({
     );
   }
   const state = access.data;
-  if (state.dataSource === "not_configured") return <NotConnected />;
-  if (!state.granted) return <AccessForm state={state} />;
+  // Operations media lives in R2, not the reports backend, so it only needs the access key.
+  if (state.dataSource === "not_configured" && area !== "operations") return <NotConnected />;
+  if (!state.granted) return <AccessForm state={state} area={area} />;
   if (bare) return <>{children(state)}</>;
   return (
     <div className="space-y-3 sm:space-y-4">

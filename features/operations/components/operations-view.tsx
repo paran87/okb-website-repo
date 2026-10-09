@@ -39,6 +39,7 @@ import {
   useOperationsMedia,
 } from "@/features/operations/hooks/use-operations-media";
 import type { OperationsMediaItem } from "@/features/operations/types";
+import { ReportsGate } from "@/features/reports/components/reports-gate";
 import { ReportsApiError, useGrantAccess } from "@/features/reports/hooks/use-reports";
 import {
   itemTitle,
@@ -586,48 +587,54 @@ export function OperationsView() {
         compact
       />
 
-      <div role="tablist" aria-label="Operation" className="grid grid-cols-2 gap-2">
-        {OPERATIONS_SECTIONS.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            role="tab"
-            aria-selected={section === s.id}
-            onClick={() => setSection(s.id)}
-            className={cn(
-              "min-h-12 rounded-lg border px-3 py-2 text-left text-caption font-semibold leading-snug transition-colors sm:text-body",
-              section === s.id
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-card text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
+      <ReportsGate area="operations" bare>
+        {() => (
+          <div className="space-y-4 sm:space-y-6">
+            <div role="tablist" aria-label="Operation" className="grid grid-cols-2 gap-2">
+              {OPERATIONS_SECTIONS.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={section === s.id}
+                  onClick={() => setSection(s.id)}
+                  className={cn(
+                    "min-h-12 rounded-lg border px-3 py-2 text-left text-caption font-semibold leading-snug transition-colors sm:text-body",
+                    section === s.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
 
-      <div role="tablist" aria-label="Media type" className="flex gap-1 border-b border-border">
-        {KINDS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={kind === id}
-            onClick={() => setKind(id)}
-            className={cn(
-              "-mb-px inline-flex min-h-10 items-center gap-2 border-b-2 px-4 py-2 text-button transition-colors",
-              kind === id
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
-            {label}
-          </button>
-        ))}
-      </div>
+            <div role="tablist" aria-label="Media type" className="flex gap-1 border-b border-border">
+              {KINDS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  aria-selected={kind === id}
+                  onClick={() => setKind(id)}
+                  className={cn(
+                    "-mb-px inline-flex min-h-10 items-center gap-2 border-b-2 px-4 py-2 text-button transition-colors",
+                    kind === id
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <Icon className="size-4" aria-hidden />
+                  {label}
+                </button>
+              ))}
+            </div>
 
-      <MediaGallery key={`${section}-${kind}`} section={section} kind={kind} />
+            <MediaGallery key={`${section}-${kind}`} section={section} kind={kind} />
+          </div>
+        )}
+      </ReportsGate>
     </div>
   );
 }
