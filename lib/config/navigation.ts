@@ -166,6 +166,13 @@ export const NAV_ITEMS: readonly NavEntry[] = [
   },
   {
     type: "link",
+    label: "OKB Media",
+    href: ROUTES.media,
+    icon: AppIcons.media,
+    permission: Permission.REPORT_VIEW,
+  },
+  {
+    type: "link",
     label: "Settings",
     href: ROUTES.settings,
     icon: AppIcons.settings,

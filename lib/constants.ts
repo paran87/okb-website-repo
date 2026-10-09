@@ -53,6 +53,7 @@ export const ROUTES = {
   reportsArchive: "/command/reports/archive",
   analytics: "/command/analytics",
   operations: "/command/operations",
+  media: "/command/media",
   settings: "/command/settings",
 } as const;
 

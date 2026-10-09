@@ -31,6 +31,7 @@ import {
   BrainCircuit,
   Archive,
   HardHat,
+  Images,
   type LucideIcon,
 } from "lucide-react";
 
@@ -56,6 +57,7 @@ export const AppIcons = {
   waterways: GitBranch,
   users: Users,
   operations: HardHat,
+  media: Images,
   settings: Settings,
   notifications: Bell,
   success: CircleCheck,
