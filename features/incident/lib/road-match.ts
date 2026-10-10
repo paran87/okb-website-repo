@@ -17,11 +17,12 @@ const ABBREVIATIONS: [RegExp, string][] = [
   [/\b(avenue|ave|av)\b/g, "ave"],
   [/\b(road|rd)\b/g, "rd"],
   [/\b(boulevard|blvd|bvd)\b/g, "blvd"],
-  [/\b(highway|hwy|hiway)\b/g, "hwy"],
+  [/\b(highway|hwy|hiway|h way)\b/g, "hwy"],
   [/\b(extension|ext)\b/g, "ext"],
   [/\b(drive)\b/g, "dr"],
   [/\b(general|gen)\b/g, "gen"],
   [/\b(santo)\b/g, "sto"],
+  [/\b(sn)\b/g, "san"],
   [/\b(santa)\b/g, "sta"],
   [/\b(president|pres)\b/g, "pres"],
   [/\b(senator|sen)\b/g, "sen"],
@@ -118,6 +119,8 @@ export function deoCode(name: string | null | undefined): string | null {
 
 export interface RoadIndex {
   byName: Map<string, RoadFeature[]>;
+  /** The names split into words once, for the initials lookup. */
+  tokens: { words: string[]; roads: RoadFeature[] }[];
 }
 
 /** Road sections by normalized name (a name in brackets is indexed too: "Sacristia St (Malabon Div Rd)"). */
@@ -138,7 +141,7 @@ export function buildRoadIndex(roads: RoadFeature[]): RoadIndex {
       add(normalizeRoad(inner[1]), road);
     }
   }
-  return { byName };
+  return { byName, tokens: [...byName].map(([key, roads]) => ({ words: key.split(" "), roads })) };
 }
 
 /**
@@ -179,8 +182,7 @@ export function findRoads(index: RoadIndex, name: string): RoadFeature[] {
   }
 
   const initials: RoadFeature[] = [];
-  for (const [k, roads] of index.byName) {
-    const kt = k.split(" ");
+  for (const { words: kt, roads } of index.tokens) {
     if (!core.every((t) => kt.includes(t))) continue;
     const extra = kt.filter((t) => !core.includes(t) && !SUFFIXES.has(t));
     if (extra.length && extra.every((t) => t.length <= 2)) initials.push(...roads);

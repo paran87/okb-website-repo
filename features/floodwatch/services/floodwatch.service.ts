@@ -2,7 +2,7 @@ import "server-only";
 import type { Feature, FeatureCollection } from "geojson";
 import { FLOODWATCH_URL } from "@/lib/constants";
 import { ApiError } from "@/lib/api/errors";
-import type { FloodwatchSummary } from "@/features/floodwatch/types";
+import type { FloodwatchArea, FloodwatchSummary } from "@/features/floodwatch/types";
 
 const REVALIDATE_SECONDS = 600;
 
@@ -30,6 +30,7 @@ interface FloodwatchAreaItem {
     longitude: number | null;
     proposedLatitude?: number | null;
     proposedLongitude?: number | null;
+    accuracy?: string;
     needsReview?: boolean;
   };
 }
@@ -59,38 +60,54 @@ export const floodwatchService = {
     };
   },
 
-  /** Every Floodwatch area that has a (confirmed or proposed) position. */
-  async getAreasGeoJson(): Promise<FeatureCollection> {
+  /** Every row of the Flood Prone Areas tab, with its (confirmed or proposed) position when it has one. */
+  async getAreas(): Promise<FloodwatchArea[]> {
     const data = await getJson<{ items: FloodwatchAreaItem[] }>(
       "api/flood-prone-areas?pageSize=5000&page=1",
     );
-    const features: Feature[] = [];
-    for (const item of data.items) {
-      const lat =
+    return data.items.map((item) => ({
+      id: `fw-${item.rowIndex}`,
+      road: item.roadNameWaterways?.trim() ?? "",
+      limits: item.kmStationLimit?.trim() ?? "",
+      barangay: item.barangay?.trim() ?? "",
+      municipality: item.municipalityCity?.trim() ?? "",
+      province: item.province?.trim() ?? "",
+      region: item.region?.trim() ?? "",
+      deo: item.deo?.trim() ?? "",
+      latitude:
         item.latitude ??
         item.location?.latitude ??
         item.location?.proposedLatitude ??
-        null;
-      const lng =
+        null,
+      longitude:
         item.longitude ??
         item.location?.longitude ??
         item.location?.proposedLongitude ??
-        null;
-      if (lat === null || lng === null) continue;
+        null,
+      approximate: ["municipality", "province", "region"].includes(item.location?.accuracy ?? ""),
+      needsReview: Boolean(item.location?.needsReview),
+    }));
+  },
+
+  /** Every Floodwatch area that has a (confirmed or proposed) position. */
+  async getAreasGeoJson(): Promise<FeatureCollection> {
+    const features: Feature[] = [];
+    for (const area of await this.getAreas()) {
+      if (area.latitude === null || area.longitude === null) continue;
       features.push({
         type: "Feature",
         properties: {
-          id: `fw-${item.rowIndex}`,
-          title: item.roadNameWaterways || "Flood-prone area",
-          description: [item.kmStationLimit, item.barangay, item.municipalityCity]
+          id: area.id,
+          title: area.road || "Flood-prone area",
+          description: [area.limits, area.barangay, area.municipality]
             .filter(Boolean)
             .join(" · "),
-          status: item.location?.needsReview ? "Needs review" : "Located",
-          region: item.region,
-          province: item.province,
+          status: area.needsReview ? "Needs review" : "Located",
+          region: area.region,
+          province: area.province,
           category: "flood-prone",
         },
-        geometry: { type: "Point", coordinates: [lng, lat] },
+        geometry: { type: "Point", coordinates: [area.longitude, area.latitude] },
       });
     }
     return { type: "FeatureCollection", features };

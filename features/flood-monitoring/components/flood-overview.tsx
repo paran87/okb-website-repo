@@ -4,7 +4,8 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Position } from "geojson";
 import { BarChart3, CloudRain, Layers, Radio, Waves, X } from "lucide-react";
-import { FloodwatchAreasOverlay } from "@/features/floodwatch/components/floodwatch-areas-overlay";
+import { FLOOD_PRONE_AREA_COLOR, FLOOD_PRONE_ROAD_COLOR, FloodProneRoadsLayer } from "@/features/floodwatch/components/flood-prone-roads-layer";
+import { useFloodProneRoads } from "@/features/floodwatch/hooks/use-flood-prone-roads";
 import { useFloodwatchSummary } from "@/features/floodwatch/hooks/use-floodwatch-summary";
 import { InsightsPanel, ncrAdvisories } from "@/features/flood-monitoring/components/insights-panel";
 import { LayerToggleCard } from "@/features/flood-monitoring/components/layer-toggle-card";
@@ -13,9 +14,6 @@ import { FloodLayers, type FloodMapProps } from "@/features/incident/components/
 import { positionsOf, useFloodSituation } from "@/features/incident/hooks/use-flood-situation";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
-import { createFloodOverviewLayerRegistry } from "@/features/map/config/layer-registry";
-import { layerService } from "@/features/map/services/layer.service";
-import { selectLayers, useMapStore } from "@/features/map/store/map.store";
 import { WeatherRadarOverlay } from "@/features/weather/components/weather-radar-overlay";
 import { usePagasaWeather } from "@/features/weather/hooks/use-pagasa-weather";
 import { cn } from "@/utils/cn";
@@ -28,10 +26,6 @@ const MapEngine = dynamic(
   { ssr: false },
 );
 
-/** Flood-prone areas stay as reference; flooding comes from the received reports (no static incident list). */
-const LAYERS = createFloodOverviewLayerRegistry().filter((layer) => layer.id !== "ncr-incidents");
-const AREA_LAYER = "floodwatch-areas";
-const AREA_COLOR = "#7c3aed";
 const RAIN_COLOR = "#0284c7";
 const NORMAL_COLOR = "#16a34a";
 
@@ -48,30 +42,16 @@ export function FloodOverview() {
   const ncr = bulletin?.ncrObservation;
   const floodwatch = useFloodwatchSummary();
   const fw = floodwatch.data;
+  const floodProne = useFloodProneRoads();
 
   const [insightsOpen, setInsightsOpen] = useState(false);
   const [floodVisible, setFloodVisible] = useState(true);
   const [radarOn, setRadarOn] = useState(false);
+  const [areasVisible, setAreasVisible] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<FloodMapProps["focus"]>(null);
   const framed = useRef(false);
   const radarAuto = useRef(false);
-
-  const layers = useMapStore(selectLayers);
-  const map = useMapStore((s) => s.map);
-  const toggleLayerVisibility = useMapStore((s) => s.toggleLayerVisibility);
-
-  const isVisible = (id: string) => layers.find((l) => l.id === id)?.visible ?? true;
-
-  const toggle = useCallback(
-    (id: string) => {
-      toggleLayerVisibility(id);
-      if (!map) return;
-      const config = useMapStore.getState().layers.find((l) => l.id === id);
-      if (config) layerService.applyVisibility(map, config);
-    },
-    [map, toggleLayerVisibility],
-  );
 
   // Frame the flooded roads once they are known.
   useEffect(() => {
@@ -136,7 +116,7 @@ export function FloodOverview() {
         initialView={{ ...NCR_MAP_VIEW, zoom: 11 }}
         initialStyleId="light"
         lockBasemap
-        initialLayers={LAYERS}
+        initialLayers={[]}
         showSearch={false}
         showLayerPanel={false}
         showLegend={false}
@@ -144,7 +124,7 @@ export function FloodOverview() {
         showStatus={false}
         className="absolute inset-0 h-full w-full"
       />
-      <FloodwatchAreasOverlay />
+      <FloodProneRoadsLayer placed={floodProne.placed} visible={areasVisible} />
       <WeatherRadarOverlay enabled={radarOn} onEnabledChange={setRadarOn} hideButton />
       <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} visible={floodVisible} alerts />
 
@@ -214,11 +194,19 @@ export function FloodOverview() {
           <LayerToggleCard
             label="Flood-prone areas"
             value={fw ? fw.totalAreas.toLocaleString() : "—"}
-            caption={fw ? `${fw.byRegion.length} regions · Floodwatch` : floodwatch.isError ? "Floodwatch unavailable" : "Loading Floodwatch…"}
-            color={AREA_COLOR}
+            caption={
+              floodProne.ready
+                ? `${floodProne.placed.length.toLocaleString()} on the map · Floodwatch`
+                : fw
+                  ? `${fw.byRegion.length} regions · Floodwatch`
+                  : floodwatch.isError
+                    ? "Floodwatch unavailable"
+                    : "Loading Floodwatch…"
+            }
+            color={FLOOD_PRONE_AREA_COLOR}
             icon={Layers}
-            visible={isVisible(AREA_LAYER)}
-            onToggle={() => toggle(AREA_LAYER)}
+            visible={areasVisible}
+            onToggle={() => setAreasVisible((v) => !v)}
             className="min-w-0"
           />
         </div>
@@ -238,7 +226,8 @@ export function FloodOverview() {
             </li>
           ))}
           <li className="flex items-center gap-1">
-            <span className="size-2 rounded-full bg-[#7c3aed] sm:size-2.5" aria-hidden />
+            <span className="size-2 rounded-full border border-white sm:size-2.5" style={{ backgroundColor: FLOOD_PRONE_AREA_COLOR }} aria-hidden />
+            <span className="h-1.5 w-3 rounded-full sm:w-4" style={{ backgroundColor: FLOOD_PRONE_ROAD_COLOR }} aria-hidden />
             Flood-prone
           </li>
         </ul>
