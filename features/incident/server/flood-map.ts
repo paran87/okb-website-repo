@@ -13,17 +13,18 @@ const HOUR = 3_600_000;
 
 /**
  * How long a flooded location stays highlighted after its latest report:
- *  - while it rains or a PAGASA rainfall / cyclone warning is in effect (or the weather is unknown): 24 h;
- *  - once the weather is normal (no rain, no warning): 3 h — floodwater on roads usually recedes within
- *    hours after the rain stops, so older highlights are cleared and the map is back to normal.
+ *  - 3 h — floodwater on roads usually recedes within hours, so a place no one reports again is cleared and
+ *    the map is back to normal;
+ *  - 6 h while it actually rains in Metro Manila (PAGASA measures rainfall) or a PAGASA rainfall / cyclone
+ *    warning for Metro Manila is in effect. A sky description alone ("Light rains" at 0 mm/hr) does not count,
+ *    and unknown weather counts as normal.
  * A newer report that says "subsided" or "no flooding" clears a location at once, whatever the weather, and a
  * report that gives the time the flood receded clears it at that time.
  */
-export const FLOOD_MAP_RULE = { wetHours: 24, normalHours: 3 } as const;
+export const FLOOD_MAP_RULE = { wetHours: 6, normalHours: 3 } as const;
 
 /** PAGASA advisories that concern Metro Manila (the bridge's reports come from NCR DEOs). */
 const NCR = /metro\s*manila|\bncr\b|national\s+capital/i;
-const WET_CONDITION = /rain|shower|thunder|storm|monsoon|habagat|typhoon|cyclone/i;
 
 export async function floodMapWeather(): Promise<FloodMapWeather> {
   try {
@@ -37,11 +38,10 @@ export async function floodMapWeather(): Promise<FloodMapWeather> {
     }
     const raining = Number.isFinite(ncr.rainfall) && ncr.rainfall > 0;
     const stormy = ncr.stormTone === "warning" || ncr.stormTone === "critical";
-    const wetSky = WET_CONDITION.test(ncr.condition ?? "");
-    const wet = raining || stormy || wetSky || advisories.length > 0;
+    // Measured rain or a warning; a sky description alone ("Light rains" at 0 mm/hr) is not rain on the roads.
+    const wet = raining || stormy || advisories.length > 0;
     const reasons = [
       raining ? `rain ${ncr.rainfall} mm/hr` : null,
-      wetSky && !raining ? ncr.condition : null,
       stormy ? ncr.stormStatus : null,
       advisories.length ? `${advisories.length} PAGASA warning${advisories.length === 1 ? "" : "s"} for Metro Manila` : null,
     ].filter(Boolean);
@@ -123,7 +123,7 @@ export function buildFloodMap(
   weather: FloodMapWeather,
   now: Date = new Date(),
 ): FloodMapData {
-  const activeHours = weather.state === "normal" ? FLOOD_MAP_RULE.normalHours : FLOOD_MAP_RULE.wetHours;
+  const activeHours = weather.state === "wet" ? FLOOD_MAP_RULE.wetHours : FLOOD_MAP_RULE.normalHours;
   const since = now.getTime() - activeHours * HOUR;
   const seen = new Set<string>();
   const decided: Place[] = [];

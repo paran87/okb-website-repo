@@ -218,9 +218,9 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
                   rule={
                     flood
                       ? `${flood.weather.label}. ${
-                          flood.weather.state === "normal"
-                            ? `A flooded road is cleared ${flood.rule.normalHours} h after its latest report.`
-                            : `Flooded roads stay ${flood.rule.wetHours} h after their latest report.`
+                          flood.weather.state === "wet"
+                            ? `Flooded roads stay ${flood.rule.wetHours} h after their latest report while it rains.`
+                            : `A flooded road is cleared ${flood.rule.normalHours} h after its latest report.`
                         } A report of subsided / no flooding or a receding time clears the road.`
                       : null
                   }

@@ -157,9 +157,9 @@ export function InsightsPanel({ placed, flood, ready, weather, byRegion, regions
         ) : null}
         {flood ? (
           <p className="mt-2 text-[10px] leading-snug text-muted-foreground">
-            {flood.weather.state === "normal"
-              ? `Weather normal: the map goes back to normal ${flood.rule.normalHours} h after a road's latest flood report.`
-              : `Rain, a warning or unknown weather: flooded roads stay ${flood.rule.wetHours} h after their latest report.`}{" "}
+            {flood.weather.state === "wet"
+              ? `Rain or a warning: flooded roads stay ${flood.rule.wetHours} h after their latest report.`
+              : `The map goes back to normal ${flood.rule.normalHours} h after a road's latest flood report.`}{" "}
             A report of subsided / no flooding or a receding time clears the road.
           </p>
         ) : null}

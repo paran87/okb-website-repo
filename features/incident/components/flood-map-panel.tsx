@@ -73,9 +73,9 @@ function WeatherStatus({ data }: { data: FloodMapData }) {
           </button>
         </div>
         <p className={cn("text-muted-foreground sm:block", ruleOpen ? "block" : "hidden")}>
-          {w.state === "normal"
-            ? `Back to normal: a flooded road is cleared ${data.rule.normalHours} h after its latest report.`
-            : `Flooded roads stay highlighted ${data.rule.wetHours} h after their latest report${w.state === "unknown" ? " until live weather is back" : " while it rains or a warning is in effect"}.`}{" "}
+          {w.state === "wet"
+            ? `Flooded roads stay highlighted ${data.rule.wetHours} h after their latest report while it rains or a warning is in effect.`
+            : `A flooded road is cleared ${data.rule.normalHours} h after its latest report (${data.rule.wetHours} h while it rains or a warning is in effect).`}{" "}
           A report that says subsided or no flooding, or gives the time the flood receded, clears the place (the same road and cross street, however it is worded).
         </p>
       </div>
