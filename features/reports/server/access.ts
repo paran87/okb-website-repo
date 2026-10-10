@@ -107,6 +107,16 @@ async function sessionOperator(): Promise<string | null> {
   return null;
 }
 
+/**
+ * For server-rendered pages that are restricted to operators (no NextRequest there): a signed-in operator with
+ * `report:view`, or a valid operator access cookie. Fails closed: never open in development or without a key.
+ */
+export async function hasOperatorAccess(): Promise<boolean> {
+  if (await sessionOperator()) return true;
+  const { cookies } = await import("next/headers");
+  return verify(getReportsConfig(), (await cookies()).get(COOKIE)?.value) !== null;
+}
+
 /** Public, data-free description of the access state (for the gate UI). */
 export async function getAccessState(request: NextRequest, area: AccessArea = "reports"): Promise<ReportsAccessState> {
   const cfg = getReportsConfig();

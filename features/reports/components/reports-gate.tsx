@@ -30,7 +30,7 @@ function NotConnected() {
   );
 }
 
-function AccessForm({ state, area }: { state: ReportsAccessState; area: AccessArea }) {
+function AccessForm({ state, area, note }: { state: ReportsAccessState; area: AccessArea; note?: string }) {
   const grant = useGrantAccess();
   const [name, setName] = useState("");
   const [key, setKey] = useState("");
@@ -69,7 +69,9 @@ function AccessForm({ state, area }: { state: ReportsAccessState; area: AccessAr
           <div>
             <p className="text-subheading text-foreground">Operator access</p>
             <p className="text-caption text-muted-foreground">
-              {area === "operations"
+              {note
+                ? note
+                : area === "operations"
                 ? "Operations photos and videos are only shown to authorized operators."
                 : "Reports contain WhatsApp/Viber message content. Your name is recorded on reviews and incidents you create."}
             </p>
@@ -153,12 +155,15 @@ export function ReportsGate({
   children,
   area = "reports",
   bare = false,
+  note,
 }: {
   children: (state: ReportsAccessState) => ReactNode;
   /** "settings" and "operations" ask for the operator access key; the report pages are open. */
   area?: AccessArea;
   /** Without the source / operator strip (full-screen map layouts). */
   bare?: boolean;
+  /** What the access form says is behind it (defaults to the area's text). */
+  note?: string;
 }) {
   const access = useReportsAccess(area);
   if (access.isPending) {
@@ -184,7 +189,7 @@ export function ReportsGate({
   const state = access.data;
   // Operations media lives in R2, not the reports backend, so it only needs the access key.
   if (state.dataSource === "not_configured" && area !== "operations") return <NotConnected />;
-  if (!state.granted) return <AccessForm state={state} area={area} />;
+  if (!state.granted) return <AccessForm state={state} area={area} note={note} />;
   if (bare) return <>{children(state)}</>;
   return (
     <div className="space-y-3 sm:space-y-4">

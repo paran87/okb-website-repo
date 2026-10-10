@@ -66,7 +66,7 @@ export function Drawer({
                   type="button"
                   onClick={onClose}
                   aria-label="Close"
-                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="-mr-2 grid size-10 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
                   <X className="size-4" aria-hidden />
                 </button>
