@@ -145,6 +145,8 @@ export interface ConsolidatedReport {
   fileName: string;
   fileSizeBytes: number | null;
   pdfStatus: "generated" | "failed";
+  /** Why the PDF could not be made, or that its photos were left out (absent from older backends). */
+  pdfError?: string | null;
   whatsappStatus: WhatsAppStatus;
   destinationGroup: string | null;
   generatedAt: string;

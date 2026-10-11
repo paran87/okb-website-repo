@@ -87,6 +87,11 @@ export async function resend(id: string): Promise<ConsolidatedReport> {
   return json(await call(`/${encodeURIComponent(id)}/resend`, { method: "POST" }));
 }
 
+/** Makes a failed PDF again and queues it for the bridge phone (the backend refuses one that already has its PDF). */
+export async function retryPdf(id: string): Promise<ConsolidatedReport> {
+  return json(await call(`/${encodeURIComponent(id)}/pdf-retry`, { method: "POST" }));
+}
+
 /** Tries a FAILED automatic TEXT delivery again (the backend refuses one that was already sent). */
 export async function retryText(id: string): Promise<ConsolidatedReport> {
   return json(await call(`/${encodeURIComponent(id)}/text-retry`, { method: "POST" }));

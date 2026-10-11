@@ -26,6 +26,7 @@ import {
   useUpdateSchedule,
 } from "@/features/consolidated-reports/hooks";
 import { BulkBar, SelectBox, useSelection } from "@/features/consolidated-reports/components/bulk-select";
+import { PdfFailed } from "@/features/consolidated-reports/components/pdf-failed";
 import { dateTimeParts, formatShort, manilaInputToIso, manilaInputValue } from "@/features/consolidated-reports/format";
 import {
   MAX_SCHEDULE_PERIOD_DAYS,
@@ -469,6 +470,7 @@ function PdfEntryStatus({ r, count }: { r: NonNullable<ScheduleEntry["report"]>;
   );
   const note = (text: string, tone = "text-muted-foreground") => <p className={cn("break-words", tone)}>{text}</p>;
   let body;
+  if (!p && r.pdfStatus === "failed") return <PdfFailed r={r} />;
   if (!p) body = <>{badge("danger", "PDF not generated")}</>;
   else if (p.status === "sent") body = <>{badge("success", "SENT")}{note(`Sent ${formatShort(p.sentAt)}`, "text-foreground")}</>;
   else if (p.status === "failed") body = <>{badge("danger", "FAILED")}{p.errorMessage ? note(p.errorMessage, "text-danger") : null}</>;
@@ -480,6 +482,7 @@ function PdfEntryStatus({ r, count }: { r: NonNullable<ScheduleEntry["report"]>;
   return (
     <div className="flex flex-col items-start gap-1">
       {body}
+      {r.pdfError ? note(r.pdfError, "text-warning") : null}
       {p && p.status !== "sent" && p.status !== "ready" ? (
         <Button
           variant="outline"

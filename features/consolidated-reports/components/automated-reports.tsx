@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ReportsGate } from "@/features/reports/components/reports-gate";
 import { BulkBar, SelectBox, useSelection } from "@/features/consolidated-reports/components/bulk-select";
 import { ReportSchedule } from "@/features/consolidated-reports/components/report-schedule";
+import { PdfFailed } from "@/features/consolidated-reports/components/pdf-failed";
 import { cn } from "@/utils/cn";
 import {
   useConsolidatedHistory,
@@ -553,6 +554,7 @@ function TextStatus({ r }: { r: ConsolidatedReport }) {
 }
 
 function PdfStatus({ r }: { r: ConsolidatedReport }) {
+  if (r.pdfStatus === "failed") return <PdfFailed r={r} />;
   // Sent as TEXT: the PDF exists (View / Download) but was never offered to the phone.
   if (r.pdfDelivery === null && r.textDelivery) {
     return <span className="text-muted-foreground">{r.pdfStatus === "generated" ? "Not sent as PDF (text only)" : "—"}</span>;
@@ -565,6 +567,7 @@ function PdfStatus({ r }: { r: ConsolidatedReport }) {
       <Badge variant={PDF_STATUS[status].variant} dot>
         {PDF_STATUS[status].label}
       </Badge>
+      {r.pdfError ? <p className="break-words text-warning">{r.pdfError}</p> : null}
       {status === "sent" && sentAt ? <p className="text-foreground">Sent {formatShort(sentAt)}</p> : null}
       {status === "notified" && r.pdfDelivery?.errorMessage ? <p className="break-words text-warning">{r.pdfDelivery.errorMessage}</p> : null}
     </div>

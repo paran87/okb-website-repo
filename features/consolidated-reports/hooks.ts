@@ -103,6 +103,15 @@ export function useResend() {
   });
 }
 
+export function useRetryPdf() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<ConsolidatedReport>(`/api/reports/consolidated/${encodeURIComponent(id)}/pdf-retry`, { method: "POST", body: "{}" }),
+    onSuccess: () => invalidateReports(qc),
+  });
+}
+
 export function useRetryText() {
   const qc = useQueryClient();
   return useMutation({
