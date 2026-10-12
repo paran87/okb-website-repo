@@ -30,8 +30,10 @@ import { cn } from "@/utils/cn";
 const BAGONG_PILIPINAS_LOGO = "/brand/bagong-pilipinas-logo.png";
 const DPWH_LOGO = "/brand/dpwh-logo.png";
 
-/** Scroll offset (px) after which the masthead condenses. */
-const CONDENSE_AT = 28;
+/** Scroll down past this to condense (must exceed masthead height delta to avoid thrashing). */
+const CONDENSE_SCROLL = 96;
+/** Scroll up above this to expand again (hysteresis band). */
+const EXPAND_SCROLL = 12;
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   [PUBLIC_ROUTES.framework]: FileText,
@@ -78,10 +80,29 @@ export function SiteHeader() {
   }, [pathname]);
 
   useEffect(() => {
-    const onScroll = () => setCondensed(window.scrollY > CONDENSE_AT);
-    onScroll();
+    let raf = 0;
+
+    const syncCondensed = () => {
+      raf = 0;
+      const y = window.scrollY;
+      setCondensed((prev) => {
+        if (!prev && y >= CONDENSE_SCROLL) return true;
+        if (prev && y <= EXPAND_SCROLL) return false;
+        return prev;
+      });
+    };
+
+    const onScroll = () => {
+      if (raf !== 0) return;
+      raf = window.requestAnimationFrame(syncCondensed);
+    };
+
+    syncCondensed();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf !== 0) window.cancelAnimationFrame(raf);
+    };
   }, []);
 
   useEffect(() => {
