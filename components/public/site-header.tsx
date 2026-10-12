@@ -131,7 +131,7 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "okb-public-header sticky top-0 z-50",
+        "okb-public-header",
         condensed && "okb-public-header--condensed",
       )}
     >
