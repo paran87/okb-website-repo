@@ -4556,26 +4556,186 @@
     color: var(--muted-foreground);
   }
 
-  /* Very narrow phones: keep "Command Center" whole. */
+  /* Phone header: a compact mark that leaves room for the controls. */
+  .okb-cc-mark--compact {
+    gap: 0.45rem;
+  }
+  .okb-cc-mark--compact .okb-cc-emblem {
+    --okb-cc-emblem: 30px;
+  }
+  .okb-cc-mark--compact .okb-cc-emblem__logo {
+    --okb-logo-size: 22px;
+  }
+  .okb-cc-mark--compact .okb-cc-title {
+    gap: 0.3rem;
+  }
+  .okb-cc-mark--compact .okb-cc-title__okb {
+    font-size: 1.1rem;
+  }
+  .okb-cc-mark--compact .okb-cc-live {
+    gap: 0.2rem;
+    padding: 0.08rem 0.3rem 0.08rem 0.22rem;
+    font-size: 0.5rem;
+  }
+  .okb-cc-mark--compact .okb-cc-live__dot {
+    width: 5px;
+    height: 5px;
+  }
+  .okb-cc-mark--compact .okb-cc-sub {
+    margin-top: 0.15rem;
+    font-size: 0.56rem;
+    letter-spacing: 0.2em;
+  }
+  .okb-cc-mark--compact .okb-cc-wave {
+    height: 3px;
+  }
+
+  /* Very narrow phones: keep "Command Center" and the CTA whole. */
   @media (max-width: 379px) {
-    .okb-cc-mark--compact {
-      gap: 0.45rem;
-    }
-    .okb-cc-mark--compact .okb-cc-emblem {
-      --okb-cc-emblem: 34px;
-    }
     .okb-cc-mark--compact .okb-cc-sub {
-      font-size: 0.66rem;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
+    }
+    .okb-cc-site__pill {
+      gap: 0.25rem;
+      padding-right: 0.45rem;
+    }
+    .okb-cc-site__label {
+      letter-spacing: 0.04em;
     }
   }
 
   @media (min-width: 640px) {
+    .okb-cc-mark--compact {
+      gap: 0.6rem;
+    }
+    .okb-cc-mark--compact .okb-cc-emblem {
+      --okb-cc-emblem: 38px;
+    }
+    .okb-cc-mark--compact .okb-cc-emblem__logo {
+      --okb-logo-size: 28px;
+    }
     .okb-cc-mark--compact .okb-cc-title__okb {
-      font-size: 1.6rem;
+      font-size: 1.45rem;
+    }
+    .okb-cc-mark--compact .okb-cc-live {
+      font-size: 0.6rem;
     }
     .okb-cc-mark--compact .okb-cc-sub {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.24em;
+    }
+  }
+
+  /* ---- "OKB Website" call to action ---- */
+  /* The link is a 40px tap target; the pill inside is the visual. */
+  .okb-cc-site {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    height: 2.5rem;
+    border-radius: 9999px;
+    outline: none;
+  }
+
+  .okb-cc-site__pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    height: 1.875rem;
+    padding: 0 0.55rem 0 0.2rem;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 35%, #ea580c 70%, #c2410c 100%);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.18) inset,
+      0 4px 14px -4px rgb(234 88 12 / 0.65);
+    color: #fff;
+    transition:
+      transform 0.18s ease,
+      box-shadow 0.18s ease,
+      filter 0.18s ease;
+  }
+
+  .okb-cc-site:hover .okb-cc-site__pill {
+    filter: brightness(1.08);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.25) inset,
+      0 6px 20px -4px rgb(234 88 12 / 0.8);
+    transform: translateY(-1px);
+  }
+
+  .okb-cc-site:active .okb-cc-site__pill {
+    transform: scale(0.96);
+  }
+
+  .okb-cc-site:focus-visible .okb-cc-site__pill {
+    box-shadow:
+      0 0 0 2px var(--header),
+      0 0 0 4px var(--ring);
+  }
+
+  .okb-cc-site__icon {
+    display: grid;
+    width: 1.45rem;
+    height: 1.45rem;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.22);
+  }
+
+  .okb-cc-site__icon svg {
+    width: 0.85rem;
+    height: 0.85rem;
+    animation: okb-cc-spin 14s linear infinite;
+  }
+
+  .okb-cc-site__label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-shadow: 0 1px 1px rgb(124 45 18 / 0.35);
+  }
+
+  .okb-cc-site__arrow {
+    width: 0.8rem;
+    height: 0.8rem;
+    flex-shrink: 0;
+    animation: okb-cc-nudge 2.6s ease-in-out infinite;
+  }
+
+  .okb-cc-site__shine {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 45%;
+    pointer-events: none;
+    background: linear-gradient(
+      100deg,
+      transparent 0%,
+      rgb(255 255 255 / 0.55) 50%,
+      transparent 100%
+    );
+    transform: translateX(-120%) skewX(-18deg);
+    animation: okb-cc-shine 4.5s ease-in-out infinite;
+  }
+
+  @media (min-width: 640px) {
+    .okb-cc-site__pill {
+      gap: 0.4rem;
+      height: 2.125rem;
+      padding: 0 0.75rem 0 0.25rem;
+    }
+    .okb-cc-site__icon {
+      width: 1.6rem;
+      height: 1.6rem;
+    }
+    .okb-cc-site__label {
+      font-size: 0.8rem;
     }
   }
 }
@@ -4622,6 +4782,28 @@
   }
 }
 
+@keyframes okb-cc-nudge {
+  0%,
+  60%,
+  100% {
+    transform: translateX(0);
+  }
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes okb-cc-shine {
+  0%,
+  55% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  85%,
+  100% {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+
 @keyframes okb-cc-wave {
   to {
     transform: translateX(-30px);
@@ -4634,7 +4816,10 @@
   .okb-cc-emblem__ripple,
   .okb-cc-title__okb,
   .okb-cc-live__dot::after,
-  .okb-cc-wave path {
+  .okb-cc-wave path,
+  .okb-cc-site__icon svg,
+  .okb-cc-site__arrow,
+  .okb-cc-site__shine {
     animation: none;
   }
 }

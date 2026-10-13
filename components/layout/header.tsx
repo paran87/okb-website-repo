@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CloudSun, Globe, Menu } from "lucide-react";
+import { ArrowRight, CloudSun, Globe, Menu } from "lucide-react";
 import { useWeatherSummary } from "@/features/weather/hooks/use-weather-summary";
 import { CommandWordmark } from "@/components/brand/command-wordmark";
 import { ConnectionIndicator } from "@/components/layout/connection-indicator";
@@ -94,12 +94,15 @@ export function Header() {
 
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
         {/* The public OKB website, in the same tab. */}
-        <Link
-          href={PUBLIC_ROUTES.home}
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/60 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-10 sm:px-3 sm:text-sm"
-        >
-          <Globe className="size-4 shrink-0 text-primary" aria-hidden />
-          OKB Website
+        <Link href={PUBLIC_ROUTES.home} className="okb-cc-site">
+          <span className="okb-cc-site__pill">
+            <span className="okb-cc-site__icon">
+              <Globe aria-hidden />
+            </span>
+            <span className="okb-cc-site__label">OKB Website</span>
+            <ArrowRight className="okb-cc-site__arrow" aria-hidden />
+            <span className="okb-cc-site__shine" aria-hidden />
+          </span>
         </Link>
         <WeatherPlaceholder />
         <LiveClock />

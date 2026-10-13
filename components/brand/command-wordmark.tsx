@@ -33,7 +33,7 @@ export function CommandWordmark({
         <span className="okb-cc-emblem" aria-hidden={showText}>
           <span className="okb-cc-emblem__sweep" />
           <span className="okb-cc-emblem__ripple" />
-          <OkbLogo size={variant === "full" ? 34 : 28} className="okb-cc-emblem__logo" />
+          <OkbLogo size={variant === "full" ? 34 : 22} className="okb-cc-emblem__logo" />
         </span>
       ) : null}
 
