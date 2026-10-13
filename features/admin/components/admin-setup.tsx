@@ -91,6 +91,27 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/** Length/format of a credential vs what R2 issues (never the value). */
+function CredentialShape({
+  shape,
+  expected,
+}: {
+  shape: { length: number; hex: boolean; strayChars: boolean } | null;
+  expected: number;
+}) {
+  if (!shape) return <span className="text-danger">not set</span>;
+  const problems: string[] = [];
+  if (shape.length !== expected) problems.push(`should be ${expected}`);
+  if (!shape.hex) problems.push("should be only digits and a–f");
+  if (shape.strayChars) problems.push("has spaces or hidden characters");
+  return (
+    <span className={problems.length ? "text-danger" : "text-success"}>
+      {shape.length} characters{shape.hex ? ", hex" : ""}
+      {problems.length ? ` — ${problems.join("; ")}` : " ✓"}
+    </span>
+  );
+}
+
 /** Tests the R2 key: list, upload, delete — with the fix for each failure. */
 function StorageCheckCard() {
   const check = useStorageCheck();
@@ -130,6 +151,12 @@ function StorageCheckCard() {
                   {[r.env.endpointVar, r.env.jurisdictionVar].filter(Boolean).join(" + ") || "—"}
                 </Row>
                 <Row label="Key from">{r.env.accessKeyVar ?? "—"}</Row>
+                <Row label="Access Key ID">
+                  <CredentialShape shape={r.credentials.accessKeyId} expected={32} />
+                </Row>
+                <Row label="Secret Access Key">
+                  <CredentialShape shape={r.credentials.secret} expected={64} />
+                </Row>
               </dl>
               <ul className="space-y-2">
                 {r.steps.map((step) => (

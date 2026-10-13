@@ -1,6 +1,7 @@
 import "server-only";
 import {
   deleteObject,
+  describeOperationsR2Credentials,
   describeOperationsR2Env,
   getOperationsR2Config,
   presign,
@@ -26,7 +27,7 @@ function hint(code: string, bucket: string, bucketFromEnv: boolean): string {
       return "The Access Key ID is not a valid R2 key for this account. Copy the Access Key ID shown when the R2 API token was created (not the Cloudflare API token value).";
     case "SignatureDoesNotMatch":
     case "AuthorizationQueryParametersError":
-      return "The Secret Access Key does not match the Access Key ID. Paste the token's Secret Access Key again (no spaces or quotes).";
+      return "The Access Key ID is valid, but the Secret Access Key does not belong to it. Paste the Secret Access Key shown with that same token (64 characters, digits and a–f) — not the \"Token value\". See the key check below.";
     case "NoSuchBucket":
       return `No bucket named "${bucket}" exists at this endpoint. Check the name, and set OPERATIONS_R2_JURISDICTION=eu if the bucket is in the EU jurisdiction.`;
     case "NetworkError":
@@ -42,6 +43,7 @@ function maskAccount(id: string): string {
 
 export async function runStorageCheck(): Promise<StorageCheck> {
   const env = describeOperationsR2Env();
+  const credentials = describeOperationsR2Credentials();
   const cfg = getOperationsR2Config();
   if (!cfg) {
     return {
@@ -51,6 +53,7 @@ export async function runStorageCheck(): Promise<StorageCheck> {
       host: null,
       account: null,
       env,
+      credentials,
       steps: [],
       otherJurisdiction: null,
       ok: false,
@@ -136,6 +139,7 @@ export async function runStorageCheck(): Promise<StorageCheck> {
     host: cfg.host.replace(cfg.accountId, maskAccount(cfg.accountId)),
     account: maskAccount(cfg.accountId),
     env,
+    credentials,
     steps,
     otherJurisdiction,
     ok: listed && wrote && steps.every((s) => s.ok),

@@ -477,3 +477,28 @@ export function describeOperationsR2Env(): {
     jurisdictionVar: pick([["OPERATIONS_R2_JURISDICTION", process.env.OPERATIONS_R2_JURISDICTION]]),
   };
 }
+
+/**
+ * Shape of the configured R2 credentials, never their values: R2 Access Key IDs
+ * are 32 hex characters and Secret Access Keys 64. Used by Admin → Storage check
+ * to spot a pasted Cloudflare "Token value", a cut-off secret or stray characters.
+ */
+export function describeOperationsR2Credentials(): {
+  accessKeyId: { length: number; hex: boolean; strayChars: boolean } | null;
+  secret: { length: number; hex: boolean; strayChars: boolean } | null;
+} {
+  const shape = (raw: string | undefined) => {
+    if (!raw) return null;
+    const value = present(raw) ?? "";
+    return {
+      length: value.length,
+      hex: /^[0-9a-f]+$/i.test(value),
+      // Whitespace or invisible characters inside the value (trimmed ends are fine).
+      strayChars: /[\s\u200b-\u200f\u2060\ufeff\u00a0]/.test(value) || /[^\x21-\x7e]/.test(value),
+    };
+  };
+  return {
+    accessKeyId: shape(process.env.OPERATIONS_R2_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID),
+    secret: shape(process.env.OPERATIONS_R2_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY),
+  };
+}

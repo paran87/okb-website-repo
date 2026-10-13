@@ -135,6 +135,11 @@ export interface StorageCheck {
     jurisdictionVar: string | null;
   };
   steps: StorageCheckStep[];
+  /** Length and format of the key and secret (never the values). */
+  credentials: {
+    accessKeyId: { length: number; hex: boolean; strayChars: boolean } | null;
+    secret: { length: number; hex: boolean; strayChars: boolean } | null;
+  };
   /** After an access-denied listing: whether the same key works on the other jurisdiction's endpoint. */
   otherJurisdiction: { jurisdiction: "default" | "eu"; host: string; works: boolean; fix: string | null } | null;
   ok: boolean;
