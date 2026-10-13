@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { MEDIA_COLLECTIONS, WEBSITE_GALLERY_PREFIX } from "@/features/admin/collections";
 import { adminName } from "@/features/admin/server/session";
 import { TRASH_PREFIX } from "@/features/operations/server/media";
-import { getOperationsR2Config, presign } from "@/features/operations/server/r2";
+import { getOperationsR2Config, r2Fetch } from "@/features/operations/server/r2";
 import { getAccessState } from "@/features/reports/server/access";
 
 export const dynamic = "force-dynamic";
@@ -44,12 +44,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   const headers: Record<string, string> = range ? { range } : {};
   let upstream: Response;
   try {
-    upstream = await fetch(presign(cfg, "GET", key, { headers, expiresIn: 300 }), {
-      headers,
-      cache: "no-store",
-      redirect: "manual",
-      signal: AbortSignal.timeout(55_000),
-    });
+    upstream = await r2Fetch(cfg, "GET", key, { headers, signal: AbortSignal.timeout(55_000) });
   } catch {
     return plain(502, "The media storage (Cloudflare R2) could not be reached.");
   }

@@ -110,10 +110,12 @@ export interface UploadTicket {
 }
 
 export interface StorageCheckStep {
-  id: "list" | "write" | "delete";
+  id: "list" | "write" | "link" | "delete";
   label: string;
   ok: boolean;
   code: string | null;
+  /** Cloudflare's own error message. */
+  detail: string | null;
   hint: string | null;
 }
 

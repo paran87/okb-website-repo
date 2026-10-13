@@ -3,6 +3,7 @@ import {
   deleteObject,
   describeOperationsR2Env,
   getOperationsR2Config,
+  presign,
   probeList,
   putObject,
   R2Error,
@@ -50,11 +51,12 @@ export async function runStorageCheck(): Promise<StorageCheck> {
   const run = async (id: StorageCheckStep["id"], label: string, fn: () => Promise<void>): Promise<boolean> => {
     try {
       await fn();
-      steps.push({ id, label, ok: true, code: null, hint: null });
+      steps.push({ id, label, ok: true, code: null, detail: null, hint: null });
       return true;
     } catch (err) {
       const code = err instanceof R2Error ? err.code || String(err.status) : "Error";
-      steps.push({ id, label, ok: false, code, hint: hint(code, cfg.bucket, bucketFromEnv) });
+      const detail = err instanceof R2Error ? err.detail : err instanceof Error ? err.message : null;
+      steps.push({ id, label, ok: false, code, detail, hint: hint(code, cfg.bucket, bucketFromEnv) });
       return false;
     }
   };
@@ -64,7 +66,28 @@ export async function runStorageCheck(): Promise<StorageCheck> {
   const wrote = await run("write", "Upload a test file", () =>
     putObject(cfg, testKey, new TextEncoder().encode("okb admin storage check").buffer as ArrayBuffer, "text/plain"),
   );
+  // The link the browser uploads to (query-signed, like Admin → Media uses).
+  const linkKey = `${testKey}.link`;
+  const linked = await run("link", "Upload through a browser upload link", async () => {
+    const url = presign(cfg, "PUT", linkKey, { headers: { "content-type": "text/plain" }, expiresIn: 300 });
+    let res: Response;
+    try {
+      res = await fetch(url, { method: "PUT", headers: { "Content-Type": "text/plain" }, body: "okb", redirect: "manual", cache: "no-store" });
+    } catch {
+      throw new R2Error("R2 request failed (network)", 0, "NetworkError");
+    }
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      throw new R2Error(
+        `R2 request failed (${res.status})`,
+        res.status,
+        /<Code>([^<]+)<\/Code>/.exec(body)?.[1] ?? String(res.status),
+        /<Message>([^<]+)<\/Message>/.exec(body)?.[1] ?? null,
+      );
+    }
+  });
   if (wrote) await run("delete", "Delete the test file", () => deleteObject(cfg, testKey));
+  if (linked) await deleteObject(cfg, linkKey).catch(() => undefined);
 
   return {
     configured: true,

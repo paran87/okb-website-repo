@@ -2,10 +2,11 @@ import "server-only";
 import { createHash, createHmac } from "node:crypto";
 
 /**
- * Minimal Cloudflare R2 (S3 API) client: list, presigned GET, move
- * (copy + delete). Requests are signed with AWS Signature V4 using
- * query-string auth, so the same signer serves server-side calls and the
- * short-lived links handed to the browser. Credentials stay on the server.
+ * Minimal Cloudflare R2 (S3 API) client: list, read, upload, move (copy +
+ * delete), CORS. Server-side calls are signed with AWS Signature V4 in the
+ * Authorization header (signRequest); short-lived query-signed links
+ * (presign) are only handed to the browser for single-object uploads.
+ * Credentials stay on the server.
  */
 
 export interface R2Config {
@@ -184,19 +185,126 @@ export function presign(
   return `https://${host}${path}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
+/**
+ * Signs a request with an Authorization header (SigV4), the way the AWS SDK
+ * calls S3. Used for every server-side call: R2 only promises query-signed
+ * links for single-object operations, and refuses bucket-level ones (listing,
+ * CORS) signed that way with AccessDenied. Every header in `headers` is
+ * signed and must be sent as returned.
+ */
+export function signRequest(
+  cfg: R2Config,
+  method: "GET" | "PUT" | "DELETE" | "HEAD",
+  key: string | null,
+  opts: { query?: Record<string, string>; headers?: Record<string, string>; at?: Date } = {},
+): { url: string; headers: Record<string, string> } {
+  const host = cfg.host || `${cfg.accountId}.r2.cloudflarestorage.com`;
+  const path =
+    key !== null
+      ? `/${encode(cfg.bucket)}/${encode(key, true)}`
+      : `/${encode(cfg.bucket)}/`;
+  const now = opts.at ?? new Date();
+  const amzDate = now
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
+  const day = amzDate.slice(0, 8);
+  const scope = `${day}/auto/s3/aws4_request`;
+
+  const headers: Record<string, string> = {
+    host,
+    "x-amz-content-sha256": "UNSIGNED-PAYLOAD",
+    "x-amz-date": amzDate,
+  };
+  for (const [k, v] of Object.entries(opts.headers ?? {}))
+    headers[k.toLowerCase()] = v.trim();
+  const headerNames = Object.keys(headers).sort();
+  const signedHeaders = headerNames.join(";");
+  const query = opts.query ?? {};
+  const canonicalQuery = Object.keys(query)
+    .sort()
+    .map((k) => `${encode(k)}=${encode(query[k] ?? "")}`)
+    .join("&");
+  const canonicalRequest = [
+    method,
+    path,
+    canonicalQuery,
+    headerNames.map((h) => `${h}:${headers[h]}\n`).join(""),
+    signedHeaders,
+    headers["x-amz-content-sha256"],
+  ].join("\n");
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    scope,
+    sha256(canonicalRequest),
+  ].join("\n");
+  const kDate = hmac(`AWS4${cfg.secretAccessKey}`, day);
+  const kSigning = hmac(hmac(hmac(kDate, "auto"), "s3"), "aws4_request");
+  const signature = createHmac("sha256", kSigning)
+    .update(stringToSign)
+    .digest("hex");
+
+  const { host: _host, ...sendHeaders } = headers;
+  void _host;
+  sendHeaders.authorization = `AWS4-HMAC-SHA256 Credential=${cfg.accessKeyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  return {
+    url: `https://${host}${path}${canonicalQuery ? `?${canonicalQuery}` : ""}`,
+    headers: sendHeaders,
+  };
+}
+
+/**
+ * Fetches an R2 object or bucket resource with header signing and returns the
+ * raw response (no status check), for streaming files through the site.
+ */
+export async function r2Fetch(
+  cfg: R2Config,
+  method: "GET" | "HEAD",
+  key: string,
+  opts: { headers?: Record<string, string>; signal?: AbortSignal } = {},
+): Promise<Response> {
+  const signed = signRequest(cfg, method, key, { headers: opts.headers });
+  return fetch(signed.url, {
+    method,
+    headers: signed.headers,
+    cache: "no-store",
+    redirect: "manual",
+    signal: opts.signal,
+  });
+}
+
 export class R2Error extends Error {
   constructor(
     message: string,
     public readonly status: number,
     public readonly code: string,
+    /** R2's own <Message>, when it sent one. */
+    public readonly detail: string | null = null,
   ) {
     super(message);
     this.name = "R2Error";
   }
 }
 
+/** Signs (Authorization header) and sends one request; throws R2Error on failure. */
+async function request(
+  cfg: R2Config,
+  method: "GET" | "PUT" | "DELETE" | "HEAD",
+  key: string | null,
+  opts: {
+    query?: Record<string, string>;
+    headers?: Record<string, string>;
+    body?: BodyInit;
+    signal?: AbortSignal;
+  } = {},
+): Promise<Response> {
+  const signed = signRequest(cfg, method, key, { query: opts.query, headers: opts.headers });
+  return send(signed.url, { method, headers: signed.headers, body: opts.body, signal: opts.signal });
+}
+
 async function send(url: string, init: RequestInit = {}): Promise<Response> {
-  // A signed URL must be fetched as-is. Following a redirect would change the path and fail the signature.
+  // A signed request must be sent as-is. Following a redirect would change the path and fail the signature.
   let res: Response;
   try {
     res = await fetch(url, { ...init, cache: "no-store", redirect: "manual" });
@@ -212,11 +320,13 @@ async function send(url: string, init: RequestInit = {}): Promise<Response> {
   }
   if (!res.ok && res.status !== 206) {
     const body = await res.text().catch(() => "");
-    const code = /<Code>([^<]+)<\/Code>/.exec(body)?.[1] ?? res.statusText;
+    const code = /<Code>([^<]+)<\/Code>/.exec(body)?.[1] ?? (res.statusText || String(res.status));
+    const detail = /<Message>([^<]+)<\/Message>/.exec(body)?.[1] ?? null;
     throw new R2Error(
       `R2 request failed (${res.status} ${code})`,
       res.status,
       code,
+      detail,
     );
   }
   return res;
@@ -247,7 +357,7 @@ export async function listObjects(
       "max-keys": "1000",
     };
     if (token) query["continuation-token"] = token;
-    const xml = await (await send(presign(cfg, "GET", null, { query }))).text();
+    const xml = await (await request(cfg, "GET", null, { query })).text();
     for (const [, block] of xml.matchAll(/<Contents>([\s\S]*?)<\/Contents>/g)) {
       if (!block) continue;
       objects.push({
@@ -273,8 +383,8 @@ export async function readStart(
 ): Promise<Uint8Array> {
   const range = `bytes=0-${bytes - 1}`;
   // The Range header has to be part of the signature; an unsigned Range is rejected.
-  const res = await send(presign(cfg, "GET", key, { headers: { range } }), {
-    headers: { Range: range },
+  const res = await request(cfg, "GET", key, {
+    headers: { range },
     signal: AbortSignal.timeout(8000),
   });
   return new Uint8Array(await res.arrayBuffer());
@@ -287,20 +397,14 @@ export async function moveObject(
   to: string,
 ): Promise<void> {
   const copySource = `/${encode(cfg.bucket)}/${encode(from, true)}`;
-  await send(
-    presign(cfg, "PUT", to, { headers: { "x-amz-copy-source": copySource } }),
-    {
-      method: "PUT",
-      headers: { "x-amz-copy-source": copySource },
-    },
-  );
-  await send(presign(cfg, "DELETE", from), { method: "DELETE" });
+  await request(cfg, "PUT", to, { headers: { "x-amz-copy-source": copySource } });
+  await request(cfg, "DELETE", from);
 }
 
 /** True when an object exists at `key`. */
 export async function objectExists(cfg: R2Config, key: string): Promise<boolean> {
   try {
-    await send(presign(cfg, "HEAD", key), { method: "HEAD" });
+    await request(cfg, "HEAD", key);
     return true;
   } catch (err) {
     if (err instanceof R2Error && err.status === 404) return false;
@@ -315,22 +419,18 @@ export async function putObject(
   body: ArrayBuffer,
   contentType: string,
 ): Promise<void> {
-  await send(presign(cfg, "PUT", key, { headers: { "content-type": contentType } }), {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body,
-  });
+  await request(cfg, "PUT", key, { headers: { "content-type": contentType }, body });
 }
 
 /** Permanently deletes an object. */
 export async function deleteObject(cfg: R2Config, key: string): Promise<void> {
-  await send(presign(cfg, "DELETE", key), { method: "DELETE" });
+  await request(cfg, "DELETE", key);
 }
 
 /** The bucket's CORS configuration XML, or null when none is set. */
 export async function getBucketCors(cfg: R2Config): Promise<string | null> {
   try {
-    const res = await send(presign(cfg, "GET", null, { query: { cors: "" } }));
+    const res = await request(cfg, "GET", null, { query: { cors: "" } });
     return await res.text();
   } catch (err) {
     if (err instanceof R2Error && (err.status === 404 || err.code === "NoSuchCORSConfiguration")) return null;
@@ -342,16 +442,12 @@ export async function getBucketCors(cfg: R2Config): Promise<string | null> {
 export async function putBucketCors(cfg: R2Config, xml: string): Promise<void> {
   const md5 = createHash("md5").update(xml).digest("base64");
   const headers = { "content-md5": md5, "content-type": "application/xml" };
-  await send(presign(cfg, "PUT", null, { query: { cors: "" }, headers }), {
-    method: "PUT",
-    headers: { "Content-MD5": md5, "Content-Type": "application/xml" },
-    body: xml,
-  });
+  await request(cfg, "PUT", null, { query: { cors: "" }, headers, body: xml });
 }
 
 /** Lists at most one object (a cheap permission check). */
 export async function probeList(cfg: R2Config, prefix = ""): Promise<void> {
-  await send(presign(cfg, "GET", null, { query: { "list-type": "2", prefix, "max-keys": "1" } }));
+  await request(cfg, "GET", null, { query: { "list-type": "2", prefix, "max-keys": "1" } });
 }
 
 /** Where each R2 setting comes from (variable names only, never values). */

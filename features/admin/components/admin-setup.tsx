@@ -141,6 +141,7 @@ function StorageCheckCard() {
                         {step.label}
                         {step.code ? <span className="ml-1.5 font-mono font-normal text-danger">{step.code}</span> : null}
                       </p>
+                      {step.detail ? <p className="text-caption italic text-muted-foreground">Cloudflare: “{step.detail}”</p> : null}
                       {step.hint ? <p className="text-caption text-muted-foreground">{step.hint}</p> : null}
                     </div>
                   </li>
