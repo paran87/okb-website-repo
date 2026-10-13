@@ -19,6 +19,7 @@ export const PUBLIC_ROUTES = {
   accomplishment: "/accomplishment",
   advisories: "/advisories",
   profile: "/profile",
+  gallery: "/gallery",
   contact: "/contact",
   commandCenter: "/command",
 } as const;

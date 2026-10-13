@@ -48,6 +48,10 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
   serverExternalPackages: ["@prisma/client", "pino", "pino-pretty"],
+  // Admin → Setup shows this SQL (read at runtime by app/api/admin/setup).
+  outputFileTracingIncludes: {
+    "/api/admin/setup": ["./supabase/migrations/20261014000000_okb_site_admin.sql"],
+  },
   experimental: {
     optimizePackageImports: [
       "lucide-react",

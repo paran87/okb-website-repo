@@ -13,6 +13,7 @@ import {
 import {
   ArrowUpRight,
   BarChart3,
+  Camera,
   ChevronRight,
   FileText,
   Images,
@@ -39,6 +40,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   [PUBLIC_ROUTES.framework]: FileText,
   [PUBLIC_ROUTES.accomplishment]: BarChart3,
   [PUBLIC_ROUTES.profile]: Images,
+  [PUBLIC_ROUTES.gallery]: Camera,
   [PUBLIC_ROUTES.commandCenter]: Radio,
 };
 

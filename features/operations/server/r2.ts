@@ -296,3 +296,55 @@ export async function moveObject(
   );
   await send(presign(cfg, "DELETE", from), { method: "DELETE" });
 }
+
+/** True when an object exists at `key`. */
+export async function objectExists(cfg: R2Config, key: string): Promise<boolean> {
+  try {
+    await send(presign(cfg, "HEAD", key), { method: "HEAD" });
+    return true;
+  } catch (err) {
+    if (err instanceof R2Error && err.status === 404) return false;
+    throw err;
+  }
+}
+
+/** Uploads a small object from the server (the direct browser upload is preferred). */
+export async function putObject(
+  cfg: R2Config,
+  key: string,
+  body: ArrayBuffer,
+  contentType: string,
+): Promise<void> {
+  await send(presign(cfg, "PUT", key, { headers: { "content-type": contentType } }), {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body,
+  });
+}
+
+/** Permanently deletes an object. */
+export async function deleteObject(cfg: R2Config, key: string): Promise<void> {
+  await send(presign(cfg, "DELETE", key), { method: "DELETE" });
+}
+
+/** The bucket's CORS configuration XML, or null when none is set. */
+export async function getBucketCors(cfg: R2Config): Promise<string | null> {
+  try {
+    const res = await send(presign(cfg, "GET", null, { query: { cors: "" } }));
+    return await res.text();
+  } catch (err) {
+    if (err instanceof R2Error && (err.status === 404 || err.code === "NoSuchCORSConfiguration")) return null;
+    throw err;
+  }
+}
+
+/** Replaces the bucket's CORS configuration. Needs an R2 token with bucket (admin) write access. */
+export async function putBucketCors(cfg: R2Config, xml: string): Promise<void> {
+  const md5 = createHash("md5").update(xml).digest("base64");
+  const headers = { "content-md5": md5, "content-type": "application/xml" };
+  await send(presign(cfg, "PUT", null, { query: { cors: "" }, headers }), {
+    method: "PUT",
+    headers: { "Content-MD5": md5, "Content-Type": "application/xml" },
+    body: xml,
+  });
+}

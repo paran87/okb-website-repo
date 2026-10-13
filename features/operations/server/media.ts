@@ -131,6 +131,11 @@ export async function listOperationsMedia(
   return { section, kind, configured: true, items };
 }
 
+/** Drops the cached listing of a folder, so a change made elsewhere (Admin) shows on the next request. */
+export function invalidateOperationsListing(prefix: string): void {
+  listings.delete(prefix);
+}
+
 /** Moves a file of the section to the trash folder. Returns false if the key is not in the section. */
 export async function deleteOperationsMedia(section: OperationsSectionId, key: string): Promise<boolean> {
   const cfg = getOperationsR2Config();

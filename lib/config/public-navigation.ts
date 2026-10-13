@@ -27,6 +27,11 @@ export const PUBLIC_NAV_ITEMS: readonly PublicNavItem[] = [
     description: "Program presentation and reference materials",
   },
   {
+    label: "Gallery",
+    href: PUBLIC_ROUTES.gallery,
+    description: "Photos and videos from the field",
+  },
+  {
     label: "OKB Command Center",
     href: PUBLIC_ROUTES.commandCenter,
     description: "Live GIS monitoring for authorized personnel",

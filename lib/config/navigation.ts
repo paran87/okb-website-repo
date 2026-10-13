@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react";
+import { ShieldCheck, type LucideIcon } from "lucide-react";
 import { AppIcons } from "@/lib/config/icons";
 import { ROUTES } from "@/lib/constants";
 import { Permission } from "@/lib/rbac/permissions";
@@ -169,6 +169,14 @@ export const NAV_ITEMS: readonly NavEntry[] = [
     label: "Settings",
     href: ROUTES.settings,
     icon: AppIcons.settings,
+    permission: Permission.SETTINGS_MANAGE,
+  },
+  {
+    // Separate page (own sign-in): visitors, website and Command Center photos/videos.
+    type: "link",
+    label: "Admin",
+    href: "/admin",
+    icon: ShieldCheck,
     permission: Permission.SETTINGS_MANAGE,
   },
 ];

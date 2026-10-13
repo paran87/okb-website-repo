@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
+import { VisitTracker } from "@/components/analytics/visit-tracker";
 import { AppProviders } from "@/providers/app-providers";
 import { DARK_ON_NEW_VISIT_SCRIPT } from "@/providers/theme-config";
 import { APP } from "@/lib/constants";
@@ -59,6 +60,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-dvh antialiased">
         <AppProviders>{children}</AppProviders>
+        <VisitTracker />
       </body>
     </html>
   );
