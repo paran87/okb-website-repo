@@ -3,19 +3,49 @@ import { z } from "zod";
 import { ApiError, NotFoundError } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { ok } from "@/lib/api/response";
-import { assertSameOrigin, getAccessState } from "@/features/reports/server/access";
-import { isOperationsSection, OPERATIONS_SECTIONS } from "@/features/operations/config";
-import { deleteOperationsMedia, listOperationsMedia } from "@/features/operations/server/media";
+import {
+  isOperationsSection,
+  OPERATIONS_SECTIONS,
+} from "@/features/operations/config";
+import {
+  deleteOperationsMedia,
+  listOperationsMedia,
+} from "@/features/operations/server/media";
 import { R2Error } from "@/features/operations/server/r2";
+import {
+  assertSameOrigin,
+  getAccessState,
+} from "@/features/reports/server/access";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const sectionIds = OPERATIONS_SECTIONS.map((s) => s.id) as [string, ...string[]];
+const sectionIds = OPERATIONS_SECTIONS.map((s) => s.id) as [
+  string,
+  ...string[],
+];
+
+function storageMessage(code: string): string {
+  if (code === "AccessDenied") {
+    return "Cloudflare R2 denied access. The token needs permission to list and read the operations bucket.";
+  }
+  if (code === "InvalidAccessKeyId")
+    return "Cloudflare R2 rejected the access key.";
+  if (
+    code === "SignatureDoesNotMatch" ||
+    code === "AuthorizationQueryParametersError"
+  ) {
+    return "Cloudflare R2 rejected the request signature.";
+  }
+  if (code === "NoSuchBucket") {
+    return "Cloudflare R2 could not find the operations bucket. Check OPERATIONS_R2_BUCKET.";
+  }
+  return "The media storage (Cloudflare R2) could not be reached.";
+}
 
 function storageError(err: unknown): never {
   if (err instanceof R2Error) {
-    throw new ApiError(502, "INTERNAL_ERROR", "The media storage (Cloudflare R2) could not be reached.", {
+    throw new ApiError(502, "INTERNAL_ERROR", storageMessage(err.code), {
       reason: "storage_error",
     });
   }
@@ -23,12 +53,22 @@ function storageError(err: unknown): never {
 }
 
 /** Operations media is only served to operators who entered the access key (same as Settings). */
-async function requireOperationsAccess(request: NextRequest, action: string): Promise<void> {
+async function requireOperationsAccess(
+  request: NextRequest,
+  action: string,
+): Promise<void> {
   const state = await getAccessState(request, "operations");
   if (!state.granted) {
-    throw new ApiError(401, "UNAUTHORIZED", `Enter the operator access key to ${action}.`, {
-      reason: state.accessConfigured ? "access_required" : "access_not_configured",
-    });
+    throw new ApiError(
+      401,
+      "UNAUTHORIZED",
+      `Enter the operator access key to ${action}.`,
+      {
+        reason: state.accessConfigured
+          ? "access_required"
+          : "access_not_configured",
+      },
+    );
   }
 }
 
@@ -38,7 +78,8 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   const params = request.nextUrl.searchParams;
   const section = params.get("section");
   const kind = params.get("kind") === "videos" ? "videos" : "photos";
-  if (!isOperationsSection(section)) throw new NotFoundError("Unknown operations section");
+  if (!isOperationsSection(section))
+    throw new NotFoundError("Unknown operations section");
   const list = await listOperationsMedia(section, kind).catch(storageError);
   const response = ok(list);
   response.headers.set("Cache-Control", "private, no-store");
@@ -55,8 +96,11 @@ export const DELETE = withApiHandler(async (request: NextRequest) => {
   assertSameOrigin(request);
   await requireOperationsAccess(request, "delete media");
   const body = deleteSchema.parse(await request.json());
-  if (!isOperationsSection(body.section)) throw new NotFoundError("Unknown operations section");
-  const removed = await deleteOperationsMedia(body.section, body.key).catch(storageError);
+  if (!isOperationsSection(body.section))
+    throw new NotFoundError("Unknown operations section");
+  const removed = await deleteOperationsMedia(body.section, body.key).catch(
+    storageError,
+  );
   if (!removed) throw new NotFoundError("File not found in this section");
   return ok({ deleted: body.key });
 });
