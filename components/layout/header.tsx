@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CloudSun, Globe, Menu } from "lucide-react";
 import { useWeatherSummary } from "@/features/weather/hooks/use-weather-summary";
-import { AppLogo } from "@/components/layout/app-logo";
+import { CommandWordmark } from "@/components/brand/command-wordmark";
 import { ConnectionIndicator } from "@/components/layout/connection-indicator";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { StatusIndicator } from "@/components/ui/status-indicator";
 import { AppIcons } from "@/lib/config/icons";
-import { APP, PUBLIC_ROUTES } from "@/lib/constants";
+import { PUBLIC_ROUTES } from "@/lib/constants";
 import { useUiStore } from "@/lib/store/ui.store";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 
@@ -77,25 +77,19 @@ export function Header() {
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen();
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-header px-3 sm:h-16 sm:px-4">
+    <header className="okb-cc-header relative flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-header px-3 sm:h-16 sm:px-4">
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={openMobileSidebar}
           aria-label="Open navigation"
-          className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
+          className="-ml-1 flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"
         >
           <Menu className="size-5" aria-hidden />
         </button>
 
         {/* The sidebar carries the brand from md up; show it here only on small screens. */}
-        <AppLogo showText={false} className="hidden sm:flex md:hidden" />
-
-        <div className="min-w-0 md:hidden">
-          <h1 className="truncate text-[15px] font-semibold leading-tight text-foreground sm:text-subheading">
-            {APP.name}
-          </h1>
-        </div>
+        <CommandWordmark asHeading className="md:hidden" />
       </div>
 
       <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">

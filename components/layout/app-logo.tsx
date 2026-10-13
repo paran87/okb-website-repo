@@ -1,5 +1,4 @@
-import { OkbLogo } from "@/components/brand/okb-logo";
-import { cn } from "@/utils/cn";
+import { CommandWordmark } from "@/components/brand/command-wordmark";
 
 interface AppLogoProps {
   showText?: boolean;
@@ -11,19 +10,6 @@ interface AppLogoProps {
  */
 export function AppLogo({ showText = true, className }: AppLogoProps) {
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <OkbLogo size={showText ? 40 : 36} className="shrink-0" />
-      {showText ? (
-        <div className="min-w-0 leading-tight">
-          <p className="truncate text-body font-semibold text-foreground">
-            OKB Command Center
-          </p>
-          <p className="truncate text-label text-muted-foreground">
-            DPWH · Oplan Kontra Baha
-          </p>
-        </div>
-      ) : null}
-    </div>
+    <CommandWordmark variant="full" showText={showText} className={className} />
   );
 }
-
