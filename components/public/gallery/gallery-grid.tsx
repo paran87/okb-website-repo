@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Film, Images, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, Play, X } from "lucide-react";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
@@ -15,7 +15,10 @@ export interface PublicGalleryItem {
   lastModified: string;
 }
 
-type Filter = "all" | "photo" | "video";
+type Tab = "photo" | "video";
+type Layout = "grid" | "list";
+
+const LAYOUT_KEY = "okb-gallery-layout";
 
 const DATE = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric" });
 
@@ -91,11 +94,36 @@ function Lightbox({
   );
 }
 
-/** Public gallery grid with a full-screen viewer. */
+/** Public gallery: Photos and Videos tabs, each as a grid or a list, with a full-screen viewer. */
 export function GalleryGrid({ items }: { items: PublicGalleryItem[] }) {
-  const [filter, setFilter] = useState<Filter>("all");
+  const photos = useMemo(() => items.filter((i) => i.kind === "photo"), [items]);
+  const videos = useMemo(() => items.filter((i) => i.kind === "video"), [items]);
+  const [tab, setTab] = useState<Tab>(photos.length || !videos.length ? "photo" : "video");
+  const [layout, setLayout] = useState<Layout>("grid");
   const [open, setOpen] = useState<number | null>(null);
-  const shown = useMemo(() => items.filter((i) => filter === "all" || i.kind === filter), [items, filter]);
+  const shown = tab === "photo" ? photos : videos;
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LAYOUT_KEY);
+      if (saved === "grid" || saved === "list") setLayout(saved);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+  const chooseLayout = (next: Layout) => {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  };
+  const chooseTab = (next: Tab) => {
+    setTab(next);
+    setOpen(null);
+  };
+
   const move = useCallback(
     (delta: number) => setOpen((i) => (i === null ? i : (i + delta + shown.length) % shown.length)),
     [shown.length],
@@ -111,76 +139,134 @@ export function GalleryGrid({ items }: { items: PublicGalleryItem[] }) {
     );
   }
 
-  const photos = items.filter((i) => i.kind === "photo").length;
-  const videos = items.length - photos;
-  const filters: { id: Filter; label: string }[] = [
-    { id: "all", label: `All (${items.length})` },
-    { id: "photo", label: `Photos (${photos})` },
-    { id: "video", label: `Videos (${videos})` },
+  const tabs: { id: Tab; label: string; icon: typeof Images; count: number }[] = [
+    { id: "photo", label: "Photos", icon: Images, count: photos.length },
+    { id: "video", label: "Videos", icon: Film, count: videos.length },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Show">
-        {filters.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            role="radio"
-            aria-checked={filter === f.id}
-            onClick={() => setFilter(f.id)}
-            className={cn(
-              "h-10 rounded-full border px-4 text-sm font-semibold transition-colors",
-              filter === f.id
-                ? "border-[#0038a8] bg-[#0038a8] text-white"
-                : "border-current/20 okb-public-body hover:border-[#0038a8]",
-            )}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-        {shown.map((item, i) => (
-          <li key={item.key}>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-current/15">
+        <div role="tablist" aria-label="Gallery" className="flex gap-1">
+          {tabs.map(({ id, label, icon: Icon, count }) => (
             <button
+              key={id}
               type="button"
-              onClick={() => setOpen(i)}
-              className="group relative block aspect-square w-full overflow-hidden rounded-sm bg-black/10 text-left"
-              aria-label={item.title ?? (item.kind === "photo" ? "Open photo" : "Play video")}
-            >
-              {item.kind === "photo" ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={item.url}
-                  alt={item.title ?? ""}
-                  loading="lazy"
-                  decoding="async"
-                  className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              ) : (
-                <>
-                  <video src={`${item.url}#t=0.5`} preload="metadata" muted playsInline className="size-full object-cover" />
-                  <span className="absolute inset-0 flex items-center justify-center">
-                    <span className="flex size-12 items-center justify-center rounded-full bg-black/55 text-white">
-                      <Play className="size-6 translate-x-0.5" aria-hidden />
-                    </span>
-                  </span>
-                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold uppercase text-white">
-                    <Film className="size-3" aria-hidden /> Video
-                  </span>
-                </>
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => chooseTab(id)}
+              className={cn(
+                "-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm font-semibold transition-colors",
+                tab === id ? "border-[#0038a8] text-[#0038a8]" : "okb-public-body border-transparent hover:text-[#0038a8]",
               )}
-              {item.title ? (
-                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-8 text-xs font-semibold text-white sm:text-sm">
-                  <span className="line-clamp-2">{item.title}</span>
-                </span>
-              ) : null}
+            >
+              <Icon className="size-4" aria-hidden />
+              {label} ({count})
             </button>
-          </li>
-        ))}
-      </ul>
+          ))}
+        </div>
+        <div role="radiogroup" aria-label="Layout" className="mb-1.5 inline-flex rounded-full border border-current/20 p-0.5">
+          {(
+            [
+              { id: "grid", label: "Grid", icon: LayoutGrid },
+              { id: "list", label: "List", icon: List },
+            ] as const
+          ).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={layout === id}
+              onClick={() => chooseLayout(id)}
+              className={cn(
+                "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors",
+                layout === id ? "bg-[#0038a8] text-white" : "okb-public-body",
+              )}
+            >
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {shown.length === 0 ? (
+        <div className="okb-public-card rounded-sm px-6 py-12 text-center">
+          <p className="okb-public-heading text-lg">No {tab === "photo" ? "photos" : "videos"} yet</p>
+          <p className="okb-public-body mt-1 text-sm">Check back for updates from the field.</p>
+        </div>
+      ) : layout === "grid" ? (
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+          {shown.map((item, i) => (
+            <li key={item.key}>
+              <button
+                type="button"
+                onClick={() => setOpen(i)}
+                className="group relative block aspect-square w-full overflow-hidden rounded-sm bg-black/10 text-left"
+                aria-label={item.title ?? (item.kind === "photo" ? "Open photo" : "Play video")}
+              >
+                <Thumb item={item} zoom />
+                {item.title ? (
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-8 text-xs font-semibold text-white sm:text-sm">
+                    <span className="line-clamp-2">{item.title}</span>
+                  </span>
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="divide-y divide-current/10 overflow-hidden rounded-sm border border-current/15">
+          {shown.map((item, i) => (
+            <li key={item.key}>
+              <button
+                type="button"
+                onClick={() => setOpen(i)}
+                className="flex min-h-20 w-full items-center gap-3 p-2 text-left hover:bg-black/5"
+                aria-label={item.title ?? (item.kind === "photo" ? "Open photo" : "Play video")}
+              >
+                <span className="relative block aspect-video w-28 shrink-0 overflow-hidden rounded-sm bg-black/10 sm:w-44">
+                  <Thumb item={item} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="okb-public-heading line-clamp-2 block text-sm font-semibold sm:text-base">
+                    {item.title ?? (item.kind === "photo" ? "Field photo" : "Operations video")}
+                  </span>
+                  {item.caption ? <span className="okb-public-body line-clamp-2 mt-0.5 block text-xs sm:text-sm">{item.caption}</span> : null}
+                  <span className="okb-public-body mt-0.5 block text-xs opacity-70">{DATE.format(new Date(item.lastModified))}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       {open !== null ? <Lightbox items={shown} index={open} onClose={() => setOpen(null)} onMove={move} /> : null}
     </div>
+  );
+}
+
+/** Photo, or video frame with a play badge, filling its box. */
+function Thumb({ item, zoom = false }: { item: PublicGalleryItem; zoom?: boolean }) {
+  if (item.kind === "photo") {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={item.url}
+        alt={item.title ?? ""}
+        loading="lazy"
+        decoding="async"
+        className={cn("size-full object-cover", zoom && "transition-transform duration-500 group-hover:scale-105")}
+      />
+    );
+  }
+  return (
+    <>
+      <video src={`${item.url}#t=0.5`} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
+      <span className="absolute inset-0 flex items-center justify-center">
+        <span className="flex size-10 items-center justify-center rounded-full bg-black/55 text-white">
+          <Play className="size-5 translate-x-0.5" aria-hidden />
+        </span>
+      </span>
+    </>
   );
 }
