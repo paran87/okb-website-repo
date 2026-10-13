@@ -136,7 +136,15 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
           setStatus("error", e.error?.message ?? "Map error");
         });
 
-        map.on("move", () => {
+        // The store feeds React components (scale bar, north arrow). Updating it on every frame of a pan or
+        // pinch re-renders them while the map is being drawn, which is what made the map lag. Update it at
+        // most ~7 times a second while moving, and once more when the gesture ends.
+        let lastSync = 0;
+        let pending: number | undefined;
+        const syncViewport = () => {
+          pending = undefined;
+          if (cancelled || mapRef.current !== map) return;
+          lastSync = performance.now();
           const center = map.getCenter();
           setViewport({
             longitude: center.lng,
@@ -146,6 +154,15 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
             pitch: map.getPitch(),
           });
           setScaleLabel(mapService.getScaleLabel(map));
+        };
+        map.on("move", () => {
+          if (pending !== undefined) return;
+          const wait = Math.max(0, 140 - (performance.now() - lastSync));
+          pending = window.setTimeout(syncViewport, wait);
+        });
+        map.on("moveend", () => {
+          if (pending !== undefined) window.clearTimeout(pending);
+          syncViewport();
         });
 
         setMap(map);

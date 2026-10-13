@@ -21,6 +21,9 @@ export const mapService = {
     styleId: MapStyleId,
     maxBounds?: LngLatBoundsLike,
   ) {
+    // Phones and tablets: a lighter renderer and a pinch that only zooms/rotates (no two-finger tilt),
+    // so the map keeps up with the fingers and the gesture is not read as a tilt.
+    const touch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
     return {
       container: undefined as unknown as HTMLElement,
       style: getMapStyle(styleId),
@@ -32,8 +35,11 @@ export const mapService = {
       maxZoom: MAP_ZOOM_LIMITS.max,
       maxBounds,
       attributionControl: false as const,
-      fadeDuration: 200,
-      antialias: true,
+      fadeDuration: touch ? 0 : 200,
+      antialias: !touch,
+      touchPitch: false,
+      pitchWithRotate: false,
+      renderWorldCopies: false,
       scrollZoom: true,
       doubleClickZoom: true,
       touchZoomRotate: true,

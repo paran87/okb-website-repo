@@ -112,7 +112,7 @@ export function FloodProneRoadsLayer({
         [POINTS, points],
       ] as const) {
         const source = m.getSource(id);
-        if (!source) m.addSource(id, { type: "geojson", data });
+        if (!source) m.addSource(id, { type: "geojson", data, tolerance: 1, buffer: 32 });
         else if (applied.current.get(id) !== data) (source as GeoJSONSource).setData(data);
         applied.current.set(id, data);
       }
