@@ -424,3 +424,20 @@ export async function listGallery(): Promise<GalleryItem[]> {
   }
   return galleryCache.items.catch(() => []);
 }
+
+/** The gallery plus why it is empty when storage is the reason (so the page does not say "coming soon" for an outage). */
+export async function listGalleryWithStatus(): Promise<{ items: GalleryItem[]; problem: "not_configured" | "storage" | null }> {
+  if (!getOperationsR2Config()) return { items: [], problem: "not_configured" };
+  if (!galleryCache || Date.now() - galleryCache.at > GALLERY_TTL_MS) {
+    const items = loadGallery();
+    galleryCache = { at: Date.now(), items };
+    items.catch(() => {
+      galleryCache = null;
+    });
+  }
+  try {
+    return { items: await galleryCache.items, problem: null };
+  } catch {
+    return { items: [], problem: "storage" };
+  }
+}

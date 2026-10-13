@@ -95,7 +95,7 @@ function Lightbox({
 }
 
 /** Public gallery: Photos and Videos tabs, each as a grid or a list, with a full-screen viewer. */
-export function GalleryGrid({ items }: { items: PublicGalleryItem[] }) {
+export function GalleryGrid({ items, problem = null }: { items: PublicGalleryItem[]; problem?: "not_configured" | "storage" | null }) {
   const photos = useMemo(() => items.filter((i) => i.kind === "photo"), [items]);
   const videos = useMemo(() => items.filter((i) => i.kind === "video"), [items]);
   const [tab, setTab] = useState<Tab>(photos.length || !videos.length ? "photo" : "video");
@@ -128,6 +128,20 @@ export function GalleryGrid({ items }: { items: PublicGalleryItem[] }) {
     (delta: number) => setOpen((i) => (i === null ? i : (i + delta + shown.length) % shown.length)),
     [shown.length],
   );
+
+  if (!items.length && problem) {
+    return (
+      <div className="okb-public-card rounded-sm px-6 py-16 text-center">
+        <Images className="mx-auto size-10 opacity-60" aria-hidden />
+        <p className="okb-public-heading mt-3 text-xl">The gallery could not be loaded</p>
+        <p className="okb-public-body mt-1 text-sm">
+          {problem === "not_configured"
+            ? "The photo storage is not set up on the server yet."
+            : "The photo storage (Cloudflare R2) could not be reached. Please try again in a moment."}
+        </p>
+      </div>
+    );
+  }
 
   if (!items.length) {
     return (

@@ -1,6 +1,6 @@
 import { PublicPageHero, PublicPageSection } from "@/components/public";
 import { GalleryGrid } from "@/components/public/gallery/gallery-grid";
-import { listGallery } from "@/features/admin/server/media";
+import { listGalleryWithStatus } from "@/features/admin/server/media";
 import { APP } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,7 @@ export const metadata = {
 
 /** Photos and videos the admin publishes (Admin → Media → Website · Gallery). */
 export default async function GalleryPage() {
-  const items = await listGallery();
+  const { items, problem } = await listGalleryWithStatus();
   return (
     <>
       <PublicPageHero
@@ -21,7 +21,7 @@ export default async function GalleryPage() {
         description="Photos and videos of declogging, clearing and flood-control work across the country."
       />
       <PublicPageSection>
-        <GalleryGrid items={items} />
+        <GalleryGrid items={items} problem={problem} />
       </PublicPageSection>
     </>
   );
