@@ -375,7 +375,7 @@ export type IncidentStorageState = "ready" | "not_configured";
 
 export type ReportDataSource = "supabase" | "fixtures" | "not_configured";
 
-export type DatePreset = "today" | "yesterday" | "7d" | "30d" | "all" | "custom" | "period";
+export type DatePreset = "today" | "24h" | "yesterday" | "7d" | "30d" | "all" | "custom" | "period";
 
 /** UI status filter values (backend statuses plus "confirmed" = has incident). */
 export type ReportStatusFilter = BridgeReportStatus | "confirmed" | "all";

@@ -19,13 +19,12 @@ import { CreateIncidentModal } from "@/features/reports/components/create-incide
 import { ReportCard } from "@/features/reports/components/report-card";
 import { ReportDetailView } from "@/features/reports/components/report-detail";
 import { ReportFilters } from "@/features/reports/components/report-filters";
-import { currentMonitoringPeriod } from "@/features/reports/lib/monitoring-period";
 import { PlatformBadge, StatusBadge } from "@/features/reports/components/report-ui";
 
-/** Incoming opens on the current monitoring period (Asia/Manila); the archive on everything. */
+/** Incoming opens on the reports of the last 24 hours (rolling); the archive on everything. */
 function defaults(variant: "incoming" | "archive"): ReportListQuery {
   return variant === "incoming"
-    ? { datePreset: "period", ...currentMonitoringPeriod(), status: "all", pageSize: 25 }
+    ? { datePreset: "24h", status: "all", pageSize: 25 }
     : { datePreset: "all", status: "all", pageSize: 50 };
 }
 
@@ -42,8 +41,7 @@ function hasFilters(q: ReportListQuery, variant: "incoming" | "archive"): boolea
       (q.municipality && q.municipality !== "all") ||
       (q.office && q.office !== "all") ||
       q.location ||
-      q.datePreset !== d.datePreset ||
-      (d.datePreset === "period" && (q.day !== d.day || q.period !== d.period)),
+      q.datePreset !== d.datePreset,
   );
 }
 
@@ -295,8 +293,8 @@ export function ReportListView({ variant }: { variant: "incoming" | "archive" })
           ) : variant === "incoming" ? (
             <EmptyState
               icon={Inbox}
-              title="No reports in the current monitoring period yet."
-              description="Reports appear here as the OKB Bridge receives them from WhatsApp and Viber groups. Pick another period above, or see the last 7 days."
+              title="No reports in the last 24 hours."
+              description="Reports appear here as the OKB Bridge receives them from WhatsApp and Viber groups. Pick a monitoring period above, or see the last 7 days."
               action={
                 <Button variant="outline" onClick={() => setQuery((q) => ({ ...q, datePreset: "7d", day: undefined, period: undefined, page: 1 }))}>
                   Show the last 7 days

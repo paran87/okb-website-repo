@@ -146,7 +146,7 @@ export function ReportFilters({ value, onChange, onReset, variant }: ReportFilte
           set(
             v
               ? { datePreset: "period", day: v.day, period: v.period }
-              : { datePreset: variant === "incoming" ? "7d" : "all", day: undefined, period: undefined },
+              : { datePreset: variant === "incoming" ? "24h" : "all", day: undefined, period: undefined },
           )
         }
       />

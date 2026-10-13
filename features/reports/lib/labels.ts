@@ -145,6 +145,7 @@ export const REPORT_TYPE_FILTER_OPTIONS = [
 
 export const DATE_PRESET_OPTIONS = [
   { value: "today", label: "Today" },
+  { value: "24h", label: "Last 24 hours" },
   { value: "yesterday", label: "Yesterday" },
   { value: "7d", label: "Last 7 days" },
   { value: "30d", label: "Last 30 days" },

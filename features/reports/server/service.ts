@@ -73,7 +73,7 @@ const listQuerySchema = z.object({
   municipality: optionalText,
   office: optionalText,
   location: optionalText,
-  datePreset: z.enum(["today", "yesterday", "7d", "30d", "all", "custom", "period"]).optional().default("all"),
+  datePreset: z.enum(["today", "24h", "yesterday", "7d", "30d", "all", "custom", "period"]).optional().default("all"),
   from: z.string().optional(),
   to: z.string().optional(),
   day: z.string().optional(),
@@ -92,6 +92,9 @@ export function resolveListQuery(params: URLSearchParams, now = new Date()): Res
   switch (p.datePreset) {
     case "today":
       from = today;
+      break;
+    case "24h":
+      from = new Date(now.getTime() - DAY);
       break;
     case "yesterday":
       from = new Date(today.getTime() - DAY);
