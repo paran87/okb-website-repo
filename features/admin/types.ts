@@ -108,3 +108,30 @@ export interface UploadTicket {
   /** Largest file the server-side fallback accepts when direct upload is blocked. */
   proxyLimit: number;
 }
+
+export interface StorageCheckStep {
+  id: "list" | "write" | "delete";
+  label: string;
+  ok: boolean;
+  code: string | null;
+  hint: string | null;
+}
+
+export interface StorageCheck {
+  configured: boolean;
+  bucket: string | null;
+  /** OPERATIONS_R2_BUCKET is set (otherwise the default name is used). */
+  bucketFromEnv: boolean;
+  host: string | null;
+  account: string | null;
+  /** Which variable each setting is read from (names only). */
+  env: {
+    endpointVar: string | null;
+    accessKeyVar: string | null;
+    secretVar: string | null;
+    bucketVar: string | null;
+    jurisdictionVar: string | null;
+  };
+  steps: StorageCheckStep[];
+  ok: boolean;
+}

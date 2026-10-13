@@ -531,7 +531,7 @@ function ConfirmSheet({
 
 // ------------------------------------------------------------------ view
 
-export function MediaManager() {
+export function MediaManager({ onOpenSetup }: { onOpenSetup: () => void }) {
   const collections = useCollections(true);
   const [collectionId, setCollectionId] = useState<string | null>(null);
   const [view, setView] = useState<View>("files");
@@ -725,7 +725,21 @@ export function MediaManager() {
           Set the OPERATIONS_R2_* variables on the server (Cloudflare R2).
         </Notice>
       ) : media.error ? (
-        <Notice tone="danger" title="Files could not be loaded">
+        <Notice
+          tone="danger"
+          title="Files could not be loaded"
+          action={
+            media.error instanceof AdminApiError && media.error.reason === "storage_error" ? (
+              <button
+                type="button"
+                onClick={onOpenSetup}
+                className="h-10 rounded-lg bg-danger px-4 text-caption font-semibold text-white"
+              >
+                Run storage check
+              </button>
+            ) : null
+          }
+        >
           {media.error.message}
         </Notice>
       ) : null}

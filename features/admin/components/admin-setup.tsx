@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { CheckCircle2, CircleAlert, Copy, Database, ExternalLink, HardDrive, KeyRound, LogOut, RefreshCw } from "lucide-react";
+import { CheckCircle2, CircleAlert, Copy, Database, ExternalLink, HardDrive, KeyRound, Loader2, LogOut, RefreshCw, Stethoscope, XCircle } from "lucide-react";
 import { AdminCard } from "@/features/admin/components/admin-ui";
-import { useAdminState, useDirectUploads, useSetupSql, useSignOut } from "@/features/admin/hooks/use-admin";
+import { useAdminState, useDirectUploads, useSetupSql, useSignOut, useStorageCheck } from "@/features/admin/hooks/use-admin";
 import type { AdminState } from "@/features/admin/types";
 import { cn } from "@/utils/cn";
 
@@ -82,6 +82,81 @@ function SqlStep() {
   );
 }
 
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-1.5">
+      <dt className="text-caption text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 break-all text-right text-caption text-foreground">{children}</dd>
+    </div>
+  );
+}
+
+/** Tests the R2 key: list, upload, delete — with the fix for each failure. */
+function StorageCheckCard() {
+  const check = useStorageCheck();
+  const r = check.data;
+  return (
+    <AdminCard title="Storage check" icon={<Stethoscope className="size-4" aria-hidden />}>
+      <p className="text-caption text-muted-foreground">
+        Tests the Cloudflare R2 key the site uses: it lists the bucket, uploads a small test file and deletes it again.
+      </p>
+      <button
+        type="button"
+        onClick={() => check.mutate()}
+        disabled={check.isPending}
+        className="mt-3 inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-caption font-semibold text-primary-foreground disabled:opacity-60"
+      >
+        {check.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Stethoscope className="size-4" aria-hidden />}
+        {r ? "Run again" : "Run storage check"}
+      </button>
+      {check.error ? <p className="mt-3 text-caption text-danger">{check.error.message}</p> : null}
+      {r ? (
+        <div className="mt-4 space-y-3">
+          {!r.configured ? (
+            <p className="text-caption text-danger">
+              R2 is not configured: set <Code>OPERATIONS_R2_ACCOUNT_ID</Code>, <Code>OPERATIONS_R2_ACCESS_KEY_ID</Code>,{" "}
+              <Code>OPERATIONS_R2_SECRET_ACCESS_KEY</Code> and <Code>OPERATIONS_R2_BUCKET</Code> in Vercel.
+            </p>
+          ) : (
+            <>
+              <dl className="divide-y divide-border rounded-xl border border-border px-3">
+                <Row label="Bucket">
+                  <Code>{r.bucket}</Code>{" "}
+                  <span className="text-muted-foreground">{r.bucketFromEnv ? "(OPERATIONS_R2_BUCKET)" : "(default — OPERATIONS_R2_BUCKET not set)"}</span>
+                </Row>
+                <Row label="Account">{r.account}</Row>
+                <Row label="Endpoint">{r.host}</Row>
+                <Row label="Key from">{r.env.accessKeyVar ?? "—"}</Row>
+              </dl>
+              <ul className="space-y-2">
+                {r.steps.map((step) => (
+                  <li key={step.id} className="flex gap-2.5">
+                    {step.ok ? (
+                      <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" aria-label="Passed" />
+                    ) : (
+                      <XCircle className="mt-0.5 size-5 shrink-0 text-danger" aria-label="Failed" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-caption font-semibold text-foreground">
+                        {step.label}
+                        {step.code ? <span className="ml-1.5 font-mono font-normal text-danger">{step.code}</span> : null}
+                      </p>
+                      {step.hint ? <p className="text-caption text-muted-foreground">{step.hint}</p> : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {r.ok ? (
+                <p className="text-caption font-semibold text-success">Storage works. Uploads and the galleries can use this bucket.</p>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
+    </AdminCard>
+  );
+}
+
 export function AdminSetup({ state }: { state: AdminState }) {
   const cors = useDirectUploads(state.storage.configured);
   const signOut = useSignOut();
@@ -131,6 +206,7 @@ export function AdminSetup({ state }: { state: AdminState }) {
             </Check>
           </ul>
         </AdminCard>
+        <StorageCheckCard />
         <AdminCard title="Account" icon={<KeyRound className="size-4" aria-hidden />}>
           <p className="text-caption text-muted-foreground">
             Signed in as <span className="font-semibold text-foreground">{state.name}</span>. The session ends after 12

@@ -55,7 +55,10 @@ export function mediaFileUrl(key: string): string {
 }
 
 function storageMessage(err: R2Error): string {
-  if (err.code === "AccessDenied") return "Cloudflare R2 denied access to the media bucket. Check the R2 API token.";
+  if (err.code === "AccessDenied") {
+    const bucket = getOperationsR2Config()?.bucket ?? "(not set)";
+    return `Cloudflare R2 denied access to the bucket "${bucket}". Run Admin → Setup → Storage check for the exact fix.`;
+  }
   if (err.code === "NoSuchBucket") return "Cloudflare R2 could not find the media bucket. Check OPERATIONS_R2_BUCKET.";
   return "The media storage (Cloudflare R2) could not be reached.";
 }

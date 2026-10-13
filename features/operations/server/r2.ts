@@ -348,3 +348,36 @@ export async function putBucketCors(cfg: R2Config, xml: string): Promise<void> {
     body: xml,
   });
 }
+
+/** Lists at most one object (a cheap permission check). */
+export async function probeList(cfg: R2Config, prefix = ""): Promise<void> {
+  await send(presign(cfg, "GET", null, { query: { "list-type": "2", prefix, "max-keys": "1" } }));
+}
+
+/** Where each R2 setting comes from (variable names only, never values). */
+export function describeOperationsR2Env(): {
+  endpointVar: string | null;
+  accessKeyVar: string | null;
+  secretVar: string | null;
+  bucketVar: string | null;
+  jurisdictionVar: string | null;
+} {
+  const pick = (pairs: [string, string | undefined][]) => pairs.find(([, v]) => present(v))?.[0] ?? null;
+  return {
+    endpointVar: pick([
+      ["OPERATIONS_R2_ENDPOINT", process.env.OPERATIONS_R2_ENDPOINT],
+      ["OPERATIONS_R2_ACCOUNT_ID", process.env.OPERATIONS_R2_ACCOUNT_ID],
+      ["R2_ACCOUNT_ID", process.env.R2_ACCOUNT_ID],
+    ]),
+    accessKeyVar: pick([
+      ["OPERATIONS_R2_ACCESS_KEY_ID", process.env.OPERATIONS_R2_ACCESS_KEY_ID],
+      ["R2_ACCESS_KEY_ID", process.env.R2_ACCESS_KEY_ID],
+    ]),
+    secretVar: pick([
+      ["OPERATIONS_R2_SECRET_ACCESS_KEY", process.env.OPERATIONS_R2_SECRET_ACCESS_KEY],
+      ["R2_SECRET_ACCESS_KEY", process.env.R2_SECRET_ACCESS_KEY],
+    ]),
+    bucketVar: pick([["OPERATIONS_R2_BUCKET", process.env.OPERATIONS_R2_BUCKET]]),
+    jurisdictionVar: pick([["OPERATIONS_R2_JURISDICTION", process.env.OPERATIONS_R2_JURISDICTION]]),
+  };
+}

@@ -148,7 +148,7 @@ export function AdminApp() {
 
         {tab === "overview" ? <AnalyticsOverview onOpenSetup={() => go("setup")} /> : null}
         {tab === "visitors" ? <VisitorLog onOpenSetup={() => go("setup")} /> : null}
-        {tab === "media" ? <MediaManager /> : null}
+        {tab === "media" ? <MediaManager onOpenSetup={() => go("setup")} /> : null}
         {tab === "setup" ? <AdminSetup state={state.data} /> : null}
       </main>
 

@@ -6,6 +6,7 @@ import type {
   AdminMediaList,
   AdminState,
   MediaCollection,
+  StorageCheck,
   StatsRange,
   VisitArea,
   VisitPage,
@@ -154,5 +155,11 @@ export function useEnableDirectUploads() {
   return useMutation({
     mutationFn: () => adminApi<{ origin: string; status: "enabled" }>("/api/admin/media/cors", { method: "POST" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.cors }),
+  });
+}
+
+export function useStorageCheck() {
+  return useMutation({
+    mutationFn: () => adminApi<StorageCheck>("/api/admin/storage-check", { method: "POST" }),
   });
 }
