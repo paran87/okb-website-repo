@@ -13,6 +13,10 @@ export interface OperationsMediaItem {
   /** Barangay / city of the geotag (reverse geocoded). */
   place: string | null;
   note: string | null;
+  /** Title the admin gave the file (Admin → Media). */
+  title: string | null;
+  /** When it was taken, when the admin entered it. */
+  takenAt: string | null;
 }
 
 export interface OperationsMediaList {

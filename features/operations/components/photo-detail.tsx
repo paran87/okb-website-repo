@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn";
 import type { OperationsMediaItem } from "@/features/operations/types";
 import {
+  dateLabel,
   itemTitle,
   mapsUrl,
   MediaThumb,
@@ -316,8 +317,9 @@ export function PhotoDetail({
               <h2 className="text-subheading text-foreground">{title}</h2>
               <p className="mt-1 flex items-center gap-1.5 text-caption text-muted-foreground">
                 <CalendarDays className="size-3.5" aria-hidden />
-                {uploadedAt(item, "MMMM d, yyyy")}
+                {dateLabel(item)} {uploadedAt(item, "MMMM d, yyyy")}
               </p>
+              {item.note ? <p className="mt-2 text-caption text-foreground">{item.note}</p> : null}
             </div>
             <div className="grid gap-3 @xl:grid-cols-2 @3xl:grid-cols-1 @6xl:grid-cols-2">
               <div className="rounded-xl border border-border p-3">
@@ -345,7 +347,7 @@ export function PhotoDetail({
                     <dd className="text-right text-foreground">{sectionLabel}</dd>
                   </div>
                   <div className="flex flex-wrap justify-between gap-x-3">
-                    <dt className="text-muted-foreground">Uploaded</dt>
+                    <dt className="text-muted-foreground">{dateLabel(item)}</dt>
                     <dd className="text-right text-foreground">{uploadedAt(item, "MMMM d, yyyy")}</dd>
                   </div>
                 </dl>

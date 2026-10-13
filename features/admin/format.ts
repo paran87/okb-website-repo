@@ -95,3 +95,18 @@ export function capitalize(value: string | null): string {
   if (!value) return "Unknown";
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
+
+/** An ISO instant as the value of a `datetime-local` input, in Philippine time ("2026-10-14T08:30"). */
+export function toManilaInput(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return "";
+  return new Date(t + 8 * 3_600_000).toISOString().slice(0, 16);
+}
+
+/** The inverse: a `datetime-local` value (Philippine time) as an ISO instant, or null when empty or invalid. */
+export function fromManilaInput(value: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
+  const t = new Date(`${value}:00+08:00`);
+  return Number.isNaN(t.getTime()) ? null : t.toISOString();
+}

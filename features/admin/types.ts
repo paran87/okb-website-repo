@@ -73,6 +73,16 @@ export interface VisitPage {
 
 export type MediaKind = "photo" | "video";
 
+/** Details an admin can add to a photo or video. `takenAt` is an ISO instant; the form edits it in Philippine time. */
+export interface MediaDetails {
+  title?: string | null;
+  caption?: string | null;
+  takenAt?: string | null;
+  place?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
 export interface MediaCollection {
   id: string;
   label: string;
@@ -89,6 +99,11 @@ export interface AdminMediaItem {
   lastModified: string;
   title: string | null;
   caption: string | null;
+  /** When it was taken (ISO), entered by the admin. */
+  takenAt: string | null;
+  place: string | null;
+  latitude: number | null;
+  longitude: number | null;
   /** Command Center collections: the file is shown in the Operations gallery. */
   shownInCommandCenter: boolean | null;
 }
@@ -99,6 +114,8 @@ export interface AdminMediaList {
   items: AdminMediaItem[];
   /** Captions could not be loaded (Admin tables not set up yet). */
   captionsAvailable: boolean;
+  /** Date, place and coordinates can be saved (the extra setup step has been run). */
+  detailsAvailable: boolean;
 }
 
 export interface UploadTicket {

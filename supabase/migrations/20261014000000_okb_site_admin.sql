@@ -51,6 +51,13 @@ create table if not exists public.okb_site_media (
 
 alter table public.okb_site_media enable row level security;
 
+-- Details the admin can add when uploading or editing a file: the date it was taken, the place, and
+-- (Command Center files) the coordinates that put it on the Operations map. Safe to run again.
+alter table public.okb_site_media add column if not exists taken_at timestamptz;
+alter table public.okb_site_media add column if not exists place text check (char_length(place) <= 200);
+alter table public.okb_site_media add column if not exists latitude double precision check (latitude between -90 and 90);
+alter table public.okb_site_media add column if not exists longitude double precision check (longitude between -180 and 180);
+
 -- -----------------------------------------------------------------------------
 -- Aggregates for the Admin dashboard over [p_from, p_to). Buckets and the
 -- hour-of-day histogram are in Philippine time (Asia/Manila).

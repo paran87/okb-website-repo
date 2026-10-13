@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, X } from "lucide-react";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
@@ -12,8 +12,13 @@ export interface PublicGalleryItem {
   url: string;
   title: string | null;
   caption: string | null;
+  /** When it was taken (the upload time if no date was entered). */
+  takenAt?: string;
+  place?: string | null;
   lastModified: string;
 }
+
+const dateOf = (item: PublicGalleryItem) => DATE.format(new Date(item.takenAt ?? item.lastModified));
 
 type Tab = "photo" | "video";
 type Layout = "grid" | "list";
@@ -87,7 +92,12 @@ function Lightbox({
         <div className="mx-auto w-full max-w-3xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-white">
           {item.title ? <p className="text-base font-semibold">{item.title}</p> : null}
           {item.caption ? <p className="mt-1 text-sm text-white/80">{item.caption}</p> : null}
-          <p className="mt-1 text-xs text-white/50">{DATE.format(new Date(item.lastModified))}</p>
+          {item.place ? (
+            <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
+              <MapPin className="size-3.5 shrink-0" aria-hidden /> {item.place}
+            </p>
+          ) : null}
+          <p className="mt-1 text-xs text-white/50">{dateOf(item)}</p>
         </div>
       </div>
     </Portal>
@@ -247,7 +257,10 @@ export function GalleryGrid({ items, problem = null }: { items: PublicGalleryIte
                     {item.title ?? (item.kind === "photo" ? "Field photo" : "Operations video")}
                   </span>
                   {item.caption ? <span className="okb-public-body line-clamp-2 mt-0.5 block text-xs sm:text-sm">{item.caption}</span> : null}
-                  <span className="okb-public-body mt-0.5 block text-xs opacity-70">{DATE.format(new Date(item.lastModified))}</span>
+                  <span className="okb-public-body mt-0.5 block text-xs opacity-70">
+                    {item.place ? `${item.place} · ` : ""}
+                    {dateOf(item)}
+                  </span>
                 </span>
               </button>
             </li>

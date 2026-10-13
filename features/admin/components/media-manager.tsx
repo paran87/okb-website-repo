@@ -9,6 +9,7 @@ import {
   Film,
   Image as ImageIcon,
   Loader2,
+  MapPin,
   Pencil,
   Play,
   RotateCcw,
@@ -21,7 +22,14 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { AdminApiError } from "@/features/admin/api";
+import { AdminApiError, adminApi, jsonBody } from "@/features/admin/api";
+import {
+  detailsToForm,
+  EMPTY_DETAILS,
+  formToDetails,
+  MediaDetailsFields,
+  type DetailsForm,
+} from "@/features/admin/components/media-details-form";
 import { AdminSheet } from "@/features/admin/components/admin-sheet";
 import { AdminCard, Notice, Segmented, SkeletonBlock } from "@/features/admin/components/admin-ui";
 import { formatBytes, formatDate, formatTime } from "@/features/admin/format";
@@ -36,7 +44,7 @@ import {
   useRestoreMedia,
 } from "@/features/admin/hooks/use-admin";
 import { uploadFile } from "@/features/admin/upload";
-import type { AdminMediaItem, MediaCollection } from "@/features/admin/types";
+import type { AdminMediaItem, MediaCollection, MediaDetails } from "@/features/admin/types";
 import { cn } from "@/utils/cn";
 
 type KindFilter = "all" | "photo" | "video";
@@ -50,6 +58,8 @@ interface UploadJob {
   id: string;
   file: File;
   collection: string;
+  /** Title, caption, date, place and coordinates saved with the file once it is uploaded. */
+  details?: MediaDetails;
   progress: number;
   status: "queued" | "uploading" | "done" | "error";
   error?: string;
@@ -74,7 +84,25 @@ function useUploadQueue(onDone: () => void) {
       if (job.controller.signal.aborted) continue;
       patch(job.id, { status: "uploading", progress: 0 });
       try {
-        await uploadFile(job.collection, job.file, (f) => patch(job.id, { progress: f }), job.controller.signal);
+        const key = await uploadFile(job.collection, job.file, (f) => patch(job.id, { progress: f }), job.controller.signal);
+        if (job.details && Object.values(job.details).some((v) => v !== null && v !== undefined)) {
+          try {
+            await adminApi("/api/admin/media", {
+              method: "PATCH",
+              body: jsonBody({ collection: job.collection, key, ...job.details }),
+              signal: job.controller.signal,
+            });
+          } catch (err) {
+            // The file is safely uploaded; only its details were refused.
+            patch(job.id, {
+              status: "error",
+              progress: 1,
+              error: `Uploaded, but the details were not saved: ${err instanceof Error ? err.message : "unknown error"}. Use Edit to add them.`,
+            });
+            onDone();
+            continue;
+          }
+        }
         patch(job.id, { status: "done", progress: 1 });
         onDone();
       } catch (err) {
@@ -90,11 +118,12 @@ function useUploadQueue(onDone: () => void) {
   }, [onDone, patch]);
 
   const add = useCallback(
-    (files: File[], collection: string) => {
+    (files: File[], collection: string, details?: MediaDetails) => {
       const next = files.map<UploadJob>((file) => ({
         id: `${file.name}-${file.size}-${Math.random().toString(36).slice(2)}`,
         file,
         collection,
+        details,
         progress: 0,
         status: "queued",
         controller: new AbortController(),
@@ -305,8 +334,14 @@ function MediaCard({
           {item.title ?? item.name}
         </p>
         {item.caption ? <p className="line-clamp-2 text-[11px] leading-4 text-muted-foreground">{item.caption}</p> : null}
+        {item.place || item.latitude != null ? (
+          <p className="flex items-center gap-1 truncate text-[11px] leading-4 text-muted-foreground">
+            <MapPin className="size-3 shrink-0 text-primary" aria-hidden />
+            <span className="truncate">{item.place ?? `${item.latitude?.toFixed(4)}, ${item.longitude?.toFixed(4)}`}</span>
+          </p>
+        ) : null}
         <p className="mt-auto pt-1 text-[11px] leading-4 text-muted-foreground">
-          {formatBytes(item.size)} · {formatDate(item.lastModified)}
+          {formatBytes(item.size)} · {formatDate(item.takenAt ?? item.lastModified)}
         </p>
       </div>
       <div className="grid grid-cols-2 border-t border-border">
@@ -358,27 +393,41 @@ function EditSheet({
   item,
   collection,
   captionsAvailable,
+  detailsAvailable,
   onClose,
 }: {
   item: AdminMediaItem;
   collection: MediaCollection;
   captionsAvailable: boolean;
+  detailsAvailable: boolean;
   onClose: () => void;
 }) {
   const edit = useEditMedia();
   const toast = useToast();
   const [fileName, setFileName] = useState(stem(item.name));
-  const [title, setTitle] = useState(item.title ?? "");
-  const [caption, setCaption] = useState(item.caption ?? "");
+  const [form, setForm] = useState<DetailsForm>(() => detailsToForm(item));
+  const [formError, setFormError] = useState<string | null>(null);
   const ext = item.name.slice(stem(item.name).length);
+  const withCoordinates = collection.area === "command";
 
   const save = () => {
+    const parsed = formToDetails(form, withCoordinates);
+    if ("error" in parsed) {
+      setFormError(parsed.error);
+      return;
+    }
+    setFormError(null);
+    const { details } = parsed;
     edit.mutate(
       {
         collection: collection.id,
         key: item.key,
         fileName: fileName.trim() !== stem(item.name) ? fileName.trim() : null,
-        ...(captionsAvailable ? { title, caption } : {}),
+        ...(detailsAvailable
+          ? details
+          : captionsAvailable
+            ? { title: details.title, caption: details.caption }
+            : {}),
       },
       {
         onSuccess: () => {
@@ -425,29 +474,91 @@ function EditSheet({
         </label>
         {captionsAvailable ? (
           <>
-            <label className="block space-y-1.5">
-              <span className="text-caption font-medium text-foreground">Title</span>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="e.g. Declogging along España Blvd." />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-caption font-medium text-foreground">Caption</span>
-              <textarea
-                value={caption}
-                onChange={(e) => setCaption(e.target.value)}
-                maxLength={2000}
-                rows={4}
-                placeholder="What, where and when"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-body text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/40"
-              />
-            </label>
+            <MediaDetailsFields value={form} onChange={setForm} withCoordinates={withCoordinates} detailsAvailable={detailsAvailable} />
             {collection.area === "website" ? (
-              <p className="text-[11px] leading-4 text-muted-foreground">The title and caption are shown on the public Gallery page.</p>
-            ) : null}
+              <p className="text-[11px] leading-4 text-muted-foreground">The title, caption, date and place are shown on the public Gallery page.</p>
+            ) : (
+              <p className="text-[11px] leading-4 text-muted-foreground">These details are shown in the Command Center Operations gallery.</p>
+            )}
           </>
         ) : (
           <p className="text-[11px] leading-4 text-muted-foreground">Titles and captions become available after the Setup step.</p>
         )}
+        {formError ? <p className="text-caption text-danger">{formError}</p> : null}
         {edit.error ? <p className="text-caption text-danger">{edit.error.message}</p> : null}
+      </div>
+    </AdminSheet>
+  );
+}
+
+/** Asks for the details of the files about to be uploaded; they are saved with every file of the batch. */
+function UploadDetailsSheet({
+  files,
+  collection,
+  detailsAvailable,
+  onCancel,
+  onUpload,
+}: {
+  files: File[];
+  collection: MediaCollection;
+  detailsAvailable: boolean;
+  onCancel: () => void;
+  onUpload: (details?: MediaDetails) => void;
+}) {
+  const [form, setForm] = useState<DetailsForm>(EMPTY_DETAILS);
+  const [error, setError] = useState<string | null>(null);
+  const withCoordinates = collection.area === "command";
+  const submit = () => {
+    const parsed = formToDetails(form, withCoordinates);
+    if ("error" in parsed) {
+      setError(parsed.error);
+      return;
+    }
+    onUpload(parsed.details);
+  };
+  return (
+    <AdminSheet
+      open
+      onClose={onCancel}
+      title={files.length === 1 ? "Add details and upload" : `Add details to ${files.length} files`}
+      description={collection.label}
+      footer={
+        <>
+          <button type="button" onClick={onCancel} className="h-10 rounded-lg px-4 text-caption font-semibold text-muted-foreground hover:bg-muted">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpload()}
+            className="h-10 rounded-lg px-4 text-caption font-semibold text-foreground hover:bg-muted"
+          >
+            Skip details
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-5 text-caption font-semibold text-primary-foreground"
+          >
+            <UploadCloud className="size-4" aria-hidden /> Upload
+          </button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <ul className="max-h-24 space-y-0.5 overflow-y-auto rounded-lg bg-muted px-3 py-2 text-caption text-muted-foreground">
+          {files.map((f) => (
+            <li key={`${f.name}-${f.size}`} className="truncate">
+              {f.name} · {formatBytes(f.size)}
+            </li>
+          ))}
+        </ul>
+        {files.length > 1 ? (
+          <p className="text-[11px] leading-4 text-muted-foreground">
+            These details are saved with every file in this batch. Upload files that share a place and date together, or edit each file afterwards.
+          </p>
+        ) : null}
+        <MediaDetailsFields value={form} onChange={setForm} withCoordinates={withCoordinates} detailsAvailable={detailsAvailable} />
+        {error ? <p className="text-caption text-danger">{error}</p> : null}
       </div>
     </AdminSheet>
   );
@@ -466,8 +577,22 @@ function PreviewSheet({ item, onClose }: { item: AdminMediaItem; onClose: () => 
           )}
         </div>
         {item.caption ? <p className="text-body text-foreground">{item.caption}</p> : null}
+        {item.place || item.latitude != null ? (
+          <p className="flex items-center gap-1.5 text-caption text-foreground">
+            <MapPin className="size-4 shrink-0 text-primary" aria-hidden />
+            {item.place ?? ""}
+            {item.latitude != null && item.longitude != null ? (
+              <span className="font-mono text-muted-foreground">
+                {item.place ? " · " : ""}
+                {item.latitude.toFixed(5)}, {item.longitude.toFixed(5)}
+              </span>
+            ) : null}
+          </p>
+        ) : null}
         <p className="text-caption text-muted-foreground">
-          {formatBytes(item.size)} · uploaded {formatDate(item.lastModified)} {formatTime(item.lastModified)}
+          {formatBytes(item.size)}
+          {item.takenAt ? ` · taken ${formatDate(item.takenAt)} ${formatTime(item.takenAt)}` : ""} · uploaded {formatDate(item.lastModified)}{" "}
+          {formatTime(item.lastModified)}
         </p>
         {item.shownInCommandCenter === false ? (
           <p className="text-caption text-warning">
@@ -541,6 +666,7 @@ export function MediaManager({ onOpenSetup }: { onOpenSetup: () => void }) {
   const [preview, setPreview] = useState<AdminMediaItem | null>(null);
   const [editing, setEditing] = useState<AdminMediaItem | null>(null);
   const [confirm, setConfirm] = useState<AdminMediaItem | null>(null);
+  const [pending, setPending] = useState<File[] | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const qc = useQueryClient();
   const toast = useToast();
@@ -576,7 +702,8 @@ export function MediaManager({ onOpenSetup }: { onOpenSetup: () => void }) {
 
   const addFiles = (list: FileList | null) => {
     if (!list?.length || !collectionId) return;
-    uploads.add(Array.from(list), collectionId);
+    // Ask for the details first (title, caption, date, place, coordinates); they are saved with each file.
+    setPending(Array.from(list));
     if (view !== "files") setView("files");
   };
 
@@ -783,12 +910,25 @@ export function MediaManager({ onOpenSetup }: { onOpenSetup: () => void }) {
         )
       ) : null}
 
+      {pending && collection ? (
+        <UploadDetailsSheet
+          files={pending}
+          collection={collection}
+          detailsAvailable={media.data?.detailsAvailable ?? false}
+          onCancel={() => setPending(null)}
+          onUpload={(details) => {
+            uploads.add(pending, collection.id, details);
+            setPending(null);
+          }}
+        />
+      ) : null}
       {preview ? <PreviewSheet item={preview} onClose={() => setPreview(null)} /> : null}
       {editing && collection ? (
         <EditSheet
           item={editing}
           collection={collection}
           captionsAvailable={media.data?.captionsAvailable ?? false}
+          detailsAvailable={media.data?.detailsAvailable ?? false}
           onClose={() => setEditing(null)}
         />
       ) : null}

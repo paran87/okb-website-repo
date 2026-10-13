@@ -9,7 +9,7 @@ import type { OperationsMediaItem } from "@/features/operations/types";
 export type LayoutMode = "grid" | "list";
 
 export function uploadedAt(item: OperationsMediaItem, pattern = "MMM d, yyyy · h:mm a"): string {
-  const date = new Date(item.lastModified);
+  const date = new Date(item.takenAt ?? item.lastModified);
   return Number.isNaN(date.getTime()) ? "" : format(date, pattern);
 }
 
@@ -17,9 +17,12 @@ export function mapsUrl(item: OperationsMediaItem): string | null {
   return item.geotag ? `https://www.google.com/maps?q=${item.geotag.lat},${item.geotag.lng}` : null;
 }
 
-/** Card / row heading: the place, else the note, else a generic label. */
+/** "Taken" when the admin entered the date, else "Uploaded". */
+export const dateLabel = (item: OperationsMediaItem) => (item.takenAt ? "Taken" : "Uploaded");
+
+/** Card / row heading: the title, else the place, else the note, else a generic label. */
 export function itemTitle(item: OperationsMediaItem): string {
-  return item.place ?? item.note ?? (item.kind === "photo" ? (item.geotag ? "Geotagged photo" : "Field photo") : "Operations video");
+  return item.title ?? item.place ?? item.note ?? (item.kind === "photo" ? (item.geotag ? "Geotagged photo" : "Field photo") : "Operations video");
 }
 
 /** Short place for compact cards ("San Roque, Manila" → "San Roque"). */

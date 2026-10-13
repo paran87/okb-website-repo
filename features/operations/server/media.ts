@@ -7,6 +7,7 @@ import {
 } from "@/features/operations/config";
 import type { OperationsMediaItem, OperationsMediaList } from "@/features/operations/types";
 import { exifGps } from "@/features/operations/server/exif-gps";
+import { metaUnder, type MediaMeta } from "@/features/admin/server/media-meta";
 import {
   getOperationsR2Config,
   listObjects,
@@ -87,7 +88,12 @@ function toItem(
   obj: R2Object,
   kind: OperationsMediaKind,
   entry: CuratedEntry,
+  meta?: MediaMeta,
 ): OperationsMediaItem {
+  // Details the admin entered win over the hand-checked list and the photo's own GPS.
+  const lat = meta?.latitude ?? entry.lat;
+  const lng = meta?.longitude ?? entry.lng;
+  const fromAdmin = meta?.latitude != null && meta?.longitude != null;
   return {
     key: obj.key,
     name: obj.key.split("/").pop() || obj.key,
@@ -96,12 +102,11 @@ function toItem(
     url: `/api/operations/media/file?key=${encodeURIComponent(obj.key)}`,
     size: obj.size,
     lastModified: obj.lastModified,
-    geotag:
-      entry.lat !== undefined && entry.lng !== undefined
-        ? { lat: entry.lat, lng: entry.lng, approx: entry.approx === true }
-        : null,
-    place: entry.place ?? null,
-    note: entry.note ?? null,
+    geotag: lat !== undefined && lat !== null && lng !== undefined && lng !== null ? { lat, lng, approx: !fromAdmin && entry.approx === true } : null,
+    place: meta?.place ?? entry.place ?? null,
+    note: meta?.caption ?? entry.note ?? null,
+    title: meta?.title ?? null,
+    takenAt: meta?.takenAt ?? null,
   };
 }
 
@@ -114,20 +119,25 @@ export async function listOperationsMedia(
   if (!cfg || !prefix) return { section, kind, configured: Boolean(cfg), items: [] };
 
   const curatedByKey = new Map(CURATED[section][kind].map((e) => [e.key, e]));
-  const objects = (await listCached(cfg, prefix)).filter((o) => o.size > 0);
+  const [listed, metaByKey] = await Promise.all([listCached(cfg, prefix), metaUnder(prefix)]);
+  const objects = listed.filter((o) => o.size > 0);
   const added = objects.filter(
     (o) => !curatedByKey.has(o.key) && Date.parse(o.lastModified) > CURATED_AT && FILE_TYPES[kind].test(o.key),
   );
   if (kind === "photos") await readExif(cfg, added);
   const addedKeys = new Set(added.map((o) => o.key));
   const items = objects.flatMap((obj) => {
+    const meta = metaByKey?.get(obj.key);
     const entry = curatedByKey.get(obj.key);
-    if (entry) return [toItem(obj, kind, entry)];
-    if (!addedKeys.has(obj.key)) return [];
+    if (entry) return [toItem(obj, kind, entry, meta)];
+    // A file the admin described is shown even if it predates the hand-checked list.
+    const described = Boolean(meta) && FILE_TYPES[kind].test(obj.key);
+    if (!addedKeys.has(obj.key) && !described) return [];
     const gps = exifCache.get(`${obj.key}|${obj.etag}`);
-    return [toItem(obj, kind, gps ? { key: obj.key, ...gps } : { key: obj.key })];
+    return [toItem(obj, kind, gps ? { key: obj.key, ...gps } : { key: obj.key }, meta)];
   });
-  items.sort((a, b) => b.lastModified.localeCompare(a.lastModified) || a.key.localeCompare(b.key));
+  const when = (i: OperationsMediaItem) => Date.parse(i.takenAt ?? i.lastModified) || 0;
+  items.sort((a, b) => when(b) - when(a) || a.key.localeCompare(b.key));
   return { section, kind, configured: true, items };
 }
 

@@ -25,7 +25,16 @@ import {
   type R2Config,
   type R2Object,
 } from "@/features/operations/server/r2";
-import { siteDbConfigured, siteRest } from "@/features/admin/server/supabase";
+import {
+  deleteMeta,
+  invalidateMeta,
+  metaColumnsAvailable,
+  metaUnder,
+  moveMeta,
+  saveMeta,
+  type MediaMeta,
+  type MediaMetaFields,
+} from "@/features/admin/server/media-meta";
 import type { AdminMediaItem, AdminMediaList, MediaKind, UploadTicket } from "@/features/admin/types";
 
 /**
@@ -83,6 +92,7 @@ function r2(): R2Config {
 
 function afterChange(c: CollectionConfig): void {
   if (c.operationsSection) invalidateOperationsListing(c.prefix);
+  invalidateMeta(c.prefix);
   if (c.prefix === WEBSITE_GALLERY_PREFIX) galleryCache = null;
 }
 
@@ -124,53 +134,9 @@ async function freeKey(cfg: R2Config, folder: string, name: string): Promise<str
   return `${folder}${stem}-${Date.now().toString(36)}${ext ? `.${ext}` : ""}`;
 }
 
-// ---------------------------------------------------------------- captions
-
-interface CaptionRow {
-  key: string;
-  title: string | null;
-  caption: string | null;
-}
-
-async function captionsUnder(prefix: string): Promise<Map<string, CaptionRow> | null> {
-  if (!siteDbConfigured()) return null;
-  try {
-    const params = new URLSearchParams({ select: "key,title,caption", key: `like.${prefix.replace(/[*%]/g, "")}*` });
-    const { data } = await siteRest<CaptionRow[]>(`okb_site_media?${params}`);
-    return new Map((data ?? []).map((r) => [r.key, r]));
-  } catch {
-    return null;
-  }
-}
-
-async function saveCaption(key: string, title: string | null, caption: string | null, by: string): Promise<void> {
-  if (!title && !caption) {
-    await siteRest(`okb_site_media?key=eq.${encodeURIComponent(key)}`, { method: "DELETE", prefer: ["return=minimal"] });
-    return;
-  }
-  await siteRest("okb_site_media?on_conflict=key", {
-    method: "POST",
-    body: { key, title, caption, updated_by: by, updated_at: new Date().toISOString() },
-    prefer: ["resolution=merge-duplicates", "return=minimal"],
-  });
-}
-
-async function moveCaption(from: string, to: string): Promise<void> {
-  if (!siteDbConfigured()) return;
-  try {
-    await siteRest(`okb_site_media?key=eq.${encodeURIComponent(from)}`, {
-      method: "PATCH",
-      body: { key: to, updated_at: new Date().toISOString() },
-      prefer: ["return=minimal"],
-    });
-  } catch {
-    /* captions are optional */
-  }
-}
-
 // ---------------------------------------------------------------- listing
 
-function toItem(obj: R2Object, kind: MediaKind, caption: CaptionRow | undefined, shown: boolean | null): AdminMediaItem {
+function toItem(obj: R2Object, kind: MediaKind, meta: MediaMeta | undefined, shown: boolean | null): AdminMediaItem {
   return {
     key: obj.key,
     name: baseName(obj.key),
@@ -178,8 +144,12 @@ function toItem(obj: R2Object, kind: MediaKind, caption: CaptionRow | undefined,
     url: mediaFileUrl(obj.key),
     size: obj.size,
     lastModified: obj.lastModified,
-    title: caption?.title ?? null,
-    caption: caption?.caption ?? null,
+    title: meta?.title ?? null,
+    caption: meta?.caption ?? null,
+    takenAt: meta?.takenAt ?? null,
+    place: meta?.place ?? null,
+    latitude: meta?.latitude ?? null,
+    longitude: meta?.longitude ?? null,
     shownInCommandCenter: shown,
   };
 }
@@ -188,10 +158,11 @@ export async function listMedia(c: CollectionConfig, view: "files" | "trash"): P
   const cfg = r2();
   const trash = view === "trash";
   const prefix = trash ? `${TRASH_PREFIX}${c.prefix}` : c.prefix;
-  const [objects, captions, shown] = await Promise.all([
+  const [objects, captions, shown, detailsAvailable] = await Promise.all([
     listObjects(cfg, prefix).catch(storageError),
-    captionsUnder(c.prefix),
+    metaUnder(c.prefix),
     !trash && c.operationsSection ? shownInCommandCenter(c) : Promise.resolve(null),
+    metaColumnsAvailable(),
   ]);
   const items = objects.flatMap((obj) => {
     const kind = obj.size > 0 ? mediaKindOf(obj.key) : null;
@@ -200,7 +171,7 @@ export async function listMedia(c: CollectionConfig, view: "files" | "trash"): P
     return [toItem(obj, kind, captions?.get(original), shown ? shown.has(obj.key) : null)];
   });
   items.sort((a, b) => b.lastModified.localeCompare(a.lastModified) || a.key.localeCompare(b.key));
-  return { collection: c.id, view, items, captionsAvailable: captions !== null };
+  return { collection: c.id, view, items, captionsAvailable: captions !== null, detailsAvailable };
 }
 
 async function shownInCommandCenter(c: CollectionConfig): Promise<Set<string> | null> {
@@ -257,9 +228,7 @@ export async function confirmUpload(c: CollectionConfig, key: string): Promise<v
 
 // ---------------------------------------------------------------- edits
 
-export interface MediaEdit {
-  title?: string | null;
-  caption?: string | null;
+export interface MediaEdit extends MediaMetaFields {
   fileName?: string | null;
 }
 
@@ -275,15 +244,18 @@ export async function updateMedia(c: CollectionConfig, key: string, edit: MediaE
     if (target !== key) {
       if (await objectExists(cfg, target).catch(storageError)) throw new ConflictError("A file with that name already exists.");
       await moveObject(cfg, key, target).catch(storageError);
-      await moveCaption(key, target);
+      await moveMeta(key, target);
       current = target;
     }
   }
-  if (edit.title !== undefined || edit.caption !== undefined) {
-    const title = edit.title?.trim() || null;
-    const caption = edit.caption?.trim() || null;
-    await saveCaption(current, title, caption, by);
-  }
+  const fields: MediaMetaFields = {};
+  if (edit.title !== undefined) fields.title = edit.title?.trim() || null;
+  if (edit.caption !== undefined) fields.caption = edit.caption?.trim() || null;
+  if (edit.place !== undefined) fields.place = edit.place?.trim() || null;
+  if (edit.takenAt !== undefined) fields.takenAt = edit.takenAt || null;
+  if (edit.latitude !== undefined) fields.latitude = edit.latitude;
+  if (edit.longitude !== undefined) fields.longitude = edit.longitude;
+  if (Object.keys(fields).length) await saveMeta(current, fields, by);
   afterChange(c);
   return { key: current };
 }
@@ -301,7 +273,7 @@ export async function restoreMedia(c: CollectionConfig, trashKey: string): Promi
   const folder = original.slice(0, original.lastIndexOf("/") + 1);
   const target = await freeKey(cfg, folder, baseName(original)).catch(storageError);
   await moveObject(cfg, trashKey, target).catch(storageError);
-  if (target !== original) await moveCaption(original, target);
+  if (target !== original) await moveMeta(original, target);
   afterChange(c);
   return { key: target };
 }
@@ -310,12 +282,7 @@ export async function purgeMedia(c: CollectionConfig, trashKey: string): Promise
   assertInCollection(c, trashKey, true);
   await deleteObject(r2(), trashKey).catch(storageError);
   const original = trashKey.slice(TRASH_PREFIX.length);
-  if (siteDbConfigured()) {
-    await siteRest(`okb_site_media?key=eq.${encodeURIComponent(original)}`, {
-      method: "DELETE",
-      prefer: ["return=minimal"],
-    }).catch(() => undefined);
-  }
+  await deleteMeta(original);
 }
 
 // ---------------------------------------------------------------- direct uploads (bucket CORS)
@@ -384,6 +351,9 @@ export interface GalleryItem {
   url: string;
   title: string | null;
   caption: string | null;
+  /** When it was taken (admin-entered); the upload time otherwise. */
+  takenAt: string;
+  place: string | null;
   lastModified: string;
 }
 
@@ -393,7 +363,7 @@ let galleryCache: { at: number; items: Promise<GalleryItem[]> } | null = null;
 async function loadGallery(): Promise<GalleryItem[]> {
   const cfg = getOperationsR2Config();
   if (!cfg) return [];
-  const [objects, captions] = await Promise.all([listObjects(cfg, WEBSITE_GALLERY_PREFIX), captionsUnder(WEBSITE_GALLERY_PREFIX)]);
+  const [objects, captions] = await Promise.all([listObjects(cfg, WEBSITE_GALLERY_PREFIX), metaUnder(WEBSITE_GALLERY_PREFIX)]);
   return objects
     .flatMap((obj) => {
       const kind = obj.size > 0 ? mediaKindOf(obj.key) : null;
@@ -406,11 +376,13 @@ async function loadGallery(): Promise<GalleryItem[]> {
           url: mediaFileUrl(obj.key),
           title: c?.title ?? null,
           caption: c?.caption ?? null,
+          takenAt: c?.takenAt ?? obj.lastModified,
+          place: c?.place ?? null,
           lastModified: obj.lastModified,
         },
       ];
     })
-    .sort((a, b) => b.lastModified.localeCompare(a.lastModified));
+    .sort((a, b) => (Date.parse(b.takenAt) || 0) - (Date.parse(a.takenAt) || 0));
 }
 
 /** Published website gallery (newest first). Empty when storage is not configured or unreachable. */

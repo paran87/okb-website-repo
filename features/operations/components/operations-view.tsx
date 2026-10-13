@@ -42,15 +42,18 @@ import type { OperationsMediaItem } from "@/features/operations/types";
 import { ReportsGate } from "@/features/reports/components/reports-gate";
 import { ReportsApiError, useGrantAccess } from "@/features/reports/hooks/use-reports";
 import {
+  dateLabel,
   itemTitle,
   mapsUrl,
   MediaThumb,
   PlaceLine,
+  shortPlace,
   uploadedAt,
   useLayoutMode,
   ViewToggle,
 } from "@/features/operations/components/media-parts";
 import { PhotoDetail } from "@/features/operations/components/photo-detail";
+import { PhotoMap } from "@/features/operations/components/photo-map";
 
 /** Cards rendered at a time; more are added with "Show more". */
 const PAGE_SIZE = 60;
@@ -240,7 +243,7 @@ function MediaViewer({
   return (
     <Modal open={item !== null} onClose={onClose} size="xl">
       {item ? (
-        <div className="-mx-5 -my-4 flex max-h-[90dvh] flex-col overflow-hidden rounded-card">
+        <div className="-mx-5 -my-4 flex max-h-[90dvh] flex-col overflow-y-auto rounded-card">
           <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
             <p className="min-w-0 truncate text-caption font-semibold text-foreground">{itemTitle(item)}</p>
             <button
@@ -257,14 +260,25 @@ function MediaViewer({
               // eslint-disable-next-line @next/next/no-img-element
               <img src={item.url} alt={itemTitle(item)} className="max-h-[65dvh] w-auto max-w-full object-contain" />
             ) : (
-              <video src={item.url} controls autoPlay playsInline className="max-h-[65dvh] w-auto max-w-full">
+              <video src={item.url} controls autoPlay playsInline className={cn("w-auto max-w-full", item.geotag ? "max-h-[45dvh]" : "max-h-[65dvh]")}>
                 <track kind="captions" />
               </video>
             )}
           </div>
+          {item.geotag ? (
+            <PhotoMap
+              lat={item.geotag.lat}
+              lng={item.geotag.lng}
+              label={shortPlace(item) ?? itemTitle(item)}
+              className="h-48 w-full border-t border-border sm:h-64"
+            />
+          ) : null}
           <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0 space-y-0.5 text-caption">
-              <p className="text-muted-foreground">Uploaded {uploadedAt(item)}</p>
+              <p className="text-muted-foreground">
+                {dateLabel(item)} {uploadedAt(item)}
+              </p>
+              {item.note ? <p className="text-foreground">{item.note}</p> : null}
               <PlaceLine item={item} className="text-caption" />
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">

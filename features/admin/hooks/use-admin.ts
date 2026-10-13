@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, jsonBody } from "@/features/admin/api";
 import type {
+  MediaDetails,
   AdminMediaList,
   AdminState,
   MediaCollection,
@@ -109,7 +110,7 @@ function useMediaMutation<T>(fn: (body: T) => Promise<unknown>) {
 
 export function useEditMedia() {
   return useMediaMutation(
-    (body: { collection: string; key: string; title?: string | null; caption?: string | null; fileName?: string | null }) =>
+    (body: { collection: string; key: string; fileName?: string | null } & MediaDetails) =>
       adminApi("/api/admin/media", { method: "PATCH", body: jsonBody(body) }),
   );
 }
