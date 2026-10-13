@@ -1,16 +1,20 @@
 import "server-only";
 
 import { ApiError } from "@/lib/api/errors";
-import { NCR_DAILY_ACCOMPLISHMENT_EMBED_URL } from "@/lib/constants";
+import { NCR_DAILY_ACCOMPLISHMENT_URL } from "@/lib/constants";
 
 export interface NcrDailyPage {
   page: number;
-  /** Signed page image. It expires, so the list is refreshed on a short cache. */
+  /** Signed image of the page (the widest Canva lists for it). It expires, so the list is refreshed on a short cache. */
   url: string;
 }
 
+/**
+ * The view page lists every page of the design (the ?embed page stops at the first 20). Each page has a
+ * 596px thumbnail; the page Canva opens first also has a 1024px preview. The widest one is used.
+ */
 const PAGE_RE =
-  /\{"bucket":"document-export\.canva\.com","key":"[^"]+","page":(\d+),"pageHash":-?\d+,"height":\d+,"width":\d+,"url":"(https:[^"]+)"\}/g;
+  /\{"bucket":"document-export\.canva\.com","key":"[^"]+","page":(\d+),"pageHash":-?\d+,"height":\d+,"width":(\d+),"url":"(https:[^"]+)"\}/g;
 
 /** How long a scraped page list is reused. The image links themselves last about an hour. */
 const CACHE_MS = 10 * 60 * 1000;
@@ -18,30 +22,32 @@ const CACHE_MS = 10 * 60 * 1000;
 let cache: { at: number; pages: NcrDailyPage[] } | null = null;
 
 function pagesFromHtml(html: string): NcrDailyPage[] {
-  const byPage = new Map<number, string>();
+  const byPage = new Map<number, { width: number; url: string }>();
   for (const match of html.matchAll(PAGE_RE)) {
     const page = Number(match[1]);
-    const url = match[2]?.replace(/\\u0026/g, "&").replace(/\\\//g, "/");
-    if (!page || !url || byPage.has(page)) continue;
-    byPage.set(page, url);
+    const width = Number(match[2]);
+    const url = match[3]?.replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+    if (!page || !url) continue;
+    if ((byPage.get(page)?.width ?? 0) >= width) continue;
+    byPage.set(page, { width, url });
   }
   return [...byPage.entries()]
     .sort((a, b) => a[0] - b[0])
-    .map(([page, url]) => ({ page, url }));
+    .map(([page, { url }]) => ({ page, url }));
 }
 
 /** Every page of the NCR Daily Accomplishment board, in order. */
 export async function getNcrDailyPages(): Promise<NcrDailyPage[]> {
   if (cache && Date.now() - cache.at < CACHE_MS) return cache.pages;
 
-  const response = await fetch(NCR_DAILY_ACCOMPLISHMENT_EMBED_URL, {
+  const response = await fetch(NCR_DAILY_ACCOMPLISHMENT_URL, {
     headers: {
       Accept: "text/html",
       // Canva answers a bare client with "Unsupported client" and no page images.
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     },
-    next: { revalidate: 600 },
+    cache: "no-store",
   });
   if (!response.ok) {
     throw new ApiError(502, "INTERNAL_ERROR", "The NCR daily accomplishment board could not be loaded.");

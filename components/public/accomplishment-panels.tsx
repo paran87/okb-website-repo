@@ -9,8 +9,10 @@ import { cn } from "@/utils/cn";
 
 interface NcrDailyPage {
   page: number;
-  url: string;
 }
+
+/** How many thumbnails the strip shows at first, and how many each "Show more" adds. */
+const STRIP_STEP = 48;
 
 /** Page images are served through this site (see app/api/accomplishment/ncr-daily/image). */
 const pageImage = (page: number) => `/api/accomplishment/ncr-daily/image?page=${page}`;
@@ -119,6 +121,7 @@ function NcrDailyAccomplishment() {
   const [index, setIndex] = useState(0);
   const touchX = useRef<number | null>(null);
   const [layout, setLayout] = useState<Layout>("grid");
+  const [shown, setShown] = useState(STRIP_STEP);
 
   useEffect(() => {
     try {
@@ -184,7 +187,7 @@ function NcrDailyAccomplishment() {
               key={current.page}
               src={pageImage(current.page)}
               alt={`NCR daily accomplishment ${index + 1} of ${count}`}
-              className="block h-auto w-full"
+              className="mx-auto block h-auto w-full max-w-[900px]"
             />
             <button
               type="button"
@@ -243,7 +246,7 @@ function NcrDailyAccomplishment() {
               aria-label="All accomplishments"
               className={cn(layout === "grid" ? "grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:grid-cols-8" : "flex flex-col gap-1.5")}
             >
-              {pages.map((item, itemIndex) => {
+              {pages.slice(0, Math.max(shown, index + 1)).map((item, itemIndex) => {
                 const selected = itemIndex === index;
                 return (
                   <button
@@ -279,6 +282,15 @@ function NcrDailyAccomplishment() {
                 );
               })}
             </div>
+            {pages.length > Math.max(shown, index + 1) ? (
+              <button
+                type="button"
+                onClick={() => setShown((value) => value + STRIP_STEP)}
+                className="mt-2 min-h-11 w-full rounded-sm border border-[var(--dpwh-border)] text-sm font-semibold text-[var(--dpwh-blue)]"
+              >
+                Show more ({pages.length - Math.max(shown, index + 1)} left)
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
