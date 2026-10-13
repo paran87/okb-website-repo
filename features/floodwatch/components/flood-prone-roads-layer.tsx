@@ -8,10 +8,16 @@ import { MAP_LABEL_FONT } from "@/features/map/config/map-styles";
 import { popupService } from "@/features/map/services/popup.service";
 import { isLiveMap, useMapStore } from "@/features/map/store/map.store";
 
-/** The flood-prone stretch of road. */
+/** The flood-prone stretch of road (Flood Monitoring). */
 export const FLOOD_PRONE_ROAD_COLOR = "#f97316";
-/** The flood-prone area marker. */
+/** The flood-prone area marker (Flood Monitoring). */
 export const FLOOD_PRONE_AREA_COLOR = "#7c3aed";
+/** Dashboard: each mapped area drawn as a road, distinct from live flood depths. */
+export const FLOOD_PRONE_NETWORK_COLOR = "#1d4ed8";
+/** Soft edge so the dashboard traces read as ribbons, not strokes. */
+const FLOOD_PRONE_NETWORK_HALO = "#bfdbfe";
+
+export type FloodProneAppearance = "markers" | "network";
 
 const LINES = "fp-roads";
 const POINTS = "fp-areas";
@@ -47,10 +53,22 @@ function propsOf({ area, section }: PlacedArea): AreaProps {
 }
 
 /**
- * Flood Prone Areas (Floodwatch) on the map: a quarter of each area's road section in orange, a small marker at
- * the area, and a small road-name label once zoomed in. Tapping an area or its stretch shows its details.
+ * Flood Prone Areas (Floodwatch) on the map. Tapping an area or its stretch shows its details.
+ *
+ * "markers" draws a quarter of each road in orange plus a small violet dot (Flood Monitoring).
+ * "network" draws every mapped area as a blue road trace, so the full list stays readable
+ * instead of collapsing into cluster circles. A small dot is kept only where the area
+ * could not be placed on a road.
  */
-export function FloodProneRoadsLayer({ placed, visible = true }: { placed: PlacedArea[]; visible?: boolean }) {
+export function FloodProneRoadsLayer({
+  placed,
+  visible = true,
+  appearance = "markers",
+}: {
+  placed: PlacedArea[];
+  visible?: boolean;
+  appearance?: FloodProneAppearance;
+}) {
   const map = useMapStore((s) => s.map);
   const status = useMapStore((s) => s.status);
   const [styleVersion, setStyleVersion] = useState(0);
@@ -103,16 +121,24 @@ export function FloodProneRoadsLayer({ placed, visible = true }: { placed: Place
       const add = (layer: Parameters<MapLibreMap["addLayer"]>[0]) => {
         if (!m.getLayer(layer.id)) m.addLayer(layer, before);
       };
+      const network = appearance === "network";
       add({
         id: "fp-road-casing",
         type: "line",
         source: LINES,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "#ffffff",
-          "line-opacity": 0.85,
-          "line-width": expr(["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 5, 15, 9]),
-        },
+        paint: network
+          ? {
+              "line-color": FLOOD_PRONE_NETWORK_HALO,
+              "line-opacity": 0.95,
+              "line-blur": 0.4,
+              "line-width": expr(["interpolate", ["linear"], ["zoom"], 8, 3.4, 11, 5, 15, 8]),
+            }
+          : {
+              "line-color": "#ffffff",
+              "line-opacity": 0.85,
+              "line-width": expr(["interpolate", ["linear"], ["zoom"], 6, 2.5, 11, 5, 15, 9]),
+            },
       });
       add({
         id: "fp-road",
@@ -120,20 +146,33 @@ export function FloodProneRoadsLayer({ placed, visible = true }: { placed: Place
         source: LINES,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": FLOOD_PRONE_ROAD_COLOR,
-          "line-width": expr(["interpolate", ["linear"], ["zoom"], 6, 1.5, 11, 3, 15, 6]),
+          "line-color": network ? FLOOD_PRONE_NETWORK_COLOR : FLOOD_PRONE_ROAD_COLOR,
+          "line-opacity": network ? 0.92 : 1,
+          "line-width": network
+            ? expr(["interpolate", ["linear"], ["zoom"], 8, 1.5, 11, 2.2, 15, 3.6])
+            : expr(["interpolate", ["linear"], ["zoom"], 6, 1.5, 11, 3, 15, 6]),
         },
       });
       add({
         id: "fp-area",
         type: "circle",
         source: POINTS,
-        paint: {
-          "circle-color": FLOOD_PRONE_AREA_COLOR,
-          "circle-radius": expr(["interpolate", ["linear"], ["zoom"], 5, 2, 10, 3, 14, 4.5, 17, 6]),
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": expr(["interpolate", ["linear"], ["zoom"], 5, 0.75, 12, 1.5]),
-        },
+        // On the dashboard the road trace is the area. A dot remains only for a place that
+        // never landed on the road network, so that row is still on the map.
+        ...(network ? { filter: ["==", ["get", "section"], "Not on the road network"] as const } : {}),
+        paint: network
+          ? {
+              "circle-color": FLOOD_PRONE_NETWORK_COLOR,
+              "circle-radius": 3,
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": 1.25,
+            }
+          : {
+              "circle-color": FLOOD_PRONE_AREA_COLOR,
+              "circle-radius": expr(["interpolate", ["linear"], ["zoom"], 5, 2, 10, 3, 14, 4.5, 17, 6]),
+              "circle-stroke-color": "#ffffff",
+              "circle-stroke-width": expr(["interpolate", ["linear"], ["zoom"], 5, 0.75, 12, 1.5]),
+            },
       });
       add({
         id: "fp-area-label",
@@ -150,7 +189,7 @@ export function FloodProneRoadsLayer({ placed, visible = true }: { placed: Place
           "text-optional": true,
         },
         paint: {
-          "text-color": "#5b21b6",
+          "text-color": network ? "#1e3a8a" : "#5b21b6",
           "text-halo-color": "rgba(255,255,255,0.95)",
           "text-halo-width": 1.5,
         },
@@ -176,7 +215,7 @@ export function FloodProneRoadsLayer({ placed, visible = true }: { placed: Place
       map.off("styledata", retry);
       map.off("idle", retry);
     };
-  }, [map, status, styleVersion, lines, points, visible]);
+  }, [map, status, styleVersion, lines, points, visible, appearance]);
 
   // Tap an area or its stretch of road for its details.
   useEffect(() => {

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Position } from "geojson";
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
-import { createFloodOverviewLayerRegistry } from "@/features/map/config/layer-registry";
-import { FloodwatchAreasOverlay } from "@/features/floodwatch/components/floodwatch-areas-overlay";
+import type { LayerConfig } from "@/features/map/types";
+import { FLOOD_PRONE_NETWORK_COLOR, FloodProneRoadsLayer } from "@/features/floodwatch/components/flood-prone-roads-layer";
+import { useFloodProneRoads } from "@/features/floodwatch/hooks/use-flood-prone-roads";
 import { FloodLayers } from "@/features/incident/components/flood-map";
 import { FloodLocationCard } from "@/features/incident/components/flood-location-card";
 import { positionsOf, type PlacedLocation } from "@/features/incident/hooks/use-flood-situation";
@@ -13,8 +14,8 @@ import type { FloodLineFeature, FloodPointFeature } from "@/features/incident/co
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 
-/** Flood-prone areas (Floodwatch) stay as background; incidents come from the received reports. */
-const DASHBOARD_LAYERS = createFloodOverviewLayerRegistry().filter((layer) => layer.id !== "ncr-incidents");
+/** No registry layers: flood-prone roads and the received reports are drawn by their own layers. */
+const DASHBOARD_LAYERS: LayerConfig[] = [];
 
 interface DashboardMapPanelProps {
   className?: string;
@@ -25,8 +26,9 @@ interface DashboardMapPanelProps {
   ready: boolean;
 }
 
-/** Dashboard map: flooded roads from the received reports (as on the Incidents tab) over flood-prone areas. */
+/** Dashboard map: flooded roads from the received reports, over every mapped flood-prone road. */
 export function DashboardMapPanel({ className, placed, lines, points, ready }: DashboardMapPanelProps) {
+  const floodProne = useFloodProneRoads();
   const [selected, setSelected] = useState<string | null>(null);
   const [focus, setFocus] = useState<{ id: number; positions: Position[] } | null>(null);
   const framed = useRef(false);
@@ -53,7 +55,7 @@ export function DashboardMapPanel({ className, placed, lines, points, ready }: D
         showLayerPanel={false}
         className="h-full min-h-[280px] w-full lg:min-h-[360px] xl:min-h-0"
       />
-      <FloodwatchAreasOverlay />
+      <FloodProneRoadsLayer placed={floodProne.placed} appearance="network" />
       <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} />
 
       <ul
@@ -67,8 +69,11 @@ export function DashboardMapPanel({ className, placed, lines, points, ready }: D
           </li>
         ))}
         <li className="flex items-center gap-1.5">
-          <span className="size-2.5 rounded-full bg-[#7c3aed]" aria-hidden />
-          Flood-prone area
+          <span className="h-[3px] w-4 rounded-full" style={{ backgroundColor: FLOOD_PRONE_NETWORK_COLOR }} aria-hidden />
+          Flood-prone roads
+          {floodProne.ready ? (
+            <span className="font-normal text-muted-foreground">{floodProne.placed.length.toLocaleString()}</span>
+          ) : null}
         </li>
       </ul>
 
