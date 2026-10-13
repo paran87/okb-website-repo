@@ -11,7 +11,7 @@ import {
   deleteOperationsMedia,
   listOperationsMedia,
 } from "@/features/operations/server/media";
-import { R2Error } from "@/features/operations/server/r2";
+import { getOperationsR2Config, R2Error } from "@/features/operations/server/r2";
 import {
   assertSameOrigin,
   getAccessState,
@@ -27,7 +27,8 @@ const sectionIds = OPERATIONS_SECTIONS.map((s) => s.id) as [
 
 function storageMessage(code: string): string {
   if (code === "AccessDenied") {
-    return "Cloudflare R2 denied access. The token needs permission to list and read the operations bucket.";
+    const bucket = getOperationsR2Config()?.bucket ?? "(not set)";
+    return `Cloudflare R2 denied access to the bucket "${bucket}". Check that OPERATIONS_R2_BUCKET is the exact bucket name and that the R2 API token has Object Read & Write on that bucket.`;
   }
   if (code === "InvalidAccessKeyId")
     return "Cloudflare R2 rejected the access key.";
