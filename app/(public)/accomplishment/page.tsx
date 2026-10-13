@@ -1,6 +1,6 @@
 import { BarChart3, MapPin, Table2, TrendingUp } from "lucide-react";
 import { PublicPageHero } from "@/components/public";
-import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
+import { AccomplishmentPanels } from "@/components/public/accomplishment-panels";
 import { CoverageExplorer } from "@/components/public/coverage-explorer";
 import { AccomplishmentHeroArt } from "@/components/public/accomplishment-hero-art";
 import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
@@ -8,7 +8,7 @@ import { APP } from "@/lib/constants";
 
 export const metadata = {
   title: "Accomplishment",
-  description: `Live ${APP.program} accomplishments dashboard — waste collection, regional progress, and source tables.`,
+  description: `Live ${APP.program} accomplishments dashboard, the NCR daily accomplishment board, and program coverage.`,
 };
 
 const HERO_BANNER = {
@@ -47,7 +47,7 @@ export default function AccomplishmentPage() {
 
       <section className="okb-public-section border-t py-6 sm:py-8">
         <div className="okb-public-shell max-w-[90rem]">
-          <AccomplishmentDashboard />
+          <AccomplishmentPanels />
         </div>
       </section>
 

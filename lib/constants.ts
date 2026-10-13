@@ -31,6 +31,17 @@ export const FRAMEWORK_DOCUMENT_HREF =
 export const ACCOMPLISHMENT_DASHBOARD_URL =
   "https://script.google.com/macros/s/AKfycbzX6AKleN8DhDTU5Re8kOwQk4lF71YRUgl9ZjgUJv4marmOFWbTw-uweiSK5tr1kl3A/exec";
 
+/**
+ * NCR Daily Accomplishment board.
+ * Editor (not frameable): https://www.canva.com/design/DAHKF7VTZh4/b7tRxzCI84QZs_CKjFCJ9g/edit
+ * Canva sends X-Frame-Options: SAMEORIGIN on /edit, so the page embeds the same design's view.
+ */
+export const NCR_DAILY_ACCOMPLISHMENT_URL =
+  "https://www.canva.com/design/DAHKF7VTZh4/b7tRxzCI84QZs_CKjFCJ9g/view";
+
+export const NCR_DAILY_ACCOMPLISHMENT_EMBED_URL =
+  "https://www.canva.com/design/DAHKF7VTZh4/b7tRxzCI84QZs_CKjFCJ9g/view?embed";
+
 /** Floodwatch drainage and flood monitoring dashboard. */
 export const FLOODWATCH_URL = "https://floodwatch-ten.vercel.app/";
 
