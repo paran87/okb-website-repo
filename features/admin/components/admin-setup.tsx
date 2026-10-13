@@ -126,6 +126,9 @@ function StorageCheckCard() {
                 </Row>
                 <Row label="Account">{r.account}</Row>
                 <Row label="Endpoint">{r.host}</Row>
+                <Row label="Endpoint from">
+                  {[r.env.endpointVar, r.env.jurisdictionVar].filter(Boolean).join(" + ") || "—"}
+                </Row>
                 <Row label="Key from">{r.env.accessKeyVar ?? "—"}</Row>
               </dl>
               <ul className="space-y-2">
@@ -147,6 +150,25 @@ function StorageCheckCard() {
                   </li>
                 ))}
               </ul>
+              {r.otherJurisdiction ? (
+                <div
+                  className={cn(
+                    "rounded-xl border p-3 text-caption",
+                    r.otherJurisdiction.works ? "border-success/40 bg-success/10" : "border-border",
+                  )}
+                >
+                  <p className="font-semibold text-foreground">
+                    Tried the {r.otherJurisdiction.jurisdiction === "eu" ? "EU" : "default"} endpoint ({r.otherJurisdiction.host}):{" "}
+                    {r.otherJurisdiction.works ? "it works with the same key." : "denied there too."}
+                  </p>
+                  {r.otherJurisdiction.fix ? <p className="mt-1 text-foreground">{r.otherJurisdiction.fix}</p> : (
+                    <p className="mt-1 text-muted-foreground">
+                      So the endpoint is not the problem: check that the key belongs to an active token with Object Read &amp;
+                      Write on this bucket.
+                    </p>
+                  )}
+                </div>
+              ) : null}
               {r.ok ? (
                 <p className="text-caption font-semibold text-success">Storage works. Uploads and the galleries can use this bucket.</p>
               ) : null}

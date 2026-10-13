@@ -135,5 +135,7 @@ export interface StorageCheck {
     jurisdictionVar: string | null;
   };
   steps: StorageCheckStep[];
+  /** After an access-denied listing: whether the same key works on the other jurisdiction's endpoint. */
+  otherJurisdiction: { jurisdiction: "default" | "eu"; host: string; works: boolean; fix: string | null } | null;
   ok: boolean;
 }

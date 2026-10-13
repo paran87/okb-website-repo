@@ -44,7 +44,17 @@ export async function runStorageCheck(): Promise<StorageCheck> {
   const env = describeOperationsR2Env();
   const cfg = getOperationsR2Config();
   if (!cfg) {
-    return { configured: false, bucket: null, bucketFromEnv: Boolean(env.bucketVar), host: null, account: null, env, steps: [], ok: false };
+    return {
+      configured: false,
+      bucket: null,
+      bucketFromEnv: Boolean(env.bucketVar),
+      host: null,
+      account: null,
+      env,
+      steps: [],
+      otherJurisdiction: null,
+      ok: false,
+    };
   }
   const bucketFromEnv = Boolean(env.bucketVar);
   const steps: StorageCheckStep[] = [];
@@ -89,6 +99,36 @@ export async function runStorageCheck(): Promise<StorageCheck> {
   if (wrote) await run("delete", "Delete the test file", () => deleteObject(cfg, testKey));
   if (linked) await deleteObject(cfg, linkKey).catch(() => undefined);
 
+  // Access denied often means the wrong jurisdiction endpoint (EU vs default):
+  // a bucket-scoped key is refused for a bucket that does not exist there.
+  let otherJurisdiction: StorageCheck["otherJurisdiction"] = null;
+  const denied = steps.find((st) => st.id === "list")?.code === "AccessDenied";
+  if (denied) {
+    const isEu = /\.eu\.r2\.cloudflarestorage\.com$/.test(cfg.host);
+    const otherHost = isEu
+      ? cfg.host.replace(".eu.r2.cloudflarestorage.com", ".r2.cloudflarestorage.com")
+      : cfg.host.replace(".r2.cloudflarestorage.com", ".eu.r2.cloudflarestorage.com");
+    let works = false;
+    try {
+      await probeList({ ...cfg, host: otherHost });
+      works = true;
+    } catch {
+      works = false;
+    }
+    otherJurisdiction = {
+      jurisdiction: isEu ? "default" : "eu",
+      host: otherHost.replace(cfg.accountId, maskAccount(cfg.accountId)),
+      works,
+      fix: !works
+        ? null
+        : isEu
+          ? `Your bucket is in the default jurisdiction, not the EU. In Vercel, delete OPERATIONS_R2_JURISDICTION${
+              env.endpointVar === "OPERATIONS_R2_ENDPOINT" ? " and remove \".eu\" from OPERATIONS_R2_ENDPOINT" : ""
+            }, then redeploy.`
+          : "Your bucket is in the EU jurisdiction. In Vercel, set OPERATIONS_R2_JURISDICTION=eu, then redeploy.",
+    };
+  }
+
   return {
     configured: true,
     bucket: cfg.bucket,
@@ -97,6 +137,7 @@ export async function runStorageCheck(): Promise<StorageCheck> {
     account: maskAccount(cfg.accountId),
     env,
     steps,
+    otherJurisdiction,
     ok: listed && wrote && steps.every((s) => s.ok),
   };
 }
