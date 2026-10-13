@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Feature, FeatureCollection, Point } from "geojson";
 import { BarChart3, Route, SlidersHorizontal, X } from "lucide-react";
 import type { ApiSuccess } from "@/lib/api/response";
@@ -62,7 +62,12 @@ export function RoadNetworkView() {
   const [showIncidents, setShowIncidents] = useState(false);
   const [selected, setSelected] = useState<Selection>(null);
   const [floodPoints, setFloodPoints] = useState<Feature<Point>[] | null>(null);
-  const [fit, setFit] = useState<{ bounds: Bounds; key: number } | null>(null);
+  const [fit, setFit] = useState<{
+    bounds: Bounds;
+    key: number;
+    /** A clicked road: leave room for the details card on a phone. */
+    focus?: "road";
+  } | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
 
   useEffect(() => {
@@ -186,10 +191,16 @@ export function RoadNetworkView() {
     };
   }, [selectedFeature, floodPoints, incidentPoints]);
 
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+
   // Frame the matches whenever the filters narrow the network (debounced for typing).
+  // A road clicked while this is waiting keeps the zoom onto that road.
   useEffect(() => {
     if (loadState !== "ready") return;
+    const atSchedule = selectedRef.current;
     const timer = window.setTimeout(() => {
+      if (selectedRef.current !== atSchedule) return;
       const bounds = active
         ? boundsOf(matches.map((r) => r.geometry))
         : PHILIPPINES;
@@ -220,12 +231,37 @@ export function RoadNetworkView() {
     },
     [scope, change],
   );
-  const pickRoad = useCallback((road: RoadFeature) => {
-    setSelected({ kind: "road", id: road.properties.id });
-    const bounds = boundsOf([road.geometry]);
-    if (bounds) setFit((prev) => ({ bounds, key: (prev?.key ?? 0) + 1 }));
-    setSheet(null);
-  }, []);
+  const frameFeature = useCallback(
+    (feature: RoadFeature | ExpresswayFeature) => {
+      const bounds = boundsOf([feature.geometry]);
+      if (bounds)
+        setFit((prev) => ({
+          bounds,
+          key: (prev?.key ?? 0) + 1,
+          focus: "road",
+        }));
+    },
+    [],
+  );
+  const selectFromMap = useCallback(
+    (selection: Selection) => {
+      setSelected(selection);
+      if (!selection) return;
+      const list = selection.kind === "road" ? roads : expressways;
+      const feature = list.find((f) => f.properties.id === selection.id);
+      if (feature) frameFeature(feature);
+      setSheet(null);
+    },
+    [roads, expressways, frameFeature],
+  );
+  const pickRoad = useCallback(
+    (road: RoadFeature) => {
+      setSelected({ kind: "road", id: road.properties.id });
+      frameFeature(road);
+      setSheet(null);
+    },
+    [frameFeature],
+  );
   const exportCsv = useCallback(() => {
     const url = URL.createObjectURL(
       new Blob([roadsToCsv(matches)], { type: "text/csv;charset=utf-8" }),
@@ -296,7 +332,7 @@ export function RoadNetworkView() {
           selected={selected}
           selectedFeature={selectedFeature}
           fit={fit}
-          onSelect={setSelected}
+          onSelect={selectFromMap}
         />
       ) : (
         <div className="text-muted-foreground absolute inset-0 flex items-center justify-center text-sm">

@@ -39,7 +39,7 @@ interface RoadMapProps {
   showIncidents: boolean;
   selected: Selection;
   selectedFeature: RoadFeature | ExpresswayFeature | null;
-  fit: { bounds: Bounds; key: number } | null;
+  fit: { bounds: Bounds; key: number; focus?: "road" } | null;
   onSelect: (selection: Selection) => void;
 }
 
@@ -459,18 +459,23 @@ function RoadMapLayers({
     if (!map || status !== "ready" || !fit) return;
     const wide = window.innerWidth >= 1024;
     const [w, s, e, n] = fit.bounds;
+    // On a phone the details card covers the bottom of the map, so a clicked road sits above it.
+    const padding = wide
+      ? { top: 80, bottom: 60, left: 380, right: 340 }
+      : fit.focus === "road"
+        ? {
+            top: 88,
+            bottom: Math.min(340, Math.round(window.innerHeight * 0.46)),
+            left: 24,
+            right: 24,
+          }
+        : { top: 110, bottom: 160, left: 30, right: 30 };
     map.fitBounds(
       [
         [w, s],
         [e, n],
       ],
-      {
-        padding: wide
-          ? { top: 80, bottom: 60, left: 380, right: 340 }
-          : { top: 110, bottom: 160, left: 30, right: 30 },
-        maxZoom: 15,
-        duration: 700,
-      },
+      { padding, maxZoom: 15, duration: 700 },
     );
   }, [map, status, fit]);
 
