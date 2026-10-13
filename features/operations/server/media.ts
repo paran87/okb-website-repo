@@ -11,7 +11,6 @@ import {
   getOperationsR2Config,
   listObjects,
   moveObject,
-  presign,
   readStart,
   type R2Config,
   type R2Object,
@@ -33,7 +32,6 @@ import {
  */
 
 export const TRASH_PREFIX = "_deleted/";
-const LINK_TTL_S = 6 * 60 * 60;
 /** When the bucket was listed for operations-media.json; files modified later were not reviewed and are shown. */
 const CURATED_AT = Date.parse("2026-10-08T07:54:00Z");
 const FILE_TYPES: Record<OperationsMediaKind, RegExp> = {
@@ -42,7 +40,6 @@ const FILE_TYPES: Record<OperationsMediaKind, RegExp> = {
 };
 /** Listings are shared for a few seconds, so many open galleries refreshing do not each list the bucket. */
 const LIST_TTL_MS = 15_000;
-const HOUR_MS = 60 * 60 * 1000;
 /** EXIF sits at the start of a JPEG; this much is read from a new photo, once. */
 const EXIF_BYTES = 128 * 1024;
 const EXIF_PER_REQUEST = 24;
@@ -87,18 +84,16 @@ interface CuratedEntry {
 const CURATED = curated as Record<OperationsSectionId, Record<OperationsMediaKind, CuratedEntry[]>>;
 
 function toItem(
-  cfg: R2Config,
   obj: R2Object,
   kind: OperationsMediaKind,
   entry: CuratedEntry,
-  signedAt: Date,
 ): OperationsMediaItem {
   return {
     key: obj.key,
     name: obj.key.split("/").pop() || obj.key,
     kind: kind === "photos" ? "photo" : "video",
-    // Signed at the start of the hour: the same link for an hour, valid for at least LINK_TTL_S.
-    url: presign(cfg, "GET", obj.key, { expiresIn: LINK_TTL_S + 3600, at: signedAt }),
+    // Served through this site (app/api/operations/media/file), so the browser never needs to reach R2 itself.
+    url: `/api/operations/media/file?key=${encodeURIComponent(obj.key)}`,
     size: obj.size,
     lastModified: obj.lastModified,
     geotag:
@@ -125,13 +120,12 @@ export async function listOperationsMedia(
   );
   if (kind === "photos") await readExif(cfg, added);
   const addedKeys = new Set(added.map((o) => o.key));
-  const signedAt = new Date(Math.floor(Date.now() / HOUR_MS) * HOUR_MS);
   const items = objects.flatMap((obj) => {
     const entry = curatedByKey.get(obj.key);
-    if (entry) return [toItem(cfg, obj, kind, entry, signedAt)];
+    if (entry) return [toItem(obj, kind, entry)];
     if (!addedKeys.has(obj.key)) return [];
     const gps = exifCache.get(`${obj.key}|${obj.etag}`);
-    return [toItem(cfg, obj, kind, gps ? { key: obj.key, ...gps } : { key: obj.key }, signedAt)];
+    return [toItem(obj, kind, gps ? { key: obj.key, ...gps } : { key: obj.key })];
   });
   items.sort((a, b) => b.lastModified.localeCompare(a.lastModified) || a.key.localeCompare(b.key));
   return { section, kind, configured: true, items };
