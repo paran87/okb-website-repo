@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Feature, FeatureCollection, Point } from "geojson";
+import type { FeatureCollection } from "geojson";
 import type {
   ExpressionSpecification,
   GeoJSONSource,
@@ -33,10 +33,6 @@ interface RoadMapProps {
   showExpressways: boolean;
   /** Region / island filters, applied to expressways too. */
   expressFilter: { region: string | null; island: string | null };
-  floodPoints: Feature<Point>[];
-  incidentPoints: Feature<Point>[];
-  showFlood: boolean;
-  showIncidents: boolean;
   selected: Selection;
   selectedFeature: RoadFeature | ExpresswayFeature | null;
   fit: { bounds: Bounds; key: number; focus?: "road" } | null;
@@ -106,10 +102,6 @@ function RoadMapLayers({
   matchIds,
   showExpressways,
   expressFilter,
-  floodPoints,
-  incidentPoints,
-  showFlood,
-  showIncidents,
   selected,
   selectedFeature,
   fit,
@@ -128,14 +120,6 @@ function RoadMapLayers({
     () => ({ type: "FeatureCollection", features: expressways }),
     [expressways],
   );
-  const floodFc = useMemo<FeatureCollection>(
-    () => ({ type: "FeatureCollection", features: floodPoints }),
-    [floodPoints],
-  );
-  const incidentFc = useMemo<FeatureCollection>(
-    () => ({ type: "FeatureCollection", features: incidentPoints }),
-    [incidentPoints],
-  );
   const selectedFc = useMemo<FeatureCollection>(
     () =>
       selectedFeature
@@ -150,8 +134,6 @@ function RoadMapLayers({
       const sources: [string, FeatureCollection][] = [
         ["rn-roads", roadsFc],
         ["rn-express", expressFc],
-        ["rn-flood", floodFc],
-        ["rn-incidents", incidentFc],
         ["rn-selected", selectedFc],
       ];
       for (const [id, data] of sources) {
@@ -165,7 +147,7 @@ function RoadMapLayers({
         }
       }
     },
-    [roadsFc, expressFc, floodFc, incidentFc, selectedFc],
+    [roadsFc, expressFc, selectedFc],
   );
 
   const ensureLayers = useCallback((m: MapLibreMap) => {
@@ -317,51 +299,6 @@ function RoadMapLayers({
         ]),
       },
     });
-    add({
-      id: "rn-flood-points",
-      type: "circle",
-      source: "rn-flood",
-      layout: { visibility: "none" },
-      paint: {
-        "circle-color": "#7c3aed",
-        "circle-radius": expr([
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5,
-          2,
-          10,
-          4,
-          14,
-          7,
-        ]),
-        "circle-stroke-color": "#fff",
-        "circle-stroke-width": 1,
-        "circle-opacity": 0.9,
-      },
-    });
-    add({
-      id: "rn-incident-points",
-      type: "circle",
-      source: "rn-incidents",
-      layout: { visibility: "none" },
-      paint: {
-        "circle-color": "#e11d48",
-        "circle-radius": expr([
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5,
-          3,
-          10,
-          5,
-          14,
-          8,
-        ]),
-        "circle-stroke-color": "#fff",
-        "circle-stroke-width": 1.5,
-      },
-    });
   }, []);
 
   // Build everything once the map is ready, and again after a basemap switch.
@@ -402,8 +339,6 @@ function RoadMapLayers({
     vis("rn-dim", matchIds !== null);
     vis("rn-express-casing", showExpressways);
     vis("rn-express-line", showExpressways);
-    vis("rn-flood-points", showFlood);
-    vis("rn-incident-points", showIncidents);
   }, [
     map,
     status,
@@ -413,8 +348,6 @@ function RoadMapLayers({
     matchIds,
     showExpressways,
     expressFilter,
-    showFlood,
-    showIncidents,
   ]);
 
   // Click to select; pointer cursor over roads.

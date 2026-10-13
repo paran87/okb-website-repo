@@ -63,14 +63,12 @@ const INITIAL_OVERLAYS = Object.fromEntries(
 
 type Sheet = "filters" | "insights" | null;
 
-/** Waterways: DENR INREMP river system explorer with flow filters and flood context. */
+/** Waterways: DENR INREMP river system explorer with flow filters. */
 export function WaterwaysView() {
   const statsQuery = useWaterwayStats();
   const [urbs, setUrbs] = useState<UrbCode[]>(ALL_URBS);
   const [classes, setClasses] = useState<DischargeClassId[]>(ALL_CLASSES);
   const [overlays, setOverlays] = useState(INITIAL_OVERLAYS);
-  const [showFlood, setShowFlood] = useState(false);
-  const [showIncidents, setShowIncidents] = useState(false);
   const [segment, setSegment] = useState<IdentifiedSegment | null>(null);
   const [river, setRiver] = useState<RiverResult | null>(null);
   const [picking, setPicking] = useState(false);
@@ -96,7 +94,7 @@ export function WaterwaysView() {
   }, [urbs, classes]);
 
   const selected = segment ?? river;
-  const needFlood = showFlood || selected !== null;
+  const needFlood = selected !== null;
   useEffect(() => {
     if (!needFlood || floodPoints !== null) return;
     let cancelled = false;
@@ -248,9 +246,6 @@ export function WaterwaysView() {
       classes={classes}
       overlays={overlays}
       legend={legendQuery.data}
-      showFlood={showFlood}
-      showIncidents={showIncidents}
-      floodCount={floodPoints ? floodPoints.length : null}
       filtering={filtering}
       onToggleUrb={toggleUrb}
       onZoomUrb={zoomUrb}
@@ -258,8 +253,6 @@ export function WaterwaysView() {
       onOverlay={(id, next) =>
         setOverlays((cur) => ({ ...cur, [id]: { ...cur[id], ...next } }))
       }
-      onToggleFlood={() => setShowFlood((v) => !v)}
-      onToggleIncidents={() => setShowIncidents((v) => !v)}
       onReset={reset}
       onPickRiver={(name) => void pickRiver(name)}
     />
@@ -297,10 +290,6 @@ export function WaterwaysView() {
         staticMaxZoom={waterwayTiles.maxZoom}
         overlays={overlays}
         highlight={highlight}
-        floodPoints={floodPoints ?? []}
-        incidentPoints={incidentPoints}
-        showFlood={showFlood}
-        showIncidents={showIncidents}
         fit={fit}
         onIdentify={(lng, lat, zoom) => void identify(lng, lat, zoom)}
         onPickBasin={zoomUrb}

@@ -58,8 +58,6 @@ export function RoadNetworkView() {
   );
   const [filters, setFilters] = useState<RoadFilters>(DEFAULT_FILTERS);
   const [showExpressways, setShowExpressways] = useState(true);
-  const [showFlood, setShowFlood] = useState(false);
-  const [showIncidents, setShowIncidents] = useState(false);
   const [selected, setSelected] = useState<Selection>(null);
   const [floodPoints, setFloodPoints] = useState<Feature<Point>[] | null>(null);
   const [fit, setFit] = useState<{
@@ -85,8 +83,8 @@ export function RoadNetworkView() {
     };
   }, []);
 
-  // Flood-prone areas are fetched once, the first time they are needed.
-  const needFlood = showFlood || selected !== null;
+  // Flood-prone areas are fetched once, the first time a road is selected.
+  const needFlood = selected !== null;
   useEffect(() => {
     if (!needFlood || floodPoints !== null) return;
     let cancelled = false;
@@ -281,15 +279,10 @@ export function RoadNetworkView() {
       expresswayCount={expressways.length}
       expresswayKm={expresswayKm}
       showExpressways={showExpressways}
-      showFlood={showFlood}
-      showIncidents={showIncidents}
-      floodCount={floodPoints ? floodPoints.length : null}
       active={active}
       onChange={change}
       onToggleClass={toggleClass}
       onToggleExpressways={() => setShowExpressways((v) => !v)}
-      onToggleFlood={() => setShowFlood((v) => !v)}
-      onToggleIncidents={() => setShowIncidents((v) => !v)}
       onReset={reset}
     />
   );
@@ -325,10 +318,6 @@ export function RoadNetworkView() {
           matchIds={matchIds}
           showExpressways={showExpressways}
           expressFilter={expressFilter}
-          floodPoints={floodPoints ?? []}
-          incidentPoints={incidentPoints}
-          showFlood={showFlood}
-          showIncidents={showIncidents}
           selected={selected}
           selectedFeature={selectedFeature}
           fit={fit}

@@ -83,22 +83,17 @@ interface FiltersPanelProps {
   classes: DischargeClassId[];
   overlays: Record<OverlayId, OverlayState>;
   legend: LegendEntries | undefined;
-  showFlood: boolean;
-  showIncidents: boolean;
-  floodCount: number | null;
   filtering: boolean;
   onToggleUrb: (code: UrbCode) => void;
   onZoomUrb: (code: UrbCode) => void;
   onToggleClass: (id: DischargeClassId) => void;
   onOverlay: (id: OverlayId, next: Partial<OverlayState>) => void;
-  onToggleFlood: () => void;
-  onToggleIncidents: () => void;
   onReset: () => void;
   onPickRiver: (name: string) => void;
   className?: string;
 }
 
-/** River search, basin and flow filters, reference layers and flood context. */
+/** River search, basin and flow filters, and reference layers. */
 export function FiltersPanel(p: FiltersPanelProps) {
   const [query, setQuery] = useState("");
   const results = useMemo(() => {
@@ -263,23 +258,6 @@ export function FiltersPanel(p: FiltersPanelProps) {
             </div>
           );
         })}
-      </div>
-
-      <div className="border-border/60 space-y-0.5 border-t p-2">
-        <Heading>Flood context</Heading>
-        <Check
-          checked={p.showFlood}
-          onChange={p.onToggleFlood}
-          label="Flood-prone areas (mapped)"
-          swatch="#7c3aed"
-          hint={p.floodCount === null ? "…" : num(p.floodCount)}
-        />
-        <Check
-          checked={p.showIncidents}
-          onChange={p.onToggleIncidents}
-          label="Active incidents (NCR)"
-          swatch="#e11d48"
-        />
       </div>
     </section>
   );

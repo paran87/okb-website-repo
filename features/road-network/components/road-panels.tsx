@@ -76,20 +76,15 @@ interface FiltersPanelProps {
   expresswayCount: number;
   expresswayKm: number;
   showExpressways: boolean;
-  showFlood: boolean;
-  showIncidents: boolean;
-  floodCount: number | null;
   active: boolean;
   onChange: (next: Partial<RoadFilters>) => void;
   onToggleClass: (cls: RoadClass) => void;
   onToggleExpressways: () => void;
-  onToggleFlood: () => void;
-  onToggleIncidents: () => void;
   onReset: () => void;
   className?: string;
 }
 
-/** Search, location filters, class toggles and context overlays. */
+/** Search, location filters and class toggles. */
 export function FiltersPanel(p: FiltersPanelProps) {
   const { filters, options, stats } = p;
   return (
@@ -203,25 +198,6 @@ export function FiltersPanel(p: FiltersPanelProps) {
           label="Expressways"
           color={EXPRESSWAY_COLOR}
           hint={`${km(p.expresswayKm)} km`}
-        />
-      </div>
-
-      <div className="border-border/60 space-y-0.5 border-t p-2">
-        <p className="text-muted-foreground px-1.5 pb-1 text-[10px] font-semibold tracking-wide uppercase">
-          Flood context
-        </p>
-        <Switch
-          checked={p.showFlood}
-          onChange={p.onToggleFlood}
-          label="Flood-prone areas (mapped)"
-          color="#7c3aed"
-          hint={p.floodCount === null ? "…" : p.floodCount.toLocaleString()}
-        />
-        <Switch
-          checked={p.showIncidents}
-          onChange={p.onToggleIncidents}
-          label="Active incidents (NCR)"
-          color="#e11d48"
         />
       </div>
     </section>

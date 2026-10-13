@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Feature, FeatureCollection, Point } from "geojson";
+import type { FeatureCollection } from "geojson";
 import type {
   GeoJSONSource,
   Map as MapLibreMap,
@@ -37,10 +37,6 @@ interface WaterwaysMapProps {
   staticMaxZoom: number;
   overlays: Record<OverlayId, OverlayState>;
   highlight: FeatureCollection;
-  floodPoints: Feature<Point>[];
-  incidentPoints: Feature<Point>[];
-  showFlood: boolean;
-  showIncidents: boolean;
   fit: { bounds: LngLatBounds; key: number } | null;
   onIdentify: (lng: number, lat: number, zoom: number) => void;
   onPickBasin: (code: UrbCode) => void;
@@ -53,7 +49,7 @@ const rasterId = (id: string) => `ww-r-${id}`;
 const POINT_OVERLAYS: OverlayId[] = ["springs", "sampling"];
 const AREA_OVERLAYS = OVERLAYS.filter((o) => !POINT_OVERLAYS.includes(o.id));
 
-/** Full-bleed map: DENR river tiles, hazard overlays, highlight and context points. */
+/** Full-bleed map: DENR river tiles, hazard overlays and the highlighted river. */
 export function WaterwaysMap(props: WaterwaysMapProps) {
   return (
     <>
@@ -81,10 +77,6 @@ function WaterwaysLayers({
   staticMaxZoom,
   overlays,
   highlight,
-  floodPoints,
-  incidentPoints,
-  showFlood,
-  showIncidents,
   fit,
   onIdentify,
   onPickBasin,
@@ -95,8 +87,8 @@ function WaterwaysLayers({
   /** Bumps whenever the layer stack was rebuilt, so dependent effects re-apply. */
   const [applied, setApplied] = useState(0);
 
-  const dataRef = useRef({ highlight, floodPoints, incidentPoints });
-  dataRef.current = { highlight, floodPoints, incidentPoints };
+  const dataRef = useRef({ highlight });
+  dataRef.current = { highlight };
 
   const basinPoints = useMemo<FeatureCollection>(
     () => ({
@@ -226,58 +218,6 @@ function WaterwaysLayers({
       },
     });
 
-    map.addSource("ww-flood", {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: data.floodPoints },
-    });
-    map.addLayer({
-      id: "ww-flood-points",
-      type: "circle",
-      source: "ww-flood",
-      paint: {
-        "circle-color": "#7c3aed",
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5,
-          2.5,
-          10,
-          4.5,
-          14,
-          8,
-        ],
-        "circle-stroke-color": "#fff",
-        "circle-stroke-width": 1,
-        "circle-opacity": 0.9,
-      },
-    });
-    map.addSource("ww-incidents", {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: data.incidentPoints },
-    });
-    map.addLayer({
-      id: "ww-incident-points",
-      type: "circle",
-      source: "ww-incidents",
-      paint: {
-        "circle-color": "#e11d48",
-        "circle-radius": [
-          "interpolate",
-          ["linear"],
-          ["zoom"],
-          5,
-          3,
-          10,
-          5,
-          14,
-          8,
-        ],
-        "circle-stroke-color": "#fff",
-        "circle-stroke-width": 1.5,
-      },
-    });
-
     // Basin markers guide the eye at national zoom, where the rivers are hairlines.
     map.addSource("ww-basins", { type: "geojson", data: basinPoints });
     map.addLayer({
@@ -336,12 +276,7 @@ function WaterwaysLayers({
       );
       map.setPaintProperty(id, "raster-opacity", overlays[o.id].opacity);
     }
-    const vis = (id: string, on: boolean) =>
-      map.getLayer(id) &&
-      map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
-    vis("ww-flood-points", showFlood);
-    vis("ww-incident-points", showIncidents);
-  }, [map, status, applied, overlays, showFlood, showIncidents]);
+  }, [map, status, applied, overlays]);
 
   // Push changed data into the existing sources.
   useEffect(() => {
@@ -349,12 +284,7 @@ function WaterwaysLayers({
     const set = (id: string, data: FeatureCollection) =>
       (map.getSource(id) as GeoJSONSource | undefined)?.setData(data);
     set("ww-highlight", highlight);
-    set("ww-flood", { type: "FeatureCollection", features: floodPoints });
-    set("ww-incidents", {
-      type: "FeatureCollection",
-      features: incidentPoints,
-    });
-  }, [map, applied, highlight, floodPoints, incidentPoints]);
+  }, [map, applied, highlight]);
 
   // Click a basin marker to go there; click anywhere else to identify the river under it.
   useEffect(() => {
