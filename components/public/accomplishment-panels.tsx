@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, List } from "lucide-react";
 import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
 import { NCR_DAILY_ACCOMPLISHMENT_URL } from "@/lib/constants";
 import type { ApiSuccess } from "@/lib/api/response";
@@ -11,6 +11,12 @@ interface NcrDailyPage {
   page: number;
   url: string;
 }
+
+/** Page images are served through this site (see app/api/accomplishment/ncr-daily/image). */
+const pageImage = (page: number) => `/api/accomplishment/ncr-daily/image?page=${page}`;
+
+type Layout = "grid" | "list";
+const LAYOUT_KEY = "okb-ncr-daily-layout";
 
 const TABS = [
   { id: "live", label: "Live dashboard" },
@@ -112,6 +118,25 @@ function NcrDailyAccomplishment() {
   const [failed, setFailed] = useState(false);
   const [index, setIndex] = useState(0);
   const touchX = useRef<number | null>(null);
+  const [layout, setLayout] = useState<Layout>("grid");
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LAYOUT_KEY);
+      if (saved === "grid" || saved === "list") setLayout(saved);
+    } catch {
+      /* storage unavailable */
+    }
+  }, []);
+
+  const chooseLayout = (next: Layout) => {
+    setLayout(next);
+    try {
+      window.localStorage.setItem(LAYOUT_KEY, next);
+    } catch {
+      /* storage unavailable */
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -157,7 +182,7 @@ function NcrDailyAccomplishment() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={current.page}
-              src={current.url}
+              src={pageImage(current.page)}
               alt={`NCR daily accomplishment ${index + 1} of ${count}`}
               className="block h-auto w-full"
             />
@@ -187,26 +212,73 @@ function NcrDailyAccomplishment() {
         )}
 
         {pages && pages.length > 0 ? (
-          <div className="grid grid-cols-4 gap-1.5 bg-white p-2 sm:grid-cols-6 lg:grid-cols-8" aria-label="All accomplishments">
-            {pages.map((item, itemIndex) => {
-              const selected = itemIndex === index;
-              return (
-                <button
-                  key={item.page}
-                  type="button"
-                  aria-label={`Show accomplishment ${itemIndex + 1} of ${count}`}
-                  aria-current={selected ? "true" : undefined}
-                  onClick={() => setIndex(itemIndex)}
-                  className={cn(
-                    "min-h-11 overflow-hidden rounded-sm border-2",
-                    selected ? "border-[var(--dpwh-orange)]" : "border-transparent",
-                  )}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={item.url} alt="" className="aspect-video w-full object-cover" />
-                </button>
-              );
-            })}
+          <div className="bg-white p-2">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-[var(--dpwh-blue)]">All accomplishments ({count})</p>
+              <div role="radiogroup" aria-label="Layout" className="inline-flex rounded-full border border-[var(--dpwh-border)] p-0.5">
+                {(
+                  [
+                    { id: "grid", label: "Grid", icon: LayoutGrid },
+                    { id: "list", label: "List", icon: List },
+                  ] as const
+                ).map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={layout === id}
+                    onClick={() => chooseLayout(id)}
+                    className={cn(
+                      "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors",
+                      layout === id ? "bg-[var(--dpwh-blue)] text-white" : "text-[var(--dpwh-muted)]",
+                    )}
+                  >
+                    <Icon className="size-4" aria-hidden />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div
+              aria-label="All accomplishments"
+              className={cn(layout === "grid" ? "grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:grid-cols-8" : "flex flex-col gap-1.5")}
+            >
+              {pages.map((item, itemIndex) => {
+                const selected = itemIndex === index;
+                return (
+                  <button
+                    key={item.page}
+                    type="button"
+                    aria-label={`Show accomplishment ${itemIndex + 1} of ${count}`}
+                    aria-current={selected ? "true" : undefined}
+                    onClick={() => {
+                      setIndex(itemIndex);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className={cn(
+                      "min-h-11 overflow-hidden rounded-sm border-2 text-left",
+                      layout === "list" && "flex items-center gap-3 p-1",
+                      selected ? "border-[var(--dpwh-orange)]" : "border-transparent",
+                    )}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={pageImage(item.page)}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className={cn("aspect-video object-cover", layout === "list" ? "w-28 shrink-0 sm:w-40" : "w-full")}
+                    />
+                    {layout === "list" ? (
+                      <span className="min-w-0 text-sm font-semibold text-[var(--dpwh-blue)]">
+                        Accomplishment {itemIndex + 1}
+                        <span className="block text-xs font-normal text-[var(--dpwh-muted)]">Page {item.page} of {count}</span>
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : null}
       </div>
