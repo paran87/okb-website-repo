@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
-import { preconnect } from "react-dom";
-import { ExternalLink } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
-import {
-  NCR_DAILY_ACCOMPLISHMENT_EMBED_URL,
-  NCR_DAILY_ACCOMPLISHMENT_URL,
-} from "@/lib/constants";
+import { NCR_DAILY_ACCOMPLISHMENT_URL } from "@/lib/constants";
+import type { ApiSuccess } from "@/lib/api/response";
 import { cn } from "@/utils/cn";
+
+interface NcrDailyPage {
+  page: number;
+  url: string;
+}
 
 const TABS = [
   { id: "live", label: "Live dashboard" },
@@ -17,10 +19,8 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-/** Accomplishment page: the live monitor, and the NCR daily board on Canva. */
+/** Accomplishment page: the live monitor, and the NCR daily board. */
 export function AccomplishmentPanels() {
-  preconnect("https://www.canva.com");
-
   const baseId = useId();
   const [tab, setTab] = useState<TabId>("live");
   const [ncrOpened, setNcrOpened] = useState(false);
@@ -106,40 +106,114 @@ export function AccomplishmentPanels() {
   );
 }
 
-/** The NCR daily board. Canva's editor cannot be framed, so this is the same design's view. */
+/** One accomplishment at a time, with previous / next and every page underneath. */
 function NcrDailyAccomplishment() {
-  const [ready, setReady] = useState(false);
+  const [pages, setPages] = useState<NcrDailyPage[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [index, setIndex] = useState(0);
+  const touchX = useRef<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/accomplishment/ncr-daily");
+        if (!res.ok) throw new Error(String(res.status));
+        const body = (await res.json()) as ApiSuccess<NcrDailyPage[]>;
+        if (!cancelled) setPages(body.data);
+      } catch {
+        if (!cancelled) setFailed(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const count = pages?.length ?? 0;
+  const current = pages?.[index] ?? null;
+
+  const go = (step: number) => {
+    if (!count) return;
+    setIndex((value) => (value + step + count) % count);
+  };
 
   return (
     <div className="space-y-3">
-      <div className="okb-acc-frame-shell okb-public-card overflow-hidden rounded-sm border shadow-sm">
-        <iframe
-          src={NCR_DAILY_ACCOMPLISHMENT_EMBED_URL}
-          title="NCR Daily Accomplishment"
-          className="block aspect-[16/10] h-auto w-full border-0 bg-white sm:aspect-auto sm:h-[min(85vh,1100px)] sm:min-h-[520px]"
-          loading="eager"
-          allow="fullscreen"
-          onLoad={() => setReady(true)}
-        />
-        <div
-          className={cn("okb-acc-loading", ready && "okb-acc-loading--done")}
-          role="status"
-          aria-live="polite"
-          aria-hidden={ready}
-        >
-          <p className="okb-acc-loading-title">Loading NCR Daily Accomplishment</p>
-          <p className="okb-acc-loading-note">Opening the Canva board.</p>
-        </div>
+      <div className="okb-public-card overflow-hidden rounded-sm border shadow-sm">
+        {current ? (
+          <div
+            className="relative bg-[#0b1f4d]"
+            onTouchStart={(event) => {
+              touchX.current = event.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(event) => {
+              const start = touchX.current;
+              const end = event.changedTouches[0]?.clientX;
+              touchX.current = null;
+              if (start !== null && end !== undefined && Math.abs(end - start) > 50) go(end < start ? 1 : -1);
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              key={current.page}
+              src={current.url}
+              alt={`NCR daily accomplishment ${index + 1} of ${count}`}
+              className="block h-auto w-full"
+            />
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label="Previous"
+              className="absolute left-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-sm sm:left-3"
+            >
+              <ChevronLeft className="size-6" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label="Next"
+              className="absolute right-1.5 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-sm sm:right-3"
+            >
+              <ChevronRight className="size-6" aria-hidden />
+            </button>
+          </div>
+        ) : (
+          <div className={cn("grid aspect-video w-full place-items-center bg-[var(--dpwh-blue-light)]", !failed && "animate-pulse")} role="status">
+            <span className={failed ? "px-4 text-center text-sm font-semibold text-[var(--dpwh-blue)]" : "sr-only"}>
+              {failed ? "The board could not be loaded." : "Loading NCR Daily Accomplishment"}
+            </span>
+          </div>
+        )}
+
+        {pages && pages.length > 0 ? (
+          <div className="grid grid-cols-4 gap-1.5 bg-white p-2 sm:grid-cols-6 lg:grid-cols-8" aria-label="All accomplishments">
+            {pages.map((item, itemIndex) => {
+              const selected = itemIndex === index;
+              return (
+                <button
+                  key={item.page}
+                  type="button"
+                  aria-label={`Show accomplishment ${itemIndex + 1} of ${count}`}
+                  aria-current={selected ? "true" : undefined}
+                  onClick={() => setIndex(itemIndex)}
+                  className={cn(
+                    "min-h-11 overflow-hidden rounded-sm border-2",
+                    selected ? "border-[var(--dpwh-orange)]" : "border-transparent",
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={item.url} alt="" className="aspect-video w-full object-cover" />
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
       </div>
 
       <p className="okb-public-body text-sm">
         NCR Daily Accomplishment board on{" "}
-        <a
-          href={NCR_DAILY_ACCOMPLISHMENT_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="okb-public-link"
-        >
+        <a href={NCR_DAILY_ACCOMPLISHMENT_URL} target="_blank" rel="noopener noreferrer" className="okb-public-link">
           Canva
           <ExternalLink className="ml-1 inline size-3.5 align-[-2px]" aria-hidden />
         </a>
