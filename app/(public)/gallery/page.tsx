@@ -3,6 +3,8 @@ import { GalleryGrid } from "@/components/public/gallery/gallery-grid";
 import { listGalleryWithStatus } from "@/features/admin/server/media";
 import { APP } from "@/lib/constants";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
+import driveGallery from "@/lib/config/gallery-drive.json";
+import type { DriveGalleryData } from "@/components/public/gallery/gallery-grid";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +24,7 @@ export default async function GalleryPage() {
         description="Photos and videos of declogging, clearing and flood-control work across the country."
       />
       <PublicPageSection>
-        <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} problem={problem} />
+        <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} drive={driveGallery as unknown as DriveGalleryData} problem={problem} />
       </PublicPageSection>
     </>
   );

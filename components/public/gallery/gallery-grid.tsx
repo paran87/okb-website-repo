@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, X } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, X } from "lucide-react";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
@@ -17,6 +17,8 @@ export interface PublicGalleryItem {
   takenAt?: string;
   place?: string | null;
   lastModified: string;
+  /** Smaller picture for the grid and list (the Google Drive photos); `url` is the large one. */
+  thumbUrl?: string;
   /** An embedded YouTube video (no file of ours behind it). */
   youtubeId?: string;
   /** Who published it (YouTube videos). */
@@ -27,6 +29,39 @@ const dateOf = (item: PublicGalleryItem) => {
   const d = new Date(item.takenAt ?? item.lastModified);
   return Number.isNaN(d.getTime()) ? "" : DATE.format(d);
 };
+
+/** The photos of the public Google Drive folder, as written by scripts/gallery-drive/crawl.mjs. */
+export interface DriveGalleryData {
+  places: { office: string | null; location: string | null; activity: string | null; label: string }[];
+  /** [Drive file id, date (YYYY-MM-DD), place index (-1: none), stage] */
+  photos: [string, string | null, number, "before" | "during" | "after" | null][];
+}
+
+type Sort = "newest" | "oldest";
+/** Pictures shown at first, and added by each "Show more". */
+const PAGE = 48;
+
+const STAGE_LABEL = { before: "Before", during: "During", after: "After" } as const;
+
+function drivePhotos(data: DriveGalleryData | undefined): PublicGalleryItem[] {
+  if (!data) return [];
+  return data.photos.map(([id, date, placeIdx, stage]) => {
+    const place = placeIdx >= 0 ? data.places[placeIdx] : undefined;
+    const parts = [place?.office, place?.activity, stage ? STAGE_LABEL[stage] : null].filter(Boolean);
+    const at = date ? `${date}T00:00:00+08:00` : "";
+    return {
+      key: `drive:${id}`,
+      kind: "photo" as const,
+      url: `/api/gallery/drive-image?id=${id}&w=1600`,
+      thumbUrl: `/api/gallery/drive-image?id=${id}&w=480`,
+      title: place ? (place.location ?? place.label) : null,
+      caption: parts.length ? parts.join(" · ") : null,
+      takenAt: at || undefined,
+      place: null,
+      lastModified: at,
+    };
+  });
+}
 
 type Tab = "photo" | "video";
 type Layout = "grid" | "list";
@@ -129,10 +164,12 @@ function Lightbox({
 export function GalleryGrid({
   items: uploaded,
   youtube = [],
+  drive,
   problem = null,
 }: {
   items: PublicGalleryItem[];
   youtube?: readonly GalleryYoutubeVideo[];
+  drive?: DriveGalleryData;
   problem?: "not_configured" | "storage" | null;
 }) {
   // YouTube videos come first in the Videos tab, then the uploaded ones.
@@ -150,10 +187,18 @@ export function GalleryGrid({
         source: v.source,
       })),
       ...uploaded,
+      ...drivePhotos(drive),
     ],
-    [youtube, uploaded],
+    [youtube, uploaded, drive],
   );
-  const photos = useMemo(() => items.filter((i) => i.kind === "photo"), [items]);
+  const [sort, setSort] = useState<Sort>("newest");
+  const [visible, setVisible] = useState(PAGE);
+  // Photos by date: newest first, or the reverse. Pictures of the same day keep their folder order.
+  const photos = useMemo(() => {
+    const at = (i: PublicGalleryItem) => Date.parse(i.takenAt ?? i.lastModified) || 0;
+    const newest = items.filter((i) => i.kind === "photo").sort((a, b) => at(b) - at(a));
+    return sort === "newest" ? newest : newest.reverse();
+  }, [items, sort]);
   const videos = useMemo(() => items.filter((i) => i.kind === "video"), [items]);
   const [tab, setTab] = useState<Tab>(photos.length || !videos.length ? "photo" : "video");
   const [layout, setLayout] = useState<Layout>("grid");
@@ -179,6 +224,12 @@ export function GalleryGrid({
   const chooseTab = (next: Tab) => {
     setTab(next);
     setOpen(null);
+    setVisible(PAGE);
+  };
+  const chooseSort = (next: Sort) => {
+    setSort(next);
+    setOpen(null);
+    setVisible(PAGE);
   };
 
   const move = useCallback(
@@ -266,6 +317,36 @@ export function GalleryGrid({
         </div>
       </div>
 
+      {tab === "photo" && photos.length > 1 ? (
+        <div role="radiogroup" aria-label="Sort photos by date" className="flex flex-wrap items-center gap-2">
+          <span className="okb-public-body text-sm">Sort by date:</span>
+          {(
+            [
+              { id: "newest", label: "Newest first", icon: ArrowDownWideNarrow },
+              { id: "oldest", label: "Oldest first", icon: ArrowUpNarrowWide },
+            ] as const
+          ).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              role="radio"
+              aria-checked={sort === id}
+              onClick={() => chooseSort(id)}
+              className={cn(
+                "inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors",
+                sort === id ? "border-[#0038a8] bg-[#0038a8] text-white" : "okb-public-body border-current/20 hover:border-[#0038a8]",
+              )}
+            >
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </button>
+          ))}
+          <span className="okb-public-body ml-auto text-xs opacity-70">
+            Showing {Math.min(visible, photos.length)} of {photos.length}
+          </span>
+        </div>
+      ) : null}
+
       {shown.length === 0 ? (
         <div className="okb-public-card rounded-sm px-6 py-12 text-center">
           <p className="okb-public-heading text-lg">No {tab === "photo" ? "photos" : "videos"} yet</p>
@@ -273,7 +354,7 @@ export function GalleryGrid({
         </div>
       ) : layout === "grid" ? (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
-          {shown.map((item, i) => (
+          {shown.slice(0, visible).map((item, i) => (
             <li key={item.key}>
               <button
                 type="button"
@@ -293,7 +374,7 @@ export function GalleryGrid({
         </ul>
       ) : (
         <ul className="divide-y divide-current/10 overflow-hidden rounded-sm border border-current/15">
-          {shown.map((item, i) => (
+          {shown.slice(0, visible).map((item, i) => (
             <li key={item.key}>
               <button
                 type="button"
@@ -319,6 +400,15 @@ export function GalleryGrid({
           ))}
         </ul>
       )}
+      {shown.length > visible ? (
+        <button
+          type="button"
+          onClick={() => setVisible((v) => v + PAGE)}
+          className="okb-public-body mx-auto flex min-h-11 items-center rounded-full border border-current/25 px-6 text-sm font-semibold hover:border-[#0038a8]"
+        >
+          Show more ({shown.length - visible} left)
+        </button>
+      ) : null}
       {open !== null ? <Lightbox items={shown} index={open} onClose={() => setOpen(null)} onMove={move} /> : null}
     </div>
   );
@@ -349,7 +439,7 @@ function Thumb({ item, zoom = false }: { item: PublicGalleryItem; zoom?: boolean
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={item.url}
+        src={item.thumbUrl ?? item.url}
         alt={item.title ?? ""}
         loading="lazy"
         decoding="async"
