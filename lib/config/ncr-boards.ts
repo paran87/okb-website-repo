@@ -8,6 +8,11 @@ export interface NcrBoard {
   label: string;
   /** Public view link (a /edit link of the same design is shown to the Canva owner only). */
   url: string;
+  /**
+   * Pages 1..rendered are sharp images made from the board's PDF export (public/ncr-pages/<id>/<page>.webp).
+   * Newer pages fall back to Canva's small previews until the next export.
+   */
+  rendered: number;
 }
 
 export const NCR_BOARDS: readonly NcrBoard[] = [
@@ -15,11 +20,13 @@ export const NCR_BOARDS: readonly NcrBoard[] = [
     id: "accomplishment",
     label: "NCR Accomplishment",
     url: "https://www.canva.com/design/DAHRMM8rzTo/YWgmn3S9SahguALjUpdW1A/view",
+    rendered: 178,
   },
   {
     id: "daily",
     label: "NCR Daily Accomplishment",
     url: "https://www.canva.com/design/DAHKF7VTZh4/b7tRxzCI84QZs_CKjFCJ9g/view",
+    rendered: 468,
   },
 ];
 

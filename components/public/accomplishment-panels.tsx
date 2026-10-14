@@ -13,10 +13,13 @@ interface NcrDailyPage {
 }
 
 /** How many thumbnails the strip shows at first, and how many each "Show more" adds. */
-const STRIP_STEP = 48;
+const STRIP_STEP = 24;
 
-/** Page images are served through this site (see app/api/accomplishment/ncr-daily/image). */
-const pageImage = (p: NcrDailyPage) => `/api/accomplishment/ncr-daily/image?board=${p.board}&page=${p.page}`;
+/** Sharp WebP from the board's PDF export when the page has one, else Canva's small preview through the image route. */
+const pageImage = (p: NcrDailyPage) =>
+  p.page <= (NCR_BOARDS.find((b) => b.id === p.board)?.rendered ?? 0)
+    ? `/ncr-pages/${p.board}/${p.page}.webp`
+    : `/api/accomplishment/ncr-daily/image?board=${p.board}&page=${p.page}`;
 
 type Layout = "grid" | "list";
 const LAYOUT_KEY = "okb-ncr-daily-layout";
