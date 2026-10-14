@@ -196,7 +196,7 @@ const EXPLORE: { href: string; title: string; body: string; image: string; posit
     href: PUBLIC_ROUTES.profile,
     title: "Portfolio",
     body: "The program presentation: task force, launch areas and field work.",
-    image: "/portfolio/slide-01.png",
+    image: "/portfolio/slide-1.webp",
     position: "center 20%",
     icon: Images,
     tag: "Program",
