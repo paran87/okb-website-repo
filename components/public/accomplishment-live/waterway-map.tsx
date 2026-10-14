@@ -10,22 +10,58 @@ import { useMapLines } from "@/components/public/accomplishment-live/data";
 
 const CLEANED = "#1d4ed8";
 const REMAINING = "#ea7317";
+const LOCATION = "#9333ea";
 
-function geometry(line: MapLine) {
-  const features = line.runs.flatMap(([cleaned, ...flat]) => {
-    const coordinates: [number, number][] = [];
-    for (let i = 0; i + 1 < flat.length; i += 2) coordinates.push([flat[i]!, flat[i + 1]!]);
-    return coordinates.length >= 2 ? [{ type: "Feature" as const, properties: { c: cleaned }, geometry: { type: "LineString" as const, coordinates } }] : [];
-  });
+type Lnglat = [number, number];
+
+/** Where a line not traced on the OKB map is, from OpenStreetMap (lib/config/coverage-geo.json). */
+export interface FallbackGeo {
+  lines: Lnglat[][];
+  point?: Lnglat;
+  note?: string;
+}
+
+type Feature =
+  | { type: "Feature"; properties: { c: number }; geometry: { type: "LineString"; coordinates: Lnglat[] } }
+  | { type: "Feature"; properties: { c: number }; geometry: { type: "Point"; coordinates: Lnglat } };
+
+/** c: 1 cleaned, 0 not yet cleaned (traced runs); 2 location only (fallback). */
+function geometry(line: MapLine | null, fallback: FallbackGeo | undefined) {
+  const features: Feature[] = line
+    ? line.runs.flatMap(([cleaned, ...flat]) => {
+        const coordinates: Lnglat[] = [];
+        for (let i = 0; i + 1 < flat.length; i += 2) coordinates.push([flat[i]!, flat[i + 1]!]);
+        return coordinates.length >= 2 ? [{ type: "Feature" as const, properties: { c: cleaned === 1 ? 1 : 0 }, geometry: { type: "LineString" as const, coordinates } }] : [];
+      })
+    : [
+        ...(fallback?.lines ?? []).map((coordinates) => ({ type: "Feature" as const, properties: { c: 2 }, geometry: { type: "LineString" as const, coordinates } })),
+        ...(fallback?.point ? [{ type: "Feature" as const, properties: { c: 2 }, geometry: { type: "Point" as const, coordinates: fallback.point } }] : []),
+      ];
+  if (!features.length) return null;
   let [w, s, e, n] = [Infinity, Infinity, -Infinity, -Infinity];
   for (const f of features)
-    for (const [x, y] of f.geometry.coordinates) {
+    for (const [x, y] of f.geometry.type === "Point" ? [f.geometry.coordinates] : f.geometry.coordinates) {
       w = Math.min(w, x);
       e = Math.max(e, x);
       s = Math.min(s, y);
       n = Math.max(n, y);
     }
-  return { fc: { type: "FeatureCollection" as const, features }, bounds: [[w, s], [e, n]] as [[number, number], [number, number]], center: [(w + e) / 2, (s + n) / 2] as [number, number] };
+  // A point on the line itself (the vertex nearest the middle) so the Google Maps pin lands on it, not beside it.
+  const mid: Lnglat = [(w + e) / 2, (s + n) / 2];
+  let center = mid;
+  let best = Infinity;
+  for (const f of features)
+    for (const p of f.geometry.type === "Point" ? [f.geometry.coordinates] : f.geometry.coordinates) {
+      const d = (p[0] - mid[0]) ** 2 + (p[1] - mid[1]) ** 2;
+      if (d < best) [best, center] = [d, p];
+    }
+  return {
+    fc: { type: "FeatureCollection" as const, features },
+    bounds: [[w, s], [e, n]] as [Lnglat, Lnglat],
+    center,
+    traced: !!line,
+    pinOnly: features.every((f) => f.geometry.type === "Point"),
+  };
 }
 
 /** Google Maps link: the traced line's centre, else a search for the name and place. */
@@ -35,11 +71,14 @@ export function googleMapsUrl(center: [number, number] | null, query: string): s
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-/** Where one waterway is: its traced line (cleaned / remaining), or a map search when it has none. */
-export function WaterwayMap({ name, place }: { name: string; place: string }) {
+/**
+ * Where one waterway is: its traced line (cleaned / remaining), else its OpenStreetMap location (fallback), else a
+ * map search.
+ */
+export function WaterwayMap({ name, place, fallback }: { name: string; place: string; fallback?: FallbackGeo }) {
   const lines = useMapLines(true);
   const line = useMemo(() => lines.data?.find((l) => l.w === name) ?? null, [lines.data, name]);
-  const geo = useMemo(() => (line ? geometry(line) : null), [line]);
+  const geo = useMemo(() => (lines.isLoading ? null : geometry(line, fallback)), [lines.isLoading, line, fallback]);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -53,7 +92,7 @@ export function WaterwayMap({ name, place }: { name: string; place: string }) {
         container: container.current,
         style: getMapStyle("light"),
         bounds: geo.bounds,
-        fitBoundsOptions: { padding: 36, maxZoom: 16 },
+        fitBoundsOptions: { padding: 36, maxZoom: geo.pinOnly ? 14 : 16 },
         attributionControl: { compact: true },
         cooperativeGestures: true,
       });
@@ -67,7 +106,15 @@ export function WaterwayMap({ name, place }: { name: string; place: string }) {
           type: "line",
           source: "line",
           layout: { "line-cap": "round", "line-join": "round" },
-          paint: { "line-color": ["case", ["==", ["get", "c"], 1], CLEANED, REMAINING], "line-width": 5 },
+          filter: ["==", ["geometry-type"], "LineString"],
+          paint: { "line-color": ["match", ["get", "c"], 1, CLEANED, 2, LOCATION, REMAINING], "line-width": 5 },
+        });
+        m.addLayer({
+          id: "pin",
+          type: "circle",
+          source: "line",
+          filter: ["==", ["geometry-type"], "Point"],
+          paint: { "circle-color": LOCATION, "circle-radius": 9, "circle-stroke-color": "#fff", "circle-stroke-width": 3 },
         });
         setReady(true);
       });
@@ -117,15 +164,26 @@ export function WaterwayMap({ name, place }: { name: string; place: string }) {
         {!ready ? <div className="absolute inset-0 animate-pulse bg-[#e3e8ef]" aria-hidden /> : null}
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-xs text-[var(--dpwh-muted)]">
-        <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
-          <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: CLEANED }} aria-hidden /> Cleaned
-        </span>
-        <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
-          <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: REMAINING }} aria-hidden /> Not yet cleaned
-        </span>
+        {geo.traced ? (
+          <>
+            <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
+              <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: CLEANED }} aria-hidden /> Cleaned
+            </span>
+            <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
+              <span className="h-1.5 w-4 rounded-full" style={{ backgroundColor: REMAINING }} aria-hidden /> Not yet cleaned
+            </span>
+          </>
+        ) : (
+          <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
+            <span className={geo.pinOnly ? "size-3 rounded-full" : "h-1.5 w-4 rounded-full"} style={{ backgroundColor: LOCATION }} aria-hidden />
+            {geo.pinOnly ? "Approximate location" : "Location"}
+            <span className="font-normal text-[var(--dpwh-muted)]">· OpenStreetMap</span>
+          </span>
+        )}
         <a href={mapsUrl} target="_blank" rel="noreferrer" className="ml-auto inline-flex h-9 items-center gap-1 font-bold text-[var(--dpwh-blue)]">
           Google Maps <ExternalLink className="size-3.5" aria-hidden />
         </a>
+        {!geo.traced && fallback?.note ? <p className="w-full pb-1">{fallback.note}</p> : null}
       </div>
     </div>
   );

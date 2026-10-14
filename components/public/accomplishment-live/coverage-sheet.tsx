@@ -6,7 +6,11 @@ import { useAccomplishment } from "@/components/public/accomplishment-live/data"
 import { locateAll, matchRecord } from "@/components/public/accomplishment-live/match";
 import { WaterwayDetail } from "@/components/public/accomplishment-live/regions";
 import { Sheet } from "@/components/public/accomplishment-live/shared";
-import { WaterwayMap } from "@/components/public/accomplishment-live/waterway-map";
+import { WaterwayMap, type FallbackGeo } from "@/components/public/accomplishment-live/waterway-map";
+import coverageGeo from "@/lib/config/coverage-geo.json";
+
+/** OpenStreetMap geometry for coverage names the live dashboard does not trace (scripts/build-coverage-geo.mjs). */
+const COVERAGE_GEO = coverageGeo as unknown as Record<string, FallbackGeo>;
 
 export interface CoverageItem {
   name: string;
@@ -53,7 +57,7 @@ export function CoverageSheet({ item, onClose }: { item: CoverageItem | null; on
                 : "Its progress is not in the live dashboard yet. It is part of the program as of the October 8 accomplishment reports."}
             </p>
           </div>
-          <WaterwayMap name={item.name} place={place} />
+          <WaterwayMap name={item.name} place={place} fallback={COVERAGE_GEO[item.name]} />
         </div>
       )}
     </Sheet>

@@ -18,3 +18,4 @@
 - Waterway river tiles for the default view are pre-rendered into `public/waterway-tiles/v1/` (rebuild with `scripts/waterway-tiles/render.py`; filtered views and zoom 13+ use live tiles from `/api/waterways/tiles`).
 - Vercel Blob (Hobby) is capped at 1 GB per store and is no longer used for the study PDFs.
 - Road network data is bundled in `public/data/road-network/` (rebuild with `node scripts/build-road-network.mjs`); river basin outlines are in `public/data/river-basins/` (rebuild with `node scripts/build-river-basin-geo.mjs`).
+- Program coverage names that the live accomplishment dashboard does not trace get their map location from `lib/config/coverage-geo.json` (OpenStreetMap; rebuild with `node scripts/build-coverage-geo.mjs`, add new names to its `SOURCES`).
