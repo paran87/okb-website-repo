@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Activity, ChevronLeft, ChevronRight, ExternalLink, GalleryVerticalEnd, LayoutGrid, List, Radio, type LucideIcon } from "lucide-react";
+import { Activity, ChevronLeft, ChevronRight, ExternalLink, Expand, GalleryVerticalEnd, LayoutGrid, List, Radio, X, ZoomIn, ZoomOut, type LucideIcon } from "lucide-react";
 import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
+import { Portal } from "@/components/ui/portal";
+import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
 
 interface NcrDailyPage {
@@ -148,6 +150,105 @@ export function AccomplishmentPanels() {
   );
 }
 
+/**
+ * Full-screen view of one accomplishment. "Fit" shows the whole page; "Actual size" shows the image at its own
+ * pixel size inside a scrollable frame, so the small print can be read (on a phone, drag to pan).
+ */
+function EnlargedPage({
+  src,
+  label,
+  alt,
+  onClose,
+  onMove,
+}: {
+  src: string;
+  label: string;
+  alt: string;
+  onClose: () => void;
+  onMove: (step: number) => void;
+}) {
+  const [actual, setActual] = useState(false);
+  const touchX = useRef<number | null>(null);
+  useEscapeKey(true, onClose);
+  useLockBodyScroll(true);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") onMove(-1);
+      if (event.key === "ArrowRight") onMove(1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onMove]);
+  const ZoomIcon = actual ? ZoomOut : ZoomIn;
+  return (
+    <Portal>
+      <div role="dialog" aria-modal="true" aria-label="Enlarged accomplishment" className="fixed inset-0 z-[70] flex flex-col bg-black">
+        <div className="flex items-center justify-between gap-2 px-2 py-2 text-white">
+          <span className="pl-2 text-sm tabular-nums text-white/70">{label}</span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setActual((v) => !v)}
+              className="inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold hover:bg-white/10"
+            >
+              <ZoomIcon className="size-5" aria-hidden />
+              {actual ? "Fit" : "Zoom"}
+            </button>
+            <button type="button" onClick={onClose} aria-label="Close" className="flex size-11 items-center justify-center rounded-full hover:bg-white/10">
+              <X className="size-6" aria-hidden />
+            </button>
+          </div>
+        </div>
+        <div
+          className={cn("relative min-h-0 flex-1", actual ? "overflow-auto" : "flex items-center justify-center px-2")}
+          onTouchStart={(event) => {
+            touchX.current = event.touches[0]?.clientX ?? null;
+          }}
+          onTouchEnd={(event) => {
+            const start = touchX.current;
+            const end = event.changedTouches[0]?.clientX;
+            touchX.current = null;
+            if (!actual && start !== null && end !== undefined && Math.abs(end - start) > 60) onMove(end < start ? 1 : -1);
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            key={src}
+            src={src}
+            alt={alt}
+            onClick={() => setActual((v) => !v)}
+            className={actual ? "block max-w-none cursor-zoom-out" : "max-h-full max-w-full cursor-zoom-in object-contain"}
+            style={actual ? { width: "max(100%, 1200px)" } : undefined}
+          />
+          {!actual ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onMove(-1)}
+                aria-label="Previous"
+                className="absolute left-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+              >
+                <ChevronLeft className="size-6" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => onMove(1)}
+                aria-label="Next"
+                className="absolute right-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-white hover:bg-black/75"
+              >
+                <ChevronRight className="size-6" aria-hidden />
+              </button>
+            </>
+          ) : null}
+        </div>
+        <p className="px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 text-center text-xs text-white/60">
+          Tap the picture or Zoom to read the small print; arrows or swipe for the next one.
+        </p>
+      </div>
+    </Portal>
+  );
+}
+
 /** One accomplishment at a time, with previous / next and every page underneath. */
 function NcrDailyAccomplishment() {
   const [pages, setPages] = useState<NcrDailyPage[] | null>(null);
@@ -156,6 +257,7 @@ function NcrDailyAccomplishment() {
   const touchX = useRef<number | null>(null);
   const [layout, setLayout] = useState<Layout>("grid");
   const [shown, setShown] = useState(STRIP_STEP);
+  const [enlarged, setEnlarged] = useState(false);
 
   useEffect(() => {
     try {
@@ -216,13 +318,23 @@ function NcrDailyAccomplishment() {
               if (start !== null && end !== undefined && Math.abs(end - start) > 50) go(end < start ? 1 : -1);
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              key={`${current.board}-${current.page}`}
-              src={pageImage(current)}
-              alt={`NCR daily accomplishment ${index + 1} of ${count}`}
-              className="mx-auto block h-auto w-full max-w-[900px]"
-            />
+            <button
+              type="button"
+              onClick={() => setEnlarged(true)}
+              aria-label="Enlarge this accomplishment"
+              className="group relative mx-auto block w-full max-w-[900px] cursor-zoom-in"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={`${current.board}-${current.page}`}
+                src={pageImage(current)}
+                alt={`NCR daily accomplishment ${index + 1} of ${count}`}
+                className="block h-auto w-full"
+              />
+              <span className="absolute bottom-2 right-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-black/65 px-3 text-xs font-semibold text-white shadow-sm">
+                <Expand className="size-4" aria-hidden /> Enlarge
+              </span>
+            </button>
             <button
               type="button"
               onClick={() => go(-1)}
@@ -328,6 +440,16 @@ function NcrDailyAccomplishment() {
           </div>
         ) : null}
       </div>
+
+      {enlarged && current ? (
+        <EnlargedPage
+          src={pageImage(current)}
+          label={`${index + 1} / ${count}`}
+          alt={`NCR daily accomplishment ${index + 1} of ${count}`}
+          onClose={() => setEnlarged(false)}
+          onMove={go}
+        />
+      ) : null}
 
       <p className="okb-public-body text-sm">
         Latest first. Boards on Canva:{" "}
