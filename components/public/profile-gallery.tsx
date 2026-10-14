@@ -168,6 +168,24 @@ export function ProfileGallery() {
             {String(TOTAL).padStart(2, "0")}
           </p>
 
+          {TOTAL > 30 ? (
+            <label className="flex w-full items-center justify-center gap-2 text-sm">
+              <span className="font-semibold">Go to slide</span>
+              <select
+                value={index}
+                onChange={(event) => setIndex(Number(event.target.value))}
+                className="h-11 min-w-0 max-w-[70vw] rounded-sm border border-current/30 bg-transparent px-2 text-sm"
+              >
+                {PROFILE_SLIDES.map((item, itemIndex) => (
+                  <option key={item.id} value={itemIndex} className="text-black">
+                    {item.id}. {item.title}
+                    {item.caption.startsWith("Photo documentation — ") ? ` · ${item.caption.slice(22)}` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
           <ol className="okb-folio-ticks" aria-label="Portfolio slides">
             {PROFILE_SLIDES.map((item, itemIndex) => (
               <li key={item.id}>
