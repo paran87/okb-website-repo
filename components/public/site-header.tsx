@@ -190,11 +190,11 @@ export function SiteHeader() {
             />
 
             <a
-              href="https://www.gov.ph/bagong-pilipinas"
+              href="https://www.dpwh.gov.ph/"
               target="_blank"
               rel="noopener noreferrer"
               className="okb-public-gov-logo-link hidden shrink-0 md:block"
-              aria-label="Bagong Pilipinas — opens in new tab"
+              aria-label="Bagong Pilipinas — DPWH official website, opens in new tab"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -403,10 +403,10 @@ export function SiteHeader() {
                     decoding="async"
                   />
                   <a
-                    href="https://www.gov.ph/bagong-pilipinas"
+                    href="https://www.dpwh.gov.ph/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    aria-label="Bagong Pilipinas — opens in new tab"
+                    aria-label="Bagong Pilipinas — DPWH official website, opens in new tab"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
