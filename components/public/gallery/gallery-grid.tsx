@@ -74,25 +74,35 @@ const LAYOUT_KEY = "okb-gallery-layout";
 const DATE = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric" });
 
 /**
- * A video of the Google Drive folder. It plays in the browser's own player (touch controls, full screen, seeking
- * by range requests); if Google refuses that (quota), Drive's embedded player takes over.
+ * A video of the Google Drive folder. It plays in the browser's own player (touch controls, full screen, seeking)
+ * from /api/gallery/drive-video; if that fails, Drive's embedded player takes over.
  */
 function DriveVideo({ id, title, poster }: { id: string; title: string | null; poster?: string }) {
   const [fallback, setFallback] = useState(false);
   if (fallback) {
     return (
-      <iframe
-        src={`https://drive.google.com/file/d/${id}/preview`}
-        title={title ?? "Video"}
-        allow="autoplay; fullscreen; picture-in-picture"
-        allowFullScreen
-        className="aspect-video max-h-full w-full max-w-5xl rounded-sm border-0 bg-black"
-      />
+      <div className="flex w-full max-w-5xl flex-col items-center gap-2">
+        <iframe
+          src={`https://drive.google.com/file/d/${id}/preview`}
+          title={title ?? "Video"}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          className="aspect-video w-full rounded-sm border-0 bg-black"
+        />
+        <a
+          href={`https://drive.google.com/file/d/${id}/view`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-semibold text-white underline"
+        >
+          Open in Google Drive
+        </a>
+      </div>
     );
   }
   return (
     <video
-      src={`https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`}
+      src={`/api/gallery/drive-video?id=${id}`}
       poster={poster}
       controls
       autoPlay
