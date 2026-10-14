@@ -1,4 +1,5 @@
 import { PublicPageHero, PublicPageSection } from "@/components/public";
+import { BrieferIssuances, BrieferPartnerships, BrieferTaskForce, BrieferWholeOfNation } from "@/components/public/briefer-sections";
 import { APP } from "@/lib/constants";
 
 export const metadata = {
@@ -51,6 +52,10 @@ export default function AboutPage() {
           </div>
         </div>
       </PublicPageSection>
+      <BrieferTaskForce />
+      <BrieferWholeOfNation />
+      <BrieferPartnerships />
+      <BrieferIssuances />
     </>
   );
 }

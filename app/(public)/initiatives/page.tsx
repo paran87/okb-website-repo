@@ -1,4 +1,5 @@
 import { PublicPageHero, PublicPageSection } from "@/components/public";
+import { BrieferEquipment, BrieferFlow, BrieferMitigation } from "@/components/public/briefer-sections";
 import { APP } from "@/lib/constants";
 
 export const metadata = {
@@ -50,6 +51,9 @@ export default function InitiativesPage() {
           ))}
         </ol>
       </PublicPageSection>
+      <BrieferMitigation alt />
+      <BrieferFlow alt={false} />
+      <BrieferEquipment alt />
     </>
   );
 }
