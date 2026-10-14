@@ -3,11 +3,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, List } from "lucide-react";
 import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
-import { NCR_DAILY_ACCOMPLISHMENT_URL } from "@/lib/constants";
+import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
 import { cn } from "@/utils/cn";
 
 interface NcrDailyPage {
+  board: string;
   page: number;
 }
 
@@ -15,7 +16,7 @@ interface NcrDailyPage {
 const STRIP_STEP = 48;
 
 /** Page images are served through this site (see app/api/accomplishment/ncr-daily/image). */
-const pageImage = (page: number) => `/api/accomplishment/ncr-daily/image?page=${page}`;
+const pageImage = (p: NcrDailyPage) => `/api/accomplishment/ncr-daily/image?board=${p.board}&page=${p.page}`;
 
 type Layout = "grid" | "list";
 const LAYOUT_KEY = "okb-ncr-daily-layout";
@@ -184,8 +185,8 @@ function NcrDailyAccomplishment() {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              key={current.page}
-              src={pageImage(current.page)}
+              key={`${current.board}-${current.page}`}
+              src={pageImage(current)}
               alt={`NCR daily accomplishment ${index + 1} of ${count}`}
               className="mx-auto block h-auto w-full max-w-[900px]"
             />
@@ -250,7 +251,7 @@ function NcrDailyAccomplishment() {
                 const selected = itemIndex === index;
                 return (
                   <button
-                    key={item.page}
+                    key={`${item.board}-${item.page}`}
                     type="button"
                     aria-label={`Show accomplishment ${itemIndex + 1} of ${count}`}
                     aria-current={selected ? "true" : undefined}
@@ -266,7 +267,7 @@ function NcrDailyAccomplishment() {
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={pageImage(item.page)}
+                      src={pageImage(item)}
                       alt=""
                       loading="lazy"
                       decoding="async"
@@ -275,7 +276,7 @@ function NcrDailyAccomplishment() {
                     {layout === "list" ? (
                       <span className="min-w-0 text-sm font-semibold text-[var(--dpwh-blue)]">
                         Accomplishment {itemIndex + 1}
-                        <span className="block text-xs font-normal text-[var(--dpwh-muted)]">Page {item.page} of {count}</span>
+                        <span className="block text-xs font-normal text-[var(--dpwh-muted)]">{NCR_BOARDS.find((b) => b.id === item.board)?.label ?? "Board"} · page {item.page}</span>
                       </span>
                     ) : null}
                   </button>
@@ -296,11 +297,16 @@ function NcrDailyAccomplishment() {
       </div>
 
       <p className="okb-public-body text-sm">
-        NCR Daily Accomplishment board on{" "}
-        <a href={NCR_DAILY_ACCOMPLISHMENT_URL} target="_blank" rel="noopener noreferrer" className="okb-public-link">
-          Canva
-          <ExternalLink className="ml-1 inline size-3.5 align-[-2px]" aria-hidden />
-        </a>
+        Latest first. Boards on Canva:{" "}
+        {NCR_BOARDS.map((board, i) => (
+          <span key={board.id}>
+            {i ? " · " : ""}
+            <a href={board.url} target="_blank" rel="noopener noreferrer" className="okb-public-link">
+              {board.label}
+              <ExternalLink className="ml-1 inline size-3.5 align-[-2px]" aria-hidden />
+            </a>
+          </span>
+        ))}
         .
       </p>
     </div>

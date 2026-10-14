@@ -1,7 +1,7 @@
 import "server-only";
 
 import { ApiError } from "@/lib/api/errors";
-import { NCR_DAILY_ACCOMPLISHMENT_URL } from "@/lib/constants";
+import { ncrBoard } from "@/lib/config/ncr-boards";
 
 export interface NcrDailyPage {
   page: number;
@@ -19,7 +19,7 @@ const PAGE_RE =
 /** How long a scraped page list is reused. The image links themselves last about an hour. */
 const CACHE_MS = 10 * 60 * 1000;
 
-let cache: { at: number; pages: NcrDailyPage[] } | null = null;
+const cache = new Map<string, { at: number; pages: NcrDailyPage[] }>();
 
 function pagesFromHtml(html: string): NcrDailyPage[] {
   const byPage = new Map<number, { width: number; url: string }>();
@@ -36,11 +36,14 @@ function pagesFromHtml(html: string): NcrDailyPage[] {
     .map(([page, { url }]) => ({ page, url }));
 }
 
-/** Every page of the NCR Daily Accomplishment board, in order. */
-export async function getNcrDailyPages(): Promise<NcrDailyPage[]> {
-  if (cache && Date.now() - cache.at < CACHE_MS) return cache.pages;
+/** Every page of one Canva board, in the order of the design (the first page is the oldest). */
+export async function getNcrBoardPages(boardId: string): Promise<NcrDailyPage[]> {
+  const board = ncrBoard(boardId);
+  if (!board) throw new ApiError(404, "NOT_FOUND", "Unknown board.");
+  const hit = cache.get(board.id);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.pages;
 
-  const response = await fetch(NCR_DAILY_ACCOMPLISHMENT_URL, {
+  const response = await fetch(board.url, {
     headers: {
       Accept: "text/html",
       // Canva answers a bare client with "Unsupported client" and no page images.
@@ -50,14 +53,14 @@ export async function getNcrDailyPages(): Promise<NcrDailyPage[]> {
     cache: "no-store",
   });
   if (!response.ok) {
-    throw new ApiError(502, "INTERNAL_ERROR", "The NCR daily accomplishment board could not be loaded.");
+    throw new ApiError(502, "INTERNAL_ERROR", "The NCR accomplishment board could not be loaded.");
   }
 
   const pages = pagesFromHtml(await response.text());
   if (!pages.length) {
-    throw new ApiError(502, "INTERNAL_ERROR", "The NCR daily accomplishment board could not be loaded.");
+    throw new ApiError(502, "INTERNAL_ERROR", "The NCR accomplishment board could not be loaded.");
   }
 
-  cache = { at: Date.now(), pages };
+  cache.set(board.id, { at: Date.now(), pages });
   return pages;
 }
