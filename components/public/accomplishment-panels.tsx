@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, LayoutGrid, List } from "lucide-react";
+import { Activity, ChevronLeft, ChevronRight, ExternalLink, GalleryVerticalEnd, LayoutGrid, List, Radio, type LucideIcon } from "lucide-react";
 import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
@@ -21,10 +21,10 @@ const pageImage = (p: NcrDailyPage) => `/api/accomplishment/ncr-daily/image?boar
 type Layout = "grid" | "list";
 const LAYOUT_KEY = "okb-ncr-daily-layout";
 
-const TABS = [
-  { id: "live", label: "Live dashboard" },
-  { id: "ncr-daily", label: "NCR Daily Accomplishment" },
-] as const;
+const TABS: readonly { id: "live" | "ncr-daily"; label: string; hint: string; icon: LucideIcon }[] = [
+  { id: "live", label: "Live dashboard", hint: "Progress, types, regions and sites", icon: Activity },
+  { id: "ncr-daily", label: "NCR Daily Accomplishment", hint: "Daily boards, latest first", icon: GalleryVerticalEnd },
+];
 
 type TabId = (typeof TABS)[number]["id"];
 
@@ -52,14 +52,20 @@ export function AccomplishmentPanels() {
 
   return (
     <div className="space-y-3">
-      <div className="-mx-1 overflow-x-auto px-1">
+      <div className="relative isolate overflow-hidden rounded-xl border border-[#0b3a85] bg-[var(--dpwh-blue-dark)] p-2 shadow-[0_6px_20px_rgba(0,40,85,0.25)] sm:p-3">
+        {/* Soft glows and a faint grid behind the tabs. */}
         <div
-          role="tablist"
-          aria-label="Accomplishment views"
-          className="flex w-max min-w-full gap-1 border-b border-[var(--dpwh-border)]"
-        >
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_120%_at_0%_0%,rgba(0,86,214,0.55),transparent_60%),radial-gradient(50%_120%_at_100%_100%,rgba(245,126,32,0.35),transparent_60%),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,28px_28px,28px_28px]"
+        />
+        <p className="mb-2 flex items-center gap-1.5 px-1 text-[0.6875rem] font-extrabold uppercase tracking-[0.18em] text-[var(--dpwh-gold)]">
+          <Radio className="size-3.5" aria-hidden />
+          Program results
+        </p>
+        <div role="tablist" aria-label="Accomplishment views" className="grid grid-cols-2 gap-2">
           {TABS.map((item) => {
             const selected = tab === item.id;
+            const Icon = item.icon;
             return (
               <button
                 key={item.id}
@@ -81,13 +87,37 @@ export function AccomplishmentPanels() {
                   document.getElementById(`${baseId}-${next.id}-tab`)?.focus();
                 }}
                 className={cn(
-                  "min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm font-semibold transition-colors sm:px-4",
+                  "group relative flex min-h-16 items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all sm:gap-3 sm:px-4",
                   selected
-                    ? "border-[var(--dpwh-orange)] text-[var(--dpwh-blue)]"
-                    : "border-transparent text-[var(--dpwh-muted)] hover:text-[var(--dpwh-blue)]",
+                    ? "border-[var(--dpwh-orange)] bg-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
+                    : "border-white/15 bg-white/10 text-white backdrop-blur-sm hover:border-white/40 hover:bg-white/15",
                 )}
               >
-                {item.label}
+                <span
+                  aria-hidden
+                  className={cn(
+                    "flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-10",
+                    selected ? "bg-[var(--dpwh-orange)] text-white" : "bg-white/15 text-[var(--dpwh-gold)]",
+                  )}
+                >
+                  <Icon className="size-5" />
+                </span>
+                <span className="min-w-0">
+                  <span
+                    className={cn(
+                      "block text-[0.8125rem] font-bold leading-tight sm:text-sm",
+                      selected ? "text-[var(--dpwh-blue-dark)]" : "text-white",
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                  <span className={cn("mt-0.5 hidden text-xs leading-snug sm:block", selected ? "text-[var(--dpwh-muted)]" : "text-white/70")}>
+                    {item.hint}
+                  </span>
+                </span>
+                {selected ? (
+                  <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[var(--dpwh-orange)]" />
+                ) : null}
               </button>
             );
           })}
