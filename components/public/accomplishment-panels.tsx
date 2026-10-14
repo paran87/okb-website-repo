@@ -255,6 +255,7 @@ function NcrDailyAccomplishment() {
   const [failed, setFailed] = useState(false);
   const [index, setIndex] = useState(0);
   const touchX = useRef<number | null>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<Layout>("grid");
   const [shown, setShown] = useState(STRIP_STEP);
   const [enlarged, setEnlarged] = useState(false);
@@ -307,7 +308,8 @@ function NcrDailyAccomplishment() {
       <div className="okb-public-card overflow-hidden rounded-sm border shadow-sm">
         {current ? (
           <div
-            className="relative bg-[#0b1f4d]"
+            ref={viewerRef}
+            className="relative scroll-mt-4 bg-[#0b1f4d]"
             onTouchStart={(event) => {
               touchX.current = event.touches[0]?.clientX ?? null;
             }}
@@ -402,7 +404,8 @@ function NcrDailyAccomplishment() {
                     aria-current={selected ? "true" : undefined}
                     onClick={() => {
                       setIndex(itemIndex);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
+                      // Bring the picked page to the middle of the screen.
+                      viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
                     className={cn(
                       "min-h-11 overflow-hidden rounded-sm border-2 text-left",
