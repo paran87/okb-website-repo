@@ -1,10 +1,14 @@
 import type { NextRequest } from "next/server";
 import driveGallery from "@/lib/config/gallery-drive.json";
+import { GALLERY_DRIVE_VIDEOS } from "@/lib/config/gallery-drive-videos";
 
 export const maxDuration = 30;
 
 /** The Drive files of the Gallery (only these can be requested), by id. */
-const KNOWN = new Set((driveGallery.photos as unknown as [string, ...unknown[]][]).map((p) => p[0]));
+const KNOWN = new Set([
+  ...(driveGallery.photos as unknown as [string, ...unknown[]][]).map((p) => p[0]),
+  ...GALLERY_DRIVE_VIDEOS.map((v) => v.id),
+]);
 const WIDTHS = new Set([480, 1600]);
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 

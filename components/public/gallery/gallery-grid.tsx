@@ -6,6 +6,7 @@ import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
 import type { GalleryYoutubeVideo } from "@/lib/config/gallery-youtube";
+import type { GalleryDriveVideo } from "@/lib/config/gallery-drive-videos";
 
 export interface PublicGalleryItem {
   key: string;
@@ -21,6 +22,8 @@ export interface PublicGalleryItem {
   thumbUrl?: string;
   /** An embedded YouTube video (no file of ours behind it). */
   youtubeId?: string;
+  /** A video of the public Google Drive folder, played in Drive's embedded player. */
+  driveVideoId?: string;
   /** Who published it (YouTube videos). */
   source?: string;
 }
@@ -105,7 +108,16 @@ function Lightbox({
           </button>
         </div>
         <div className="relative flex min-h-0 flex-1 items-center justify-center px-2">
-          {item.youtubeId ? (
+          {item.driveVideoId ? (
+            <iframe
+              key={item.key}
+              src={`https://drive.google.com/file/d/${item.driveVideoId}/preview`}
+              title={item.title ?? "Video"}
+              allow="autoplay; fullscreen; picture-in-picture"
+              allowFullScreen
+              className="aspect-video max-h-full w-full max-w-5xl rounded-sm border-0 bg-black"
+            />
+          ) : item.youtubeId ? (
             <iframe
               key={item.key}
               src={`https://www.youtube-nocookie.com/embed/${item.youtubeId}?autoplay=1&rel=0`}
@@ -164,11 +176,13 @@ function Lightbox({
 export function GalleryGrid({
   items: uploaded,
   youtube = [],
+  driveVideos = [],
   drive,
   problem = null,
 }: {
   items: PublicGalleryItem[];
   youtube?: readonly GalleryYoutubeVideo[];
+  driveVideos?: readonly GalleryDriveVideo[];
   drive?: DriveGalleryData;
   problem?: "not_configured" | "storage" | null;
 }) {
@@ -186,10 +200,21 @@ export function GalleryGrid({
         youtubeId: v.id,
         source: v.source,
       })),
+      ...driveVideos.map((v) => ({
+        key: `drive-video:${v.id}`,
+        kind: "video" as const,
+        url: `https://drive.google.com/file/d/${v.id}/view`,
+        thumbUrl: `/api/gallery/drive-image?id=${v.id}&w=480`,
+        title: v.title,
+        caption: v.caption,
+        takenAt: `${v.date}T00:00:00+08:00`,
+        lastModified: `${v.date}T00:00:00+08:00`,
+        driveVideoId: v.id,
+      })),
       ...uploaded,
       ...drivePhotos(drive),
     ],
-    [youtube, uploaded, drive],
+    [youtube, driveVideos, uploaded, drive],
   );
   const [sort, setSort] = useState<Sort>("newest");
   const [visible, setVisible] = useState(PAGE);
@@ -237,7 +262,7 @@ export function GalleryGrid({
     [shown.length],
   );
 
-  if (!uploaded.length && !youtube.length && problem) {
+  if (!uploaded.length && !youtube.length && !driveVideos.length && problem) {
     return (
       <div className="okb-public-card rounded-sm px-6 py-16 text-center">
         <Images className="mx-auto size-10 opacity-60" aria-hidden />
@@ -416,6 +441,25 @@ export function GalleryGrid({
 
 /** Photo, or video frame with a play badge, filling its box. */
 function Thumb({ item, zoom = false }: { item: PublicGalleryItem; zoom?: boolean }) {
+  if (item.driveVideoId) {
+    return (
+      <>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={item.thumbUrl}
+          alt={item.title ?? ""}
+          loading="lazy"
+          decoding="async"
+          className={cn("size-full object-cover", zoom && "transition-transform duration-500 group-hover:scale-105")}
+        />
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="flex size-12 items-center justify-center rounded-full bg-black/55 text-white">
+            <Play className="size-6 translate-x-0.5" aria-hidden />
+          </span>
+        </span>
+      </>
+    );
+  }
   if (item.youtubeId) {
     return (
       <>
