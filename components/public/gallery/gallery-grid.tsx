@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
+import type { GalleryYoutubeVideo } from "@/lib/config/gallery-youtube";
 
 export interface PublicGalleryItem {
   key: string;
@@ -16,9 +17,16 @@ export interface PublicGalleryItem {
   takenAt?: string;
   place?: string | null;
   lastModified: string;
+  /** An embedded YouTube video (no file of ours behind it). */
+  youtubeId?: string;
+  /** Who published it (YouTube videos). */
+  source?: string;
 }
 
-const dateOf = (item: PublicGalleryItem) => DATE.format(new Date(item.takenAt ?? item.lastModified));
+const dateOf = (item: PublicGalleryItem) => {
+  const d = new Date(item.takenAt ?? item.lastModified);
+  return Number.isNaN(d.getTime()) ? "" : DATE.format(d);
+};
 
 type Tab = "photo" | "video";
 type Layout = "grid" | "list";
@@ -62,7 +70,17 @@ function Lightbox({
           </button>
         </div>
         <div className="relative flex min-h-0 flex-1 items-center justify-center px-2">
-          {item.kind === "photo" ? (
+          {item.youtubeId ? (
+            <iframe
+              key={item.key}
+              src={`https://www.youtube-nocookie.com/embed/${item.youtubeId}?autoplay=1&rel=0`}
+              title={item.title ?? "YouTube video"}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+              className="aspect-video max-h-full w-full max-w-5xl rounded-sm border-0 bg-black"
+            />
+          ) : item.kind === "photo" ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={item.url} alt={item.title ?? "Gallery photo"} className="max-h-full max-w-full object-contain" />
           ) : (
@@ -97,7 +115,10 @@ function Lightbox({
               <MapPin className="size-3.5 shrink-0" aria-hidden /> {item.place}
             </p>
           ) : null}
-          <p className="mt-1 text-xs text-white/50">{dateOf(item)}</p>
+          <p className="mt-1 text-xs text-white/50">
+            {item.source ? `${item.source} · ` : ""}
+            {item.youtubeId && !item.takenAt ? "YouTube" : dateOf(item)}
+          </p>
         </div>
       </div>
     </Portal>
@@ -105,7 +126,33 @@ function Lightbox({
 }
 
 /** Public gallery: Photos and Videos tabs, each as a grid or a list, with a full-screen viewer. */
-export function GalleryGrid({ items, problem = null }: { items: PublicGalleryItem[]; problem?: "not_configured" | "storage" | null }) {
+export function GalleryGrid({
+  items: uploaded,
+  youtube = [],
+  problem = null,
+}: {
+  items: PublicGalleryItem[];
+  youtube?: readonly GalleryYoutubeVideo[];
+  problem?: "not_configured" | "storage" | null;
+}) {
+  // YouTube videos come first in the Videos tab, then the uploaded ones.
+  const items = useMemo<PublicGalleryItem[]>(
+    () => [
+      ...youtube.map((v) => ({
+        key: `youtube:${v.id}`,
+        kind: "video" as const,
+        url: `https://www.youtube.com/watch?v=${v.id}`,
+        title: v.title,
+        caption: v.caption,
+        takenAt: v.date,
+        lastModified: v.date ?? "",
+        youtubeId: v.id,
+        source: v.source,
+      })),
+      ...uploaded,
+    ],
+    [youtube, uploaded],
+  );
   const photos = useMemo(() => items.filter((i) => i.kind === "photo"), [items]);
   const videos = useMemo(() => items.filter((i) => i.kind === "video"), [items]);
   const [tab, setTab] = useState<Tab>(photos.length || !videos.length ? "photo" : "video");
@@ -139,7 +186,7 @@ export function GalleryGrid({ items, problem = null }: { items: PublicGalleryIte
     [shown.length],
   );
 
-  if (!items.length && problem) {
+  if (!uploaded.length && !youtube.length && problem) {
     return (
       <div className="okb-public-card rounded-sm px-6 py-16 text-center">
         <Images className="mx-auto size-10 opacity-60" aria-hidden />
@@ -170,6 +217,11 @@ export function GalleryGrid({ items, problem = null }: { items: PublicGalleryIte
 
   return (
     <div className="space-y-4">
+      {problem === "storage" ? (
+        <p className="okb-public-body rounded-sm border border-current/20 px-3 py-2 text-sm">
+          Some photos and videos could not be loaded right now. Please try again in a moment.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-current/15">
         <div role="tablist" aria-label="Gallery" className="flex gap-1">
           {tabs.map(({ id, label, icon: Icon, count }) => (
@@ -274,6 +326,25 @@ export function GalleryGrid({ items, problem = null }: { items: PublicGalleryIte
 
 /** Photo, or video frame with a play badge, filling its box. */
 function Thumb({ item, zoom = false }: { item: PublicGalleryItem; zoom?: boolean }) {
+  if (item.youtubeId) {
+    return (
+      <>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://i.ytimg.com/vi/${item.youtubeId}/hqdefault.jpg`}
+          alt={item.title ?? ""}
+          loading="lazy"
+          decoding="async"
+          className={cn("size-full object-cover", zoom && "transition-transform duration-500 group-hover:scale-105")}
+        />
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="flex h-9 w-14 items-center justify-center rounded-xl bg-[#e00] text-white shadow-md">
+            <Play className="size-5 fill-current" aria-hidden />
+          </span>
+        </span>
+      </>
+    );
+  }
   if (item.kind === "photo") {
     return (
       // eslint-disable-next-line @next/next/no-img-element

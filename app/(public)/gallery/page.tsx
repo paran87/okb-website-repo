@@ -2,6 +2,7 @@ import { PublicPageHero, PublicPageSection } from "@/components/public";
 import { GalleryGrid } from "@/components/public/gallery/gallery-grid";
 import { listGalleryWithStatus } from "@/features/admin/server/media";
 import { APP } from "@/lib/constants";
+import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function GalleryPage() {
         description="Photos and videos of declogging, clearing and flood-control work across the country."
       />
       <PublicPageSection>
-        <GalleryGrid items={items} problem={problem} />
+        <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} problem={problem} />
       </PublicPageSection>
     </>
   );
