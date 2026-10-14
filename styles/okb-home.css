@@ -997,6 +997,38 @@
   color: #166534;
 }
 
+.okb-cov-chip--btn {
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.okb-cov-chip--btn:hover {
+  border-color: currentColor;
+}
+
+.okb-cov-chip--btn:active {
+  transform: scale(0.97);
+}
+
+.okb-cov-chip--btn:focus-visible {
+  outline: 2px solid var(--dpwh-orange);
+  outline-offset: 2px;
+}
+
+/* Touch screens: a comfortable tap target for every name. */
+@media (pointer: coarse) {
+  .okb-cov-chip--btn {
+    min-height: 2.5rem;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.75rem;
+  }
+}
+
 .okb-cov-chip--muted {
   border: 1px dashed var(--dpwh-border);
   color: var(--dpwh-muted);

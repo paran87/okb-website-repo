@@ -12,13 +12,14 @@ import {
   regionWaterways,
   type CoverageArea,
 } from "@/lib/config/okb-coverage";
+import { CoverageSheet, type CoverageItem } from "@/components/public/accomplishment-live/coverage-sheet";
 import { cn } from "@/utils/cn";
 
 type Kind = "all" | "waterways" | "drainage";
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-function AreaBlock({ area, kind, q }: { area: CoverageArea; kind: Kind; q: string }) {
+function AreaBlock({ area, kind, q, onOpen }: { area: CoverageArea; kind: Kind; q: string; onOpen: (name: string, kind: CoverageItem["kind"], area: string) => void }) {
   const match = (s: string) => !q || norm(s).includes(q) || norm(area.name).includes(q);
   const waterways = kind === "drainage" ? [] : (area.waterways ?? []).filter(match);
   const drainage = kind === "waterways" ? [] : (area.drainage ?? []).filter(match);
@@ -38,9 +39,11 @@ function AreaBlock({ area, kind, q }: { area: CoverageArea; kind: Kind; q: strin
       {waterways.length || unlisted ? (
         <ul className="okb-cov-chips" aria-label={`Waterways in ${area.name}`}>
           {waterways.map((w) => (
-            <li key={w} className="okb-cov-chip okb-cov-chip--water">
-              <Waves className="size-3 shrink-0" aria-hidden />
-              {w}
+            <li key={w}>
+              <button type="button" onClick={() => onOpen(w, "waterway", area.name)} className="okb-cov-chip okb-cov-chip--water okb-cov-chip--btn">
+                <Waves className="size-3 shrink-0" aria-hidden />
+                {w}
+              </button>
             </li>
           ))}
           {unlisted ? <li className="okb-cov-chip okb-cov-chip--muted">{unlisted} waterway{unlisted === 1 ? "" : "s"} (names to follow)</li> : null}
@@ -49,9 +52,11 @@ function AreaBlock({ area, kind, q }: { area: CoverageArea; kind: Kind; q: strin
       {drainage.length ? (
         <ul className="okb-cov-chips" aria-label={`Drainage lines in ${area.name}`}>
           {drainage.map((d) => (
-            <li key={d} className="okb-cov-chip okb-cov-chip--drain">
-              <Droplets className="size-3 shrink-0" aria-hidden />
-              {d}
+            <li key={d}>
+              <button type="button" onClick={() => onOpen(d, "drainage", area.name)} className="okb-cov-chip okb-cov-chip--drain okb-cov-chip--btn">
+                <Droplets className="size-3 shrink-0" aria-hidden />
+                {d}
+              </button>
             </li>
           ))}
         </ul>
@@ -61,13 +66,15 @@ function AreaBlock({ area, kind, q }: { area: CoverageArea; kind: Kind; q: strin
 }
 
 /**
- * Every waterway and drainage line in the program, by region and province / city (names only: progress is on the
- * live dashboard). Search, a waterway / drainage filter and a region picker keep it short on a phone.
+ * Every waterway and drainage line in the program, by region and province / city. Tapping one opens its location,
+ * live progress, details and photos (CoverageSheet). Search, a waterway / drainage filter and a region picker keep it
+ * short on a phone.
  */
 export function CoverageExplorer() {
   const [region, setRegion] = useState<string>("all");
   const [kind, setKind] = useState<Kind>("all");
   const [query, setQuery] = useState("");
+  const [opened, setOpened] = useState<CoverageItem | null>(null);
   const q = norm(query.trim());
 
   const regions = useMemo(
@@ -178,7 +185,13 @@ export function CoverageExplorer() {
               </header>
               <div className="okb-cov-card__body">
                 {r.areas.map((a) => (
-                  <AreaBlock key={a.name} area={a} kind={kind} q={norm(`${r.code} ${r.name}`).includes(q) ? "" : q} />
+                  <AreaBlock
+                    key={a.name}
+                    area={a}
+                    kind={kind}
+                    q={norm(`${r.code} ${r.name}`).includes(q) ? "" : q}
+                    onOpen={(name, k, area) => setOpened({ name, kind: k, area, regionCode: r.code, regionName: r.name })}
+                  />
                 ))}
               </div>
             </section>
@@ -187,9 +200,10 @@ export function CoverageExplorer() {
       )}
 
       <p className="okb-cov-note">
-        From the OKB accomplishment reports as of {COVERAGE_AS_OF}. Volumes and progress change daily: see the live
-        dashboard above.
+        Tap a waterway or drainage line for its location, progress and photos. From the OKB accomplishment reports as
+        of {COVERAGE_AS_OF}; volumes and progress are live.
       </p>
+      <CoverageSheet item={opened} onClose={() => setOpened(null)} />
     </div>
   );
 }

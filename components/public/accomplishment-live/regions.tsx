@@ -6,6 +6,7 @@ import { recordType, regionLabel, statusCounts, volumeTotals, workStatus, type V
 import type { AccomplishmentData, AccomplishmentRecord } from "@/features/accomplishment/types";
 import { useFieldPhotos } from "@/components/public/accomplishment-live/data";
 import { PhotoThumb, PhotoViewer } from "@/components/public/accomplishment-live/photo-viewer";
+import { WaterwayMap } from "@/components/public/accomplishment-live/waterway-map";
 import {
   compact,
   dayText,
@@ -163,6 +164,8 @@ export function WaterwayDetail({ sel, scale, onShowMap }: { sel: Selection; scal
           {w.lu ? ` · last field update ${dayText(w.lu)}` : ""}
         </p>
       </div>
+
+      <WaterwayMap name={w.n} place={[x.city, site, region].filter(Boolean).join(", ")} />
 
       {x.ph ? (
         <div>
