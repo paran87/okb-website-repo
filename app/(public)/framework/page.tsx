@@ -1,4 +1,5 @@
 import { OkbFrameworkStory } from "@/components/public/okb-framework-story";
+import "@/styles/okb-framework.css";
 import { APP } from "@/lib/constants";
 
 export const metadata = {

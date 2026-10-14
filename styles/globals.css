@@ -3849,43 +3849,6 @@
   }
 }
 
-.okb-fw-icon-chip {
-  background: var(--dpwh-orange-light);
-  color: var(--dpwh-orange-dark);
-}
-
-.okb-fw-objective {
-  transition: transform 0.25s ease, border-color 0.25s ease;
-}
-
-.okb-fw-objective:hover {
-  border-color: var(--dpwh-orange);
-  transform: translateX(4px);
-}
-
-.okb-fw-spine {
-  background: linear-gradient(180deg, var(--dpwh-orange), var(--dpwh-blue));
-}
-
-.okb-fw-node {
-  background: var(--dpwh-orange);
-  box-shadow: 0 0 0 6px color-mix(in srgb, var(--dpwh-orange) 18%, transparent);
-}
-
-.okb-fw-bar {
-  background: linear-gradient(90deg, var(--dpwh-blue), var(--dpwh-orange));
-}
-
-.okb-fw-bar--outcome {
-  background: linear-gradient(90deg, var(--dpwh-orange), #fcd116);
-}
-
-.okb-fw-season {
-  border: 1px solid var(--dpwh-border);
-  border-top: 3px solid var(--dpwh-blue);
-  background: var(--dpwh-panel);
-}
-
 .okb-fw-signoff {
   background-color: #001428;
 }
@@ -4283,7 +4246,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .okb-fw-orbit,
-  .okb-fw-objective,
   .okb-fw-hero-photo,
   .okb-fw-hero-flow,
   .okb-fw-hero-emblem,

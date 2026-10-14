@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { RIDGE_TO_REEF_ZONES } from "@/lib/config/okb-framework";
 import { cn } from "@/utils/cn";
 
@@ -29,7 +29,8 @@ const RAIN = [136, 152, 168, 184, 200, 216] as const;
 
 /** Interactive ridge-to-reef traverse — the hydrologic continuum OKB works across. */
 export function FrameworkRidgeToReef() {
-  const reduce = useReducedMotion();
+  // Hydration-safe: false on the server and first render, so SSR and client markup match.
+  const reduce = useMediaQuery("(prefers-reduced-motion: reduce)") === true;
   const [active, setActive] = useState(0);
   const zone = RIDGE_TO_REEF_ZONES[active]!;
   const anim = (name: string) => (reduce ? undefined : name);

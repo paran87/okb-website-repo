@@ -2,28 +2,52 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import { MotionConfig, motion, type Variants } from "framer-motion";
 import {
-  Activity,
+  ArrowDown,
   ArrowDownToLine,
+  ArrowRight,
   ArrowUpRight,
+  BarChart3,
+  Building2,
   Camera,
-  Droplets,
+  ClipboardCheck,
+  ClipboardList,
+  CalendarClock,
+  CloudRain,
   FileCheck2,
-  FlaskConical,
+  Flag,
+  Gauge,
+  Handshake,
+  HardHat,
+  Home,
   Landmark,
   Leaf,
+  ListOrdered,
+  Map as MapIcon,
+  MapPinned,
   Mountain,
+  Radar,
   Recycle,
+  RefreshCw,
   Scale,
   Search,
   Shield,
+  ShieldCheck,
+  Siren,
+  Sparkles,
   Users,
   Waves,
+  Wind,
+  Wrench,
+  type LucideIcon,
 } from "lucide-react";
+import { FrameworkChapterNav, scrollToChapter, type FrameworkChapter } from "@/components/public/framework-chapter-nav";
 import { FrameworkCycle } from "@/components/public/framework-cycle";
 import { FrameworkRidgeToReef } from "@/components/public/framework-ridge-to-reef";
+import { FrameworkScopeTabs } from "@/components/public/framework-scope-tabs";
 import { PublicPageSection } from "@/components/public/public-page-section";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   FRAMEWORK_MECHANISM,
   FRAMEWORK_META,
@@ -32,10 +56,12 @@ import {
   GUIDING_PRINCIPLES,
   INTERVENTION_SCOPES,
   MAINTENANCE_TYPES,
+  OPERATIONAL_CYCLE,
   PARTNERS,
   PERFORMANCE,
 } from "@/lib/config/okb-framework";
 import { FRAMEWORK_DOCUMENT_HREF, PUBLIC_ROUTES } from "@/lib/constants";
+import { cn } from "@/utils/cn";
 
 const PRINCIPLE_ICONS = [
   Mountain,
@@ -164,13 +190,11 @@ const HERO_META_FIELDS = [
 ] as const;
 
 function FrameworkHeroCopy() {
-  const reduce = useReducedMotion();
-
   return (
     <motion.div
       className="okb-fw-hero-panel"
       variants={heroPanelVariants}
-      initial={reduce ? false : "hidden"}
+      initial="hidden"
       animate="show"
     >
       <span className="okb-fw-hero-tick okb-fw-hero-tick--tl" aria-hidden />
@@ -234,33 +258,139 @@ function FrameworkHeroCopy() {
   );
 }
 
+
 function Reveal({
   children,
   className,
   delay = 0,
+  as = "div",
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  /** "li" when the reveal is itself a list item. */
+  as?: "div" | "li";
 }) {
-  const reduce = useReducedMotion();
-
+  const Tag = as === "li" ? motion.li : motion.div;
   return (
-    <motion.div
+    <Tag
       className={className}
-      initial={reduce ? false : { opacity: 0, y: 22 }}
+      initial={{ opacity: 0, y: 22 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.55, delay: reduce ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
-    </motion.div>
+    </Tag>
+  );
+}
+
+const CHAPTERS = [
+  { id: "basis", label: "Policy basis" },
+  { id: "principles", label: "Principles" },
+  { id: "objectives", label: "Objectives" },
+  { id: "scope", label: "Fields of work" },
+  { id: "governance", label: "Governance" },
+  { id: "cycle", label: "Cycle" },
+  { id: "performance", label: "Performance" },
+  { id: "maintenance", label: "Maintenance" },
+  { id: "partners", label: "Partners" },
+  { id: "signoff", label: "Sign-off" },
+] as const satisfies readonly FrameworkChapter[];
+
+type ChapterId = (typeof CHAPTERS)[number]["id"];
+const chapterNo = (id: ChapterId) => String(CHAPTERS.findIndex((c) => c.id === id) + 1).padStart(2, "0");
+
+/** Chapter heading: number chip + eyebrow, display title, optional lead. */
+function ChapterHeading({ id, eyebrow, title, lead }: { id: ChapterId; eyebrow: string; title: ReactNode; lead?: ReactNode }) {
+  return (
+    <Reveal>
+      <p className="okb-fw-kicker">
+        <span className="okb-fw-kicker__num">{chapterNo(id)}</span>
+        <span className="okb-public-eyebrow">{eyebrow}</span>
+      </p>
+      <h2 className="okb-fw-title mt-3">{title}</h2>
+      {lead ? <p className="okb-fw-lead mt-3">{lead}</p> : null}
+    </Reveal>
+  );
+}
+
+const GLANCE: { value: number; label: string; to: ChapterId }[] = [
+  { value: GUIDING_PRINCIPLES.length, label: "Guiding principles", to: "principles" },
+  { value: FRAMEWORK_OBJECTIVES.length, label: "Objectives", to: "objectives" },
+  { value: INTERVENTION_SCOPES.length, label: "Fields of work", to: "scope" },
+  { value: GOVERNANCE_ROLES.length, label: "Command levels", to: "governance" },
+  { value: OPERATIONAL_CYCLE.length, label: "Cycle stages", to: "cycle" },
+  { value: MAINTENANCE_TYPES.length, label: "Upkeep rhythms", to: "maintenance" },
+];
+
+const MECHANISM_ICONS: LucideIcon[] = [Search, ClipboardCheck, ListOrdered, HardHat, Radar, RefreshCw];
+
+/** Governance roles grouped into tiers; the first role of each tier leads it. */
+const TIERS: { level: string; name: string; roles: (typeof GOVERNANCE_ROLES)[number]["id"][] }[] = [
+  { level: "Tier 1", name: "National command", roles: ["secretary", "task-force", "commander", "secretariat"] },
+  { level: "Tier 2", name: "Regional", roles: ["regional"] },
+  { level: "Tier 3", name: "Field", roles: ["district"] },
+  { level: "Support", name: "Department-wide", roles: ["bureaus"] },
+];
+
+const ROLE_ICONS: Record<(typeof GOVERNANCE_ROLES)[number]["id"], LucideIcon> = {
+  secretary: Landmark,
+  "task-force": ShieldCheck,
+  commander: Flag,
+  secretariat: ClipboardList,
+  regional: MapPinned,
+  district: HardHat,
+  bureaus: Wrench,
+};
+
+const RHYTHM_UI: Record<(typeof MAINTENANCE_TYPES)[number]["id"], { icon: LucideIcon; when: string }> = {
+  routine: { icon: CalendarClock, when: "On schedule" },
+  "pre-rainy": { icon: CloudRain, when: "Before the rains" },
+  "post-event": { icon: Wind, when: "After typhoons" },
+  condition: { icon: Gauge, when: "At critical levels" },
+  urgent: { icon: Siren, when: "Immediately" },
+};
+
+const PARTNER_ICONS: Record<(typeof PARTNERS)[number]["id"], LucideIcon> = {
+  dpwh: Building2,
+  lgu: Home,
+  nga: Landmark,
+  private: Handshake,
+};
+
+const PILLARS: { icon: LucideIcon; title: string; body: string }[] = [
+  { icon: MapIcon, title: "Data and geospatial mapping", body: "Planning, resources, and recurring hotspots" },
+  { icon: BarChart3, title: "Periodic evaluation", body: "The Task Force reviews implementation" },
+  { icon: FileCheck2, title: "One framework nationwide", body: "Planning through sustained maintenance" },
+];
+
+function GlanceTiles() {
+  const reduce = useMediaQuery("(prefers-reduced-motion: reduce)") === true;
+  return (
+    <div className="okb-fw-glance">
+      {GLANCE.map((g, i) => (
+        <Reveal key={g.to} delay={i * 0.04}>
+          <a
+            href={`#${g.to}`}
+            onClick={(e) => {
+              e.preventDefault();
+              scrollToChapter(g.to, reduce);
+            }}
+            className="okb-fw-glance__tile h-full"
+          >
+            <span className="okb-fw-glance__num">{g.value}</span>
+            <span className="okb-fw-glance__label">{g.label}</span>
+          </a>
+        </Reveal>
+      ))}
+    </div>
   );
 }
 
 export function OkbFrameworkStory() {
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <section className="okb-fw-hero relative isolate overflow-hidden">
         <FrameworkHeroBackdrop />
 
@@ -275,63 +405,73 @@ export function OkbFrameworkStory() {
         </div>
       </section>
 
-      <PublicPageSection containerClassName="space-y-6">
-        <Reveal>
-          <p className="okb-public-eyebrow">Policy basis</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Institutionalized as standing operations
-          </h2>
-          <p className="okb-public-body okb-public-prose mt-4 text-base sm:text-lg">
-            Issued {FRAMEWORK_META.dateIssued} under {FRAMEWORK_META.directive}{" "}
-            and {FRAMEWORK_META.specialOrder}. OKB is the Department&apos;s
-            coordinated, risk-based mechanism for identification, assessment,
-            prioritization, implementation, monitoring, and sustained
-            maintenance.
-          </p>
-        </Reveal>
+      <FrameworkChapterNav chapters={CHAPTERS} />
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          {FRAMEWORK_MECHANISM.map((item, index) => (
-            <Reveal key={item} delay={index * 0.05}>
-              <div className="okb-public-card flex h-full flex-col justify-between rounded-sm p-4">
-                <span className="okb-public-accent-blue text-xs font-bold">
-                  0{index + 1}
-                </span>
-                <p className="okb-public-heading mt-3 text-base">{item}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+      {/* 01 Policy basis */}
+      <PublicPageSection id="basis" className="border-t-0 py-12 sm:py-16" containerClassName="space-y-8 sm:space-y-10">
+        <GlanceTiles />
+        <ChapterHeading
+          id="basis"
+          eyebrow="Policy basis"
+          title={
+            <>
+              Institutionalized as <em>standing operations</em>
+            </>
+          }
+          lead={
+            <>
+              Issued {FRAMEWORK_META.dateIssued} under {FRAMEWORK_META.directive} and {FRAMEWORK_META.specialOrder}. OKB
+              is the Department&apos;s coordinated, risk-based mechanism — from finding a problem to keeping it fixed.
+            </>
+          }
+        />
+        <Reveal>
+          <ol className="okb-fw-flow" aria-label="The OKB mechanism">
+            {FRAMEWORK_MECHANISM.map((step, i) => {
+              const Icon = MECHANISM_ICONS[i]!;
+              return (
+                <li key={step} className="okb-fw-flow__step">
+                  <span className="okb-fw-flow__node">
+                    <Icon className="size-6" aria-hidden />
+                    <span className="okb-fw-flow__badge">{i + 1}</span>
+                  </span>
+                  <span className="okb-fw-flow__label">{step}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </Reveal>
       </PublicPageSection>
 
-      <PublicPageSection alternate containerClassName="space-y-10">
-        <Reveal>
-          <p className="okb-public-eyebrow">Guiding principles</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Eight principles that hold the program together
-          </h2>
-        </Reveal>
-
-        <div className="grid gap-5 sm:grid-cols-2">
+      {/* 02 Principles */}
+      <PublicPageSection id="principles" className="okb-fw-dark" containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="principles"
+          eyebrow="Guiding principles"
+          title={
+            <>
+              Eight principles that <em>hold the program together</em>
+            </>
+          }
+          lead="Every OKB decision — where to work, how, and with whom — is tested against these principles from the memorandum."
+        />
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {GUIDING_PRINCIPLES.map((principle, index) => {
             const Icon = PRINCIPLE_ICONS[index]!;
             return (
-              <Reveal key={principle.id} delay={index * 0.04}>
-                <article className="okb-public-card h-full rounded-sm p-6">
-                  <div className="flex items-start gap-3">
-                    <span className="okb-fw-icon-chip inline-flex size-11 shrink-0 items-center justify-center rounded-sm">
+              <Reveal key={principle.id} delay={(index % 4) * 0.05}>
+                <article className="okb-fw-principle">
+                  <span className="okb-fw-principle__letter" aria-hidden>
+                    {principle.letter}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="okb-fw-principle__icon">
                       <Icon className="size-5" aria-hidden />
                     </span>
-                    <div>
-                      <p className="okb-public-eyebrow">
-                        Principle {principle.letter}
-                      </p>
-                      <h3 className="okb-public-heading mt-1 text-xl">
-                        {principle.title}
-                      </h3>
-                    </div>
+                    <p className="okb-fw-principle__tag">Principle {principle.letter}</p>
                   </div>
-                  <p className="okb-public-body mt-4">{principle.body}</p>
+                  <h3 className="okb-fw-principle__title mt-3">{principle.title}</h3>
+                  <p className="okb-fw-principle__body mt-2">{principle.body}</p>
                 </article>
               </Reveal>
             );
@@ -339,224 +479,270 @@ export function OkbFrameworkStory() {
         </div>
       </PublicPageSection>
 
-      <PublicPageSection containerClassName="space-y-8">
-        <Reveal>
-          <p className="okb-public-eyebrow">Objectives</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            What the framework is built to achieve
-          </h2>
-        </Reveal>
-
-        <ol className="space-y-3">
+      {/* 03 Objectives */}
+      <PublicPageSection id="objectives" containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="objectives"
+          eyebrow="Objectives"
+          title={
+            <>
+              What the framework is <em>built to achieve</em>
+            </>
+          }
+        />
+        <ol className="okb-fw-goals">
           {FRAMEWORK_OBJECTIVES.map((objective, index) => (
-            <Reveal key={objective} delay={index * 0.03}>
-              <li className="okb-fw-objective flex gap-4 rounded-sm border border-[var(--dpwh-border)] bg-[var(--dpwh-panel)] p-4 sm:p-5">
-                <span className="okb-public-heading text-2xl text-[var(--dpwh-orange)] sm:text-3xl">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <p className="okb-public-body pt-1 text-base sm:text-lg">
-                  {objective}
-                </p>
-              </li>
+            <Reveal as="li" key={objective} delay={(index % 2) * 0.05} className="okb-fw-goal">
+              <span className="okb-fw-goal__num">{String(index + 1).padStart(2, "0")}</span>
+              <p className="okb-fw-goal__text">{objective}</p>
             </Reveal>
           ))}
         </ol>
       </PublicPageSection>
 
-      <PublicPageSection alternate containerClassName="space-y-10">
+      {/* 04 Fields of work */}
+      <PublicPageSection id="scope" alternate containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="scope"
+          eyebrow="Scope of interventions"
+          title={
+            <>
+              Six fields of work <em>on the ground</em>
+            </>
+          }
+          lead="Tap a field to see what crews do there and the equipment they bring."
+        />
         <Reveal>
-          <p className="okb-public-eyebrow">Scope of interventions</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Six fields of work on the ground
-          </h2>
+          <FrameworkScopeTabs />
         </Reveal>
+      </PublicPageSection>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {INTERVENTION_SCOPES.map((scope, index) => (
-            <Reveal key={scope.id} delay={index * 0.05}>
-              <article className="okb-public-card h-full rounded-sm p-6">
-                <div className="mb-4 flex items-center gap-2">
-                  {scope.id === "waterways" ? (
-                    <Waves className="okb-public-icon size-6" aria-hidden />
-                  ) : scope.id === "drainage" ? (
-                    <Droplets className="okb-public-icon size-6" aria-hidden />
-                  ) : scope.id === "facilities" ? (
-                    <Activity className="okb-public-icon size-6" aria-hidden />
-                  ) : scope.id === "waste" ? (
-                    <Recycle className="okb-public-icon size-6" aria-hidden />
-                  ) : scope.id === "monitoring" ? (
-                    <Search className="okb-public-icon size-6" aria-hidden />
-                  ) : (
-                    <FlaskConical className="okb-public-icon size-6" aria-hidden />
-                  )}
-                  <h3 className="okb-public-heading text-xl">{scope.title}</h3>
+      {/* 05 Governance */}
+      <PublicPageSection id="governance" containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="governance"
+          eyebrow="Governance"
+          title={
+            <>
+              Command, coordination, <em>and the field</em>
+            </>
+          }
+          lead="Clear lines from the Secretary to the District Engineering Offices doing the work, with support across the Department."
+        />
+        <div className="okb-fw-tiers">
+          {TIERS.map((tier) => (
+            <Reveal key={tier.name}>
+              <div className="okb-fw-tier">
+                <div className="okb-fw-tier__label">
+                  <span className="okb-fw-tier__level">{tier.level}</span>
+                  <span className="okb-fw-tier__name">{tier.name}</span>
+                  <span className="okb-fw-tier__rule" aria-hidden />
                 </div>
-                <ul className="okb-public-body space-y-2 text-sm sm:text-base">
-                  {scope.items.map((item) => (
-                    <li key={item} className="flex gap-2.5">
-                      <span
-                        className="okb-public-dot mt-2 size-1.5 shrink-0 rounded-full"
-                        aria-hidden
-                      />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="okb-public-body mt-4 border-t border-[var(--dpwh-border)] pt-4 text-sm">
-                  {scope.note}
-                </p>
-              </article>
+                <div className={cn("okb-fw-tier__cards", tier.roles.length > 1 && "okb-fw-tier__cards--multi")}>
+                  {tier.roles.map((id, i) => {
+                    const role = GOVERNANCE_ROLES.find((r) => r.id === id)!;
+                    const Icon = ROLE_ICONS[id];
+                    return (
+                      <article key={id} className={cn("okb-fw-role", i === 0 && "okb-fw-role--lead")}>
+                        <span className="okb-fw-role__icon">
+                          <Icon className="size-5" aria-hidden />
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="okb-fw-role__title">{role.title}</h3>
+                          <p className="okb-fw-role__body">{role.body}</p>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
             </Reveal>
           ))}
         </div>
       </PublicPageSection>
 
-      <PublicPageSection containerClassName="space-y-10">
-        <Reveal>
-          <p className="okb-public-eyebrow">Governance</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Command, coordination, and the field
-          </h2>
-        </Reveal>
-
-        <div className="relative space-y-4">
-          <div
-            className="okb-fw-spine pointer-events-none absolute top-4 bottom-4 left-[1.15rem] w-px sm:left-6"
-            aria-hidden
-          />
-          {GOVERNANCE_ROLES.map((role, index) => (
-            <Reveal key={role.id} delay={index * 0.04}>
-              <article className="relative grid gap-4 pl-12 sm:grid-cols-[14rem_1fr] sm:items-start sm:pl-16">
-                <span className="okb-fw-node absolute top-2 left-0 size-9 rounded-full sm:size-12" />
-                <h3 className="okb-public-heading text-lg sm:text-xl">{role.title}</h3>
-                <p className="okb-public-body">{role.body}</p>
-              </article>
-            </Reveal>
-          ))}
-        </div>
-      </PublicPageSection>
-
-      <PublicPageSection alternate containerClassName="space-y-10">
-        <Reveal>
-          <p className="okb-public-eyebrow">Operational cycle</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            From identification back to maintenance
-          </h2>
-          <p className="okb-public-body okb-public-prose mt-4">
-            Hover or select a stage to walk the cycle used by District
-            Engineering Offices, Regional Task Groups, and the OKB Task Force.
-          </p>
-        </Reveal>
+      {/* 06 Cycle */}
+      <PublicPageSection id="cycle" alternate containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="cycle"
+          eyebrow="Operational cycle"
+          title={
+            <>
+              From identification <em>back to maintenance</em>
+            </>
+          }
+          lead="Tap a stage to walk the cycle used by District Engineering Offices, Regional Task Groups, and the OKB Task Force."
+        />
         <FrameworkCycle />
       </PublicPageSection>
 
-      <PublicPageSection containerClassName="space-y-10">
+      {/* 07 Performance */}
+      <PublicPageSection id="performance" containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="performance"
+          eyebrow="Performance"
+          title={
+            <>
+              Outputs and outcomes, <em>not headcount</em>
+            </>
+          }
+          lead={PERFORMANCE.note}
+        />
         <Reveal>
-          <p className="okb-public-eyebrow">Performance</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Outputs and outcomes, not headcount
-          </h2>
-          <p className="okb-public-body okb-public-prose mt-4">
-            {PERFORMANCE.note}
-          </p>
-        </Reveal>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Reveal>
-            <article className="okb-public-card h-full rounded-sm p-6">
-              <h3 className="okb-public-heading text-xl">Output indicators</h3>
-              <ul className="mt-4 space-y-3">
-                {PERFORMANCE.outputs.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    <span className="okb-fw-bar mt-2 h-2 w-10 shrink-0 rounded-full" />
-                    <span className="okb-public-body">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <article className="okb-public-card h-full rounded-sm p-6">
-              <h3 className="okb-public-heading text-xl">Outcome indicators</h3>
-              <ul className="mt-4 space-y-3">
-                {PERFORMANCE.outcomes.map((item) => (
-                  <li key={item} className="flex gap-3">
-                    <span className="okb-fw-bar okb-fw-bar--outcome mt-2 h-2 w-10 shrink-0 rounded-full" />
-                    <span className="okb-public-body">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
-          </Reveal>
-        </div>
-      </PublicPageSection>
-
-      <PublicPageSection alternate containerClassName="space-y-10">
-        <Reveal>
-          <p className="okb-public-eyebrow">Preventive and periodic maintenance</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Five rhythms of upkeep
-          </h2>
-        </Reveal>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {MAINTENANCE_TYPES.map((item, index) => (
-            <Reveal key={item.id} delay={index * 0.05}>
-              <article className="okb-fw-season h-full rounded-sm p-5">
-                <p className="text-xs font-bold tracking-[0.14em] text-[var(--dpwh-orange)]">
-                  {String(index + 1).padStart(2, "0")}
-                </p>
-                <h3 className="okb-public-heading mt-3 text-lg">{item.title}</h3>
-                <p className="okb-public-body mt-2 text-sm">{item.body}</p>
-              </article>
-            </Reveal>
-          ))}
-        </div>
-      </PublicPageSection>
-
-      <PublicPageSection containerClassName="space-y-10">
-        <Reveal>
-          <p className="okb-public-eyebrow">Whole-of-nation</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Partners around the same waterway
-          </h2>
-        </Reveal>
-
-        <div className="grid gap-5 sm:grid-cols-2">
-          {PARTNERS.map((partner, index) => (
-            <Reveal key={partner.id} delay={index * 0.05}>
-              <article className="okb-public-card flex h-full gap-4 rounded-sm p-6">
-                <Landmark className="okb-public-icon mt-1 size-6 shrink-0" aria-hidden />
+          <div className="okb-fw-perf">
+            <article className="okb-fw-perf__card">
+              <div className="okb-fw-perf__head">
+                <span className="okb-fw-perf__head-icon">
+                  <BarChart3 className="size-5" aria-hidden />
+                </span>
                 <div>
-                  <h3 className="okb-public-heading text-xl">{partner.title}</h3>
-                  <p className="okb-public-body mt-2">{partner.body}</p>
+                  <p className="text-[0.7rem] font-bold uppercase tracking-[0.14em] text-white/75">What crews deliver</p>
+                  <h3 className="text-lg font-bold leading-tight">Output indicators</h3>
                 </div>
-              </article>
+              </div>
+              <ul className="okb-fw-perf__list">
+                {PERFORMANCE.outputs.map((item, i) => (
+                  <li key={item} className="okb-fw-perf__item">
+                    <span className="okb-fw-perf__dot">{i + 1}</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </article>
+            <div className="okb-fw-perf__link" aria-hidden>
+              <span className="okb-fw-perf__link-icon">
+                <ArrowDown className="size-5 lg:hidden" />
+                <ArrowRight className="hidden size-5 lg:block" />
+              </span>
+              Leads to
+            </div>
+            <article className="okb-fw-perf__card okb-fw-perf__card--outcome">
+              <div className="okb-fw-perf__head">
+                <span className="okb-fw-perf__head-icon">
+                  <Sparkles className="size-5" aria-hidden />
+                </span>
+                <div>
+                  <p className="text-[0.7rem] font-bold uppercase tracking-[0.14em] text-white/80">What communities feel</p>
+                  <h3 className="text-lg font-bold leading-tight">Outcome indicators</h3>
+                </div>
+              </div>
+              <ul className="okb-fw-perf__list">
+                {PERFORMANCE.outcomes.map((item, i) => (
+                  <li key={item} className="okb-fw-perf__item">
+                    <span className="okb-fw-perf__dot">{i + 1}</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </div>
+        </Reveal>
+      </PublicPageSection>
+
+      {/* 08 Maintenance */}
+      <PublicPageSection id="maintenance" alternate containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="maintenance"
+          eyebrow="Preventive and periodic maintenance"
+          title={
+            <>
+              Five rhythms <em>of upkeep</em>
+            </>
+          }
+          lead="From the calendar to the emergency call — maintenance never stops at one clearing."
+        />
+        <ol className="okb-fw-rhythm">
+          {MAINTENANCE_TYPES.map((item, index) => {
+            const ui = RHYTHM_UI[item.id];
+            const Icon = ui.icon;
+            return (
+              <Reveal as="li" key={item.id} delay={index * 0.05} className="okb-fw-rhythm__item">
+                <span className="okb-fw-rhythm__node">
+                  <Icon className="size-5" aria-hidden />
+                </span>
+                <div className="okb-fw-rhythm__card">
+                  <p className="okb-fw-rhythm__when">{ui.when}</p>
+                  <h3 className="okb-public-heading mt-1 text-base sm:text-lg">{item.title}</h3>
+                  <p className="okb-public-body mt-1 text-sm leading-relaxed">{item.body}</p>
+                </div>
+              </Reveal>
+            );
+          })}
+        </ol>
+      </PublicPageSection>
+
+      {/* 09 Partners */}
+      <PublicPageSection id="partners" containerClassName="space-y-8 sm:space-y-10">
+        <ChapterHeading
+          id="partners"
+          eyebrow="Whole-of-nation"
+          title={
+            <>
+              Partners around <em>the same waterway</em>
+            </>
+          }
+          lead="Each partner keeps its own mandate — together they keep one river system flowing."
+        />
+        <Reveal>
+          <div className="okb-fw-partners">
+            <div className="okb-fw-partners__hub">
+              <Waves className="okb-fw-partners__waves size-9" aria-hidden />
+              <p className="font-[family-name:var(--font-okb-display)] text-xl font-bold uppercase leading-none">
+                One waterway
+              </p>
+              <p className="text-xs text-white/75">Ridge to reef</p>
+            </div>
+            {PARTNERS.map((partner) => {
+              const Icon = PARTNER_ICONS[partner.id];
+              return (
+                <article key={partner.id} className="okb-fw-partner">
+                  <span className="okb-fw-partner__icon">
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="okb-public-heading text-lg leading-tight">{partner.title}</h3>
+                    <p className="okb-public-body mt-1 text-sm leading-relaxed">{partner.body}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </Reveal>
+      </PublicPageSection>
+
+      {/* 10 Sign-off */}
+      <PublicPageSection id="signoff" alternate containerClassName="space-y-8">
+        <ChapterHeading
+          id="signoff"
+          eyebrow="Living framework"
+          title={
+            <>
+              Data, review, and <em>strict implementation</em>
+            </>
+          }
+          lead="An OKB information and data-management system supports planning, resource allocation, and monitoring of recurring hotspots, and the Task Force periodically evaluates implementation."
+        />
+
+        <div className="okb-fw-pillars">
+          {PILLARS.map((p, i) => (
+            <Reveal key={p.title} delay={i * 0.05}>
+              <div className="okb-fw-pillar h-full">
+                <span className="okb-fw-pillar__icon">
+                  <p.icon className="size-5" aria-hidden />
+                </span>
+                <span>
+                  {p.title}
+                  <small>{p.body}</small>
+                </span>
+              </div>
             </Reveal>
           ))}
         </div>
-      </PublicPageSection>
-
-      <PublicPageSection alternate containerClassName="space-y-8">
-        <Reveal>
-          <p className="okb-public-eyebrow">Living framework</p>
-          <h2 className="okb-public-heading mt-2 text-2xl sm:text-4xl">
-            Data, review, and strict implementation
-          </h2>
-          <p className="okb-public-body okb-public-prose mt-4 text-base sm:text-lg">
-            An OKB information and data-management system — including geospatial
-            mapping — supports planning, resource allocation, and monitoring of
-            recurring hotspots. The Task Force periodically evaluates
-            implementation. This memorandum is the Department-wide framework for
-            coordinated planning, prioritization, implementation, monitoring,
-            evaluation, and sustained maintenance nationwide.
-          </p>
-        </Reveal>
 
         <Reveal delay={0.08}>
           <div
             id="framework-signoff"
-            className="okb-fw-signoff relative isolate overflow-hidden rounded-sm p-6 sm:p-8"
+            className="okb-fw-signoff relative isolate overflow-hidden rounded-xl p-6 sm:p-8"
           >
             <div
               aria-hidden
@@ -591,18 +777,24 @@ export function OkbFrameworkStory() {
               <p className="okb-fw-signoff-meta">
                 {FRAMEWORK_META.dateIssued} · {FRAMEWORK_META.tracking}
               </p>
-              <a
-                href={FRAMEWORK_DOCUMENT_HREF}
-                download
-                className="okb-fw-signoff-cta okb-public-btn okb-public-btn-accent"
-              >
-                <ArrowDownToLine className="size-4" aria-hidden />
-                Download the signed memorandum
-              </a>
+              <div className="okb-fw-signoff-cta flex flex-wrap gap-2">
+                <a
+                  href={FRAMEWORK_DOCUMENT_HREF}
+                  download
+                  className="okb-public-btn okb-public-btn-accent"
+                >
+                  <ArrowDownToLine className="size-4" aria-hidden />
+                  Download the signed memorandum
+                </a>
+                <Link href={PUBLIC_ROUTES.commandCenter} className="okb-fw-btn okb-fw-btn--ghost">
+                  <span>See it in the Command Center</span>
+                  <ArrowUpRight className="okb-fw-btn__icon size-4 shrink-0" aria-hidden />
+                </Link>
+              </div>
             </div>
           </div>
         </Reveal>
       </PublicPageSection>
-    </>
+    </MotionConfig>
   );
 }

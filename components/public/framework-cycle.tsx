@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion } from "framer-motion";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { OPERATIONAL_CYCLE } from "@/lib/config/okb-framework";
 import { cn } from "@/utils/cn";
 
@@ -18,7 +19,7 @@ const POSITIONS = [
 
 /** Interactive eight-stage operational cycle from the OKB memorandum. */
 export function FrameworkCycle() {
-  const reduce = useReducedMotion();
+  const reduce = useMediaQuery("(prefers-reduced-motion: reduce)") === true;
   const [active, setActive] = useState(0);
   const step = OPERATIONAL_CYCLE[active]!;
 
@@ -85,7 +86,7 @@ export function FrameworkCycle() {
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="okb-public-card rounded-sm p-6 sm:p-8"
+        className="okb-public-card rounded-xl p-5 sm:p-8"
       >
         <p className="okb-public-eyebrow">
           Stage {active + 1} of {OPERATIONAL_CYCLE.length}
@@ -99,7 +100,7 @@ export function FrameworkCycle() {
                 type="button"
                 onClick={() => setActive(index)}
                 className={cn(
-                  "w-full rounded-sm border px-2 py-2 text-left text-[0.7rem] font-semibold",
+                  "flex min-h-10 w-full items-center rounded-lg border px-2 py-1.5 text-left text-[0.72rem] font-semibold leading-tight",
                   index === active
                     ? "border-[var(--dpwh-orange)] bg-[var(--dpwh-orange-light)] text-[var(--dpwh-blue-dark)]"
                     : "border-[var(--dpwh-border)] text-[var(--dpwh-muted)] hover:border-[var(--dpwh-blue)]",
