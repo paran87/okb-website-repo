@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow_Condensed, Source_Sans_3 } from "next/font/google";
+import localFont from "next/font/local";
 import { VisitTracker } from "@/components/analytics/visit-tracker";
 import { AppProviders } from "@/providers/app-providers";
 import { DARK_ON_NEW_VISIT_SCRIPT } from "@/providers/theme-config";
@@ -8,16 +8,23 @@ import "@/styles/globals.css";
 import "@/styles/okb-folio.css";
 import "@/styles/okb-home.css";
 
-const okbDisplay = Barlow_Condensed({
-  subsets: ["latin"],
-  weight: ["600", "700"],
+/*
+ * Barlow Condensed and Source Sans 3 (Latin), the same files Google Fonts serves, kept in the repo so the
+ * build does not download fonts (next/font/google failed on Vercel inside Turbopack).
+ */
+const okbDisplay = localFont({
+  src: [
+    { path: "./fonts/barlow-condensed-600-latin.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/barlow-condensed-700-latin.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-okb-display",
   display: "swap",
 });
 
-const okbSans = Source_Sans_3({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+const okbSans = localFont({
+  src: "./fonts/source-sans-3-latin.woff2",
+  weight: "400 700",
+  style: "normal",
   variable: "--font-okb-sans",
   display: "swap",
 });
