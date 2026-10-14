@@ -73,6 +73,39 @@ const LAYOUT_KEY = "okb-gallery-layout";
 
 const DATE = new Intl.DateTimeFormat("en-PH", { timeZone: "Asia/Manila", month: "long", day: "numeric", year: "numeric" });
 
+/**
+ * A video of the Google Drive folder. It plays in the browser's own player (touch controls, full screen, seeking
+ * by range requests); if Google refuses that (quota), Drive's embedded player takes over.
+ */
+function DriveVideo({ id, title, poster }: { id: string; title: string | null; poster?: string }) {
+  const [fallback, setFallback] = useState(false);
+  if (fallback) {
+    return (
+      <iframe
+        src={`https://drive.google.com/file/d/${id}/preview`}
+        title={title ?? "Video"}
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        className="aspect-video max-h-full w-full max-w-5xl rounded-sm border-0 bg-black"
+      />
+    );
+  }
+  return (
+    <video
+      src={`https://drive.usercontent.google.com/download?id=${id}&export=download&confirm=t`}
+      poster={poster}
+      controls
+      autoPlay
+      playsInline
+      preload="metadata"
+      onError={() => setFallback(true)}
+      className="max-h-full w-full max-w-5xl bg-black"
+    >
+      <track kind="captions" />
+    </video>
+  );
+}
+
 function Lightbox({
   items,
   index,
@@ -109,14 +142,7 @@ function Lightbox({
         </div>
         <div className="relative flex min-h-0 flex-1 items-center justify-center px-2">
           {item.driveVideoId ? (
-            <iframe
-              key={item.key}
-              src={`https://drive.google.com/file/d/${item.driveVideoId}/preview`}
-              title={item.title ?? "Video"}
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              className="aspect-video max-h-full w-full max-w-5xl rounded-sm border-0 bg-black"
-            />
+            <DriveVideo key={item.key} id={item.driveVideoId} title={item.title} poster={item.thumbUrl} />
           ) : item.youtubeId ? (
             <iframe
               key={item.key}
