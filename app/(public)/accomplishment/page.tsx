@@ -1,4 +1,4 @@
-import { BarChart3, MapPin, Table2, TrendingUp } from "lucide-react";
+import { Camera, Map, MapPin, TrendingUp } from "lucide-react";
 import { PublicPageHero } from "@/components/public";
 import { AccomplishmentPanels } from "@/components/public/accomplishment-panels";
 import { CoverageExplorer } from "@/components/public/coverage-explorer";
@@ -18,9 +18,9 @@ const HERO_BANNER = {
 
 const HERO_CHIPS = [
   { icon: TrendingUp, label: "Overall progress" },
-  { icon: BarChart3, label: "Accomplishment types" },
-  { icon: MapPin, label: "Regions and areas" },
-  { icon: Table2, label: "Source tables" },
+  { icon: MapPin, label: "Regions and sites" },
+  { icon: Map, label: "Map of cleaned waterways" },
+  { icon: Camera, label: "Field photos" },
 ] as const;
 
 const coverageLine = `${COVERAGE_TOTALS.waterways} waterways and ${COVERAGE_TOTALS.drainage} drainage lines in ${COVERAGE_TOTALS.regions} regions`;
@@ -31,7 +31,7 @@ export default function AccomplishmentPage() {
       <PublicPageHero
         eyebrow="Program results"
         title="Accomplishment"
-        description={`Live ${APP.program} accomplishments monitoring — overall progress, accomplishment types, regions and areas, and source tables.`}
+        description={`Live ${APP.program} accomplishments from the OKB Single Source of Truth — progress per region, site and waterway, a map of cleaned stretches, field photos, field updates, and the equipment and crews deployed.`}
         bannerImage={HERO_BANNER}
         art={<AccomplishmentHeroArt />}
       >

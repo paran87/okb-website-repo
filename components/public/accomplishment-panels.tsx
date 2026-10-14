@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Activity, ChevronLeft, ChevronRight, ExternalLink, Expand, GalleryVerticalEnd, LayoutGrid, List, Radio, X, ZoomIn, ZoomOut, type LucideIcon } from "lucide-react";
-import { AccomplishmentDashboard } from "@/components/public/accomplishment-dashboard";
+import { AccomplishmentLive } from "@/components/public/accomplishment-live/accomplishment-live";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
 import { Portal } from "@/components/ui/portal";
@@ -27,7 +27,7 @@ type Layout = "grid" | "list";
 const LAYOUT_KEY = "okb-ncr-daily-layout";
 
 const TABS: readonly { id: "live" | "ncr-daily"; label: string; hint: string; icon: LucideIcon }[] = [
-  { id: "live", label: "Live dashboard", hint: "Progress, types, regions and sites", icon: Activity },
+  { id: "live", label: "Live dashboard", hint: "Progress, map, photos and field updates", icon: Activity },
   { id: "ncr-daily", label: "NCR Daily Accomplishment", hint: "Daily boards, latest first", icon: GalleryVerticalEnd },
 ];
 
@@ -135,7 +135,7 @@ export function AccomplishmentPanels() {
         aria-labelledby={`${baseId}-live-tab`}
         hidden={tab !== "live"}
       >
-        <AccomplishmentDashboard />
+        <AccomplishmentLive />
       </div>
 
       <div

@@ -3,6 +3,7 @@
  * Port of rdBuild_ in the "OKB SSOT" Apps Script project (Accomplishment.gs): the same tabs, the same column
  * names, the same name matching and the same progress scale detection.
  */
+import { dayOrder, isoDay, parseSheetDate } from "@/features/accomplishment/lib/dates";
 import type {
   AccomplishmentData,
   AccomplishmentRecord,
@@ -11,12 +12,12 @@ import type {
   SheetRows,
 } from "@/features/accomplishment/types";
 
-interface Table {
+export interface Table {
   head: Map<string, number>;
   rows: string[][];
 }
 
-function table(rows: SheetRows): Table {
+export function table(rows: SheetRows): Table {
   const [header = [], ...body] = rows;
   const head = new Map<string, number>();
   header.forEach((cell, column) => {
@@ -27,7 +28,7 @@ function table(rows: SheetRows): Table {
 }
 
 /** The first of [names] that is a heading of the tab, or -1. */
-function pick(head: Map<string, number>, names: string[]): number {
+export function pick(head: Map<string, number>, names: string[]): number {
   for (const name of names) {
     const column = head.get(name);
     if (column !== undefined) return column;
@@ -35,7 +36,7 @@ function pick(head: Map<string, number>, names: string[]): number {
   return -1;
 }
 
-const val = (row: string[], column: number) => (column < 0 ? "" : (row[column] ?? ""));
+export const val = (row: string[], column: number) => (column < 0 ? "" : (row[column] ?? ""));
 
 /** Comparable name: trimmed, upper case, single spaces, no zero-width or non-breaking spaces. */
 export function key(value: unknown): string {
@@ -48,7 +49,7 @@ export function key(value: unknown): string {
 }
 
 /** Letters and digits only, for names written with different punctuation. */
-function looseKey(value: unknown): string {
+export function looseKey(value: unknown): string {
   return key(value)
     .replace(/[‐-―]/g, "-")
     .replace(/[^A-Z0-9]+/g, "");
@@ -75,6 +76,85 @@ export interface AccomplishmentTabs {
   siteWaterway: SheetRows;
   /** "WaterwayVsAccomplishment": name of waterway, planned_volume_office, accomplished_volume, progress, status, … */
   accomplishment: SheetRows;
+  /** "Accomplishment Log": every field entry of a dredged volume (optional). */
+  log?: SheetRows;
+}
+
+/** One waterway's Accomplishment Log, replayed (port of rdAccomplishmentLog_). */
+export interface LogTotal {
+  name: string;
+  total: number;
+  entries: number;
+  lastAt: number | null;
+  planned: number | null;
+  cleaned: number | null;
+  points: number | null;
+}
+
+/**
+ * "update to" / "set" / "replace" sets the total; "update by" / "add" adds to it. Anything unrecognised counts
+ * as an addition, the safe direction (same as the Apps Script).
+ */
+function entryMode(value: string): "to" | "by" {
+  const word = value.toLowerCase().replace(/[^a-z]+/g, "");
+  if (word === "to" || word.includes("updateto") || word.includes("set") || word.includes("replace") || word.includes("absolute")) return "to";
+  return "by";
+}
+
+/** Replays the Accomplishment Log per waterway: entries in time order (row order when a row has no time). */
+export function replayLog(rows: SheetRows | undefined): Map<string, LogTotal> & { rows?: number } {
+  const out = new Map<string, LogTotal>() as Map<string, LogTotal> & { rows?: number };
+  if (!rows?.length) return out;
+  const t = table(rows);
+  const name = pick(t.head, ["name of waterway", "waterway"]);
+  if (name < 0) return out;
+  const when = pick(t.head, ["timestamp", "date", "logged"]);
+  const mode = pick(t.head, ["entry_mode", "entry mode", "mode"]);
+  const volume = pick(t.head, ["volume_entered_cu_m", "volume entered cu m", "volume_entered", "volume"]);
+  const previous = pick(t.head, ["previous_total_cu_m", "previous total cu m", "previous_total"]);
+  const planned = pick(t.head, ["planned_volume_office", "planned volume office", "planned_volume"]);
+  const cleaned = pick(t.head, ["points_cleaned", "points cleaned"]);
+  const points = pick(t.head, ["points_total", "points total"]);
+  const order = dayOrder(t.rows.map((r) => val(r, when)), "dmy");
+
+  const groups = new Map<string, { name: string; entries: { index: number; at: number | null; row: string[] }[] }>();
+  let counted = 0;
+  t.rows.forEach((row, index) => {
+    const raw = val(row, name);
+    const k = key(raw);
+    if (!k) return;
+    let g = groups.get(k);
+    if (!g) {
+      g = { name: raw.trim(), entries: [] };
+      groups.set(k, g);
+    }
+    g.entries.push({ index, at: parseSheetDate(val(row, when), order), row });
+    counted++;
+  });
+
+  for (const [k, g] of groups) {
+    const dated = g.entries.every((e) => e.at !== null);
+    g.entries.sort((a, b) => (dated && a.at !== b.at ? (a.at ?? 0) - (b.at ?? 0) : a.index - b.index));
+    const first = g.entries[0]!;
+    const last = g.entries[g.entries.length - 1]!;
+    let total = num(val(first.row, previous)) ?? 0;
+    for (const e of g.entries) {
+      const v = num(val(e.row, volume));
+      if (v === null) continue;
+      total = entryMode(val(e.row, mode)) === "to" ? v : total + v;
+    }
+    out.set(k, {
+      name: g.name,
+      total,
+      entries: g.entries.length,
+      lastAt: last.at,
+      planned: num(val(last.row, planned)),
+      cleaned: num(val(last.row, cleaned)),
+      points: num(val(last.row, points)),
+    });
+  }
+  out.rows = counted;
+  return out;
 }
 
 export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new Date()): AccomplishmentData {
@@ -104,7 +184,7 @@ export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new 
   }
 
   // Accomplishment per waterway, drainage or ISF record.
-  type Acc = Pick<AccomplishmentRecord, "p" | "v" | "g" | "s" | "pl" | "al">;
+  type Acc = Pick<AccomplishmentRecord, "p" | "v" | "g" | "s" | "pl" | "al" | "lc" | "lu" | "pc" | "pt">;
   const accTable = table(tabs.accomplishment);
   const accName = pick(accTable.head, ["name of waterway", "waterway"]);
   const plannedVolume = pick(accTable.head, ["planned_volume_office", "planned volume office", "planned_volume"]);
@@ -156,6 +236,37 @@ export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new 
       const ratio = record.v / record.p;
       record.g = scale === "fraction" ? ratio : ratio * 100;
     }
+  }
+
+  // The log wins where there is one (rdBuild_): its replayed total becomes the accomplished volume, and the
+  // percentage is recomputed from it when there is a planned volume to divide by.
+  const log = replayLog(tabs.log);
+  let logApplied = 0;
+  let logOnly = 0;
+  for (const [k, entry] of log) {
+    let record: Acc | undefined = accomplishments.get(k);
+    if (!record) {
+      const lk = looseKey(entry.name);
+      if (lk && !duplicateLoose.has(lk)) record = loose.get(lk);
+    }
+    if (!record) {
+      record = { p: null, v: null, g: null, s: "", pl: null, al: null };
+      accomplishments.set(k, record);
+      const lk = looseKey(entry.name);
+      if (lk && !loose.has(lk)) loose.set(lk, record);
+      logOnly++;
+    }
+    record.v = entry.total;
+    if (record.p === null && entry.planned !== null) record.p = entry.planned;
+    if (record.p !== null && record.p > 0) {
+      const ratio = entry.total / record.p;
+      record.g = scale === "fraction" ? ratio : ratio * 100;
+    }
+    record.lc = entry.entries;
+    record.lu = isoDay(entry.lastAt);
+    record.pc = entry.cleaned;
+    record.pt = entry.points;
+    logApplied++;
   }
 
   // Records grouped by site, sites by region.
@@ -228,5 +339,11 @@ export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new 
     .sort(byName);
   stats.regions = output.length;
 
-  return { generatedAt: generatedAt.toISOString(), scale, regions: output, stats };
+  return {
+    generatedAt: generatedAt.toISOString(),
+    scale,
+    regions: output,
+    stats,
+    log: { present: Boolean(tabs.log), rows: log.rows ?? 0, waterways: log.size, applied: logApplied, logOnly },
+  };
 }
