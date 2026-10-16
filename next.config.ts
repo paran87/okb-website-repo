@@ -50,7 +50,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "pino", "pino-pretty"],
   // Admin → Setup shows this SQL (read at runtime by app/api/admin/setup).
   outputFileTracingIncludes: {
-    "/api/admin/setup": ["./supabase/migrations/20261014000000_okb_site_admin.sql"],
+    "/api/admin/setup": ["./supabase/migrations/20261014000000_okb_site_admin.sql", "./supabase/migrations/20261016000000_okb_gallery_engagement.sql"],
   },
   experimental: {
     optimizePackageImports: [

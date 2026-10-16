@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, X } from "lucide-react";
+import { GalleryEngagement } from "@/components/public/gallery/gallery-engagement";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
@@ -190,7 +191,7 @@ function Lightbox({
             </>
           ) : null}
         </div>
-        <div className="mx-auto w-full max-w-3xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-white">
+        <div className="mx-auto max-h-[55dvh] w-full max-w-3xl shrink-0 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-white">
           {item.title ? <p className="text-base font-semibold">{item.title}</p> : null}
           {item.caption ? <p className="mt-1 text-sm text-white/80">{item.caption}</p> : null}
           {item.place ? (
@@ -202,6 +203,7 @@ function Lightbox({
             {item.source ? `${item.source} · ` : ""}
             {item.youtubeId && !item.takenAt ? "YouTube" : dateOf(item)}
           </p>
+          <GalleryEngagement itemKey={item.key} />
         </div>
       </div>
     </Portal>
