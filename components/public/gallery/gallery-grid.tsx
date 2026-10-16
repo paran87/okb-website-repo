@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, SearchCheck, Users, X } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, GalleryVerticalEnd, SearchCheck, Users, X } from "lucide-react";
+import { NcrDailyAccomplishment } from "@/components/public/accomplishment-panels";
 import { EngagementBar, GalleryEngagement, useEngagementSummary } from "@/components/public/gallery/gallery-engagement";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
@@ -67,7 +68,9 @@ function drivePhotos(data: DriveGalleryData | undefined): PublicGalleryItem[] {
   });
 }
 
-type Tab = "photo" | "video" | "inspections" | "summit";
+const NO_ITEMS: PublicGalleryItem[] = [];
+
+type Tab = "photo" | "video" | "inspections" | "summit" | "ncr";
 type Layout = "grid" | "list";
 
 const LAYOUT_KEY = "okb-gallery-layout";
@@ -287,7 +290,7 @@ export function GalleryGrid({
   const [tab, setTab] = useState<Tab>(!driveReady || photos.length || !videos.length ? "photo" : "video");
   const [layout, setLayout] = useState<Layout>("grid");
   const [open, setOpen] = useState<number | null>(null);
-  const shown = tab === "photo" ? photos : tab === "video" ? videos : tab === "inspections" ? inspections : summit;
+  const shown = tab === "photo" ? photos : tab === "video" ? videos : tab === "inspections" ? inspections : tab === "summit" ? summit : NO_ITEMS;
   const { summary, refresh: refreshSummary } = useEngagementSummary(useMemo(() => shown.slice(0, visible).map((i) => i.key), [shown, visible]));
 
   useEffect(() => {
@@ -306,8 +309,15 @@ export function GalleryGrid({
       /* storage unavailable */
     }
   };
+  // Old links to #ncr-daily open the OKB Daily Accomplishment (NCR) tab.
+  useEffect(() => {
+    if (window.location.hash === "#ncr-daily") setTab("ncr");
+  }, []);
   const chooseTab = (next: Tab) => {
     setTab(next);
+    if (next === "ncr" || window.location.hash === "#ncr-daily") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${next === "ncr" ? "#ncr-daily" : ""}`);
+    }
     setOpen(null);
     setVisible(PAGE);
   };
@@ -336,21 +346,12 @@ export function GalleryGrid({
     );
   }
 
-  if (!items.length && !inspections.length && !summit.length && driveReady) {
-    return (
-      <div className="okb-public-card rounded-sm px-6 py-16 text-center">
-        <Images className="mx-auto size-10 opacity-60" aria-hidden />
-        <p className="okb-public-heading mt-3 text-xl">Photos and videos are coming soon</p>
-        <p className="okb-public-body mt-1 text-sm">Check back for updates from the field.</p>
-      </div>
-    );
-  }
-
   const tabs: { id: Tab; label: string; icon: typeof Images; count: number }[] = [
     { id: "photo", label: "OKB Photos", icon: Images, count: photos.length },
     { id: "video", label: "OKB Videos", icon: Film, count: videos.length },
     { id: "inspections", label: "OKB Inspections", icon: SearchCheck, count: inspections.length },
     { id: "summit", label: "OKB Summit", icon: Users, count: summit.length },
+    { id: "ncr", label: "OKB Daily Accomplishment (NCR)", icon: GalleryVerticalEnd, count: -1 },
   ];
 
   return (
@@ -360,7 +361,7 @@ export function GalleryGrid({
           Some photos and videos could not be loaded right now. Please try again in a moment.
         </p>
       ) : null}
-      <div role="tablist" aria-label="Gallery" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <div role="tablist" aria-label="Gallery" className="grid grid-cols-2 gap-2 lg:grid-cols-5">
         {tabs.map(({ id, label, icon: Icon, count }) => {
           const on = tab === id;
           return (
@@ -372,6 +373,7 @@ export function GalleryGrid({
               onClick={() => chooseTab(id)}
               className={cn(
                 "group relative flex min-h-[3.75rem] items-center gap-2.5 overflow-hidden rounded-xl border-2 px-2.5 py-2 text-left transition-all sm:gap-3 sm:px-3.5",
+                id === "ncr" && "col-span-2 lg:col-span-1",
                 on
                   ? "border-[#0b3a85] bg-gradient-to-br from-[#0038a8] to-[#002855] text-white shadow-[0_8px_20px_rgba(0,40,85,0.35)]"
                   : "border-transparent bg-white text-[#14233a] shadow-sm ring-1 ring-black/10 hover:-translate-y-0.5 hover:ring-[#0038a8]/50 hover:shadow-md",
@@ -389,7 +391,7 @@ export function GalleryGrid({
               <span className="min-w-0 flex-1">
                 <span className="block text-[12px] font-extrabold uppercase leading-tight tracking-wide sm:text-sm">{label}</span>
                 <span className={cn("mt-0.5 block text-xs font-semibold", on ? "text-white/75" : "text-[#5b6b80]")}>
-                  {count === 0 ? "Coming soon" : `${count.toLocaleString("en-US")} ${id === "photo" ? "photos" : id === "video" ? "videos" : "items"}`}
+                  {id === "ncr" ? "Daily boards, latest first" : count === 0 ? "Coming soon" : `${count.toLocaleString("en-US")} ${id === "photo" ? "photos" : id === "video" ? "videos" : "items"}`}
                 </span>
               </span>
               {on ? <span aria-hidden className="absolute inset-x-3 bottom-0 h-1 rounded-t-full bg-[#f57e20]" /> : null}
@@ -398,7 +400,7 @@ export function GalleryGrid({
         })}
       </div>
 
-      <div className="flex justify-end">
+      <div className={cn("flex justify-end", tab === "ncr" && "hidden")}>
         <div role="radiogroup" aria-label="Layout" className="inline-flex rounded-full border border-current/20 bg-white/60 p-0.5">
           {(
             [
@@ -454,7 +456,9 @@ export function GalleryGrid({
         </div>
       ) : null}
 
-      {shown.length === 0 ? (
+      {tab === "ncr" ? (
+        <NcrDailyAccomplishment />
+      ) : shown.length === 0 ? (
         <div className="okb-public-card rounded-sm px-6 py-12 text-center">
           <p className="okb-public-heading text-lg">{tab === "photo" ? "No photos yet" : tab === "video" ? "No videos yet" : tab === "inspections" ? "OKB Inspections are coming soon" : "OKB Summit is coming soon"}</p>
           <p className="okb-public-body mt-1 text-sm">Check back for updates from the field.</p>
