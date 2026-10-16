@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   BarChart3,
   ChevronDown,
+  ChevronRight,
   Camera,
   Droplets,
   HardHat,
@@ -33,6 +34,7 @@ import {
 } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import { useAccomplishment } from "@/components/public/accomplishment-live/data";
+import { InsightView, type InsightKind } from "@/components/public/accomplishment-live/insight";
 import { MapSection } from "@/components/public/accomplishment-live/map-section";
 import { Overview, type SectionId } from "@/components/public/accomplishment-live/overview";
 import { PhotoViewer } from "@/components/public/accomplishment-live/photo-viewer";
@@ -73,9 +75,12 @@ function loadPrefs(): Prefs {
   }
 }
 
-function Tile({ icon: Icon, label, value, unit, hint, pct, extra, open }: { icon: LucideIcon; label: string; value: string; unit?: string; hint?: string; pct?: number | null; /** Hidden on phones until the figures are expanded. */ extra?: boolean; open?: boolean }) {
+function Tile({ icon: Icon, label, value, unit, hint, pct, extra, open, onOpen, cue }: { onOpen?: () => void; /** What tapping the tile shows (read by screen readers). */ cue?: string; icon: LucideIcon; label: string; value: string; unit?: string; hint?: string; pct?: number | null; /** Hidden on phones until the figures are expanded. */ extra?: boolean; open?: boolean }) {
+  const Wrapper = (onOpen ? "button" : "div") as "button";
+  const wrapperProps = onOpen ? { type: "button" as const, onClick: onOpen, "aria-label": `${label}: ${value}${unit ? ` ${unit}` : ""}${cue ? `. ${cue}` : ""}` } : {};
   return (
-    <div className={cn("okb-live-tile min-w-0 rounded-xl border border-white/12 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5", extra && !open && "max-sm:hidden")}>
+    <Wrapper {...wrapperProps} className={cn("okb-live-tile relative block w-full min-w-0 rounded-xl text-left border border-white/12 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5", extra && !open && "max-sm:hidden", onOpen && "cursor-pointer transition-colors hover:border-white/40 hover:bg-white/[0.13] focus-visible:outline-2 focus-visible:outline-[var(--dpwh-gold)]")}>
+      {onOpen ? <ChevronRight className="absolute right-2 top-2 size-4 text-white/55" aria-hidden /> : null}
       <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--dpwh-gold)]">
         <Icon className="size-3.5 shrink-0" aria-hidden />
         <span className="truncate">{label}</span>
@@ -86,7 +91,7 @@ function Tile({ icon: Icon, label, value, unit, hint, pct, extra, open }: { icon
       </p>
       {pct !== undefined ? <Meter pct={pct} tone="light" className="mt-1.5 h-1" /> : null}
       {hint ? <p className={cn("mt-1 truncate text-[10.5px] text-white/70", !open && "max-sm:hidden")}>{hint}</p> : null}
-    </div>
+    </Wrapper>
   );
 }
 
@@ -138,6 +143,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
   const navRef = useRef<HTMLDivElement>(null);
   // On phones the section bar is pinned to the bottom: it slips away while scrolling down and returns on scrolling up.
   const [figuresOpen, setFiguresOpen] = useState(false);
+  const [insight, setInsight] = useState<InsightKind | null>(null);
   const [navHidden, setNavHidden] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
@@ -213,6 +219,12 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
 
   const go = (next: SectionId) => {
     setSection(next);
+    setInsight(null);
+    navRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const openInsight = (kind: InsightKind) => {
+    setSection("overview");
+    setInsight(kind);
     navRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const showOnMap = (name: string) => {
@@ -280,14 +292,14 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
           </div>
           <div className="min-w-0 flex-1">
           <div className="grid flex-1 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
-            <Tile open={figuresOpen} icon={Shovel} label="Silt removed" value={compact(volume.acc)} unit="m³" pct={volume.plan ? (100 * volume.acc) / volume.plan : null} hint={volume.plan ? `of ${compact(volume.plan)} m³ planned` : undefined} />
-            <Tile open={figuresOpen} icon={Ruler} label="Length cleaned" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
-            <Tile open={figuresOpen} icon={BarChart3} label="Completed" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
-            <Tile open={figuresOpen} icon={Waves} label="Records" value={int(typeCounts.waterway)} unit="waterways" hint={`${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
-            <Tile open={figuresOpen} icon={MapIcon} label="Points cleaned" extra value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways)} waterways traced`} />
-            <Tile open={figuresOpen} icon={Camera} label="Field photos" extra value={int(data.photos.total)} hint={`${int(data.photos.waterways)} waterways documented`} />
-            <Tile open={figuresOpen} icon={Truck} label="Equipment" extra value={int(data.resources.equipment)} unit="units" hint={`${data.resources.sites.length} sites reporting`} />
-            <Tile open={figuresOpen} icon={HardHat} label="Manpower" extra value={int(data.resources.manpower)} unit="crew" hint="RO/DEO, LGU and private" />
+            <Tile open={figuresOpen} icon={Shovel} label="Silt removed" onOpen={() => openInsight("volume")} cue="Shows silt removed by region and waterway" value={compact(volume.acc)} unit="m³" pct={volume.plan ? (100 * volume.acc) / volume.plan : null} hint={volume.plan ? `of ${compact(volume.plan)} m³ planned` : undefined} />
+            <Tile open={figuresOpen} icon={Ruler} label="Length cleaned" onOpen={() => go("map")} cue="Opens the map of cleaned and not yet cleaned stretches" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
+            <Tile open={figuresOpen} icon={BarChart3} label="Completed" onOpen={() => openInsight("status")} cue="Lists records by status" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
+            <Tile open={figuresOpen} icon={Waves} label="Records" onOpen={() => openInsight("records")} cue="Lists every record" value={int(typeCounts.waterway)} unit="waterways" hint={`${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
+            <Tile open={figuresOpen} icon={MapIcon} label="Points cleaned" onOpen={() => go("map")} cue="Opens the map" extra value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways)} waterways traced`} />
+            <Tile open={figuresOpen} icon={Camera} label="Field photos" onOpen={() => go("photos")} cue="Opens the field photos" extra value={int(data.photos.total)} hint={`${int(data.photos.waterways)} waterways documented`} />
+            <Tile open={figuresOpen} icon={Truck} label="Equipment" onOpen={() => go("resources")} cue="Opens equipment and crews" extra value={int(data.resources.equipment)} unit="units" hint={`${data.resources.sites.length} sites reporting`} />
+            <Tile open={figuresOpen} icon={HardHat} label="Manpower" onOpen={() => go("resources")} cue="Opens equipment and crews" extra value={int(data.resources.manpower)} unit="crew" hint="RO/DEO, LGU and private" />
           </div>
             <button
               type="button"
@@ -367,7 +379,9 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
         </div>
       </div>
 
-      {section === "overview" ? (
+      {insight ? (
+        <InsightView kind={insight} chipTree={tree} allTree={allTree} scale={data.scale} onBack={() => setInsight(null)} onOpen={(sel) => setSelection(sel)} />
+      ) : section === "overview" ? (
         <Overview
           data={data}
           tree={tree}
@@ -395,7 +409,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
           <Empty>No records with these settings.</Empty>
         )
       ) : section === "map" ? (
-        <MapSection data={data} focus={mapFocus} onOpenWaterway={openWaterway} onUntraced={openWaterway} />
+        <MapSection data={data} focus={mapFocus} onOpenWaterway={openWaterway} onUntraced={openWaterway} recordFor={findByName} length={length} />
       ) : section === "photos" ? (
         <PhotosSection />
       ) : section === "updates" ? (

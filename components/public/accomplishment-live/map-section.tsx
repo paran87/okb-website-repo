@@ -8,7 +8,8 @@ import { ChevronRight, Layers, Map as MapIcon, X } from "lucide-react";
 import { getMapStyle } from "@/features/map/config/map-styles";
 import type { MapLine, PublicAccomplishment } from "@/features/accomplishment/public-types";
 import { useMapLines } from "@/components/public/accomplishment-live/data";
-import { Empty, int, Meter, Panel, pctText } from "@/components/public/accomplishment-live/shared";
+import type { Selection } from "@/components/public/accomplishment-live/regions";
+import { dayText, Empty, int, km, Meter, Panel, pctText, recordProgress, StatusPill } from "@/components/public/accomplishment-live/shared";
 
 /** Validated pair (dataviz validator, light basemap); white casing gives the orange its contrast. */
 const CLEANED = "#1d4ed8";
@@ -55,7 +56,23 @@ function boundsOf(lines: MapLine[]): [[number, number], [number, number]] | null
 }
 
 /** Every traced waterway: cleaned and remaining stretches (WaterwayVsCoordinates). */
-export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: PublicAccomplishment; focus: { name: string; id: number } | null; onOpenWaterway: (name: string) => void; onUntraced?: (name: string) => void }) {
+export function MapSection({
+  data,
+  focus,
+  onOpenWaterway,
+  onUntraced,
+  recordFor,
+  length,
+}: {
+  data: PublicAccomplishment;
+  focus: { name: string; id: number } | null;
+  onOpenWaterway: (name: string) => void;
+  onUntraced?: (name: string) => void;
+  /** The dashboard record behind a traced line (status, volumes, length). */
+  recordFor?: (name: string) => Selection | null;
+  /** Length cleaned and planned, in metres, for the strip above the map. */
+  length?: { done: number; plan: number };
+}) {
   const query = useMapLines(true);
   const lines = useMemo(() => query.data ?? [], [query.data]);
   const container = useRef<HTMLDivElement>(null);
@@ -64,6 +81,8 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
   const [basemap, setBasemap] = useState<Basemap>("light");
   const [region, setRegion] = useState("all");
   const [picked, setPicked] = useState<MapLine | null>(null);
+  const pickedRef = useRef<MapLine | null>(null);
+  pickedRef.current = picked;
   const geo = useMemo(() => toGeoJson(lines), [lines]);
   const byName = useMemo(() => new Map(lines.map((l) => [l.w, l])), [lines]);
   const regions = useMemo(() => [...new Set(lines.map((l) => l.r).filter(Boolean))].sort(), [lines]);
@@ -73,6 +92,14 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
       if (m.getSource("okb-runs")) return;
       m.addSource("okb-runs", { type: "geojson", data: geo.runs });
       m.addSource("okb-pins", { type: "geojson", data: geo.pins });
+      m.addLayer({
+        id: "okb-selected-glow",
+        type: "line",
+        source: "okb-runs",
+        filter: ["==", ["get", "w"], pickedRef.current?.w ?? ""],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#fcd116", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 8, 14, 20], "line-opacity": 0.95, "line-blur": 1.5 },
+      });
       m.addLayer({ id: "okb-runs-casing", type: "line", source: "okb-runs", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": ["interpolate", ["linear"], ["zoom"], 8, 3, 14, 8], "line-opacity": 0.9 } });
       m.addLayer({
         id: "okb-runs",
@@ -121,7 +148,13 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
       });
       const pick = (e: MapLayerMouseEvent) => {
         const name = e.features?.[0]?.properties?.w as string | undefined;
-        if (name) setPicked(byName.get(name) ?? null);
+        const line = name ? byName.get(name) : undefined;
+        if (!line) return;
+        setPicked(line);
+        // Zoom to the whole waterway, leaving room for the information panel.
+        const b = boundsOf([line]);
+        const narrow = container.current ? container.current.clientWidth < 640 : false;
+        if (b) m.fitBounds(b, { padding: { top: 60, left: 48, right: narrow ? 48 : 340, bottom: narrow ? 220 : 60 }, maxZoom: 16, duration: 800 });
       };
       for (const layer of ["okb-runs", "okb-pins"]) {
         m.on("click", layer, pick);
@@ -159,9 +192,18 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
     (m.getSource("okb-pins") as GeoJSONSource | undefined)?.setData(geo.pins);
   }, [ready, geo]);
 
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!ready || !m || !m.getLayer("okb-selected-glow")) return;
+    m.setFilter("okb-selected-glow", ["==", ["get", "w"], picked?.w ?? ""]);
+  }, [ready, picked]);
+
   const fit = useCallback((subset: MapLine[], maxZoom = 14) => {
     const b = boundsOf(subset);
-    if (b && mapRef.current) mapRef.current.fitBounds(b, { padding: 48, maxZoom, duration: 800 });
+    if (!b || !mapRef.current) return;
+    const narrow = container.current ? container.current.clientWidth < 640 : false;
+    const selected = subset.length === 1;
+    mapRef.current.fitBounds(b, { padding: selected ? { top: 60, left: 48, right: narrow ? 48 : 340, bottom: narrow ? 220 : 60 } : 48, maxZoom, duration: 800 });
   }, []);
 
   useEffect(() => {
@@ -203,6 +245,16 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
         ) : null
       }
     >
+      {length && length.plan > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-[#e3e8ef] bg-[#f6f8fb] px-4 py-2.5">
+          <p className="text-sm text-[var(--dpwh-muted)]">
+            <span className="font-display text-xl font-bold text-[var(--dpwh-blue-dark)]">{km(length.done)}</span> cleaned of{" "}
+            <span className="font-semibold text-[var(--dpwh-text)]">{km(length.plan)}</span> planned
+          </p>
+          <Meter pct={(100 * length.done) / length.plan} className="h-2 min-w-24 flex-1" label="Length cleaned" />
+          <span className="font-display text-lg font-bold text-[var(--dpwh-blue-dark)]">{pctText((100 * length.done) / length.plan, 0)}</span>
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[#e3e8ef] px-4 py-2 text-xs text-[var(--dpwh-muted)]">
         <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
           <span className="h-1.5 w-5 rounded-full" style={{ backgroundColor: CLEANED }} aria-hidden /> Cleaned
@@ -253,10 +305,53 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
                 <X className="size-4" aria-hidden />
               </button>
             </div>
-            <div className="mt-2 flex items-center gap-3">
-              <Meter pct={picked.g} className="flex-1" />
-              <span className="font-display text-xl font-bold text-[var(--dpwh-blue-dark)]">{pctText(picked.g, 0)}</span>
-            </div>
+            {(() => {
+              const sel = recordFor?.(picked.w) ?? null;
+              const w = sel?.record;
+              const pct = w ? recordProgress(w, data.scale) : picked.g;
+              return (
+                <>
+                  {w && sel ? <StatusPill w={w} scale={data.scale} className="mt-2" /> : null}
+                  <div className="mt-2 flex items-center gap-3">
+                    <Meter pct={pct} className="flex-1" />
+                    <span className="font-display text-xl font-bold text-[var(--dpwh-blue-dark)]">{pctText(pct, 0)}</span>
+                  </div>
+                  {w ? (
+                    <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                      <div>
+                        <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">Silt removed</dt>
+                        <dd className="font-semibold text-[var(--dpwh-text)]">{w.v !== null ? `${int(w.v)} m³` : "—"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">Planned</dt>
+                        <dd className="font-semibold text-[var(--dpwh-text)]">{w.p !== null ? `${int(w.p)} m³` : "—"}</dd>
+                      </div>
+                      {w.al !== null || w.pl !== null ? (
+                        <div>
+                          <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">Length cleaned</dt>
+                          <dd className="font-semibold text-[var(--dpwh-text)]">
+                            {w.al !== null ? km(w.al) : "—"}
+                            {w.pl ? ` of ${km(w.pl)}` : ""}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {w.o ? (
+                        <div className="min-w-0">
+                          <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">Office</dt>
+                          <dd className="truncate font-semibold text-[var(--dpwh-text)]">{w.o}</dd>
+                        </div>
+                      ) : null}
+                      {w.lu ? (
+                        <div className="col-span-2">
+                          <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">Last field update</dt>
+                          <dd className="font-semibold text-[var(--dpwh-text)]">{dayText(w.lu)}</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  ) : null}
+                </>
+              );
+            })()}
             <button
               type="button"
               onClick={() => onOpenWaterway(picked.w)}
