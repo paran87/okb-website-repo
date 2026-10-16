@@ -15,7 +15,7 @@ export default function NcrDailyAccomplishmentPage() {
         description="The daily accomplishment boards of Oplan Kontra Baha in the National Capital Region, from the latest to the oldest. Open a board to enlarge it."
         compact
       />
-      <PublicPageSection>
+      <PublicPageSection className="py-6 sm:py-8">
         <NcrDailyAccomplishment />
       </PublicPageSection>
     </>

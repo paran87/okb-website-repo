@@ -22,8 +22,9 @@ export default async function GalleryPage() {
         eyebrow="From the field"
         title="Gallery"
         description="Photos and videos of declogging, clearing and flood-control work across the country."
+        compact
       />
-      <PublicPageSection>
+      <PublicPageSection className="py-6 sm:py-8">
         <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} problem={problem} />
       </PublicPageSection>
     </>
