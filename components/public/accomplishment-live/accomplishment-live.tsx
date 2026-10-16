@@ -355,7 +355,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
           data={data}
           tree={tree}
           prefs={prefs}
-          onOpenRegion={(key) => setOpenRegion({ key, initial: null })}
+          onShowMap={showOnMap}
           onOpenRecord={setSelection}
           onGo={go}
           onOpenPhoto={setPhotoIndex}

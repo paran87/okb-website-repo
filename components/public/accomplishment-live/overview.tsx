@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
-import { ArrowRight, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowRight, ChevronDown, FileDown, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
 import { regionLabel, statusCounts, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
+import { RegionDropdown } from "@/components/public/accomplishment-live/region-dropdown";
+import { printRegionsPdf } from "@/components/public/accomplishment-live/region-pdf";
 import { RegionSortToggle, type RegionSort } from "@/components/public/accomplishment-live/picker";
 import { PhotoThumb } from "@/components/public/accomplishment-live/photo-viewer";
 import type { Selection } from "@/components/public/accomplishment-live/regions";
@@ -26,8 +28,8 @@ export function Overview({
   data,
   tree,
   prefs,
-  onOpenRegion,
   onOpenRecord,
+  onShowMap,
   onGo,
   onOpenPhoto,
   regionSort,
@@ -36,13 +38,14 @@ export function Overview({
   data: PublicAccomplishment;
   tree: VisibleRegion[];
   prefs: Prefs;
-  onOpenRegion: (key: string) => void;
   onOpenRecord: (sel: Selection) => void;
+  onShowMap: (name: string) => void;
   onGo: (section: SectionId) => void;
   onOpenPhoto: (index: number) => void;
   regionSort: RegionSort;
   onRegionSort: (v: RegionSort) => void;
 }) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const located = useMemo<Located[]>(
     () => tree.flatMap((r) => r.sites.flatMap((s) => s.w.map((w) => ({ record: w, region: regionLabel(r).code, site: s.n, regionKey: r.key })))),
     [tree],
@@ -101,7 +104,7 @@ export function Overview({
               const label = regionLabel(r);
               return (
                 <li key={r.key}>
-                  <button type="button" onClick={() => onOpenRegion(r.key)} className="group flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-[#f3f6fa]">
+                  <button type="button" aria-expanded={openKey === r.key} onClick={() => setOpenKey((k) => (k === r.key ? null : r.key))} className="group flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-[#f3f6fa]">
                     <span className="w-5 shrink-0 text-right text-xs font-bold tabular-nums text-[var(--dpwh-muted)]">{i + 1}</span>
                     <span className="w-[5.5rem] shrink-0 sm:w-28">
                       <span className="block truncate font-display text-base font-bold uppercase leading-tight tracking-wide text-[var(--dpwh-blue-dark)]">{label.code}</span>
@@ -111,7 +114,9 @@ export function Overview({
                     </span>
                     <Meter pct={r.pct} className="h-3 flex-1" label={`${label.code} progress`} />
                     <span className="w-14 shrink-0 text-right font-display text-lg font-bold tabular-nums text-[var(--dpwh-blue-dark)]">{pctText(r.pct, 0)}</span>
+                    <ChevronDown className={`size-4 shrink-0 text-[var(--dpwh-muted)] transition-transform ${openKey === r.key ? "rotate-180" : ""}`} aria-hidden />
                   </button>
+                  {openKey === r.key ? <RegionDropdown region={r} scale={data.scale} types={prefs.types} onMap={onShowMap} onInfo={onOpenRecord} /> : null}
                 </li>
               );
             })}
@@ -119,6 +124,13 @@ export function Overview({
         ) : (
           <Empty>No records with these settings.</Empty>
         )}
+        {byRegion.length ? (
+          <div className="mt-2 border-t border-[#e3e8ef] px-1 pt-2">
+            <button type="button" onClick={() => printRegionsPdf(byRegion, data.scale, prefs.types)} className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-[var(--dpwh-blue)] hover:bg-[#f3f6fa]">
+              <FileDown className="size-4" aria-hidden /> Download all regions as PDF
+            </button>
+          </div>
+        ) : null}
       </Panel>
 
       {/* Status */}
