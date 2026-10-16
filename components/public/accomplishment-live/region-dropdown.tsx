@@ -14,8 +14,8 @@ export const TYPE_ICON: Record<RecordType, { icon: LucideIcon; label: string; co
   isf: { icon: Home, label: "ISF", color: "var(--dpwh-orange)" },
 };
 
-/** Leading icon of a record row: its type when several types are shown, else the map pin. */
-export function RowIcon({ type, showType }: { type: RecordType; showType: boolean }) {
+/** Leading icon of a record row: its type (waterway, drainage or ISF), or the map pin when [showType] is off. */
+export function RowIcon({ type, showType = true }: { type: RecordType; showType?: boolean }) {
   if (!showType) return <MapPin className="size-4 shrink-0 text-[var(--dpwh-orange)]" aria-hidden />;
   const t = TYPE_ICON[type];
   const Icon = t.icon;
@@ -64,7 +64,7 @@ export function RegionDropdown({
                 return (
                   <li key={w.n} className="flex items-stretch">
                     <button type="button" onClick={() => onMap(w.n)} className="flex min-h-12 min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left hover:bg-[#f3f6fa]">
-                      <RowIcon type={recordType(w)} showType={types.length > 1} />
+                      <RowIcon type={recordType(w)} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{w.n}</span>
                         <span className="block truncate text-[11px] text-[var(--dpwh-muted)]">{[w.x?.city, w.o].filter(Boolean).join(" · ")}</span>
