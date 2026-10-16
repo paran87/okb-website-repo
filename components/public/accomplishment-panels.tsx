@@ -292,11 +292,19 @@ export function NcrDailyAccomplishment() {
                       viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
                     }}
                     className={cn(
-                      "min-h-11 overflow-hidden rounded-sm border-2 text-left",
+                      "relative min-h-11 overflow-hidden rounded-sm border-2 text-left transition-all",
                       layout === "list" && "flex items-center gap-3 p-1",
-                      selected ? "border-[var(--dpwh-orange)]" : "border-transparent",
+                      selected
+                        ? "z-10 scale-[1.04] border-[#fcd116] bg-white shadow-[0_0_0_3px_var(--dpwh-blue-dark),0_8px_20px_rgba(0,40,85,0.45)]"
+                        : "border-transparent opacity-60 hover:opacity-100",
                     )}
                   >
+                    {selected ? (
+                      <span aria-hidden className="absolute left-1 top-1 z-10 inline-flex items-center gap-1 rounded-full bg-[#fcd116] px-1.5 py-0.5 text-[9px] font-extrabold uppercase leading-none tracking-wide text-[var(--dpwh-blue-dark)] shadow">
+                        <span className="size-1.5 rounded-full bg-[var(--dpwh-blue-dark)]" />
+                        Viewing
+                      </span>
+                    ) : null}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={pageImage(item)}
