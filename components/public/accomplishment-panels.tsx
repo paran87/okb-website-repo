@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Activity, ChevronLeft, ChevronRight, ExternalLink, Expand, GalleryVerticalEnd, LayoutGrid, List, Radio, X, ZoomIn, ZoomOut, type LucideIcon } from "lucide-react";
+import { Activity, ArrowRight, Check, ChevronLeft, ChevronRight, ExternalLink, Expand, GalleryVerticalEnd, LayoutGrid, List, Radio, X, ZoomIn, ZoomOut, type LucideIcon } from "lucide-react";
 import { AccomplishmentLive } from "@/components/public/accomplishment-live/accomplishment-live";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
@@ -57,7 +57,7 @@ export function AccomplishmentPanels() {
 
   return (
     <div className="space-y-3">
-      <div className="relative isolate overflow-hidden rounded-xl border border-[#0b3a85] bg-[var(--dpwh-blue-dark)] p-1.5 shadow-[0_6px_20px_rgba(0,40,85,0.25)] sm:p-2">
+      <div className="relative isolate rounded-xl border border-[#0b3a85] bg-[var(--dpwh-blue-dark)] p-1.5 pb-3 pt-3 shadow-[0_6px_20px_rgba(0,40,85,0.25)] sm:p-2">
         {/* Soft glows and a faint grid behind the tabs. */}
         <div
           aria-hidden
@@ -92,36 +92,45 @@ export function AccomplishmentPanels() {
                   document.getElementById(`${baseId}-${next.id}-tab`)?.focus();
                 }}
                 className={cn(
-                  "group relative flex min-h-12 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-all sm:gap-3 sm:px-3",
+                  "group relative flex min-h-12 items-center gap-2 rounded-lg border-2 px-2.5 py-1.5 text-left transition-all sm:gap-3 sm:px-3",
                   selected
-                    ? "border-[var(--dpwh-orange)] bg-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
-                    : "border-white/15 bg-white/10 text-white backdrop-blur-sm hover:border-white/40 hover:bg-white/15",
+                    ? "border-white bg-gradient-to-br from-[#ff9a3c] to-[var(--dpwh-orange)] text-white shadow-[0_6px_18px_rgba(245,126,32,0.55)]"
+                    : "border-dashed border-[var(--dpwh-gold)]/80 bg-white/10 text-white backdrop-blur-sm hover:border-solid hover:bg-white/20",
                 )}
               >
                 <span
                   aria-hidden
                   className={cn(
                     "flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9",
-                    selected ? "bg-[var(--dpwh-orange)] text-white" : "bg-white/15 text-[var(--dpwh-gold)]",
+                    selected ? "bg-white text-[var(--dpwh-orange)]" : "bg-[var(--dpwh-gold)] text-[var(--dpwh-blue-dark)]",
                   )}
                 >
                   <Icon className="size-4 sm:size-[1.125rem]" />
                 </span>
-                <span className="min-w-0">
-                  <span
-                    className={cn(
-                      "block text-[0.8125rem] font-bold leading-tight sm:text-sm",
-                      selected ? "text-[var(--dpwh-blue-dark)]" : "text-white",
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[0.8125rem] font-extrabold leading-tight text-white sm:text-sm">{item.label}</span>
+                  <span className={cn("block text-[11px] font-bold leading-snug", selected ? "text-white/90" : "text-[var(--dpwh-gold)]")}>
+                    {selected ? (
+                      <>
+                        <Check className="mr-0.5 inline size-3 align-[-1px]" aria-hidden />
+                        Now viewing
+                      </>
+                    ) : (
+                      <>
+                        Tap to open <ArrowRight className="inline size-3 align-[-1px] transition-transform group-hover:translate-x-0.5" aria-hidden />
+                      </>
                     )}
-                  >
-                    {item.label}
-                  </span>
-                  <span className={cn("hidden text-[11px] leading-snug sm:block", selected ? "text-[var(--dpwh-muted)]" : "text-white/70")}>
-                    {item.hint}
+                    <span className="hidden font-medium opacity-80 sm:inline"> · {item.hint}</span>
                   </span>
                 </span>
+                {!selected && item.id === "ncr-daily" ? (
+                  <span aria-hidden className="absolute -right-1 -top-2 inline-flex items-center gap-1 rounded-full bg-[var(--dpwh-gold)] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-[var(--dpwh-blue-dark)] shadow">
+                    <span className="size-1.5 animate-pulse rounded-full bg-[var(--dpwh-orange)]" />
+                    Daily boards
+                  </span>
+                ) : null}
                 {selected ? (
-                  <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-[var(--dpwh-orange)]" />
+                  <span aria-hidden className="absolute -bottom-[7px] left-1/2 size-3 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-white bg-[var(--dpwh-orange)]" />
                 ) : null}
               </button>
             );
