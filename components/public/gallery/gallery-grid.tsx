@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, GalleryVerticalEnd, SearchCheck, Users, X } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, GalleryVerticalEnd, Search, SearchCheck, Users, X } from "lucide-react";
 import { NcrDailyAccomplishment } from "@/components/public/accomplishment-panels";
 import { EngagementBar, GalleryEngagement, useEngagementSummary } from "@/components/public/gallery/gallery-engagement";
 import { Portal } from "@/components/ui/portal";
@@ -297,7 +297,14 @@ export function GalleryGrid({
   const [tab, setTab] = useState<Tab>(!driveReady || photos.length || !videos.length ? "photo" : "video");
   const [layout, setLayout] = useState<Layout>("grid");
   const [open, setOpen] = useState<number | null>(null);
-  const shown = tab === "photo" ? photos : tab === "video" ? videos : tab === "inspections" ? inspections : tab === "summit" ? summit : NO_ITEMS;
+  const [query, setQuery] = useState("");
+  const tabItems = tab === "photo" ? photos : tab === "video" ? videos : tab === "inspections" ? inspections : tab === "summit" ? summit : NO_ITEMS;
+  // The search box filters the open tab by title, caption, place and date.
+  const shown = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return tabItems;
+    return tabItems.filter((i) => [i.title, i.caption, i.place, i.source, dateOf(i)].some((t) => t?.toLowerCase().includes(needle)));
+  }, [tabItems, query]);
   const { summary, refresh: refreshSummary } = useEngagementSummary(useMemo(() => shown.slice(0, visible).map((i) => i.key), [shown, visible]));
 
   useEffect(() => {
@@ -322,6 +329,7 @@ export function GalleryGrid({
   }, []);
   const chooseTab = (next: Tab) => {
     setTab(next);
+    setQuery("");
     if (next === "ncr" || window.location.hash === "#ncr-daily") {
       window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${next === "ncr" ? "#ncr-daily" : ""}`);
     }
@@ -407,7 +415,27 @@ export function GalleryGrid({
         })}
       </div>
 
-      <div className={cn("flex justify-end", tab === "ncr" && "hidden")}>
+      <div className={cn("flex flex-wrap items-center gap-2", tab === "ncr" && "hidden")}>
+        <label className="relative block min-w-0 flex-1 basis-56">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 opacity-60" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setVisible(PAGE);
+              setOpen(null);
+            }}
+            placeholder={tab === "video" ? "Search videos by title, place or date" : "Search by title, place or date"}
+            aria-label="Search this tab"
+            className="h-11 w-full rounded-full border border-current/20 bg-white pl-10 pr-10 text-sm text-[#14233a] outline-none placeholder:text-[#5b6b80] focus:border-[#0038a8] focus:ring-2 focus:ring-[#0038a8]/20 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query ? (
+            <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-[#5b6b80] hover:bg-black/5">
+              <X className="size-4" aria-hidden />
+            </button>
+          ) : null}
+        </label>
         <div role="radiogroup" aria-label="Layout" className="inline-flex rounded-full border border-current/20 bg-white/60 p-0.5">
           {(
             [
@@ -458,7 +486,7 @@ export function GalleryGrid({
             </button>
           ))}
           <span className="okb-public-body ml-auto text-xs opacity-70">
-            Showing {Math.min(visible, photos.length)} of {photos.length}
+            Showing {Math.min(visible, shown.length)} of {shown.length}{query.trim() ? " matches" : ""}
           </span>
         </div>
       ) : null}
@@ -467,7 +495,7 @@ export function GalleryGrid({
         <NcrDailyAccomplishment />
       ) : shown.length === 0 ? (
         <div className="okb-public-card rounded-sm px-6 py-12 text-center">
-          <p className="okb-public-heading text-lg">{tab === "photo" ? "No photos yet" : tab === "video" ? "No videos yet" : tab === "inspections" ? "OKB Inspections are coming soon" : "OKB Summit is coming soon"}</p>
+          <p className="okb-public-heading text-lg">{query.trim() ? "Nothing matches your search" : tab === "photo" ? "No photos yet" : tab === "video" ? "No videos yet" : tab === "inspections" ? "OKB Inspections are coming soon" : "OKB Summit is coming soon"}</p>
           <p className="okb-public-body mt-1 text-sm">Check back for updates from the field.</p>
         </div>
       ) : layout === "grid" ? (
