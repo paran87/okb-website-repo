@@ -17,6 +17,7 @@ export const PUBLIC_ROUTES = {
   initiatives: "/initiatives",
   framework: "/framework",
   accomplishment: "/accomplishment",
+  ncrDaily: "/ncr-daily-accomplishment",
   advisories: "/advisories",
   profile: "/profile",
   gallery: "/gallery",

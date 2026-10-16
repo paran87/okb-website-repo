@@ -22,6 +22,11 @@ export const PUBLIC_NAV_ITEMS: readonly PublicNavItem[] = [
     description: "Outputs and outcomes from the live dashboard",
   },
   {
+    label: "NCR Daily Accomplishment",
+    href: PUBLIC_ROUTES.ncrDaily,
+    description: "Daily accomplishment boards of NCR, latest first",
+  },
+  {
     label: "Portfolio",
     href: PUBLIC_ROUTES.profile,
     description: "Program presentation and reference materials",

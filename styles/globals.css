@@ -1395,6 +1395,21 @@
   padding-bottom: 0.4rem;
 }
 
+/* Six nav items: tighter tabs on small desktops so the Command Center button is not pushed off. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .okb-public-nav-row .okb-tab {
+    padding: 0.5rem 0.55rem;
+    gap: 0.3rem;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+  }
+  .okb-public-nav-row .okb-nav-cta {
+    padding: 0.5rem 0.8rem;
+    letter-spacing: 0.04em;
+    font-size: 0.6875rem;
+  }
+}
+
 .okb-tab {
   position: relative;
   isolation: isolate;

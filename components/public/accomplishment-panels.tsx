@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
-import { Activity, ChevronLeft, ChevronRight, ExternalLink, Expand, GalleryVerticalEnd, LayoutGrid, List, X, ZoomIn, ZoomOut, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, ExternalLink, Expand, LayoutGrid, List, X, ZoomIn, ZoomOut } from "lucide-react";
 import { AccomplishmentLive } from "@/components/public/accomplishment-live/accomplishment-live";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
@@ -26,94 +26,12 @@ const pageImage = (p: NcrDailyPage) =>
 type Layout = "grid" | "list";
 const LAYOUT_KEY = "okb-ncr-daily-layout";
 
-const TABS: readonly { id: "live" | "ncr-daily"; label: string; hint: string; icon: LucideIcon }[] = [
-  { id: "live", label: "Live dashboard", hint: "Progress, map, photos and field updates", icon: Activity },
-  { id: "ncr-daily", label: "NCR Daily Accomplishment", hint: "Daily boards, latest first", icon: GalleryVerticalEnd },
-];
-
-type TabId = (typeof TABS)[number]["id"];
-
-/** Accomplishment page: the live monitor, and the NCR daily board. */
+/** Accomplishment page: the live dashboard. Old #ncr-daily links go to the NCR Daily Accomplishment page. */
 export function AccomplishmentPanels() {
-  const baseId = useId();
-  const [tab, setTab] = useState<TabId>("live");
-  const [ncrOpened, setNcrOpened] = useState(false);
-
   useEffect(() => {
-    if (window.location.hash === "#ncr-daily") {
-      setTab("ncr-daily");
-      setNcrOpened(true);
-    }
+    if (window.location.hash === "#ncr-daily") window.location.replace("/ncr-daily-accomplishment");
   }, []);
-
-  const select = (next: TabId) => {
-    setTab(next);
-    if (next === "ncr-daily") setNcrOpened(true);
-    const hash = next === "ncr-daily" ? "#ncr-daily" : "";
-    if (window.location.hash === "#ncr-daily" || next === "ncr-daily") {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${hash}`);
-    }
-  };
-
-  return (
-    <div className="space-y-3">
-      <div role="tablist" aria-label="Accomplishment views" className="grid grid-cols-2 gap-1.5 rounded-xl border border-[var(--dpwh-border)] bg-white p-1.5">
-        {TABS.map((item) => {
-          const selected = tab === item.id;
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              id={`${baseId}-${item.id}-tab`}
-              aria-selected={selected}
-              aria-controls={`${baseId}-${item.id}-panel`}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => select(item.id)}
-              onKeyDown={(event) => {
-                if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
-                event.preventDefault();
-                const index = TABS.findIndex((entry) => entry.id === item.id);
-                const step = event.key === "ArrowRight" ? 1 : TABS.length - 1;
-                const next = TABS[(index + step) % TABS.length];
-                if (!next) return;
-                select(next.id);
-                document.getElementById(`${baseId}-${next.id}-tab`)?.focus();
-              }}
-              className={cn(
-                "flex min-h-12 items-center justify-center gap-1.5 rounded-lg px-2 text-center text-[13px] font-bold leading-tight transition-colors",
-                selected
-                  ? "bg-[var(--dpwh-blue-dark)] text-white shadow-[inset_0_-3px_0_var(--dpwh-orange)]"
-                  : "text-[var(--dpwh-blue-dark)] hover:bg-[var(--dpwh-blue-light)]",
-              )}
-            >
-              <Icon className={cn("size-4 shrink-0", selected ? "text-[var(--dpwh-gold)]" : "text-[var(--dpwh-orange)]")} aria-hidden />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div
-        role="tabpanel"
-        id={`${baseId}-live-panel`}
-        aria-labelledby={`${baseId}-live-tab`}
-        hidden={tab !== "live"}
-      >
-        <AccomplishmentLive />
-      </div>
-
-      <div
-        role="tabpanel"
-        id={`${baseId}-ncr-daily-panel`}
-        aria-labelledby={`${baseId}-ncr-daily-tab`}
-        hidden={tab !== "ncr-daily"}
-      >
-        {ncrOpened ? <NcrDailyAccomplishment /> : null}
-      </div>
-    </div>
-  );
+  return <AccomplishmentLive />;
 }
 
 /**
@@ -216,7 +134,7 @@ function EnlargedPage({
 }
 
 /** One accomplishment at a time, with previous / next and every page underneath. */
-function NcrDailyAccomplishment() {
+export function NcrDailyAccomplishment() {
   const [pages, setPages] = useState<NcrDailyPage[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [index, setIndex] = useState(0);
