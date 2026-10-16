@@ -135,6 +135,29 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
   const [photoIndex, setPhotoIndex] = useState<number | null>(null);
   const [regionSort, setRegionSortState] = useState<RegionSort>("progress");
   const navRef = useRef<HTMLDivElement>(null);
+  // On phones the section bar is pinned to the bottom: it slips away while scrolling down and returns on scrolling up.
+  const [navHidden, setNavHidden] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [inView, setInView] = useState(true);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setInView(Boolean(entry?.isIntersecting)), { threshold: 0, rootMargin: "0px 0px -80px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      const delta = y - last;
+      if (Math.abs(delta) < 8) return;
+      setNavHidden(delta > 0 && y > 120);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     setPrefs(loadPrefs());
@@ -215,7 +238,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
   const regionOpen = openRegion ? (tree.find((r) => r.key === openRegion.key) ?? null) : null;
 
   return (
-    <div className="okb-live space-y-3">
+    <div ref={rootRef} className="okb-live space-y-3 pb-20 sm:pb-0">
       {/* Headline band */}
       <section aria-label="Program totals" className="okb-live-band relative isolate overflow-hidden rounded-2xl p-3 text-white sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
@@ -268,7 +291,14 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
 
       {/* Sections */}
       <div ref={navRef} className="scroll-mt-28">
-        <nav aria-label="Dashboard sections" className="grid grid-cols-6 gap-1 rounded-xl border border-[var(--dpwh-border)] bg-white p-1">
+        <nav
+          aria-label="Dashboard sections"
+          className={cn(
+            "grid grid-cols-6 gap-1 rounded-xl border border-[var(--dpwh-border)] bg-white p-1",
+            "max-sm:fixed max-sm:inset-x-2 max-sm:bottom-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:z-40 max-sm:shadow-[0_8px_28px_rgba(0,40,85,0.35)] max-sm:transition-transform max-sm:duration-300",
+            (navHidden || !inView) && "max-sm:translate-y-[160%]",
+          )}
+        >
           {SECTIONS.map(({ id, label, icon: Icon }) => {
             const active = section === id;
             return (
