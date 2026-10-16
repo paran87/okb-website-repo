@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Hand, Heart, Loader2, MessageCircle, Send, ShieldCheck, ThumbsUp, Zap, type LucideIcon } from "lucide-react";
+import { Hand, Heart, Loader2, MessageCircle, Send, ThumbsUp, Zap, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 type Reaction = "like" | "love" | "clap" | "wow";
@@ -183,16 +183,10 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
           void post();
         }}
       >
-        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[#fde68a]">
-          <ShieldCheck className="mt-px size-3.5 shrink-0" aria-hidden />
-          <span>
-            <strong>Your name will be shown as “Anonymous”.</strong> No name or e-mail is collected. Keep it respectful; no personal details or links.
-          </span>
-        </p>
         <label className="sr-only" htmlFor="gallery-comment">
           Write a comment
         </label>
-        <div className="mt-1.5 flex items-end gap-2">
+        <div className="flex items-end gap-2">
           <textarea
             id="gallery-comment"
             value={text}
