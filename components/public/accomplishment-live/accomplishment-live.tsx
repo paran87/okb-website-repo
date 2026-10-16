@@ -5,7 +5,6 @@ import {
   AlertTriangle,
   BarChart3,
   Camera,
-  Download,
   Droplets,
   HardHat,
   Home,
@@ -25,7 +24,6 @@ import {
   regionLabel,
   rollup,
   statusCounts,
-  toCsv,
   visibleTree,
   volumeTotals,
   type Prefs,
@@ -125,10 +123,10 @@ export function AccomplishmentLive() {
       </div>
     );
   }
-  return <Dashboard data={query.data} refreshing={query.isFetching} onRefresh={() => query.refetch()} />;
+  return <Dashboard data={query.data} />;
 }
 
-function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment; refreshing: boolean; onRefresh: () => void }) {
+function Dashboard({ data }: { data: PublicAccomplishment }) {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [section, setSection] = useState<SectionId>("overview");
   const [openRegion, setOpenRegion] = useState<{ key: string; initial: Selection | null } | null>(null);
@@ -209,16 +207,6 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
     update({ types: has ? prefs.types.filter((x) => x !== t) : [...prefs.types, t] });
   };
 
-  const downloadCsv = () => {
-    const blob = new Blob([`﻿${toCsv(tree, data.scale)}`], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `okb-accomplishment-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const regionsSorted = useMemo(() => {
     const other = (r: (typeof tree)[number]) => (regionLabel(r).code === "Other" ? 1 : 0);
     if (regionSort === "order") return [...tree].sort((a, b) => other(a) - other(b));
@@ -228,26 +216,6 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
 
   return (
     <div className="okb-live space-y-3">
-      {/* Live strip */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-[#dcfce7] px-2.5 text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#15803d]">
-          <span className="okb-live-dot" aria-hidden /> Live
-        </span>
-        <p className="min-w-0 flex-1 text-xs text-[var(--dpwh-muted)]">
-          OKB Single Source of Truth · updated <span className="font-semibold text-[var(--dpwh-text)]">{stampText(data.generatedAt)}</span>
-        </p>
-        <div className="flex gap-1.5">
-          <button type="button" onClick={downloadCsv} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] bg-white px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
-            <Download className="size-4" aria-hidden />
-            <span className="hidden sm:inline">CSV</span>
-            <span className="sr-only sm:hidden">Download CSV</span>
-          </button>
-          <button type="button" onClick={onRefresh} aria-label="Refresh" className="grid size-10 place-items-center rounded-lg border border-[var(--dpwh-border)] bg-white text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
-            <RefreshCw className={cn("size-4", refreshing && "animate-spin")} aria-hidden />
-          </button>
-        </div>
-      </div>
-
       {/* Headline band */}
       <section aria-label="Program totals" className="okb-live-band relative isolate overflow-hidden rounded-2xl p-3 text-white sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
@@ -257,6 +225,13 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
               <p className="font-display text-lg font-bold uppercase leading-tight tracking-wide sm:text-xl">Oplan Kontra Baha</p>
               <p className="mt-1 text-xs text-white/75">
                 Dredging, desilting and declogging · {tree.length} regions · {sites} sites · {int(ways.length)} records
+              </p>
+              <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/80">
+                <span className="okb-live-dot shrink-0" aria-hidden />
+                <span className="font-extrabold uppercase tracking-[0.12em] text-[#86efac]">Live</span>
+                <span className="min-w-0">
+                  · updated <span className="font-semibold text-white">{stampText(data.generatedAt)}</span>
+                </span>
               </p>
               <div className="mt-2 flex rounded-lg bg-white/10 p-0.5 text-[11px] font-bold" role="group" aria-label="Progress measure">
                 {(
