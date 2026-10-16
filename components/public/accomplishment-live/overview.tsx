@@ -113,8 +113,13 @@ export function Overview({
             <button type="button" onClick={() => setOpenKeys(new Set())} disabled={!openKeys.size} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)] disabled:opacity-40">
               <ChevronsUp className="size-4" aria-hidden /> Close all
             </button>
-            <button type="button" onClick={() => printRegionsPdf(byRegion, data.scale, prefs.types)} className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--dpwh-blue-dark)] px-3 text-xs font-bold text-white sm:ml-auto">
-              <FileDown className="size-4" aria-hidden /> All regions PDF
+            <button
+              type="button"
+              disabled={!openKeys.size}
+              onClick={() => printRegionsPdf(byRegion.filter((r) => openKeys.has(r.key)), data.scale, prefs.types)}
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--dpwh-blue-dark)] px-3 text-xs font-bold text-white disabled:opacity-40 sm:ml-auto"
+            >
+              <FileDown className="size-4" aria-hidden /> {openKeys.size ? `PDF of ${openKeys.size} opened region${openKeys.size === 1 ? "" : "s"}` : "Open a region to get its PDF"}
             </button>
           </div>
         ) : null}
