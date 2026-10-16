@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   BarChart3,
+  ChevronDown,
   Camera,
   Droplets,
   HardHat,
@@ -72,9 +73,9 @@ function loadPrefs(): Prefs {
   }
 }
 
-function Tile({ icon: Icon, label, value, unit, hint, pct }: { icon: LucideIcon; label: string; value: string; unit?: string; hint?: string; pct?: number | null }) {
+function Tile({ icon: Icon, label, value, unit, hint, pct, extra, open }: { icon: LucideIcon; label: string; value: string; unit?: string; hint?: string; pct?: number | null; /** Hidden on phones until the figures are expanded. */ extra?: boolean; open?: boolean }) {
   return (
-    <div className="okb-live-tile min-w-0 rounded-xl border border-white/12 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5">
+    <div className={cn("okb-live-tile min-w-0 rounded-xl border border-white/12 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5", extra && !open && "max-sm:hidden")}>
       <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--dpwh-gold)]">
         <Icon className="size-3.5 shrink-0" aria-hidden />
         <span className="truncate">{label}</span>
@@ -84,7 +85,7 @@ function Tile({ icon: Icon, label, value, unit, hint, pct }: { icon: LucideIcon;
         {unit ? <span className="ml-1 text-sm font-semibold text-white/70">{unit}</span> : null}
       </p>
       {pct !== undefined ? <Meter pct={pct} tone="light" className="mt-1.5 h-1" /> : null}
-      {hint ? <p className="mt-1 truncate text-[10.5px] text-white/70">{hint}</p> : null}
+      {hint ? <p className={cn("mt-1 truncate text-[10.5px] text-white/70", !open && "max-sm:hidden")}>{hint}</p> : null}
     </div>
   );
 }
@@ -136,6 +137,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
   const [regionSort, setRegionSortState] = useState<RegionSort>("progress");
   const navRef = useRef<HTMLDivElement>(null);
   // On phones the section bar is pinned to the bottom: it slips away while scrolling down and returns on scrolling up.
+  const [figuresOpen, setFiguresOpen] = useState(false);
   const [navHidden, setNavHidden] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(true);
@@ -276,15 +278,26 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
               </div>
             </div>
           </div>
+          <div className="min-w-0 flex-1">
           <div className="grid flex-1 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
-            <Tile icon={Shovel} label="Silt removed" value={compact(volume.acc)} unit="m³" pct={volume.plan ? (100 * volume.acc) / volume.plan : null} hint={volume.plan ? `of ${compact(volume.plan)} m³ planned` : undefined} />
-            <Tile icon={Ruler} label="Length cleaned" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
-            <Tile icon={BarChart3} label="Completed" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
-            <Tile icon={Waves} label="Records" value={int(typeCounts.waterway)} unit="waterways" hint={`${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
-            <Tile icon={MapIcon} label="Points cleaned" value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways)} waterways traced`} />
-            <Tile icon={Camera} label="Field photos" value={int(data.photos.total)} hint={`${int(data.photos.waterways)} waterways documented`} />
-            <Tile icon={Truck} label="Equipment" value={int(data.resources.equipment)} unit="units" hint={`${data.resources.sites.length} sites reporting`} />
-            <Tile icon={HardHat} label="Manpower" value={int(data.resources.manpower)} unit="crew" hint="RO/DEO, LGU and private" />
+            <Tile open={figuresOpen} icon={Shovel} label="Silt removed" value={compact(volume.acc)} unit="m³" pct={volume.plan ? (100 * volume.acc) / volume.plan : null} hint={volume.plan ? `of ${compact(volume.plan)} m³ planned` : undefined} />
+            <Tile open={figuresOpen} icon={Ruler} label="Length cleaned" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
+            <Tile open={figuresOpen} icon={BarChart3} label="Completed" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
+            <Tile open={figuresOpen} icon={Waves} label="Records" value={int(typeCounts.waterway)} unit="waterways" hint={`${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
+            <Tile open={figuresOpen} icon={MapIcon} label="Points cleaned" extra value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways)} waterways traced`} />
+            <Tile open={figuresOpen} icon={Camera} label="Field photos" extra value={int(data.photos.total)} hint={`${int(data.photos.waterways)} waterways documented`} />
+            <Tile open={figuresOpen} icon={Truck} label="Equipment" extra value={int(data.resources.equipment)} unit="units" hint={`${data.resources.sites.length} sites reporting`} />
+            <Tile open={figuresOpen} icon={HardHat} label="Manpower" extra value={int(data.resources.manpower)} unit="crew" hint="RO/DEO, LGU and private" />
+          </div>
+            <button
+              type="button"
+              onClick={() => setFiguresOpen((v) => !v)}
+              aria-expanded={figuresOpen}
+              className="mt-1.5 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-white/15 bg-white/10 text-xs font-bold text-white sm:hidden"
+            >
+              {figuresOpen ? "Show fewer figures" : "Show all figures"}
+              <ChevronDown className={cn("size-4 transition-transform", figuresOpen && "rotate-180")} aria-hidden />
+            </button>
           </div>
         </div>
       </section>
