@@ -105,6 +105,12 @@ export function Overview({
       <Panel title={regionSort === "order" ? "Regions, CAR to XIII" : "Progress by region"} icon={Gauge} action={<RegionSortToggle value={regionSort} onChange={onRegionSort} />} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
         {byRegion.length ? (
           <div className="mb-2 flex flex-wrap items-center gap-1.5 border-b border-[#e3e8ef] px-1 pb-2">
+            <p aria-live="polite" className="flex w-full items-baseline gap-2 rounded-lg border border-[#e3e8ef] bg-[#f6f8fb] px-3 py-2 text-sm">
+              <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--dpwh-muted)]">Open regions:</span>
+              <span className="min-w-0 font-display text-base font-bold tracking-wide text-[var(--dpwh-blue-dark)]">
+                {openKeys.size ? byRegion.filter((r) => openKeys.has(r.key)).map((r) => regionLabel(r).code.replace(/^Region /, "")).join(", ") : <span className="font-sans text-sm font-semibold text-[var(--dpwh-muted)]">none</span>}
+              </span>
+            </p>
             <button type="button" onClick={() => setOpenKeys(new Set(byRegion.map((r) => r.key)))} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
               <ChevronsDown className="size-4" aria-hidden /> Open all
             </button>
