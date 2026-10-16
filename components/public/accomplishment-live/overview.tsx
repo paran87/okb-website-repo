@@ -100,30 +100,30 @@ export function Overview({
   );
 
   return (
-    <div className="grid gap-4 lg:grid-cols-12">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-12">
       {/* Progress by region */}
-      <Panel title={regionSort === "order" ? "Regions, CAR to XIII" : "Progress by region"} icon={Gauge} action={<RegionSortToggle value={regionSort} onChange={onRegionSort} />} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
+      <Panel title={regionSort === "order" ? "Regions, CAR to XIII" : "Progress by region"} icon={Gauge} action={<RegionSortToggle value={regionSort} onChange={onRegionSort} />} className="overflow-clip lg:col-span-7" bodyClassName="p-2 sm:p-3">
         {byRegion.length ? (
-          <div className="mb-2 flex flex-wrap items-center gap-1.5 border-b border-[#e3e8ef] px-1 pb-2">
-            <p aria-live="polite" className="flex w-full items-baseline gap-2 rounded-lg border border-[#e3e8ef] bg-[#f6f8fb] px-3 py-2 text-sm">
+          <div className="sticky top-20 sm:top-[7.5rem] lg:top-[10.5rem] z-20 -mx-2 mb-2 flex flex-wrap items-center gap-1.5 border-b border-[#e3e8ef] bg-white/95 px-3 pb-2 pt-2 shadow-[0_4px_8px_-6px_rgba(0,40,85,0.25)] backdrop-blur sm:-mx-3">
+            <p aria-live="polite" className="flex w-full items-baseline gap-x-2 rounded-lg border border-[#e3e8ef] bg-[#f6f8fb] px-3 py-1.5 text-sm">
               <span className="shrink-0 text-[11px] font-extrabold uppercase tracking-[0.12em] text-[var(--dpwh-muted)]">Open regions:</span>
-              <span className="min-w-0 font-display text-base font-bold tracking-wide text-[var(--dpwh-blue-dark)]">
+              <span className="min-w-0 max-w-full break-words font-display text-sm sm:text-base font-bold leading-snug tracking-wide text-[var(--dpwh-blue-dark)]">
                 {openKeys.size ? byRegion.filter((r) => openKeys.has(r.key)).map((r) => regionLabel(r).code.replace(/^Region /, "")).join(", ") : <span className="font-sans text-sm font-semibold text-[var(--dpwh-muted)]">none</span>}
               </span>
             </p>
-            <button type="button" onClick={() => setOpenKeys(new Set(byRegion.map((r) => r.key)))} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
+            <button type="button" onClick={() => setOpenKeys(new Set(byRegion.map((r) => r.key)))} className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--dpwh-border)] px-2.5 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
               <ChevronsDown className="size-4" aria-hidden /> Open all
             </button>
-            <button type="button" onClick={() => setOpenKeys(new Set())} disabled={!openKeys.size} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)] disabled:opacity-40">
+            <button type="button" onClick={() => setOpenKeys(new Set())} disabled={!openKeys.size} className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--dpwh-border)] px-2.5 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)] disabled:opacity-40">
               <ChevronsUp className="size-4" aria-hidden /> Close all
             </button>
             <button
               type="button"
               disabled={!openKeys.size}
               onClick={() => printRegionsPdf(byRegion.filter((r) => openKeys.has(r.key)), data.scale, prefs.types)}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--dpwh-blue-dark)] px-3 text-xs font-bold text-white disabled:opacity-40 sm:ml-auto"
+              className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-[var(--dpwh-blue-dark)] px-2.5 text-xs font-bold text-white disabled:opacity-40 sm:ml-auto sm:flex-none"
             >
-              <FileDown className="size-4" aria-hidden /> {openKeys.size ? `PDF of ${openKeys.size} opened region${openKeys.size === 1 ? "" : "s"}` : "Open a region to get its PDF"}
+              <FileDown className="size-4" aria-hidden /> {openKeys.size ? `PDF · ${openKeys.size} open` : "Open a region for PDF"}
             </button>
           </div>
         ) : null}
