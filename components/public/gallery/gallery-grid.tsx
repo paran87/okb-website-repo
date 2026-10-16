@@ -415,8 +415,8 @@ export function GalleryGrid({
         })}
       </div>
 
-      <div className={cn("flex flex-wrap items-center gap-2", tab === "ncr" && "hidden")}>
-        <label className="relative block min-w-0 flex-1 basis-56">
+      <div className={cn("flex items-center gap-2", tab === "ncr" && "hidden")}>
+        <label className="relative block min-w-0 flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 opacity-60" aria-hidden />
           <input
             type="search"
@@ -426,7 +426,7 @@ export function GalleryGrid({
               setVisible(PAGE);
               setOpen(null);
             }}
-            placeholder={tab === "video" ? "Search videos by title, place or date" : "Search by title, place or date"}
+            placeholder={tab === "video" ? "Search videos…" : "Search title, place or date"}
             aria-label="Search this tab"
             className="h-11 w-full rounded-full border border-current/20 bg-white pl-10 pr-10 text-sm text-[#14233a] outline-none placeholder:text-[#5b6b80] focus:border-[#0038a8] focus:ring-2 focus:ring-[#0038a8]/20 [&::-webkit-search-cancel-button]:appearance-none"
           />
@@ -448,14 +448,15 @@ export function GalleryGrid({
               type="button"
               role="radio"
               aria-checked={layout === id}
+              aria-label={label}
               onClick={() => chooseLayout(id)}
               className={cn(
-                "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors",
+                "inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors sm:px-3.5",
                 layout === id ? "bg-[#0038a8] text-white" : "okb-public-body",
               )}
             >
               <Icon className="size-4" aria-hidden />
-              {label}
+              <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
         </div>
