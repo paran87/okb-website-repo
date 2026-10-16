@@ -3563,6 +3563,12 @@
   }
 }
 
+@media (min-width: 1024px) {
+  .okb-fw-hero .okb-fw-hero-panel {
+    max-width: none;
+  }
+}
+
 .okb-fw-hero-tick {
   position: absolute;
   height: 1.15rem;
