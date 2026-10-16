@@ -5,6 +5,7 @@ import { ArrowRight, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, T
 import { regionLabel, statusCounts, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
+import { RegionSortToggle, type RegionSort } from "@/components/public/accomplishment-live/picker";
 import { PhotoThumb } from "@/components/public/accomplishment-live/photo-viewer";
 import type { Selection } from "@/components/public/accomplishment-live/regions";
 import { dayText, Empty, int, Meter, Panel, pctText, recordProgress, STATUS, STATUS_ORDER, stampDay } from "@/components/public/accomplishment-live/shared";
@@ -29,6 +30,8 @@ export function Overview({
   onOpenRecord,
   onGo,
   onOpenPhoto,
+  regionSort,
+  onRegionSort,
 }: {
   data: PublicAccomplishment;
   tree: VisibleRegion[];
@@ -37,6 +40,8 @@ export function Overview({
   onOpenRecord: (sel: Selection) => void;
   onGo: (section: SectionId) => void;
   onOpenPhoto: (index: number) => void;
+  regionSort: RegionSort;
+  onRegionSort: (v: RegionSort) => void;
 }) {
   const located = useMemo<Located[]>(
     () => tree.flatMap((r) => r.sites.flatMap((s) => s.w.map((w) => ({ record: w, region: regionLabel(r).code, site: s.n, regionKey: r.key })))),
@@ -47,8 +52,11 @@ export function Overview({
   const total = ways.length || 1;
 
   const byRegion = useMemo(
-    () => [...tree].filter((r) => regionLabel(r).code !== "Other").sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1)),
-    [tree],
+    () => {
+      const list = [...tree].filter((r) => regionLabel(r).code !== "Other");
+      return regionSort === "order" ? list : list.sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+    },
+    [tree, regionSort],
   );
   const topVolume = useMemo(() => [...located].filter((l) => (l.record.v ?? 0) > 0).sort((a, b) => (b.record.v ?? 0) - (a.record.v ?? 0)).slice(0, 6), [located]);
   const maxVolume = topVolume[0]?.record.v ?? 1;
@@ -86,7 +94,7 @@ export function Overview({
   return (
     <div className="grid gap-4 lg:grid-cols-12">
       {/* Progress by region */}
-      <Panel title="Progress by region" icon={Gauge} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
+      <Panel title={regionSort === "order" ? "Regions, CAR to XIII" : "Progress by region"} icon={Gauge} action={<RegionSortToggle value={regionSort} onChange={onRegionSort} />} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
         {byRegion.length ? (
           <ol className="space-y-0.5">
             {byRegion.map((r, i) => {

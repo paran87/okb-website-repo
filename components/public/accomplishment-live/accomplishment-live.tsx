@@ -14,11 +14,9 @@ import {
   Radio,
   RefreshCw,
   Ruler,
-  Search,
   Shovel,
   Truck,
   Waves,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -39,14 +37,16 @@ import { useAccomplishment } from "@/components/public/accomplishment-live/data"
 import { MapSection } from "@/components/public/accomplishment-live/map-section";
 import { Overview, type SectionId } from "@/components/public/accomplishment-live/overview";
 import { PhotoViewer } from "@/components/public/accomplishment-live/photo-viewer";
+import { WaterwayPicker, RegionSortToggle, type RegionSort } from "@/components/public/accomplishment-live/picker";
 import { PhotosSection } from "@/components/public/accomplishment-live/photos-section";
-import { RecordRow, RegionCard, RegionSheet, WaterwaySheet, type Selection } from "@/components/public/accomplishment-live/regions";
+import { RegionCard, RegionSheet, WaterwaySheet, type Selection } from "@/components/public/accomplishment-live/regions";
 import { ResourcesSection } from "@/components/public/accomplishment-live/resources-section";
 import { compact, Empty, int, km, Meter, ProgressRing, stampText } from "@/components/public/accomplishment-live/shared";
 import { UpdatesSection } from "@/components/public/accomplishment-live/updates-section";
 import { cn } from "@/utils/cn";
 
 const PREFS_KEY = "okb.public-accomplishment.prefs";
+const SORT_KEY = "okb.public-accomplishment.region-sort";
 
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon }[] = [
   { id: "overview", label: "Overview", icon: BarChart3 },
@@ -131,14 +131,29 @@ export function AccomplishmentLive() {
 function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment; refreshing: boolean; onRefresh: () => void }) {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [section, setSection] = useState<SectionId>("overview");
-  const [search, setSearch] = useState("");
   const [openRegion, setOpenRegion] = useState<{ key: string; initial: Selection | null } | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [mapFocus, setMapFocus] = useState<string | null>(null);
   const [photoIndex, setPhotoIndex] = useState<number | null>(null);
+  const [regionSort, setRegionSortState] = useState<RegionSort>("progress");
   const navRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => setPrefs(loadPrefs()), []);
+  useEffect(() => {
+    setPrefs(loadPrefs());
+    try {
+      if (localStorage.getItem(SORT_KEY) === "order") setRegionSortState("order");
+    } catch {
+      /* private mode */
+    }
+  }, []);
+  const setRegionSort = (v: RegionSort) => {
+    setRegionSortState(v);
+    try {
+      localStorage.setItem(SORT_KEY, v);
+    } catch {
+      /* private mode */
+    }
+  };
   const update = (patch: Partial<Prefs>) =>
     setPrefs((p) => {
       const next = { ...p, ...patch };
@@ -166,11 +181,6 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
   );
   const findByName = (name: string): Selection | null => located.find((l) => l.record.n === name) ?? null;
 
-  const q = search.trim().toLowerCase();
-  const results = useMemo(() => {
-    if (!q) return [];
-    return located.filter(({ record: w, region, site }) => [w.n, site, region, w.o, w.x?.city ?? "", w.x?.q ?? ""].some((t) => t.toLowerCase().includes(q)));
-  }, [located, q]);
 
   const typeCounts = useMemo(() => {
     const c = { waterway: 0, drainage: 0, isf: 0 };
@@ -180,7 +190,6 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
 
   const go = (next: SectionId) => {
     setSection(next);
-    setSearch("");
     navRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
   const showOnMap = (name: string) => {
@@ -212,10 +221,10 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
 
   const regionsSorted = useMemo(() => {
     const other = (r: (typeof tree)[number]) => (regionLabel(r).code === "Other" ? 1 : 0);
+    if (regionSort === "order") return [...tree].sort((a, b) => other(a) - other(b));
     return [...tree].sort((a, b) => other(a) - other(b) || (b.pct ?? -1) - (a.pct ?? -1));
-  }, [tree]);
+  }, [tree, regionSort]);
   const regionOpen = openRegion ? (tree.find((r) => r.key === openRegion.key) ?? null) : null;
-  const showFilters = section === "overview" || section === "regions" || Boolean(q);
 
   return (
     <div className="okb-live space-y-3">
@@ -286,7 +295,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
       <div ref={navRef} className="scroll-mt-28">
         <nav aria-label="Dashboard sections" className="grid grid-cols-3 gap-1.5 rounded-xl border border-[var(--dpwh-border)] bg-white p-1.5 sm:grid-cols-6">
           {SECTIONS.map(({ id, label, icon: Icon }) => {
-            const active = section === id && !q;
+            const active = section === id;
             return (
               <button
                 key={id}
@@ -308,24 +317,17 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
 
       {/* Search + filters */}
       <div className="flex flex-col gap-2 md:flex-row md:items-center">
-        <label className="relative block md:flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--dpwh-muted)]" aria-hidden />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Find a waterway, site, city or region"
-            aria-label="Find a waterway, site, city or region"
-            className="h-11 w-full rounded-lg border border-[var(--dpwh-border)] bg-white pl-9 pr-10 text-sm text-[var(--dpwh-text)] outline-none focus:border-[var(--dpwh-blue)] focus:ring-2 focus:ring-[var(--dpwh-blue)]/20 [&::-webkit-search-cancel-button]:appearance-none"
-          />
-          {search ? (
-            <button type="button" onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-md text-[var(--dpwh-muted)]">
-              <X className="size-4" aria-hidden />
-            </button>
-          ) : null}
-        </label>
-        {showFilters ? (
-          <div className="grid grid-cols-3 gap-1.5 md:flex" role="group" aria-label="Record types">
+        <WaterwayPicker
+          items={located}
+          types={prefs.types}
+          scale={data.scale}
+          onMap={showOnMap}
+          onInfo={(it) => {
+            setOpenRegion(null);
+            setSelection(it);
+          }}
+        />
+        <div className="grid grid-cols-3 gap-1.5 md:flex" role="group" aria-label="Record types">
             {TYPES.map(({ value, label, icon: Icon }) => {
               const on = prefs.types.includes(value);
               return (
@@ -345,30 +347,10 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
                 </button>
               );
             })}
-          </div>
-        ) : null}
+        </div>
       </div>
 
-      {q ? (
-        <section aria-label="Search results" className="overflow-hidden rounded-xl border border-[var(--dpwh-border)] bg-white">
-          <p className="border-b border-[#e3e8ef] px-4 py-2.5 text-xs text-[var(--dpwh-muted)]">
-            {results.length} match{results.length === 1 ? "" : "es"} for “{search.trim()}”{results.length > 80 ? " · showing the first 80" : ""}
-          </p>
-          {results.length ? (
-            <ul className="divide-y divide-[#eef1f5]">
-              {results.slice(0, 80).map((l) => (
-                <li key={`${l.regionKey}|${l.site}|${l.record.n}`}>
-                  <RecordRow w={l.record} scale={data.scale} sub={[l.region, l.site, l.record.x?.city].filter(Boolean).join(" · ")} onOpen={() => setSelection(l)} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="p-4">
-              <Empty>Nothing found. Try another name.</Empty>
-            </div>
-          )}
-        </section>
-      ) : section === "overview" ? (
+      {section === "overview" ? (
         <Overview
           data={data}
           tree={tree}
@@ -377,19 +359,27 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
           onOpenRecord={setSelection}
           onGo={go}
           onOpenPhoto={setPhotoIndex}
+          regionSort={regionSort}
+          onRegionSort={setRegionSort}
         />
       ) : section === "regions" ? (
         regionsSorted.length ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-[var(--dpwh-muted)]">{regionSort === "order" ? "Regions from CAR to Region XIII" : "Regions ranked by progress"}</p>
+              <RegionSortToggle value={regionSort} onChange={setRegionSort} />
+            </div>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {regionsSorted.map((r, i) => (
-              <RegionCard key={r.key} region={r} scale={data.scale} rank={regionLabel(r).code === "Other" ? null : i + 1} onOpen={() => setOpenRegion({ key: r.key, initial: null })} />
+              <RegionCard key={r.key} region={r} scale={data.scale} rank={regionLabel(r).code === "Other" || regionSort === "order" ? null : i + 1} onOpen={() => setOpenRegion({ key: r.key, initial: null })} />
             ))}
+          </div>
           </div>
         ) : (
           <Empty>No records with these settings.</Empty>
         )
       ) : section === "map" ? (
-        <MapSection data={data} focus={mapFocus} onOpenWaterway={openWaterway} />
+        <MapSection data={data} focus={mapFocus} onOpenWaterway={openWaterway} onUntraced={openWaterway} />
       ) : section === "photos" ? (
         <PhotosSection />
       ) : section === "updates" ? (
