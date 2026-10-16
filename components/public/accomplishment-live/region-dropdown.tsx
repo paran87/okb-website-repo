@@ -53,8 +53,9 @@ export function RegionDropdown({
       <div>
         {region.sites.map((s) => (
           <section key={s.n}>
-            <h4 className="border-b border-[#e3e8ef] bg-[#eef3f9] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--dpwh-blue-dark)]">
-              {s.n} <span className="font-semibold normal-case tracking-normal text-[var(--dpwh-muted)]">· {s.w.length}</span>
+            <h4 className="flex items-center gap-2 border-l-4 border-[var(--dpwh-orange)] bg-[var(--dpwh-blue-dark)] px-3 py-2 font-display text-base font-bold uppercase leading-tight tracking-wide text-white">
+              <span className="min-w-0 flex-1">{s.n}</span>
+              <span className="shrink-0 rounded-full bg-white/15 px-2 py-0.5 font-sans text-[11px] font-bold normal-case tracking-normal text-[var(--dpwh-gold)]">{s.w.length}</span>
             </h4>
             <ul className="divide-y divide-[#eef1f5]">
               {s.w.map((w) => {
