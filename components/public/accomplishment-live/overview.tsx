@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown, FileDown, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronsDown, ChevronsUp, FileDown, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
 import { regionLabel, statusCounts, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
@@ -45,7 +45,14 @@ export function Overview({
   regionSort: RegionSort;
   onRegionSort: (v: RegionSort) => void;
 }) {
-  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
+  const toggleRegion = (key: string) =>
+    setOpenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const located = useMemo<Located[]>(
     () => tree.flatMap((r) => r.sites.flatMap((s) => s.w.map((w) => ({ record: w, region: regionLabel(r).code, site: s.n, regionKey: r.key })))),
     [tree],
@@ -99,12 +106,25 @@ export function Overview({
       {/* Progress by region */}
       <Panel title={regionSort === "order" ? "Regions, CAR to XIII" : "Progress by region"} icon={Gauge} action={<RegionSortToggle value={regionSort} onChange={onRegionSort} />} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
         {byRegion.length ? (
+          <div className="mb-2 flex flex-wrap items-center gap-1.5 border-b border-[#e3e8ef] px-1 pb-2">
+            <button type="button" onClick={() => setOpenKeys(new Set(byRegion.map((r) => r.key)))} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
+              <ChevronsDown className="size-4" aria-hidden /> Open all
+            </button>
+            <button type="button" onClick={() => setOpenKeys(new Set())} disabled={!openKeys.size} className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-[var(--dpwh-border)] px-3 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)] disabled:opacity-40">
+              <ChevronsUp className="size-4" aria-hidden /> Close all
+            </button>
+            <button type="button" onClick={() => printRegionsPdf(byRegion, data.scale, prefs.types)} className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--dpwh-blue-dark)] px-3 text-xs font-bold text-white sm:ml-auto">
+              <FileDown className="size-4" aria-hidden /> All regions PDF
+            </button>
+          </div>
+        ) : null}
+        {byRegion.length ? (
           <ol className="space-y-0.5">
             {byRegion.map((r, i) => {
               const label = regionLabel(r);
               return (
                 <li key={r.key}>
-                  <button type="button" aria-expanded={openKey === r.key} onClick={() => setOpenKey((k) => (k === r.key ? null : r.key))} className="group flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-[#f3f6fa]">
+                  <button type="button" aria-expanded={openKeys.has(r.key)} onClick={() => toggleRegion(r.key)} className="group flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-[#f3f6fa]">
                     <span className="w-5 shrink-0 text-right text-xs font-bold tabular-nums text-[var(--dpwh-muted)]">{i + 1}</span>
                     <span className="w-[5.5rem] shrink-0 sm:w-28">
                       <span className="block truncate font-display text-base font-bold uppercase leading-tight tracking-wide text-[var(--dpwh-blue-dark)]">{label.code}</span>
@@ -114,9 +134,9 @@ export function Overview({
                     </span>
                     <Meter pct={r.pct} className="h-3 flex-1" label={`${label.code} progress`} />
                     <span className="w-14 shrink-0 text-right font-display text-lg font-bold tabular-nums text-[var(--dpwh-blue-dark)]">{pctText(r.pct, 0)}</span>
-                    <ChevronDown className={`size-4 shrink-0 text-[var(--dpwh-muted)] transition-transform ${openKey === r.key ? "rotate-180" : ""}`} aria-hidden />
+                    <ChevronDown className={`size-4 shrink-0 text-[var(--dpwh-muted)] transition-transform ${openKeys.has(r.key) ? "rotate-180" : ""}`} aria-hidden />
                   </button>
-                  {openKey === r.key ? <RegionDropdown region={r} scale={data.scale} types={prefs.types} onMap={onShowMap} onInfo={onOpenRecord} /> : null}
+                  {openKeys.has(r.key) ? <RegionDropdown region={r} scale={data.scale} types={prefs.types} onMap={onShowMap} onInfo={onOpenRecord} /> : null}
                 </li>
               );
             })}
@@ -124,13 +144,6 @@ export function Overview({
         ) : (
           <Empty>No records with these settings.</Empty>
         )}
-        {byRegion.length ? (
-          <div className="mt-2 border-t border-[#e3e8ef] px-1 pt-2">
-            <button type="button" onClick={() => printRegionsPdf(byRegion, data.scale, prefs.types)} className="inline-flex h-10 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold text-[var(--dpwh-blue)] hover:bg-[#f3f6fa]">
-              <FileDown className="size-4" aria-hidden /> Download all regions as PDF
-            </button>
-          </div>
-        ) : null}
       </Panel>
 
       {/* Status */}

@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Info, MapPin, Search, X } from "lucide-react";
+import { ChevronDown, Info, Search, X } from "lucide-react";
 import { recordType, type RecordType } from "@/features/accomplishment/lib/rollup";
 import type { AccomplishmentData, AccomplishmentRecord } from "@/features/accomplishment/types";
+import { RowIcon } from "@/components/public/accomplishment-live/region-dropdown";
 import { Meter, pctText, recordProgress } from "@/components/public/accomplishment-live/shared";
 import { cn } from "@/utils/cn";
 
@@ -148,7 +149,7 @@ export function WaterwayPicker({
                       return (
                         <li key={`${it.site}|${it.record.n}`} className="flex items-stretch">
                           <button type="button" onClick={() => pick(() => onMap(it.record.n))} className="flex min-h-12 min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left hover:bg-[#f3f6fa]">
-                            <MapPin className="size-4 shrink-0 text-[var(--dpwh-orange)]" aria-hidden />
+                            <RowIcon type={recordType(it.record)} showType={types.length > 1} />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{it.record.n}</span>
                               <span className="block truncate text-[11px] text-[var(--dpwh-muted)]">{[it.site, it.record.x?.city].filter(Boolean).join(" · ")}</span>
