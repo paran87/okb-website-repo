@@ -4,10 +4,9 @@ import { listGalleryWithStatus } from "@/features/admin/server/media";
 import { APP } from "@/lib/constants";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
 import { GALLERY_DRIVE_VIDEOS } from "@/lib/config/gallery-drive-videos";
-import driveGallery from "@/lib/config/gallery-drive.json";
-import type { DriveGalleryData } from "@/components/public/gallery/gallery-grid";
 
-export const dynamic = "force-dynamic";
+// Rendered once and refreshed every minute, so opening the page is instant instead of waiting on storage each time.
+export const revalidate = 60;
 
 export const metadata = {
   title: "Gallery",
@@ -25,7 +24,7 @@ export default async function GalleryPage() {
         description="Photos and videos of declogging, clearing and flood-control work across the country."
       />
       <PublicPageSection>
-        <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} drive={driveGallery as unknown as DriveGalleryData} problem={problem} />
+        <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} problem={problem} />
       </PublicPageSection>
     </>
   );

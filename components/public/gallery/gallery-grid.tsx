@@ -213,7 +213,7 @@ export function GalleryGrid({
   items: uploaded,
   youtube = [],
   driveVideos = [],
-  drive,
+  drive: driveProp,
   problem = null,
 }: {
   items: PublicGalleryItem[];
@@ -222,6 +222,22 @@ export function GalleryGrid({
   drive?: DriveGalleryData;
   problem?: "not_configured" | "storage" | null;
 }) {
+  // The Drive photo list is large, so it loads as its own chunk instead of riding in the page payload.
+  const [drive, setDrive] = useState<DriveGalleryData | undefined>(driveProp);
+  const [driveReady, setDriveReady] = useState(Boolean(driveProp));
+  useEffect(() => {
+    if (driveProp) return;
+    let live = true;
+    void import("@/lib/config/gallery-drive.json").then((m) => {
+      if (!live) return;
+      setDrive(m.default as unknown as DriveGalleryData);
+      setDriveReady(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [driveProp]);
+
   // YouTube videos come first in the Videos tab, then the uploaded ones.
   const items = useMemo<PublicGalleryItem[]>(
     () => [
@@ -261,7 +277,7 @@ export function GalleryGrid({
     return sort === "newest" ? newest : newest.reverse();
   }, [items, sort]);
   const videos = useMemo(() => items.filter((i) => i.kind === "video"), [items]);
-  const [tab, setTab] = useState<Tab>(photos.length || !videos.length ? "photo" : "video");
+  const [tab, setTab] = useState<Tab>(!driveReady || photos.length || !videos.length ? "photo" : "video");
   const [layout, setLayout] = useState<Layout>("grid");
   const [open, setOpen] = useState<number | null>(null);
   const shown = tab === "photo" ? photos : videos;
@@ -312,7 +328,7 @@ export function GalleryGrid({
     );
   }
 
-  if (!items.length) {
+  if (!items.length && driveReady) {
     return (
       <div className="okb-public-card rounded-sm px-6 py-16 text-center">
         <Images className="mx-auto size-10 opacity-60" aria-hidden />
