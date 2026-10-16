@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Hand, Heart, Loader2, MessageCircle, Send, ShieldCheck, ThumbsUp, X, Zap, type LucideIcon } from "lucide-react";
+import { Hand, Heart, Loader2, MessageCircle, Send, ShieldCheck, ThumbsUp, Zap, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 type Reaction = "like" | "love" | "clap" | "wow";
@@ -62,7 +62,6 @@ async function call<T>(init?: RequestInit, query = ""): Promise<T> {
 export function GalleryEngagement({ itemKey }: { itemKey: string }) {
   const [data, setData] = useState<Engagement | null>(null);
   const [failed, setFailed] = useState(false);
-  const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
@@ -71,7 +70,6 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
     let live = true;
     setData(null);
     setFailed(false);
-    setOpen(false);
     setText("");
     setNotice(null);
     call<Engagement>(undefined, `?key=${encodeURIComponent(itemKey)}&visitor=${visitorId()}`)
@@ -123,17 +121,16 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
   if (!data) {
     return (
       <div className="mt-3 flex items-center gap-2 text-xs text-white/50">
-        <Loader2 className="size-3.5 animate-spin" aria-hidden /> Loading reactions…
+        <Loader2 className="size-3.5 animate-spin" aria-hidden /> Loading reactions and comments…
       </div>
     );
   }
   if (!data.enabled) return <p className="mt-3 text-xs text-white/50">Reactions and comments will be available soon.</p>;
 
-  const total = REACTIONS.reduce((n, r) => n + data.counts[r.id], 0);
-
   return (
-    <div className="mt-3">
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="mt-2.5 flex min-h-0 flex-1 flex-col">
+      {/* Reactions: always in view. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
         {REACTIONS.map(({ id, label, icon: Icon, color }) => {
           const on = data.mine === id;
           return (
@@ -154,83 +151,79 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
             </button>
           );
         })}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className={cn("ml-auto inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-semibold transition-colors", open ? "border-transparent bg-white text-[#001a3a]" : "border-white/25 text-white hover:bg-white/10")}
-        >
-          <MessageCircle className="size-4" aria-hidden />
-          Comments <span className="tabular-nums">{data.comments.length}</span>
-        </button>
       </div>
-      {total > 0 ? <p className="mt-1.5 text-[11px] text-white/50">{total} reaction{total === 1 ? "" : "s"}</p> : null}
 
-      {open ? (
-        <div className="mt-2 rounded-xl border border-white/15 bg-white/[0.06] p-3">
-          <div className="flex items-start gap-2 rounded-lg bg-[#fcd116]/15 px-2.5 py-2 text-xs leading-snug text-[#fde68a]">
-            <ShieldCheck className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <p>
-              <strong>Your name will be shown as “Anonymous”.</strong> No name or e-mail is collected. Please keep comments respectful and leave out personal details and links.
-            </p>
-          </div>
-          <form
-            className="mt-2.5"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void post();
-            }}
+      {/* Comments: shown straight away, scrolling on their own, above the box to write in. */}
+      <p className="mt-3 flex shrink-0 items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-white/70">
+        <MessageCircle className="size-3.5" aria-hidden /> Comments <span className="tabular-nums text-[#fcd116]">{data.comments.length}</span>
+      </p>
+      <div className="mt-1.5 min-h-[3.5rem] flex-1 overflow-y-auto overscroll-contain pr-1" tabIndex={0} aria-label="Comments">
+        {data.comments.length ? (
+          <ul className="space-y-2">
+            {data.comments.map((c) => (
+              <li key={c.id} className="rounded-lg bg-white/[0.07] px-3 py-2">
+                <p className="flex items-baseline gap-2 text-xs">
+                  <span className="font-bold text-white">Anonymous</span>
+                  <span className="text-white/45">{ago(c.createdAt)}</span>
+                </p>
+                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-white/90">{c.body}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="py-3 text-center text-xs text-white/50">No comments yet. Be the first.</p>
+        )}
+      </div>
+
+      {/* Write a comment: pinned at the bottom. */}
+      <form
+        className="mt-2 shrink-0 border-t border-white/10 pt-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void post();
+        }}
+      >
+        <p className="flex items-start gap-1.5 text-[11px] leading-snug text-[#fde68a]">
+          <ShieldCheck className="mt-px size-3.5 shrink-0" aria-hidden />
+          <span>
+            <strong>Your name will be shown as “Anonymous”.</strong> No name or e-mail is collected. Keep it respectful; no personal details or links.
+          </span>
+        </p>
+        <label className="sr-only" htmlFor="gallery-comment">
+          Write a comment
+        </label>
+        <div className="mt-1.5 flex items-end gap-2">
+          <textarea
+            id="gallery-comment"
+            value={text}
+            onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
+            rows={1}
+            placeholder="Write a comment as Anonymous…"
+            className="max-h-24 min-h-10 w-full resize-none rounded-xl border border-white/25 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-[#fcd116] focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={busy || !text.trim()}
+            aria-label="Post as Anonymous"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#fcd116] px-3.5 text-sm font-bold text-[#001a3a] disabled:opacity-50"
           >
-            <label className="sr-only" htmlFor="gallery-comment">
-              Write a comment
-            </label>
-            <textarea
-              id="gallery-comment"
-              value={text}
-              onChange={(e) => setText(e.target.value.slice(0, COMMENT_MAX))}
-              rows={2}
-              placeholder="Write a comment as Anonymous…"
-              className="w-full resize-none rounded-lg border border-white/25 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-[#fcd116] focus:outline-none"
-            />
-            <div className="mt-1.5 flex items-center justify-between gap-2">
-              <span className="text-[11px] tabular-nums text-white/50">
-                {text.length}/{COMMENT_MAX}
-              </span>
-              <button
-                type="submit"
-                disabled={busy || !text.trim()}
-                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#fcd116] px-4 text-sm font-bold text-[#001a3a] disabled:opacity-50"
-              >
-                {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
-                Post as Anonymous
-              </button>
-            </div>
-          </form>
-          {notice ? (
-            <p role="status" className={cn("mt-2 text-xs font-semibold", notice.tone === "error" ? "text-[#fca5a5]" : "text-[#86efac]")}>
-              {notice.text}
-            </p>
-          ) : null}
-          {data.comments.length ? (
-            <ul className="mt-3 max-h-[26vh] space-y-2.5 overflow-y-auto overscroll-contain pr-1">
-              {data.comments.map((c) => (
-                <li key={c.id} className="rounded-lg bg-black/30 px-3 py-2">
-                  <p className="flex items-baseline gap-2 text-xs">
-                    <span className="font-bold text-white">Anonymous</span>
-                    <span className="text-white/45">{ago(c.createdAt)}</span>
-                  </p>
-                  <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-white/90">{c.body}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-3 text-center text-xs text-white/50">No comments yet. Be the first.</p>
-          )}
-          <button type="button" onClick={() => setOpen(false)} className="mt-2 inline-flex h-9 items-center gap-1 text-xs font-semibold text-white/60 hover:text-white">
-            <X className="size-3.5" aria-hidden /> Close comments
+            {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
+            <span className="hidden sm:inline">Post</span>
           </button>
         </div>
-      ) : null}
+        <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
+          {notice ? (
+            <span role="status" className={cn("font-semibold", notice.tone === "error" ? "text-[#fca5a5]" : "text-[#86efac]")}>
+              {notice.text}
+            </span>
+          ) : (
+            <span />
+          )}
+          <span className="tabular-nums text-white/45">
+            {text.length}/{COMMENT_MAX}
+          </span>
+        </div>
+      </form>
     </div>
   );
 }

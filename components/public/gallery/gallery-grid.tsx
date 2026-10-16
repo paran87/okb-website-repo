@@ -146,7 +146,7 @@ function Lightbox({
   return (
     <Portal>
       <div role="dialog" aria-modal="true" aria-label={item.title ?? "Gallery item"} className="fixed inset-0 z-[70] flex flex-col bg-black/95">
-        <div className="flex items-center justify-between gap-2 px-2 py-2 text-white">
+        <div className="flex shrink-0 items-center justify-between gap-2 px-2 py-2 text-white">
           <span className="pl-2 text-sm tabular-nums text-white/70">
             {index + 1} / {items.length}
           </span>
@@ -154,7 +154,9 @@ function Lightbox({
             <X className="size-6" aria-hidden />
           </button>
         </div>
-        <div className="relative flex min-h-0 flex-1 items-center justify-center px-2">
+        {/* The picture and the reactions stay put; only the comments scroll. */}
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="relative flex min-h-[28dvh] min-w-0 flex-1 items-center justify-center px-2">
           {item.driveVideoId ? (
             <DriveVideo key={item.key} id={item.driveVideoId} title={item.title} poster={item.thumbUrl} />
           ) : item.youtubeId ? (
@@ -194,19 +196,24 @@ function Lightbox({
             </>
           ) : null}
         </div>
-        <div className="mx-auto max-h-[55dvh] w-full max-w-3xl shrink-0 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-white">
-          {item.title ? <p className="text-base font-semibold">{item.title}</p> : null}
-          {item.caption ? <p className="mt-1 text-sm text-white/80">{item.caption}</p> : null}
-          {item.place ? (
-            <p className="mt-1 flex items-center gap-1 text-sm text-white/80">
-              <MapPin className="size-3.5 shrink-0" aria-hidden /> {item.place}
-            </p>
-          ) : null}
-          <p className="mt-1 text-xs text-white/50">
-            {item.source ? `${item.source} · ` : ""}
-            {item.youtubeId && !item.takenAt ? "YouTube" : dateOf(item)}
-          </p>
-          <GalleryEngagement itemKey={item.key} />
+          <aside className="flex max-h-[52dvh] min-h-0 shrink-0 flex-col border-t border-white/10 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 text-white lg:max-h-none lg:w-[24rem] lg:border-l lg:border-t-0">
+            <div className="shrink-0">
+              {item.title ? <p className="line-clamp-2 text-base font-semibold">{item.title}</p> : null}
+              {item.caption ? <p className="mt-0.5 line-clamp-2 text-sm text-white/80">{item.caption}</p> : null}
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-white/50">
+                {item.place ? (
+                  <span className="inline-flex items-center gap-1 text-white/70">
+                    <MapPin className="size-3.5 shrink-0" aria-hidden /> {item.place}
+                  </span>
+                ) : null}
+                <span>
+                  {item.source ? `${item.source} · ` : ""}
+                  {item.youtubeId && !item.takenAt ? "YouTube" : dateOf(item)}
+                </span>
+              </p>
+            </div>
+            <GalleryEngagement itemKey={item.key} />
+          </aside>
         </div>
       </div>
     </Portal>
