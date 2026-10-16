@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, X } from "lucide-react";
-import { GalleryEngagement } from "@/components/public/gallery/gallery-engagement";
+import { EngagementBar, GalleryEngagement, useEngagementSummary } from "@/components/public/gallery/gallery-engagement";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 import { cn } from "@/utils/cn";
@@ -283,6 +283,7 @@ export function GalleryGrid({
   const [layout, setLayout] = useState<Layout>("grid");
   const [open, setOpen] = useState<number | null>(null);
   const shown = tab === "photo" ? photos : videos;
+  const { summary, refresh: refreshSummary } = useEngagementSummary(useMemo(() => shown.slice(0, visible).map((i) => i.key), [shown, visible]));
 
   useEffect(() => {
     try {
@@ -442,11 +443,10 @@ export function GalleryGrid({
                 aria-label={item.title ?? (item.kind === "photo" ? "Open photo" : "Play video")}
               >
                 <Thumb item={item} zoom />
-                {item.title ? (
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-2.5 pb-2 pt-8 text-xs font-semibold text-white sm:text-sm">
-                    <span className="line-clamp-2">{item.title}</span>
-                  </span>
-                ) : null}
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-2.5 pb-2 pt-9 text-xs font-semibold text-white sm:text-sm">
+                  {item.title ? <span className="line-clamp-2 mb-1.5 block">{item.title}</span> : null}
+                  {summary?.enabled ? <EngagementBar stats={summary.items[item.key]} variant="grid" /> : null}
+                </span>
               </button>
             </li>
           ))}
@@ -473,6 +473,7 @@ export function GalleryGrid({
                     {item.place ? `${item.place} · ` : ""}
                     {dateOf(item)}
                   </span>
+                  {summary?.enabled ? <EngagementBar stats={summary.items[item.key]} variant="list" /> : null}
                 </span>
               </button>
             </li>
@@ -488,7 +489,7 @@ export function GalleryGrid({
           Show more ({shown.length - visible} left)
         </button>
       ) : null}
-      {open !== null ? <Lightbox items={shown} index={open} onClose={() => setOpen(null)} onMove={move} /> : null}
+      {open !== null ? <Lightbox items={shown} index={open} onClose={() => { setOpen(null); refreshSummary(); }} onMove={move} /> : null}
     </div>
   );
 }

@@ -116,3 +116,30 @@ export async function addComment(key: string, visitor: string, raw: unknown): Pr
   if (!row) throw new ApiError(502, "INTERNAL_ERROR", "The comment could not be saved.");
   return { id: row.id, body: row.body, createdAt: row.created_at };
 }
+
+export interface EngagementSummary {
+  enabled: boolean;
+  /** Per item key: reaction counts and how many comments. */
+  items: Record<string, { counts: Record<Reaction, number>; comments: number }>;
+}
+
+/** Reaction and comment counts for the items on screen (the Gallery grid and list). */
+export async function getSummary(keys: string[]): Promise<EngagementSummary> {
+  const unique = [...new Set(keys.filter((k) => typeof k === "string" && k.length > 0 && k.length <= 300))].slice(0, 100);
+  if (!siteDbConfigured() || !unique.length) return { enabled: siteDbConfigured(), items: {} };
+  const list = `in.(${unique.map((k) => `"${k.replace(/"/g, "")}"`).join(",")})`;
+  try {
+    const [reactions, comments] = await Promise.all([
+      siteRest<{ item_key: string; reaction: Reaction }[]>(`okb_gallery_reactions?select=item_key,reaction&item_key=${q(list)}&limit=50000`),
+      siteRest<{ item_key: string }[]>(`okb_gallery_comments?select=item_key&hidden=eq.false&item_key=${q(list)}&limit=50000`),
+    ]);
+    const items: EngagementSummary["items"] = {};
+    const slot = (k: string) => (items[k] ??= { counts: { like: 0, love: 0, clap: 0, wow: 0 }, comments: 0 });
+    for (const r of reactions.data ?? []) if (r.reaction in slot(r.item_key).counts) slot(r.item_key).counts[r.reaction]++;
+    for (const c of comments.data ?? []) slot(c.item_key).comments++;
+    return { enabled: true, items };
+  } catch (e) {
+    if (e instanceof SiteDbMissingError || e instanceof SiteDbNotConfiguredError) return { enabled: false, items: {} };
+    throw e;
+  }
+}

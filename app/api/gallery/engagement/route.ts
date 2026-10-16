@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
 import { ApiError } from "@/lib/api/errors";
 import { ok } from "@/lib/api/response";
-import { addComment, getEngagement, isVisitorId, REACTIONS, setReaction, type Reaction } from "@/features/gallery/server/engagement";
+import { addComment, getEngagement, getSummary, isVisitorId, REACTIONS, setReaction, type Reaction } from "@/features/gallery/server/engagement";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +16,7 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 /** { action: "react", key, visitor, reaction | null } or { action: "comment", key, visitor, body } */
 export const POST = withApiHandler(async (request: NextRequest) => {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+  if (body?.action === "summary" && Array.isArray(body.keys)) return ok(await getSummary(body.keys as string[]));
   if (!body || typeof body.key !== "string" || !isVisitorId(body.visitor)) throw new ApiError(400, "VALIDATION_ERROR", "Invalid request.");
   if (body.action === "react") {
     const reaction = body.reaction === null ? null : (REACTIONS as readonly unknown[]).includes(body.reaction) ? (body.reaction as Reaction) : undefined;

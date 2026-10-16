@@ -234,3 +234,63 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ grid and list summary */
+
+export interface EngagementSummary {
+  enabled: boolean;
+  items: Record<string, { counts: Record<Reaction, number>; comments: number }>;
+}
+
+/** Reaction and comment counts of the items on screen; `refresh` re-reads them (after the viewer closes). */
+export function useEngagementSummary(keys: string[]): { summary: EngagementSummary | null; refresh: () => void } {
+  const [summary, setSummary] = useState<EngagementSummary | null>(null);
+  const [tick, setTick] = useState(0);
+  const joined = keys.join("\n");
+  useEffect(() => {
+    if (!joined) return;
+    let live = true;
+    const t = window.setTimeout(() => {
+      call<EngagementSummary>({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "summary", keys: joined.split("\n") }) })
+        .then((d) => live && setSummary(d))
+        .catch(() => undefined);
+    }, 250);
+    return () => {
+      live = false;
+      window.clearTimeout(t);
+    };
+  }, [joined, tick]);
+  return { summary, refresh: useCallback(() => setTick((n) => n + 1), []) };
+}
+
+/**
+ * The reactions and comments of one item on its grid card or list row: visible at a glance so people are drawn to open
+ * the picture. With nothing yet it invites the first reaction.
+ */
+export function EngagementBar({ stats, variant }: { stats: { counts: Record<Reaction, number>; comments: number } | undefined; variant: "grid" | "list" }) {
+  const counts = stats?.counts ?? { like: 0, love: 0, clap: 0, wow: 0 };
+  const comments = stats?.comments ?? 0;
+  const total = REACTIONS.reduce((n, r) => n + counts[r.id], 0);
+  const onPhoto = variant === "grid";
+  const chip = onPhoto ? "bg-black/55 text-white backdrop-blur-sm" : "bg-white text-[#14233a] shadow-sm ring-1 ring-black/10";
+  return (
+    <span className={cn("flex flex-wrap items-center gap-1", variant === "list" && "mt-1.5")} aria-label={`${total} reactions, ${comments} comments`}>
+      {total > 0 ? (
+        REACTIONS.filter((r) => counts[r.id] > 0).map(({ id, icon: Icon, color }) => (
+          <span key={id} className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-[11px] font-bold tabular-nums", chip)}>
+            <Icon className="size-3.5" style={{ color }} fill={id === "love" ? color : "none"} aria-hidden />
+            {counts[id]}
+          </span>
+        ))
+      ) : (
+        <span className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-[11px] font-bold", chip)}>
+          <Heart className="size-3.5 text-[#f87171]" aria-hidden /> React
+        </span>
+      )}
+      <span className={cn("inline-flex h-6 items-center gap-1 rounded-full px-2 text-[11px] font-bold", comments > 0 ? "bg-[#fcd116] text-[#001a3a]" : chip)}>
+        <MessageCircle className="size-3.5" aria-hidden />
+        {comments > 0 ? comments : "Comment"}
+      </span>
+    </span>
+  );
+}
