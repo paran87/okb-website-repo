@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { ArrowRight, Radio } from "lucide-react";
 import { COVERAGE, COVERAGE_AS_OF, COVERAGE_TOTALS, regionDrainage, regionWaterways } from "@/lib/config/okb-coverage";
-import { APP, PUBLIC_ROUTES } from "@/lib/constants";
+import { PUBLIC_ROUTES } from "@/lib/constants";
 
 const HOME_HERO_BANNER = {
   src: "/photos/aerial-river-dredging.webp",
@@ -49,7 +49,7 @@ export function HomeHero() {
         <motion.div variants={container} initial={reduce ? false : "hidden"} animate="show">
           <motion.p className="okb-hero-chip" variants={item}>
             <span className="okb-hero-chip__dot" aria-hidden />
-            {APP.organization}
+            Philippine flood-control program
           </motion.p>
 
           <motion.h1 className="okb-home-title" variants={item}>

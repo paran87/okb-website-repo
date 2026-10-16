@@ -11,7 +11,7 @@ export default function AboutPage() {
   return (
     <>
       <PublicPageHero
-        eyebrow={APP.organizationShort}
+        eyebrow="The program"
         title={`About ${APP.program}`}
         description="A whole-of-government flood-control effort led by the Department of Public Works and Highways to reduce flood risk, protect critical infrastructure, and support communities before, during, and after severe weather."
       />

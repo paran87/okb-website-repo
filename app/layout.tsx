@@ -31,11 +31,11 @@ const okbSans = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: `${APP.program} — ${APP.organizationShort}`,
+    default: `${APP.program} — Philippine flood-control program`,
     template: `%s · ${APP.program}`,
   },
   description:
-    "Official DPWH Oplan Kontra Baha website — flood-control program information and OKB Command Center access.",
+    "Oplan Kontra Baha — flood-control program information, accomplishments and OKB Command Center access.",
   applicationName: APP.program,
   icons: {
     icon: "/brand/oplan-kontra-baha-logo.png",

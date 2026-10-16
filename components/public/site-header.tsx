@@ -155,21 +155,21 @@ export function SiteHeader() {
                 {APP.program}
               </span>
               <span className="okb-public-masthead-wordmark-sub block">
-                {APP.organizationShort} · Special Concerns
+                Flood control program
               </span>
             </span>
 
             <span className="okb-masthead-lockup hidden min-w-0 md:block">
-              <span className="okb-mast-eyebrow">Republic of the Philippines</span>
+              <span className="okb-mast-eyebrow">A whole-of-nation approach</span>
               <span className="okb-public-heading okb-public-masthead-title block">
-                {APP.organization}
+                {APP.program}
               </span>
               <span className="okb-public-body okb-public-masthead-subtitle">
-                <span>Office of Undersecretary for Special Concerns</span>
+                <span>Flood control and disaster resilience</span>
                 {/* Dot travels with the program name so it never dangles at a wrap. */}
                 <span className="okb-mast-subtitle-tail">
                   <span className="okb-mast-dot" aria-hidden />
-                  <em>{APP.program}</em>
+                  <em>Philippines</em>
                 </span>
               </span>
             </span>
@@ -416,9 +416,9 @@ export function SiteHeader() {
                     />
                   </a>
                   <p>
-                    Republic of the Philippines
+                    {APP.program}
                     <br />
-                    {APP.organization}
+                    Philippine flood-control program
                   </p>
                 </motion.div>
               </nav>

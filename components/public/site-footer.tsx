@@ -74,7 +74,7 @@ export function SiteFooter() {
           <div className="okb-foot-brand">
             <p className="okb-foot-eyebrow">
               <span className="okb-foot-eyebrow__dot" aria-hidden />
-              Republic of the Philippines
+              Philippine flood-control program
             </p>
 
             <div className="okb-foot-lockup">
@@ -82,15 +82,14 @@ export function SiteFooter() {
               <div className="okb-foot-brand-copy">
                 <p className="okb-foot-title">{APP.program}</p>
                 <p className="okb-foot-kicker">
-                  Office of the Secretary · {APP.organizationShort}
+                  A whole-of-nation approach
                 </p>
               </div>
             </div>
 
             <p className="okb-foot-lead">
-              The national flood-control program of the {APP.organization},
-              coordinating infrastructure, monitoring, and emergency response
-              from ridge to reef.
+              A national flood-control program, coordinating infrastructure,
+              monitoring, and emergency response from ridge to reef.
             </p>
 
             <ul className="okb-foot-mandates">
@@ -176,7 +175,7 @@ export function SiteFooter() {
       <div className="okb-foot-bar">
         <div className="okb-public-shell okb-foot-bar__inner">
           <p>
-            © {year} {APP.organization}. All rights reserved.
+            © {year} {APP.program}. All rights reserved.
           </p>
           <p>Flood control · Public works · National resilience</p>
         </div>
