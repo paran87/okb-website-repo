@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown, ChevronsDown, ChevronsUp, FileDown, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
-import { regionLabel, statusCounts, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
+import { ArrowRight, ChevronDown, ChevronsDown, ChevronsUp, FileDown, FileSpreadsheet, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
+import { regionLabel, statusCounts, toCsv, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
 import { RegionDropdown } from "@/components/public/accomplishment-live/region-dropdown";
@@ -22,6 +22,16 @@ const QUADRANTS = ["NORTH", "SOUTH", "EAST", "WEST", "CENTRAL"] as const;
 
 function todayIso(): string {
   return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
+}
+
+function downloadOpenCsv(regions: VisibleRegion[], scale: PublicAccomplishment["scale"]) {
+  const blob = new Blob([`\ufeff${toCsv(regions, scale)}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `okb-accomplishment-opened-regions-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function Overview({
@@ -111,19 +121,27 @@ export function Overview({
                 {openKeys.size ? byRegion.filter((r) => openKeys.has(r.key)).map((r) => regionLabel(r).code.replace(/^Region /, "")).join(", ") : <span className="font-sans text-sm font-semibold text-[var(--dpwh-muted)]">none</span>}
               </span>
             </p>
-            <button type="button" onClick={() => setOpenKeys(new Set(byRegion.map((r) => r.key)))} className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--dpwh-border)] px-2.5 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
+            <button type="button" onClick={() => setOpenKeys(new Set(byRegion.map((r) => r.key)))} className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--dpwh-border)] px-2 text-[11px] sm:px-2.5 sm:text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)]">
               <ChevronsDown className="size-4" aria-hidden /> Open all
             </button>
-            <button type="button" onClick={() => setOpenKeys(new Set())} disabled={!openKeys.size} className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--dpwh-border)] px-2.5 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)] disabled:opacity-40">
+            <button type="button" onClick={() => setOpenKeys(new Set())} disabled={!openKeys.size} className="inline-flex h-10 items-center gap-1 rounded-lg border border-[var(--dpwh-border)] px-2 text-[11px] sm:px-2.5 sm:text-xs font-bold text-[var(--dpwh-blue-dark)] hover:border-[var(--dpwh-blue)] disabled:opacity-40">
               <ChevronsUp className="size-4" aria-hidden /> Close all
             </button>
             <button
               type="button"
               disabled={!openKeys.size}
               onClick={() => printRegionsPdf(byRegion.filter((r) => openKeys.has(r.key)), data.scale, prefs.types)}
-              className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-[var(--dpwh-blue-dark)] px-2.5 text-xs font-bold text-white disabled:opacity-40 sm:ml-auto sm:flex-none"
+              className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-[var(--dpwh-blue-dark)] px-2 text-[11px] sm:px-2.5 sm:text-xs font-bold text-white disabled:opacity-40 sm:ml-auto sm:flex-none"
             >
-              <FileDown className="size-4" aria-hidden /> {openKeys.size ? `PDF · ${openKeys.size} open` : "Open a region for PDF"}
+              <FileDown className="size-4 shrink-0" aria-hidden /> {openKeys.size ? `PDF · ${openKeys.size}` : "PDF"}
+            </button>
+            <button
+              type="button"
+              disabled={!openKeys.size}
+              onClick={() => downloadOpenCsv(byRegion.filter((r) => openKeys.has(r.key)), data.scale)}
+              className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-[var(--dpwh-blue)] px-2 text-[11px] font-bold text-white disabled:opacity-40 sm:flex-none sm:px-2.5 sm:text-xs"
+            >
+              <FileSpreadsheet className="size-4 shrink-0" aria-hidden /> CSV
             </button>
           </div>
         ) : null}
