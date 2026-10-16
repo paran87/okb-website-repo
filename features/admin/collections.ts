@@ -8,6 +8,10 @@ import type { MediaCollection, MediaKind } from "@/features/admin/types";
  *  - Command Center: the Operations galleries (features/operations/config.ts).
  */
 export const WEBSITE_GALLERY_PREFIX = "okb-website/gallery/";
+export const WEBSITE_INSPECTIONS_PREFIX = "okb-website/inspections/";
+export const WEBSITE_SUMMIT_PREFIX = "okb-website/summit/";
+/** Folders whose files anyone can see on the public Gallery. */
+export const WEBSITE_PUBLIC_PREFIXES = [WEBSITE_GALLERY_PREFIX, WEBSITE_INSPECTIONS_PREFIX, WEBSITE_SUMMIT_PREFIX] as const;
 
 export interface CollectionConfig extends MediaCollection {
   prefix: string;
@@ -18,10 +22,26 @@ export interface CollectionConfig extends MediaCollection {
 export const MEDIA_COLLECTIONS: readonly CollectionConfig[] = [
   {
     id: "website-gallery",
-    label: "Website · Gallery",
+    label: "Website · Gallery (OKB Photos and Videos)",
     area: "website",
-    description: "Shown to the public on the OKB website Gallery page.",
+    description: "Shown to the public on the OKB website Gallery page, in the OKB Photos and OKB Videos tabs.",
     prefix: WEBSITE_GALLERY_PREFIX,
+    operationsSection: null,
+  },
+  {
+    id: "website-inspections",
+    label: "Website · Gallery (OKB Inspections)",
+    area: "website",
+    description: "Shown to the public in the OKB Inspections tab of the Gallery. Photos and videos both work.",
+    prefix: WEBSITE_INSPECTIONS_PREFIX,
+    operationsSection: null,
+  },
+  {
+    id: "website-summit",
+    label: "Website · Gallery (OKB Summit)",
+    area: "website",
+    description: "Shown to the public in the OKB Summit tab of the Gallery. Photos and videos both work.",
+    prefix: WEBSITE_SUMMIT_PREFIX,
     operationsSection: null,
   },
   ...OPERATIONS_SECTIONS.flatMap((s) =>

@@ -26,7 +26,7 @@ export function GallerySections({ children }: { children: ReactNode }) {
   };
 
   const items = [
-    { id: "media" as const, label: "Photos & Videos", icon: Images },
+    { id: "media" as const, label: "OKB Gallery", icon: Images },
     { id: "ncr" as const, label: "NCR Daily Accomplishment", icon: GalleryVerticalEnd },
   ];
 

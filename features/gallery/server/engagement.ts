@@ -1,7 +1,7 @@
 import "server-only";
 import { ApiError } from "@/lib/api/errors";
 import { siteDbConfigured, siteRest, SiteDbMissingError, SiteDbNotConfiguredError } from "@/features/admin/server/supabase";
-import { listGallery } from "@/features/admin/server/media";
+import { listGallery, listGallerySections } from "@/features/admin/server/media";
 import driveGallery from "@/lib/config/gallery-drive.json";
 import { GALLERY_DRIVE_VIDEOS } from "@/lib/config/gallery-drive-videos";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
@@ -44,8 +44,8 @@ async function assertKnownKey(key: string): Promise<void> {
   } else if (kind === "youtube") {
     if (GALLERY_YOUTUBE_VIDEOS.some((v) => v.id === id)) return;
   } else {
-    const items = await listGallery().catch(() => []);
-    if (items.some((i) => i.key === key)) return;
+    const [main, extra] = await Promise.all([listGallery(), listGallerySections()]);
+    if ([...main, ...extra.inspections, ...extra.summit].some((i) => i.key === key)) return;
   }
   throw new ApiError(404, "NOT_FOUND", "Unknown gallery item.");
 }

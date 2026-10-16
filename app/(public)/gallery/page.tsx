@@ -1,7 +1,7 @@
 import { PublicPageHero, PublicPageSection } from "@/components/public";
 import { GalleryGrid } from "@/components/public/gallery/gallery-grid";
 import { GallerySections } from "@/components/public/gallery/gallery-sections";
-import { listGalleryWithStatus } from "@/features/admin/server/media";
+import { listGallerySections, listGalleryWithStatus } from "@/features/admin/server/media";
 import { APP } from "@/lib/constants";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
 import { GALLERY_DRIVE_VIDEOS } from "@/lib/config/gallery-drive-videos";
@@ -16,7 +16,7 @@ export const metadata = {
 
 /** Photos and videos the admin publishes (Admin → Media → Website · Gallery). */
 export default async function GalleryPage() {
-  const { items, problem } = await listGalleryWithStatus();
+  const [{ items, problem }, sections] = await Promise.all([listGalleryWithStatus(), listGallerySections()]);
   return (
     <>
       <PublicPageHero
@@ -27,7 +27,7 @@ export default async function GalleryPage() {
       />
       <PublicPageSection className="py-6 sm:py-8">
         <GallerySections>
-          <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} problem={problem} />
+          <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} inspections={sections.inspections} summit={sections.summit} problem={problem} />
         </GallerySections>
       </PublicPageSection>
     </>

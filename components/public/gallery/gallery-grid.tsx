@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, X } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronLeft, ChevronRight, Film, Images, LayoutGrid, List, MapPin, Play, SearchCheck, Users, X } from "lucide-react";
 import { EngagementBar, GalleryEngagement, useEngagementSummary } from "@/components/public/gallery/gallery-engagement";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
@@ -67,7 +67,7 @@ function drivePhotos(data: DriveGalleryData | undefined): PublicGalleryItem[] {
   });
 }
 
-type Tab = "photo" | "video";
+type Tab = "photo" | "video" | "inspections" | "summit";
 type Layout = "grid" | "list";
 
 const LAYOUT_KEY = "okb-gallery-layout";
@@ -216,12 +216,17 @@ export function GalleryGrid({
   youtube = [],
   driveVideos = [],
   drive: driveProp,
+  inspections = [],
+  summit = [],
   problem = null,
 }: {
   items: PublicGalleryItem[];
   youtube?: readonly GalleryYoutubeVideo[];
   driveVideos?: readonly GalleryDriveVideo[];
   drive?: DriveGalleryData;
+  /** The OKB Inspections and OKB Summit tabs (photos and videos the admin adds). */
+  inspections?: PublicGalleryItem[];
+  summit?: PublicGalleryItem[];
   problem?: "not_configured" | "storage" | null;
 }) {
   // The Drive photo list is large, so it loads as its own chunk instead of riding in the page payload.
@@ -282,7 +287,7 @@ export function GalleryGrid({
   const [tab, setTab] = useState<Tab>(!driveReady || photos.length || !videos.length ? "photo" : "video");
   const [layout, setLayout] = useState<Layout>("grid");
   const [open, setOpen] = useState<number | null>(null);
-  const shown = tab === "photo" ? photos : videos;
+  const shown = tab === "photo" ? photos : tab === "video" ? videos : tab === "inspections" ? inspections : summit;
   const { summary, refresh: refreshSummary } = useEngagementSummary(useMemo(() => shown.slice(0, visible).map((i) => i.key), [shown, visible]));
 
   useEffect(() => {
@@ -331,7 +336,7 @@ export function GalleryGrid({
     );
   }
 
-  if (!items.length && driveReady) {
+  if (!items.length && !inspections.length && !summit.length && driveReady) {
     return (
       <div className="okb-public-card rounded-sm px-6 py-16 text-center">
         <Images className="mx-auto size-10 opacity-60" aria-hidden />
@@ -342,8 +347,10 @@ export function GalleryGrid({
   }
 
   const tabs: { id: Tab; label: string; icon: typeof Images; count: number }[] = [
-    { id: "photo", label: "Photos", icon: Images, count: photos.length },
-    { id: "video", label: "Videos", icon: Film, count: videos.length },
+    { id: "photo", label: "OKB Photos", icon: Images, count: photos.length },
+    { id: "video", label: "OKB Videos", icon: Film, count: videos.length },
+    { id: "inspections", label: "OKB Inspections", icon: SearchCheck, count: inspections.length },
+    { id: "summit", label: "OKB Summit", icon: Users, count: summit.length },
   ];
 
   return (
@@ -354,7 +361,7 @@ export function GalleryGrid({
         </p>
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-current/15">
-        <div role="tablist" aria-label="Gallery" className="flex gap-1">
+        <div role="tablist" aria-label="Gallery" className="grid w-full grid-cols-2 gap-x-1 sm:flex sm:w-auto sm:flex-wrap">
           {tabs.map(({ id, label, icon: Icon, count }) => (
             <button
               key={id}
@@ -363,7 +370,7 @@ export function GalleryGrid({
               aria-selected={tab === id}
               onClick={() => chooseTab(id)}
               className={cn(
-                "-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 px-4 text-sm font-semibold transition-colors",
+                "-mb-px inline-flex min-h-11 items-center justify-center gap-2 border-b-2 px-2 text-sm font-semibold transition-colors sm:justify-start sm:px-4",
                 tab === id ? "border-[#0038a8] text-[#0038a8]" : "okb-public-body border-transparent hover:text-[#0038a8]",
               )}
             >
@@ -429,7 +436,7 @@ export function GalleryGrid({
 
       {shown.length === 0 ? (
         <div className="okb-public-card rounded-sm px-6 py-12 text-center">
-          <p className="okb-public-heading text-lg">No {tab === "photo" ? "photos" : "videos"} yet</p>
+          <p className="okb-public-heading text-lg">{tab === "photo" ? "No photos yet" : tab === "video" ? "No videos yet" : tab === "inspections" ? "OKB Inspections are coming soon" : "OKB Summit is coming soon"}</p>
           <p className="okb-public-body mt-1 text-sm">Check back for updates from the field.</p>
         </div>
       ) : layout === "grid" ? (

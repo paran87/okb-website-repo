@@ -4,6 +4,9 @@ import {
   MAX_UPLOAD_BYTES,
   mediaKindOf,
   WEBSITE_GALLERY_PREFIX,
+  WEBSITE_INSPECTIONS_PREFIX,
+  WEBSITE_PUBLIC_PREFIXES,
+  WEBSITE_SUMMIT_PREFIX,
   type CollectionConfig,
 } from "@/features/admin/collections";
 import {
@@ -93,7 +96,7 @@ function r2(): R2Config {
 function afterChange(c: CollectionConfig): void {
   if (c.operationsSection) invalidateOperationsListing(c.prefix);
   invalidateMeta(c.prefix);
-  if (c.prefix === WEBSITE_GALLERY_PREFIX) galleryCache = null;
+  if ((WEBSITE_PUBLIC_PREFIXES as readonly string[]).includes(c.prefix)) sectionCache.delete(c.prefix);
 }
 
 function assertInCollection(c: CollectionConfig, key: string, trash = false): void {
@@ -358,12 +361,12 @@ export interface GalleryItem {
 }
 
 const GALLERY_TTL_MS = 30_000;
-let galleryCache: { at: number; items: Promise<GalleryItem[]> } | null = null;
+const sectionCache = new Map<string, { at: number; items: Promise<GalleryItem[]> }>();
 
-async function loadGallery(): Promise<GalleryItem[]> {
+async function loadGallery(prefix: string): Promise<GalleryItem[]> {
   const cfg = getOperationsR2Config();
   if (!cfg) return [];
-  const [objects, captions] = await Promise.all([listObjects(cfg, WEBSITE_GALLERY_PREFIX), metaUnder(WEBSITE_GALLERY_PREFIX)]);
+  const [objects, captions] = await Promise.all([listObjects(cfg, prefix), metaUnder(prefix)]);
   return objects
     .flatMap((obj) => {
       const kind = obj.size > 0 ? mediaKindOf(obj.key) : null;
@@ -385,30 +388,31 @@ async function loadGallery(): Promise<GalleryItem[]> {
     .sort((a, b) => (Date.parse(b.takenAt) || 0) - (Date.parse(a.takenAt) || 0));
 }
 
+function sectionItems(prefix: string): Promise<GalleryItem[]> {
+  const hit = sectionCache.get(prefix);
+  if (hit && Date.now() - hit.at <= GALLERY_TTL_MS) return hit.items;
+  const items = loadGallery(prefix);
+  sectionCache.set(prefix, { at: Date.now(), items });
+  items.catch(() => sectionCache.delete(prefix));
+  return items;
+}
+
 /** Published website gallery (newest first). Empty when storage is not configured or unreachable. */
 export async function listGallery(): Promise<GalleryItem[]> {
-  if (!galleryCache || Date.now() - galleryCache.at > GALLERY_TTL_MS) {
-    const items = loadGallery();
-    galleryCache = { at: Date.now(), items };
-    items.catch(() => {
-      galleryCache = null;
-    });
-  }
-  return galleryCache.items.catch(() => []);
+  return sectionItems(WEBSITE_GALLERY_PREFIX).catch(() => []);
+}
+
+/** The OKB Inspections and OKB Summit sections of the Gallery (newest first; empty until the admin adds files). */
+export async function listGallerySections(): Promise<{ inspections: GalleryItem[]; summit: GalleryItem[] }> {
+  const [inspections, summit] = await Promise.all([sectionItems(WEBSITE_INSPECTIONS_PREFIX).catch(() => []), sectionItems(WEBSITE_SUMMIT_PREFIX).catch(() => [])]);
+  return { inspections, summit };
 }
 
 /** The gallery plus why it is empty when storage is the reason (so the page does not say "coming soon" for an outage). */
 export async function listGalleryWithStatus(): Promise<{ items: GalleryItem[]; problem: "not_configured" | "storage" | null }> {
   if (!getOperationsR2Config()) return { items: [], problem: "not_configured" };
-  if (!galleryCache || Date.now() - galleryCache.at > GALLERY_TTL_MS) {
-    const items = loadGallery();
-    galleryCache = { at: Date.now(), items };
-    items.catch(() => {
-      galleryCache = null;
-    });
-  }
   try {
-    return { items: await galleryCache.items, problem: null };
+    return { items: await sectionItems(WEBSITE_GALLERY_PREFIX), problem: null };
   } catch {
     return { items: [], problem: "storage" };
   }

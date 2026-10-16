@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { MEDIA_COLLECTIONS, WEBSITE_GALLERY_PREFIX } from "@/features/admin/collections";
+import { MEDIA_COLLECTIONS, WEBSITE_PUBLIC_PREFIXES } from "@/features/admin/collections";
 import { adminName } from "@/features/admin/server/session";
 import { TRASH_PREFIX } from "@/features/operations/server/media";
 import { getOperationsR2Config, r2Fetch } from "@/features/operations/server/r2";
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   const inTrash = key.startsWith(TRASH_PREFIX);
   const original = inTrash ? key.slice(TRASH_PREFIX.length) : key;
   if (!MEDIA_COLLECTIONS.some((c) => original.startsWith(c.prefix))) return plain(404, "File not found");
-  const isPublic = !inTrash && key.startsWith(WEBSITE_GALLERY_PREFIX);
+  const isPublic = !inTrash && WEBSITE_PUBLIC_PREFIXES.some((p) => key.startsWith(p));
   if (!isPublic) {
     const admin = Boolean(adminName(request));
     const operator = !inTrash && !admin && (await getAccessState(request, "operations")).granted;
