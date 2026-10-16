@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, Expand, LayoutGrid, List, X, ZoomIn, ZoomOut } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, ExternalLink, Expand, LayoutGrid, List, Search, X, ZoomIn, ZoomOut } from "lucide-react";
 import { AccomplishmentLive } from "@/components/public/accomplishment-live/accomplishment-live";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import type { ApiSuccess } from "@/lib/api/response";
@@ -24,6 +24,15 @@ const pageImage = (p: NcrDailyPage) =>
     : `/api/accomplishment/ncr-daily/image?board=${p.board}&page=${p.page}`;
 
 type Layout = "grid" | "list";
+
+/** What the header of each page says (read from the images; lib/config/ncr-index.json). */
+interface PageText {
+  deo?: string;
+  location?: string;
+  activity?: string;
+  date?: string;
+}
+type NcrTextIndex = Record<string, Record<string, PageText>>;
 const LAYOUT_KEY = "okb-ncr-daily-layout";
 
 /** Accomplishment page: the live dashboard. Old #ncr-daily links go to the NCR Daily Accomplishment tab of the Gallery. */
@@ -143,6 +152,17 @@ export function NcrDailyAccomplishment() {
   const [layout, setLayout] = useState<Layout>("grid");
   const [shown, setShown] = useState(STRIP_STEP);
   const [enlarged, setEnlarged] = useState(false);
+  const [query, setQuery] = useState("");
+  const [text, setText] = useState<NcrTextIndex>({});
+
+  // The text of each page loads as its own file, so the page itself stays light.
+  useEffect(() => {
+    let live = true;
+    void import("@/lib/config/ncr-index.json").then((m) => live && setText(m.default as unknown as NcrTextIndex));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -181,6 +201,17 @@ export function NcrDailyAccomplishment() {
 
   const count = pages?.length ?? 0;
   const current = pages?.[index] ?? null;
+  const textOf = (p: NcrDailyPage): PageText => text[p.board]?.[String(p.page)] ?? {};
+  // The pages that match the search (all of them when it is empty), each with its place in the full list.
+  const matches = useMemo(() => {
+    const all = (pages ?? []).map((item, i) => ({ item, i }));
+    const needle = query.trim().toLowerCase();
+    if (!needle) return all;
+    return all.filter(({ item }) => {
+      const t = text[item.board]?.[String(item.page)] ?? {};
+      return [t.deo, t.location, t.activity, t.date, NCR_BOARDS.find((b) => b.id === item.board)?.label, `page ${item.page}`].some((v) => v?.toLowerCase().includes(needle));
+    });
+  }, [pages, text, query]);
 
   const go = (step: number) => {
     if (!count) return;
@@ -248,8 +279,29 @@ export function NcrDailyAccomplishment() {
 
         {pages && pages.length > 0 ? (
           <div className="bg-white p-2">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-[var(--dpwh-blue)]">All accomplishments ({count})</p>
+            <p className="mb-1.5 text-sm font-semibold text-[var(--dpwh-blue)]">
+              {query.trim() ? `${matches.length} of ${count} accomplishments match` : `All accomplishments (${count})`}
+            </p>
+            <div className="mb-2 flex items-center gap-2">
+              <label className="relative block min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[var(--dpwh-muted)]" aria-hidden />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setShown(STRIP_STEP);
+                  }}
+                  placeholder="Search place, office, activity or date"
+                  aria-label="Search the accomplishments"
+                  className="h-11 w-full rounded-full border border-[var(--dpwh-border)] bg-white pl-10 pr-10 text-sm text-[var(--dpwh-text)] outline-none placeholder:text-[var(--dpwh-muted)] focus:border-[var(--dpwh-blue)] focus:ring-2 focus:ring-[var(--dpwh-blue)]/20 [&::-webkit-search-cancel-button]:appearance-none"
+                />
+                {query ? (
+                  <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="absolute right-1 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full text-[var(--dpwh-muted)] hover:bg-black/5">
+                    <X className="size-4" aria-hidden />
+                  </button>
+                ) : null}
+              </label>
               <div role="radiogroup" aria-label="Layout" className="inline-flex rounded-full border border-[var(--dpwh-border)] p-0.5">
                 {(
                   [
@@ -262,14 +314,15 @@ export function NcrDailyAccomplishment() {
                     type="button"
                     role="radio"
                     aria-checked={layout === id}
+                    aria-label={label}
                     onClick={() => chooseLayout(id)}
                     className={cn(
-                      "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold transition-colors",
+                      "inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-sm font-semibold transition-colors sm:px-3.5",
                       layout === id ? "bg-[var(--dpwh-blue)] text-white" : "text-[var(--dpwh-muted)]",
                     )}
                   >
                     <Icon className="size-4" aria-hidden />
-                    {label}
+                    <span className="hidden sm:inline">{label}</span>
                   </button>
                 ))}
               </div>
@@ -278,8 +331,9 @@ export function NcrDailyAccomplishment() {
               aria-label="All accomplishments"
               className={cn(layout === "grid" ? "grid grid-cols-3 gap-1.5 sm:grid-cols-5 lg:grid-cols-8" : "flex flex-col gap-1.5")}
             >
-              {pages.slice(0, Math.max(shown, index + 1)).map((item, itemIndex) => {
+              {matches.slice(0, query.trim() ? shown : Math.max(shown, index + 1)).map(({ item, i: itemIndex }) => {
                 const selected = itemIndex === index;
+                const t = textOf(item);
                 return (
                   <button
                     key={`${item.board}-${item.page}`}
@@ -315,21 +369,25 @@ export function NcrDailyAccomplishment() {
                     />
                     {layout === "list" ? (
                       <span className="min-w-0 text-sm font-semibold text-[var(--dpwh-blue)]">
-                        Accomplishment {itemIndex + 1}
-                        <span className="block text-xs font-normal text-[var(--dpwh-muted)]">{NCR_BOARDS.find((b) => b.id === item.board)?.label ?? "Board"} · page {item.page}</span>
+                        <span className="line-clamp-2">{t.location ?? `Accomplishment ${itemIndex + 1}`}</span>
+                        <span className="block text-xs font-normal text-[var(--dpwh-muted)]">
+                          {[t.date, t.deo].filter(Boolean).join(" · ") || `${NCR_BOARDS.find((b) => b.id === item.board)?.label ?? "Board"} · page ${item.page}`}
+                        </span>
+                        {t.activity ? <span className="line-clamp-2 block text-xs font-normal text-[var(--dpwh-text)]/80">{t.activity}</span> : null}
                       </span>
                     ) : null}
                   </button>
                 );
               })}
             </div>
-            {pages.length > Math.max(shown, index + 1) ? (
+            {query.trim() && matches.length === 0 ? <p className="px-2 py-6 text-center text-sm text-[var(--dpwh-muted)]">Nothing matches your search.</p> : null}
+            {matches.length > (query.trim() ? shown : Math.max(shown, index + 1)) ? (
               <button
                 type="button"
                 onClick={() => setShown((value) => value + STRIP_STEP)}
                 className="mt-2 min-h-11 w-full rounded-sm border border-[var(--dpwh-border)] text-sm font-semibold text-[var(--dpwh-blue)]"
               >
-                Show more ({pages.length - Math.max(shown, index + 1)} left)
+                Show more ({matches.length - (query.trim() ? shown : Math.max(shown, index + 1))} left)
               </button>
             ) : null}
           </div>
