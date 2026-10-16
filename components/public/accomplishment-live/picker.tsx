@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, Info, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { recordType, type RecordType } from "@/features/accomplishment/lib/rollup";
 import type { AccomplishmentData, AccomplishmentRecord } from "@/features/accomplishment/types";
 import { RowIcon } from "@/components/public/accomplishment-live/region-dropdown";
@@ -44,19 +44,17 @@ const TYPE_WORD: Record<RecordType, string> = { waterway: "Waterway", drainage: 
 
 /**
  * Search box with a dropdown of every waterway / drainage the type chips allow, grouped by region from CAR to XIII.
- * Tapping a row opens it on the map; the info button opens its details.
+ * Tapping a row opens its details (map, progress and photos).
  */
 export function WaterwayPicker({
   items,
   types,
   scale,
-  onMap,
   onInfo,
 }: {
   items: PickerItem[];
   types: RecordType[];
   scale: AccomplishmentData["scale"];
-  onMap: (name: string) => void;
   onInfo: (item: PickerItem) => void;
 }) {
   const [text, setText] = useState("");
@@ -134,7 +132,7 @@ export function WaterwayPicker({
         <div id="okb-picker-list" className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-[var(--dpwh-border)] bg-white shadow-xl">
           <p className="border-b border-[#e3e8ef] bg-[#f6f8fb] px-3 py-2 text-[11px] font-semibold text-[var(--dpwh-muted)]">
             {count} {what}
-            {q ? ` matching “${text.trim()}”` : ""} · tap one to see it on the map
+            {q ? ` matching “${text.trim()}”` : ""} · tap one for its details, map and photos
           </p>
           <div className="max-h-[min(60vh,28rem)] overflow-y-auto overscroll-contain">
             {groups.length ? (
@@ -148,7 +146,7 @@ export function WaterwayPicker({
                       const pct = recordProgress(it.record, scale);
                       return (
                         <li key={`${it.site}|${it.record.n}`} className="flex items-stretch">
-                          <button type="button" onClick={() => pick(() => onMap(it.record.n))} className="flex min-h-12 min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left hover:bg-[#f3f6fa]">
+                          <button type="button" onClick={() => pick(() => onInfo(it))} className="flex min-h-12 min-w-0 flex-1 items-center gap-2 px-3 py-2 text-left hover:bg-[#f3f6fa]">
                             <RowIcon type={recordType(it.record)} />
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{it.record.n}</span>
@@ -156,9 +154,7 @@ export function WaterwayPicker({
                               <Meter pct={pct} className="mt-1 h-1" />
                             </span>
                             <span className="w-11 shrink-0 text-right font-display text-base font-bold tabular-nums text-[var(--dpwh-blue-dark)]">{pctText(pct, 0)}</span>
-                          </button>
-                          <button type="button" onClick={() => pick(() => onInfo(it))} aria-label={`Details of ${it.record.n}`} className="grid w-11 shrink-0 place-items-center border-l border-[#eef1f5] text-[var(--dpwh-blue)] hover:bg-[#f3f6fa]">
-                            <Info className="size-4" aria-hidden />
+                            <ChevronRight className="size-4 shrink-0 text-[var(--dpwh-muted)]" aria-hidden />
                           </button>
                         </li>
                       );

@@ -29,7 +29,6 @@ export function Overview({
   tree,
   prefs,
   onOpenRecord,
-  onShowMap,
   onGo,
   onOpenPhoto,
   regionSort,
@@ -39,7 +38,6 @@ export function Overview({
   tree: VisibleRegion[];
   prefs: Prefs;
   onOpenRecord: (sel: Selection) => void;
-  onShowMap: (name: string) => void;
   onGo: (section: SectionId) => void;
   onOpenPhoto: (index: number) => void;
   regionSort: RegionSort;
@@ -141,7 +139,7 @@ export function Overview({
                     <span className="w-14 shrink-0 text-right font-display text-lg font-bold tabular-nums text-[var(--dpwh-blue-dark)]">{pctText(r.pct, 0)}</span>
                     <ChevronDown className={`size-4 shrink-0 text-[var(--dpwh-muted)] transition-transform ${openKeys.has(r.key) ? "rotate-180" : ""}`} aria-hidden />
                   </button>
-                  {openKeys.has(r.key) ? <RegionDropdown region={r} scale={data.scale} types={prefs.types} onMap={onShowMap} onInfo={onOpenRecord} /> : null}
+                  {openKeys.has(r.key) ? <RegionDropdown region={r} scale={data.scale} types={prefs.types} onInfo={onOpenRecord} /> : null}
                 </li>
               );
             })}

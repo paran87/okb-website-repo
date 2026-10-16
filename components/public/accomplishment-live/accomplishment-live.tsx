@@ -321,7 +321,6 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
           items={located}
           types={prefs.types}
           scale={data.scale}
-          onMap={showOnMap}
           onInfo={(it) => {
             setOpenRegion(null);
             setSelection(it);
@@ -355,7 +354,6 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
           data={data}
           tree={tree}
           prefs={prefs}
-          onShowMap={showOnMap}
           onOpenRecord={setSelection}
           onGo={go}
           onOpenPhoto={setPhotoIndex}
