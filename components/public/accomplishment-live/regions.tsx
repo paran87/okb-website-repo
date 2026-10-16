@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ArrowLeft, Camera, ChevronDown, ChevronRight, Map as MapIcon, MapPin } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { ArrowLeft, Camera, ChevronDown, ChevronRight, Download, Loader2, Map as MapIcon, MapPin } from "lucide-react";
 import { recordType, regionLabel, statusCounts, volumeTotals, workStatus, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
 import type { AccomplishmentData, AccomplishmentRecord } from "@/features/accomplishment/types";
 import { useFieldPhotos } from "@/components/public/accomplishment-live/data";
 import { PhotoThumb, PhotoViewer } from "@/components/public/accomplishment-live/photo-viewer";
+import { downloadBlob, renderWaterwayImage } from "@/components/public/accomplishment-live/waterway-image";
 import { WaterwayMap } from "@/components/public/accomplishment-live/waterway-map";
 import {
   compact,
@@ -133,6 +134,21 @@ export function WaterwayDetail({ sel, scale, onShowMap }: { sel: Selection; scal
   const [viewer, setViewer] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const traced = x.tp ? (100 * (x.cp ?? 0)) / x.tp : null;
+  const captureRef = useRef<(() => HTMLCanvasElement | null) | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const saveImage = async () => {
+    setSaving(true);
+    setSaveError(false);
+    try {
+      const blob = await renderWaterwayImage({ record: w, region, site, scale, photos, map: captureRef.current?.() ?? null });
+      downloadBlob(blob, `okb-${w.n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.png`);
+    } catch {
+      setSaveError(true);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -158,6 +174,18 @@ export function WaterwayDetail({ sel, scale, onShowMap }: { sel: Selection; scal
           ) : null}
         </div>
         <Meter pct={pct} className="mt-3 h-2.5" label="Progress" />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={saveImage}
+            disabled={saving}
+            className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-[var(--dpwh-blue-dark)] px-3 text-xs font-bold text-white disabled:opacity-60"
+          >
+            {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
+            {saving ? "Preparing image…" : "Save as image"}
+          </button>
+          {saveError ? <span className="text-xs font-semibold text-[var(--dpwh-orange-dark)]">The image could not be created. Try again.</span> : null}
+        </div>
         <p className="mt-2 text-xs text-[var(--dpwh-muted)]">
           {w.v !== null ? `${int(w.v)} m³ removed` : "No volume reported yet"}
           {w.p ? ` of ${int(w.p)} m³ planned` : ""}
@@ -165,7 +193,7 @@ export function WaterwayDetail({ sel, scale, onShowMap }: { sel: Selection; scal
         </p>
       </div>
 
-      <WaterwayMap name={w.n} place={[x.city, site, region].filter(Boolean).join(", ")} />
+      <WaterwayMap name={w.n} place={[x.city, site, region].filter(Boolean).join(", ")} captureRef={captureRef} />
 
       {x.ph ? (
         <div>

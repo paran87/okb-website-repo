@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import type { Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ExternalLink, MapPinned } from "lucide-react";
@@ -75,7 +75,7 @@ export function googleMapsUrl(center: [number, number] | null, query: string): s
  * Where one waterway is: its traced line (cleaned / remaining), else its OpenStreetMap location (fallback), else a
  * map search.
  */
-export function WaterwayMap({ name, place, fallback }: { name: string; place: string; fallback?: FallbackGeo }) {
+export function WaterwayMap({ name, place, fallback, captureRef }: { name: string; place: string; fallback?: FallbackGeo; /** Receives a function that returns the live map canvas (for "save as image"). */ captureRef?: MutableRefObject<(() => HTMLCanvasElement | null) | null> }) {
   const lines = useMapLines(true);
   const line = useMemo(() => lines.data?.find((l) => l.w === name) ?? null, [lines.data, name]);
   const geo = useMemo(() => (lines.isLoading ? null : geometry(line, fallback)), [lines.isLoading, line, fallback]);
@@ -95,6 +95,7 @@ export function WaterwayMap({ name, place, fallback }: { name: string; place: st
         fitBoundsOptions: { padding: 36, maxZoom: geo.pinOnly ? 14 : 16 },
         attributionControl: { compact: true },
         cooperativeGestures: true,
+        preserveDrawingBuffer: !!captureRef,
       });
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-left");
       m.on("load", () => {
@@ -117,13 +118,14 @@ export function WaterwayMap({ name, place, fallback }: { name: string; place: st
           paint: { "circle-color": LOCATION, "circle-radius": 9, "circle-stroke-color": "#fff", "circle-stroke-width": 3 },
         });
         setReady(true);
+        if (captureRef) captureRef.current = () => (m.loaded() ? m.getCanvas() : null);
       });
       mapRef.current = m;
     });
     return () => {
       cancelled = true;
     };
-  }, [geo]);
+  }, [geo, captureRef]);
 
   useEffect(
     () => () => {
