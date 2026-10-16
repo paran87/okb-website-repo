@@ -16,7 +16,6 @@ import {
   Camera,
   ChevronRight,
   FileText,
-  GalleryVerticalEnd,
   Images,
   Menu,
   Radio,
@@ -40,7 +39,6 @@ const EXPAND_SCROLL = 12;
 const NAV_ICONS: Record<string, LucideIcon> = {
   [PUBLIC_ROUTES.framework]: FileText,
   [PUBLIC_ROUTES.accomplishment]: BarChart3,
-  [PUBLIC_ROUTES.ncrDaily]: GalleryVerticalEnd,
   [PUBLIC_ROUTES.profile]: Images,
   [PUBLIC_ROUTES.gallery]: Camera,
   [PUBLIC_ROUTES.commandCenter]: Radio,

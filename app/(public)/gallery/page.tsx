@@ -1,5 +1,6 @@
 import { PublicPageHero, PublicPageSection } from "@/components/public";
 import { GalleryGrid } from "@/components/public/gallery/gallery-grid";
+import { GallerySections } from "@/components/public/gallery/gallery-sections";
 import { listGalleryWithStatus } from "@/features/admin/server/media";
 import { APP } from "@/lib/constants";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
@@ -25,7 +26,9 @@ export default async function GalleryPage() {
         compact
       />
       <PublicPageSection className="py-6 sm:py-8">
-        <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} problem={problem} />
+        <GallerySections>
+          <GalleryGrid items={items} youtube={GALLERY_YOUTUBE_VIDEOS} driveVideos={GALLERY_DRIVE_VIDEOS} problem={problem} />
+        </GallerySections>
       </PublicPageSection>
     </>
   );

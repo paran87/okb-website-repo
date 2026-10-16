@@ -26,10 +26,10 @@ const pageImage = (p: NcrDailyPage) =>
 type Layout = "grid" | "list";
 const LAYOUT_KEY = "okb-ncr-daily-layout";
 
-/** Accomplishment page: the live dashboard. Old #ncr-daily links go to the NCR Daily Accomplishment page. */
+/** Accomplishment page: the live dashboard. Old #ncr-daily links go to the NCR Daily Accomplishment tab of the Gallery. */
 export function AccomplishmentPanels() {
   useEffect(() => {
-    if (window.location.hash === "#ncr-daily") window.location.replace("/ncr-daily-accomplishment");
+    if (window.location.hash === "#ncr-daily") window.location.replace("/gallery#ncr-daily");
   }, []);
   return <AccomplishmentLive />;
 }
