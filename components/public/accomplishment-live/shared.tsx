@@ -115,8 +115,8 @@ export function ProgressRing({ pct, caption, size = 148 }: { pct: number | null;
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="font-display text-[2.4rem] font-bold leading-none tracking-wide text-white">{pctText(pct)}</span>
-        <span className="mt-1 max-w-[78%] text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-[var(--dpwh-gold)]">{caption}</span>
+        <span className="font-display font-bold leading-none tracking-wide text-white" style={{ fontSize: size * 0.25 }}>{pctText(pct)}</span>
+        <span className="mt-0.5 max-w-[78%] text-[9px] font-bold uppercase leading-tight tracking-[0.14em] text-[var(--dpwh-gold)]">{caption}</span>
       </div>
     </div>
   );

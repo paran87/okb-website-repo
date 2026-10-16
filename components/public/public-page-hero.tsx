@@ -19,6 +19,8 @@ interface PublicPageHeroProps {
   bannerImage?: PublicPageHeroBanner;
   /** Decorative layer painted between the banner and the copy. */
   art?: ReactNode;
+  /** Tighter padding and type for pages whose content should start higher. */
+  compact?: boolean;
 }
 
 /** Ridge profile reused for every contour band in the hero artwork. */
@@ -103,6 +105,7 @@ export function PublicPageHero({
   children,
   bannerImage,
   art,
+  compact,
 }: PublicPageHeroProps) {
   const reduce = useReducedMotion();
 
@@ -111,6 +114,7 @@ export function PublicPageHero({
       className={cn(
         "okb-public-hero-band okb-page-hero relative isolate overflow-hidden",
         bannerImage && "okb-public-hero-band--with-image",
+        compact && "okb-page-hero--compact",
       )}
     >
       {bannerImage ? (

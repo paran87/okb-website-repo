@@ -76,17 +76,17 @@ function loadPrefs(): Prefs {
 
 function Tile({ icon: Icon, label, value, unit, hint, pct }: { icon: LucideIcon; label: string; value: string; unit?: string; hint?: string; pct?: number | null }) {
   return (
-    <div className="okb-live-tile min-w-0 rounded-xl border border-white/12 bg-white/[0.07] p-3 backdrop-blur-sm sm:p-3.5">
+    <div className="okb-live-tile min-w-0 rounded-xl border border-white/12 bg-white/[0.07] px-2.5 py-2 backdrop-blur-sm sm:px-3 sm:py-2.5">
       <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--dpwh-gold)]">
         <Icon className="size-3.5 shrink-0" aria-hidden />
         <span className="truncate">{label}</span>
       </p>
-      <p className="mt-1.5 truncate font-display text-[1.75rem] font-bold leading-none text-white sm:text-[2rem]">
+      <p className="mt-1 truncate font-display text-[1.45rem] font-bold leading-none text-white sm:text-[1.65rem]">
         {value}
         {unit ? <span className="ml-1 text-sm font-semibold text-white/70">{unit}</span> : null}
       </p>
-      {pct !== undefined ? <Meter pct={pct} tone="light" className="mt-2 h-1.5" /> : null}
-      {hint ? <p className="mt-1.5 truncate text-[11px] text-white/70">{hint}</p> : null}
+      {pct !== undefined ? <Meter pct={pct} tone="light" className="mt-1.5 h-1" /> : null}
+      {hint ? <p className="mt-1 truncate text-[10.5px] text-white/70">{hint}</p> : null}
     </div>
   );
 }
@@ -249,16 +249,16 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
       </div>
 
       {/* Headline band */}
-      <section aria-label="Program totals" className="okb-live-band relative isolate overflow-hidden rounded-2xl p-4 text-white sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-8">
+      <section aria-label="Program totals" className="okb-live-band relative isolate overflow-hidden rounded-2xl p-3 text-white sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
           <div className="flex items-center gap-4 lg:flex-col lg:items-center lg:text-center">
-            <ProgressRing pct={overall} caption={prefs.mode === "wtd" ? "by volume" : "average progress"} />
+            <ProgressRing size={112} pct={overall} caption={prefs.mode === "wtd" ? "by volume" : "average progress"} />
             <div className="min-w-0 lg:w-48">
-              <p className="font-display text-xl font-bold uppercase leading-tight tracking-wide sm:text-2xl">Oplan Kontra Baha</p>
+              <p className="font-display text-lg font-bold uppercase leading-tight tracking-wide sm:text-xl">Oplan Kontra Baha</p>
               <p className="mt-1 text-xs text-white/75">
                 Dredging, desilting and declogging · {tree.length} regions · {sites} sites · {int(ways.length)} records
               </p>
-              <div className="mt-3 flex rounded-lg bg-white/10 p-0.5 text-[11px] font-bold" role="group" aria-label="Progress measure">
+              <div className="mt-2 flex rounded-lg bg-white/10 p-0.5 text-[11px] font-bold" role="group" aria-label="Progress measure">
                 {(
                   [
                     { value: "avg", label: "Average" },
@@ -270,7 +270,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
                     type="button"
                     aria-pressed={prefs.mode === o.value}
                     onClick={() => update({ mode: o.value })}
-                    className={cn("h-9 flex-1 rounded-md px-2 transition-colors", prefs.mode === o.value ? "bg-white text-[var(--dpwh-blue-dark)]" : "text-white/80 hover:text-white")}
+                    className={cn("h-8 flex-1 rounded-md px-2 transition-colors", prefs.mode === o.value ? "bg-white text-[var(--dpwh-blue-dark)]" : "text-white/80 hover:text-white")}
                   >
                     {o.label}
                   </button>
@@ -278,7 +278,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
               </div>
             </div>
           </div>
-          <div className="grid flex-1 grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+          <div className="grid flex-1 grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
             <Tile icon={Shovel} label="Silt removed" value={compact(volume.acc)} unit="m³" pct={volume.plan ? (100 * volume.acc) / volume.plan : null} hint={volume.plan ? `of ${compact(volume.plan)} m³ planned` : undefined} />
             <Tile icon={Ruler} label="Length cleaned" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
             <Tile icon={BarChart3} label="Completed" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
@@ -293,7 +293,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
 
       {/* Sections */}
       <div ref={navRef} className="scroll-mt-28">
-        <nav aria-label="Dashboard sections" className="grid grid-cols-3 gap-1.5 rounded-xl border border-[var(--dpwh-border)] bg-white p-1.5 sm:grid-cols-6">
+        <nav aria-label="Dashboard sections" className="grid grid-cols-6 gap-1 rounded-xl border border-[var(--dpwh-border)] bg-white p-1">
           {SECTIONS.map(({ id, label, icon: Icon }) => {
             const active = section === id;
             return (
@@ -303,7 +303,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
                 onClick={() => go(id)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-12 items-center justify-center gap-1.5 rounded-lg px-2 text-[13px] font-bold transition-colors",
+                  "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 text-[10.5px] font-bold leading-none transition-colors sm:min-h-10 sm:flex-row sm:gap-1.5 sm:px-2 sm:text-[13px]",
                   active ? "bg-[var(--dpwh-blue-dark)] text-white shadow-[inset_0_-3px_0_var(--dpwh-orange)]" : "text-[var(--dpwh-blue-dark)] hover:bg-[var(--dpwh-blue-light)]",
                 )}
               >

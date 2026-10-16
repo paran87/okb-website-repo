@@ -2094,6 +2094,57 @@
   }
 }
 
+/* Compact hero (Accomplishment): less height on phones and desktops. */
+.okb-page-hero--compact {
+  padding-top: clamp(0.9rem, 2.4vw, 1.5rem);
+  padding-bottom: clamp(0.9rem, 2.4vw, 1.5rem);
+}
+
+@media (min-width: 1024px) {
+  .okb-page-hero.okb-page-hero--compact {
+    min-height: 0;
+  }
+}
+
+.okb-page-hero--compact .okb-hero-chip {
+  padding: 0.2rem 0.65rem 0.2rem 0.55rem;
+  font-size: 0.5625rem;
+}
+
+.okb-page-hero--compact .okb-hero-title {
+  margin-top: 0.4rem;
+  font-size: clamp(1.6rem, 4.6vw, 2.5rem);
+}
+
+.okb-page-hero--compact .okb-hero-rule {
+  margin-top: 0.45rem;
+}
+
+.okb-page-hero--compact .okb-hero-lead {
+  margin-top: 0.45rem;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 640px) {
+  .okb-page-hero--compact .okb-hero-lead {
+    font-size: 0.9375rem;
+  }
+}
+
+.okb-page-hero--compact .okb-hero-extra {
+  margin-top: 0.6rem;
+}
+
+.okb-page-hero--compact .okb-acc-chips {
+  gap: 0.3rem;
+}
+
+.okb-page-hero--compact .okb-acc-chip {
+  padding: 0.22rem 0.55rem;
+  font-size: 0.6875rem;
+}
+
 .okb-hero-art {
   pointer-events: none;
   position: absolute;

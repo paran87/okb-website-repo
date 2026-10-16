@@ -57,17 +57,17 @@ export function AccomplishmentPanels() {
 
   return (
     <div className="space-y-3">
-      <div className="relative isolate overflow-hidden rounded-xl border border-[#0b3a85] bg-[var(--dpwh-blue-dark)] p-2 shadow-[0_6px_20px_rgba(0,40,85,0.25)] sm:p-3">
+      <div className="relative isolate overflow-hidden rounded-xl border border-[#0b3a85] bg-[var(--dpwh-blue-dark)] p-1.5 shadow-[0_6px_20px_rgba(0,40,85,0.25)] sm:p-2">
         {/* Soft glows and a faint grid behind the tabs. */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_120%_at_0%_0%,rgba(0,86,214,0.55),transparent_60%),radial-gradient(50%_120%_at_100%_100%,rgba(245,126,32,0.35),transparent_60%),linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[length:auto,auto,28px_28px,28px_28px]"
         />
-        <p className="mb-2 flex items-center gap-1.5 px-1 text-[0.6875rem] font-extrabold uppercase tracking-[0.18em] text-[var(--dpwh-gold)]">
+        <p className="mb-1 flex items-center gap-1.5 px-1 text-[0.625rem] font-extrabold uppercase tracking-[0.18em] text-[var(--dpwh-gold)]">
           <Radio className="size-3.5" aria-hidden />
           Program results
         </p>
-        <div role="tablist" aria-label="Accomplishment views" className="grid grid-cols-2 gap-2">
+        <div role="tablist" aria-label="Accomplishment views" className="grid grid-cols-2 gap-1.5">
           {TABS.map((item) => {
             const selected = tab === item.id;
             const Icon = item.icon;
@@ -92,7 +92,7 @@ export function AccomplishmentPanels() {
                   document.getElementById(`${baseId}-${next.id}-tab`)?.focus();
                 }}
                 className={cn(
-                  "group relative flex min-h-16 items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-all sm:gap-3 sm:px-4",
+                  "group relative flex min-h-12 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left transition-all sm:gap-3 sm:px-3",
                   selected
                     ? "border-[var(--dpwh-orange)] bg-white shadow-[0_4px_14px_rgba(0,0,0,0.25)]"
                     : "border-white/15 bg-white/10 text-white backdrop-blur-sm hover:border-white/40 hover:bg-white/15",
@@ -101,11 +101,11 @@ export function AccomplishmentPanels() {
                 <span
                   aria-hidden
                   className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-10",
+                    "flex size-8 shrink-0 items-center justify-center rounded-lg sm:size-9",
                     selected ? "bg-[var(--dpwh-orange)] text-white" : "bg-white/15 text-[var(--dpwh-gold)]",
                   )}
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-4 sm:size-[1.125rem]" />
                 </span>
                 <span className="min-w-0">
                   <span
@@ -116,7 +116,7 @@ export function AccomplishmentPanels() {
                   >
                     {item.label}
                   </span>
-                  <span className={cn("mt-0.5 hidden text-xs leading-snug sm:block", selected ? "text-[var(--dpwh-muted)]" : "text-white/70")}>
+                  <span className={cn("hidden text-[11px] leading-snug sm:block", selected ? "text-[var(--dpwh-muted)]" : "text-white/70")}>
                     {item.hint}
                   </span>
                 </span>

@@ -34,6 +34,7 @@ export default function AccomplishmentPage() {
         description={`Live ${APP.program} accomplishments from the OKB Single Source of Truth — progress per region, site and waterway, a map of cleaned stretches, field photos, field updates, and the equipment and crews deployed.`}
         bannerImage={HERO_BANNER}
         art={<AccomplishmentHeroArt />}
+        compact
       >
         <ul className="okb-acc-chips">
           {HERO_CHIPS.map(({ icon: Icon, label }) => (
