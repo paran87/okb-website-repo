@@ -155,7 +155,7 @@ export function SiteHeader() {
                 {APP.program}
               </span>
               <span className="okb-public-masthead-wordmark-sub block">
-                Flood control program
+                Flood mitigation program
               </span>
             </span>
 
