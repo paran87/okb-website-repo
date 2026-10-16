@@ -133,7 +133,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
   const [section, setSection] = useState<SectionId>("overview");
   const [openRegion, setOpenRegion] = useState<{ key: string; initial: Selection | null } | null>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [mapFocus, setMapFocus] = useState<string | null>(null);
+  const [mapFocus, setMapFocus] = useState<{ name: string; id: number } | null>(null);
   const [photoIndex, setPhotoIndex] = useState<number | null>(null);
   const [regionSort, setRegionSortState] = useState<RegionSort>("progress");
   const navRef = useRef<HTMLDivElement>(null);
@@ -195,7 +195,7 @@ function Dashboard({ data, refreshing, onRefresh }: { data: PublicAccomplishment
   const showOnMap = (name: string) => {
     setOpenRegion(null);
     setSelection(null);
-    setMapFocus(name);
+    setMapFocus({ name, id: Date.now() });
     go("map");
   };
   const openWaterway = (name: string) => {

@@ -55,7 +55,7 @@ function boundsOf(lines: MapLine[]): [[number, number], [number, number]] | null
 }
 
 /** Every traced waterway: cleaned and remaining stretches (WaterwayVsCoordinates). */
-export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: PublicAccomplishment; focus: string | null; onOpenWaterway: (name: string) => void; onUntraced?: (name: string) => void }) {
+export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: PublicAccomplishment; focus: { name: string; id: number } | null; onOpenWaterway: (name: string) => void; onUntraced?: (name: string) => void }) {
   const query = useMapLines(true);
   const lines = useMemo(() => query.data ?? [], [query.data]);
   const container = useRef<HTMLDivElement>(null);
@@ -172,12 +172,12 @@ export function MapSection({ data, focus, onOpenWaterway, onUntraced }: { data: 
 
   useEffect(() => {
     if (!ready || !focus) return;
-    const line = byName.get(focus);
+    const line = byName.get(focus.name);
     if (line) {
       fit([line], 16);
       setPicked(line);
     } else if (!query.isLoading) {
-      onUntraced?.(focus);
+      onUntraced?.(focus.name);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, focus, byName, fit]);
