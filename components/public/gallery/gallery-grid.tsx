@@ -360,26 +360,46 @@ export function GalleryGrid({
           Some photos and videos could not be loaded right now. Please try again in a moment.
         </p>
       ) : null}
-      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-current/15">
-        <div role="tablist" aria-label="Gallery" className="grid w-full grid-cols-2 gap-x-1 sm:flex sm:w-auto sm:flex-wrap">
-          {tabs.map(({ id, label, icon: Icon, count }) => (
+      <div role="tablist" aria-label="Gallery" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {tabs.map(({ id, label, icon: Icon, count }) => {
+          const on = tab === id;
+          return (
             <button
               key={id}
               type="button"
               role="tab"
-              aria-selected={tab === id}
+              aria-selected={on}
               onClick={() => chooseTab(id)}
               className={cn(
-                "-mb-px inline-flex min-h-11 items-center justify-center gap-2 border-b-2 px-2 text-sm font-semibold transition-colors sm:justify-start sm:px-4",
-                tab === id ? "border-[#0038a8] text-[#0038a8]" : "okb-public-body border-transparent hover:text-[#0038a8]",
+                "group relative flex min-h-[3.75rem] items-center gap-2.5 overflow-hidden rounded-xl border-2 px-2.5 py-2 text-left transition-all sm:gap-3 sm:px-3.5",
+                on
+                  ? "border-[#0b3a85] bg-gradient-to-br from-[#0038a8] to-[#002855] text-white shadow-[0_8px_20px_rgba(0,40,85,0.35)]"
+                  : "border-transparent bg-white text-[#14233a] shadow-sm ring-1 ring-black/10 hover:-translate-y-0.5 hover:ring-[#0038a8]/50 hover:shadow-md",
               )}
             >
-              <Icon className="size-4" aria-hidden />
-              {label} ({count})
+              <span
+                aria-hidden
+                className={cn(
+                  "flex size-10 shrink-0 items-center justify-center rounded-lg transition-colors",
+                  on ? "bg-[#fcd116] text-[#002855]" : "bg-[#e6efff] text-[#0038a8] group-hover:bg-[#0038a8] group-hover:text-white",
+                )}
+              >
+                <Icon className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12px] font-extrabold uppercase leading-tight tracking-wide sm:text-sm">{label}</span>
+                <span className={cn("mt-0.5 block text-xs font-semibold", on ? "text-white/75" : "text-[#5b6b80]")}>
+                  {count === 0 ? "Coming soon" : `${count.toLocaleString("en-US")} ${id === "photo" ? "photos" : id === "video" ? "videos" : "items"}`}
+                </span>
+              </span>
+              {on ? <span aria-hidden className="absolute inset-x-3 bottom-0 h-1 rounded-t-full bg-[#f57e20]" /> : null}
             </button>
-          ))}
-        </div>
-        <div role="radiogroup" aria-label="Layout" className="mb-1.5 inline-flex rounded-full border border-current/20 p-0.5">
+          );
+        })}
+      </div>
+
+      <div className="flex justify-end">
+        <div role="radiogroup" aria-label="Layout" className="inline-flex rounded-full border border-current/20 bg-white/60 p-0.5">
           {(
             [
               { id: "grid", label: "Grid", icon: LayoutGrid },
