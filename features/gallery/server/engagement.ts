@@ -2,6 +2,7 @@ import "server-only";
 import { ApiError } from "@/lib/api/errors";
 import { siteDbConfigured, siteRest, SiteDbMissingError, SiteDbNotConfiguredError } from "@/features/admin/server/supabase";
 import { listGallery, listGallerySections } from "@/features/admin/server/media";
+import { NCR_BOARDS } from "@/lib/config/ncr-boards";
 import driveGallery from "@/lib/config/gallery-drive.json";
 import { GALLERY_DRIVE_VIDEOS } from "@/lib/config/gallery-drive-videos";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
@@ -41,6 +42,10 @@ async function assertKnownKey(key: string): Promise<void> {
     if ((driveGallery.photos as unknown as [string, ...unknown[]][]).some((p) => p[0] === id)) return;
   } else if (kind === "drive-video") {
     if (GALLERY_DRIVE_VIDEOS.some((v) => v.id === id)) return;
+  } else if (kind === "ncr") {
+    // ncr:<board>:<page>
+    const [board, page] = id.split(":");
+    if (NCR_BOARDS.some((b) => b.id === board) && /^\d{1,4}$/.test(page ?? "") && Number(page) >= 1) return;
   } else if (kind === "youtube") {
     if (GALLERY_YOUTUBE_VIDEOS.some((v) => v.id === id)) return;
   } else {

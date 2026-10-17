@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { EngagementBar, GalleryEngagement, useEngagementSummary } from "@/components/public/gallery/gallery-engagement";
 import { ChevronLeft, ChevronRight, ExternalLink, Expand, LayoutGrid, List, Search, X, ZoomIn, ZoomOut } from "lucide-react";
 import { AccomplishmentLive } from "@/components/public/accomplishment-live/accomplishment-live";
 import { NCR_BOARDS } from "@/lib/config/ncr-boards";
@@ -201,6 +202,7 @@ export function NcrDailyAccomplishment() {
 
   const count = pages?.length ?? 0;
   const current = pages?.[index] ?? null;
+  const ncrKey = (item: NcrDailyPage) => `ncr:${item.board}:${item.page}`;
   const textOf = (p: NcrDailyPage): PageText => text[p.board]?.[String(p.page)] ?? {};
   // The pages that match the search (all of them when it is empty), each with its place in the full list.
   const matches = useMemo(() => {
@@ -213,6 +215,11 @@ export function NcrDailyAccomplishment() {
     });
   }, [pages, text, query]);
 
+  // Reaction and comment counts for the rows on screen (list layout); refreshed when another page is opened.
+  const { summary, refresh: refreshSummary } = useEngagementSummary(useMemo(() => matches.slice(0, query.trim() ? shown : Math.max(shown, index + 1)).map(({ item }) => `ncr:${item.board}:${item.page}`), [matches, query, shown, index]));
+  useEffect(() => refreshSummary(), [index, refreshSummary]);
+
+
   const go = (step: number) => {
     if (!count) return;
     setIndex((value) => (value + step + count) % count);
@@ -222,6 +229,7 @@ export function NcrDailyAccomplishment() {
     <div className="space-y-3">
       <div className="okb-public-card overflow-hidden rounded-sm border shadow-sm">
         {current ? (
+          <>
           <div
             ref={viewerRef}
             className="relative scroll-mt-4 bg-[#0b1f4d]"
@@ -269,6 +277,10 @@ export function NcrDailyAccomplishment() {
               <ChevronRight className="size-6" aria-hidden />
             </button>
           </div>
+          <section aria-label="Reactions and comments" className="flex max-h-[30rem] min-h-0 flex-col bg-[#0b1f4d] px-3 pb-3 pt-1 text-white sm:px-4">
+            <GalleryEngagement itemKey={ncrKey(current)} />
+          </section>
+          </>
         ) : (
           <div className={cn("grid aspect-video w-full place-items-center bg-[var(--dpwh-blue-light)]", !failed && "animate-pulse")} role="status">
             <span className={failed ? "px-4 text-center text-sm font-semibold text-[var(--dpwh-blue)]" : "sr-only"}>
@@ -374,6 +386,7 @@ export function NcrDailyAccomplishment() {
                           {[t.date, t.deo].filter(Boolean).join(" · ") || `${NCR_BOARDS.find((b) => b.id === item.board)?.label ?? "Board"} · page ${item.page}`}
                         </span>
                         {t.activity ? <span className="line-clamp-2 block text-xs font-normal text-[var(--dpwh-text)]/80">{t.activity}</span> : null}
+                        {summary?.enabled ? <EngagementBar stats={summary.items[ncrKey(item)]} variant="list" /> : null}
                       </span>
                     ) : null}
                   </button>
