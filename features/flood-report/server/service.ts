@@ -11,6 +11,7 @@ import { FLOOD_LEVELS, inPhilippines, MAX_PHOTO_BYTES, MAX_PHOTOS, ROAD_STATUSES
 import { floodMapWeather } from "@/features/incident/server/flood-map";
 import { buildMobileRecord, depthOf, toMyReport, toPublicReport } from "@/features/flood-report/server/record";
 import type {
+  AdminMobileReport,
   FloodReportInput,
   MyFloodReport,
   PlaceName,
@@ -333,6 +334,8 @@ export async function listMyReports(body: unknown): Promise<MyFloodReport[]> {
 
 const editSchema = inputSchema.omit({ id: true, website: true }).extend({ token: z.string() });
 
+type Editor = { kind: "sender" } | { kind: "operator"; name: string };
+
 /**
  * Replaces the sender's report with the edited form (and photo list). Photos left out are deleted from R2.
  * An approved report goes back to "needs review" unless the only change is the time the flood receded.
@@ -340,13 +343,28 @@ const editSchema = inputSchema.omit({ id: true, website: true }).extend({ token:
 export async function updateMyReport(id: string, body: unknown): Promise<MyFloodReport> {
   const { token, ...input } = editSchema.parse(body) as Omit<FloodReportInput, "id"> & { token: string };
   const row = await ownRow(id, token);
-  const reportId = row.id;
   const status = row.status ?? "needs_review";
   if (status === "rejected" || status === "ignored") {
     throw new ForbiddenError("OKB operators took this report off the map, so it can no longer be edited. You can still delete it.");
   }
-  checkReport(input, reportId, Date.parse(row.created_at));
+  return applyEdit(row, input, { kind: "sender" });
+}
 
+const operatorEditSchema = inputSchema.omit({ id: true, website: true });
+
+/** An OKB operator corrects a mobile report (Admin → Reports). Its review status stays as it is. */
+export async function updateReportAsOperator(id: string, operator: string, body: unknown): Promise<MyFloodReport> {
+  const input = operatorEditSchema.parse(body) as Omit<FloodReportInput, "id">;
+  if (!UUID.test(id)) throw new NotFoundError("Report not found.");
+  const row = (await rows([id.toLowerCase()]))[0];
+  if (!row) throw new NotFoundError("This report no longer exists.");
+  return applyEdit(row, input, { kind: "operator", name: operator });
+}
+
+async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: Editor): Promise<MyFloodReport> {
+  const reportId = row.id;
+  const status = row.status ?? "needs_review";
+  checkReport(input, reportId, Date.parse(row.created_at));
   const old = (row.record.mobile ?? {}) as Record<string, unknown>;
   const oldKeys = new Set(Array.isArray(old.photos) ? old.photos.map((p) => (p as { key?: string }).key).filter(Boolean) : []);
   const added = input.photos.filter((p) => !oldKeys.has(p.key));
@@ -363,7 +381,8 @@ export async function updateMyReport(id: string, body: unknown): Promise<MyFlood
     added.length === 0 &&
     input.photos.length === oldKeys.size &&
     !same(old.recededAt, input.recededAt);
-  const nextStatus = status === "approved" && !recededOnly ? "needs_review" : status;
+  // A sender's edit of an approved report is checked again; an operator's correction keeps the status.
+  const nextStatus = editor.kind === "sender" && status === "approved" && !recededOnly ? "needs_review" : status;
 
   const createdAt = new Date(row.created_at);
   const rebuilt = buildMobileRecord({ ...input, id: reportId }, createdAt);
@@ -373,7 +392,7 @@ export async function updateMyReport(id: string, body: unknown): Promise<MyFlood
   const entry = {
     action: recededOnly ? "marked receded" : "edited",
     at,
-    reviewer: "the sender (OKB Mobile)",
+    reviewer: editor.kind === "sender" ? "the sender (OKB Mobile)" : `operator ${editor.name}`.slice(0, 100),
     notes: nextStatus !== status ? "Edited after approval; needs review again." : null,
   };
   const record = {
@@ -381,7 +400,13 @@ export async function updateMyReport(id: string, body: unknown): Promise<MyFlood
     status: nextStatus,
     updatedAt: at,
     review: { linkedMessageIds: [], ...review, history: [...history, entry].slice(-20) },
-    mobile: { ...rebuilt.mobile, ownerTokenHash: old.ownerTokenHash, inConsolidated: old.inConsolidated === true, editedAt: at },
+    mobile: {
+      ...rebuilt.mobile,
+      ownerTokenHash: old.ownerTokenHash,
+      inConsolidated: old.inConsolidated === true,
+      editedAt: at,
+      ...(editor.kind === "operator" ? { operatorEditedAt: at, operatorEditedBy: editor.name.slice(0, 100) } : {}),
+    },
   };
   const res = await rest(`${REPORTS}?id=eq.${reportId}&platform=eq.${MOBILE_REPORT_PLATFORM}`, {
     method: "PATCH",
@@ -397,10 +422,38 @@ export async function updateMyReport(id: string, body: unknown): Promise<MyFlood
   await Promise.all(removed.map((k) => deleteObject(cfg, k).catch((err) => log.warn({ err, key: k }, "Removed photo not deleted from R2"))));
   invalidateAggregates();
   memo = null;
-  log.info({ id: reportId, recededOnly, removed: removed.length, added: added.length }, "Mobile flood report edited by sender");
+  log.info({ id: reportId, recededOnly, removed: removed.length, added: added.length }, `Mobile flood report edited by ${editor.kind}`);
   const view = toMyReport({ id: reportId, status: nextStatus, created_at: row.created_at, record }, await liveRainNow());
   if (!view) throw new StorageUnavailable("Your changes were saved but could not be shown.");
   return view;
+}
+
+/** Admin → Reports: mobile reports of the last [days] (any status), newest first, with the operator-only fields. */
+export async function listReportsForAdmin(days: number): Promise<AdminMobileReport[]> {
+  if (!supabase()) return [];
+  const since = new Date(Date.now() - days * 24 * 3_600_000).toISOString();
+  const res = await rest(
+    `${REPORTS}?select=id,status,created_at,record&platform=eq.${MOBILE_REPORT_PLATFORM}&created_at=gte.${since}&order=created_at.desc&limit=300`,
+  );
+  if (!res.ok) {
+    log.error({ status: res.status }, "Admin flood report list rejected");
+    throw new StorageUnavailable("Mobile reports could not be loaded.");
+  }
+  const liveRain = await liveRainNow();
+  return ((await res.json()) as Row[]).flatMap((row): AdminMobileReport[] => {
+    const view = toMyReport(row, liveRain);
+    if (!view) return [];
+    const m = (row.record.mobile ?? {}) as Record<string, unknown>;
+    return [
+      {
+        ...view,
+        contactNumber: typeof m.contactNumber === "string" ? m.contactNumber : null,
+        inConsolidated: m.inConsolidated === true,
+        hasEditKey: typeof m.ownerTokenHash === "string",
+        operatorEditedBy: typeof m.operatorEditedBy === "string" ? m.operatorEditedBy : null,
+      },
+    ];
+  });
 }
 
 /** Deletes a mobile report and its photos, unless OKB operators already made it part of an incident. */

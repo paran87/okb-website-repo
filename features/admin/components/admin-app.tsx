@@ -2,23 +2,25 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { BarChart3, Globe, Images, LayoutDashboard, Loader2, LogOut, Settings2, Users } from "lucide-react";
+import { BarChart3, Camera, Globe, Images, LayoutDashboard, Loader2, LogOut, Settings2, Users } from "lucide-react";
 import { OkbLogo } from "@/components/brand/okb-logo";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { AdminLogin } from "@/features/admin/components/admin-login";
 import { AdminSetup } from "@/features/admin/components/admin-setup";
 import { AnalyticsOverview } from "@/features/admin/components/analytics-overview";
 import { MediaManager } from "@/features/admin/components/media-manager";
+import { MobileReportsAdmin } from "@/features/admin/components/mobile-reports";
 import { VisitorLog } from "@/features/admin/components/visitor-log";
 import { useAdminState, useSignOut } from "@/features/admin/hooks/use-admin";
 import { cn } from "@/utils/cn";
 
-type Tab = "overview" | "visitors" | "media" | "setup";
+type Tab = "overview" | "visitors" | "media" | "reports" | "setup";
 
 const TABS: { id: Tab; label: string; title: string; icon: ReactNode }[] = [
   { id: "overview", label: "Overview", title: "Visitors at a glance", icon: <BarChart3 className="size-5" aria-hidden /> },
   { id: "visitors", label: "Visitors", title: "Every visit, newest first", icon: <Users className="size-5" aria-hidden /> },
   { id: "media", label: "Media", title: "Photos & videos", icon: <Images className="size-5" aria-hidden /> },
+  { id: "reports", label: "Reports", title: "OKB Mobile flood reports", icon: <Camera className="size-5" aria-hidden /> },
   { id: "setup", label: "Setup", title: "Setup & account", icon: <Settings2 className="size-5" aria-hidden /> },
 ];
 
@@ -26,7 +28,7 @@ function isTab(value: string): value is Tab {
   return TABS.some((t) => t.id === value);
 }
 
-/** The /admin page: sign-in gate, then Overview · Visitors · Media · Setup. */
+/** The /admin page: sign-in gate, then Overview · Visitors · Media · Reports · Setup. */
 export function AdminApp() {
   const state = useAdminState();
   const signOut = useSignOut();
@@ -149,13 +151,14 @@ export function AdminApp() {
         {tab === "overview" ? <AnalyticsOverview onOpenSetup={() => go("setup")} /> : null}
         {tab === "visitors" ? <VisitorLog onOpenSetup={() => go("setup")} /> : null}
         {tab === "media" ? <MediaManager onOpenSetup={() => go("setup")} /> : null}
+        {tab === "reports" ? <MobileReportsAdmin /> : null}
         {tab === "setup" ? <AdminSetup state={state.data} /> : null}
       </main>
 
       {/* Phone: thumb-reach bottom navigation. */}
       <nav
         aria-label="Admin sections"
-        className="admin-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="admin-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {TABS.map((t) => (
           <button
@@ -168,7 +171,7 @@ export function AdminApp() {
               t.id === tab ? "text-primary" : "text-muted-foreground",
             )}
           >
-            {t.id === tab ? <span className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary" aria-hidden /> : null}
+            {t.id === tab ? <span className="absolute inset-x-4 top-0 h-0.5 rounded-full bg-primary" aria-hidden /> : null}
             {t.icon}
             {t.label}
           </button>

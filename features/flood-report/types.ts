@@ -115,6 +115,15 @@ export interface MyFloodReport extends PublicFloodReport {
   editedAt: string | null;
 }
 
+/** Admin → Reports: a mobile report with the fields only operators see. */
+export interface AdminMobileReport extends MyFloodReport {
+  contactNumber: string | null;
+  inConsolidated: boolean;
+  /** The sender can still change it from their phone. */
+  hasEditKey: boolean;
+  operatorEditedBy: string | null;
+}
+
 export interface PublicFloodReportList {
   generatedAt: string;
   hours: number;

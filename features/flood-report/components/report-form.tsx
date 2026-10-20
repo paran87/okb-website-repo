@@ -81,6 +81,7 @@ export function ReportForm({
   onBack,
   onSubmit,
   initial,
+  editHeading,
 }: {
   photos: FormPhoto[];
   place: PlaceName | null;
@@ -89,6 +90,8 @@ export function ReportForm({
   onSubmit: (values: ReportFormValues) => void;
   /** Editing: the report's current answers (its location stays where it was reported). */
   initial?: FloodReportFormValues;
+  /** Header when editing, e.g. for operators (default "Edit your report"). */
+  editHeading?: { title: string; subtitle: string };
 }) {
   const editing = Boolean(initial);
   // The most accurate photo position is the report's location.
@@ -204,8 +207,10 @@ export function ReportForm({
           <ArrowLeft className="size-6" aria-hidden />
         </button>
         <div className="min-w-0">
-          <h2 className="text-lg font-bold leading-tight">{editing ? "Edit your report" : "Flood details"}</h2>
-          <p className="text-xs text-white/70">{editing ? "Your changes show on the map right away" : "A few taps, then send"}</p>
+          <h2 className="text-lg font-bold leading-tight">{editing ? (editHeading?.title ?? "Edit your report") : "Flood details"}</h2>
+          <p className="text-xs text-white/70">
+            {editing ? (editHeading?.subtitle ?? "Your changes show on the map right away") : "A few taps, then send"}
+          </p>
         </div>
       </header>
 
