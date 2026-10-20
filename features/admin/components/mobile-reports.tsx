@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
-import { Camera, ExternalLink, Film, ImagePlus, Loader2, MapPin, MessageSquareText, Pencil, Play, Search, Trash2, X } from "lucide-react";
+import { Camera, Check, CheckSquare, ExternalLink, Film, ImagePlus, Loader2, MapPin, MessageSquareText, Pencil, Play, Search, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
@@ -99,6 +99,11 @@ export function MobileReportsAdmin() {
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
+  // Select mode: tapping a report ticks it; the bar at the bottom deletes the ticked reports.
+  const [selecting, setSelecting] = useState(false);
+  const [ticked, setTicked] = useState<Set<string>>(() => new Set());
+  const [bulk, setBulk] = useState<{ stage: "confirm" } | { stage: "deleting"; done: number; total: number } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ deleted: number; failed: { label: string; reason: string }[] } | null>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
 
@@ -124,6 +129,8 @@ export function MobileReportsAdmin() {
     });
   }, [list.data, q, source]);
   const open = (list.data ?? []).find((r) => r.id === openId) ?? null;
+  // Only ticked reports that the current period, source and search still show are counted and deleted.
+  const chosen = reports.filter((r) => ticked.has(r.id));
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ["admin", "mobile-reports"] });
@@ -242,6 +249,43 @@ export function MobileReportsAdmin() {
     }
   };
 
+  const toggle = (id: string) =>
+    setTicked((old) => {
+      const next = new Set(old);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const stopSelecting = () => {
+    setSelecting(false);
+    setTicked(new Set());
+    setBulk(null);
+    setBulkResult(null);
+  };
+
+  /** Deletes the ticked reports one by one (a WhatsApp / Viber delete waits for the OKB Bridge); failures stay ticked. */
+  const removePicked = async () => {
+    const targets = chosen;
+    const failed: { label: string; reason: string }[] = [];
+    const deleted: string[] = [];
+    setBulkResult(null);
+    for (const [i, r] of targets.entries()) {
+      setBulk({ stage: "deleting", done: i, total: targets.length });
+      try {
+        await adminApi(`/api/admin/mobile-reports/${r.id}`, { method: "DELETE" });
+        deleted.push(r.id);
+      } catch (e) {
+        failed.push({ label: `${r.reference} · ${titleOf(r)}`, reason: errorText(e, "Could not be deleted.") });
+      }
+    }
+    const gone = new Set(deleted);
+    queryClient.setQueryData<AdminReport[]>(listKey(days), (old) => (old ? old.filter((x) => !gone.has(x.id)) : old));
+    setTicked((old) => new Set([...old].filter((id) => !gone.has(id))));
+    setBulk(null);
+    setBulkResult({ deleted: deleted.length, failed });
+    void refresh();
+  };
+
   const mediaTile = (
     <button
       type="button"
@@ -275,6 +319,18 @@ export function MobileReportsAdmin() {
               className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-body text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
             />
           </label>
+          <button
+            type="button"
+            onClick={() => (selecting ? stopSelecting() : setSelecting(true))}
+            aria-pressed={selecting}
+            className={cn(
+              "flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-caption font-semibold",
+              selecting ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            {selecting ? <X className="size-4" aria-hidden /> : <CheckSquare className="size-4" aria-hidden />}
+            {selecting ? "Cancel" : "Select"}
+          </button>
         </div>
       </AdminCard>
 
@@ -294,18 +350,34 @@ export function MobileReportsAdmin() {
           </p>
         </AdminCard>
       ) : (
-        <ul className="grid gap-2 lg:grid-cols-2">
+        <ul className={cn("grid gap-2 lg:grid-cols-2", selecting && "pb-44 md:pb-28")}>
           {reports.map((r) => (
             <li key={r.id}>
               <button
                 type="button"
                 onClick={() => {
+                  if (selecting) return toggle(r.id);
                   setOpenId(r.id);
                   setError(null);
                   setConfirm(null);
                 }}
-                className="flex w-full items-start gap-3 rounded-2xl border border-border bg-card p-2.5 text-left shadow-sm transition-colors hover:bg-muted/40"
+                {...(selecting ? { role: "checkbox", "aria-checked": ticked.has(r.id) } : {})}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-2xl border bg-card p-2.5 text-left shadow-sm transition-colors hover:bg-muted/40",
+                  selecting && ticked.has(r.id) ? "border-primary ring-1 ring-primary" : "border-border",
+                )}
               >
+                {selecting ? (
+                  <span
+                    className={cn(
+                      "mt-1 flex size-6 shrink-0 items-center justify-center rounded-md border-2",
+                      ticked.has(r.id) ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50",
+                    )}
+                    aria-hidden
+                  >
+                    {ticked.has(r.id) ? <Check className="size-4" /> : null}
+                  </span>
+                ) : null}
                 <Thumb photos={r.photos} videos={r.videos} source={sourceOf(r)} />
                 {r.kind === "mobile" ? <MobileRow r={r} /> : <BridgeRow r={r} />}
               </button>
@@ -313,6 +385,79 @@ export function MobileReportsAdmin() {
           ))}
         </ul>
       )}
+
+      {selecting ? (
+        <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 px-3 pb-2 md:bottom-0 md:pb-4">
+          <div className="mx-auto max-w-3xl space-y-2 rounded-2xl border border-border bg-card p-3 shadow-xl" role="region" aria-label="Selected reports">
+            {bulkResult ? (
+              <div className="space-y-1 text-caption" role="status">
+                <p className="font-semibold text-foreground">
+                  {bulkResult.deleted ? `Deleted ${bulkResult.deleted} report${bulkResult.deleted === 1 ? "" : "s"}.` : "Nothing was deleted."}
+                  {bulkResult.failed.length ? ` ${bulkResult.failed.length} could not be deleted (still ticked):` : ""}
+                </p>
+                {bulkResult.failed.length ? (
+                  <ul className="max-h-24 space-y-0.5 overflow-y-auto text-danger">
+                    {bulkResult.failed.map((f) => (
+                      <li key={f.label} className="break-words">
+                        <span className="font-semibold">{f.label}</span> — {f.reason}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+            {bulk?.stage === "deleting" ? (
+              <p className="flex h-10 items-center gap-2 text-caption font-semibold text-foreground" role="status">
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Deleting {bulk.done + 1} of {bulk.total}… keep this page open.
+              </p>
+            ) : bulk?.stage === "confirm" ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="mr-auto min-w-0 basis-full text-caption text-foreground sm:basis-auto">
+                  Delete {chosen.length} report{chosen.length === 1 ? "" : "s"} for good? Mobile reports lose their photos; WhatsApp / Viber reports
+                  are also deleted from the OKB Bridge.
+                </p>
+                <Button variant="ghost" size="sm" onClick={() => setBulk(null)} className="h-10">
+                  Keep
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => void removePicked()} leftIcon={<Trash2 className="size-4" aria-hidden />} className="h-10">
+                  Delete {chosen.length}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="mr-auto text-caption font-semibold text-foreground">{chosen.length} selected</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTicked((old) => {
+                      const shown = reports.map((r) => r.id);
+                      const all = shown.every((id) => old.has(id));
+                      return all ? new Set([...old].filter((id) => !shown.includes(id))) : new Set([...old, ...shown]);
+                    })
+                  }
+                  className="h-10 rounded-lg px-3 text-caption font-semibold text-primary hover:bg-muted"
+                >
+                  {reports.length && reports.every((r) => ticked.has(r.id)) ? "Unselect all" : `Select all (${reports.length})`}
+                </button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  disabled={!chosen.length}
+                  onClick={() => {
+                    setBulkResult(null);
+                    setBulk({ stage: "confirm" });
+                  }}
+                  leftIcon={<Trash2 className="size-4" aria-hidden />}
+                  className="h-10"
+                >
+                  Delete{chosen.length ? ` ${chosen.length}` : ""}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <AdminSheet
         open={Boolean(open) && !editing}
