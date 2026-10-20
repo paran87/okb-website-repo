@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Hand, Heart, Loader2, MessageCircle, Send, ThumbsUp, Zap, type LucideIcon } from "lucide-react";
+import { Hand, Heart, Loader2, MessageCircle, Pencil, Send, ThumbsUp, Trash2, Zap, type LucideIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 
 type Reaction = "like" | "love" | "clap" | "wow";
@@ -10,6 +10,8 @@ interface Comment {
   id: number;
   body: string;
   createdAt: string;
+  /** Written from this browser: it can be edited or deleted here. */
+  mine: boolean;
 }
 
 interface Engagement {
@@ -65,9 +67,17 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
+  /** The own comment being edited (with its draft), or waiting for the delete confirmation. */
+  const [editing, setEditing] = useState<{ id: number; draft: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [rowBusy, setRowBusy] = useState<number | null>(null);
+  const [rowError, setRowError] = useState<{ id: number; text: string } | null>(null);
 
   useEffect(() => {
     let live = true;
+    setEditing(null);
+    setConfirmDelete(null);
+    setRowError(null);
     setData(null);
     setFailed(false);
     setText("");
@@ -109,11 +119,49 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
       const { comment } = await call<{ comment: Comment }>({ method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "comment", key: itemKey, visitor: visitorId(), body: text }) });
       setData({ ...data, comments: [comment, ...data.comments] });
       setText("");
-      setNotice({ tone: "ok", text: "Thanks! Your comment is posted as Anonymous." });
+      setNotice({ tone: "ok", text: "Thanks! Posted as Anonymous. You can edit or delete it from this browser." });
     } catch (e) {
       setNotice({ tone: "error", text: e instanceof Error ? e.message : "The comment could not be posted." });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!data || !editing || rowBusy !== null) return;
+    setRowBusy(editing.id);
+    setRowError(null);
+    try {
+      const { comment } = await call<{ comment: Comment }>({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "edit-comment", key: itemKey, visitor: visitorId(), id: editing.id, body: editing.draft }),
+      });
+      setData((d) => (d ? { ...d, comments: d.comments.map((c) => (c.id === comment.id ? comment : c)) } : d));
+      setEditing(null);
+    } catch (e) {
+      setRowError({ id: editing.id, text: e instanceof Error ? e.message : "The comment could not be saved." });
+    } finally {
+      setRowBusy(null);
+    }
+  };
+
+  const remove = async (id: number) => {
+    if (!data || rowBusy !== null) return;
+    setRowBusy(id);
+    setRowError(null);
+    try {
+      await call<{ deleted: boolean }>({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete-comment", key: itemKey, visitor: visitorId(), id }),
+      });
+      setData((d) => (d ? { ...d, comments: d.comments.filter((c) => c.id !== id) } : d));
+      setConfirmDelete(null);
+    } catch (e) {
+      setRowError({ id, text: e instanceof Error ? e.message : "The comment could not be deleted." });
+    } finally {
+      setRowBusy(null);
     }
   };
 
@@ -160,15 +208,122 @@ export function GalleryEngagement({ itemKey }: { itemKey: string }) {
       <div className="mt-1.5 min-h-[3.5rem] flex-1 overflow-y-auto overscroll-contain pr-1" tabIndex={0} aria-label="Comments">
         {data.comments.length ? (
           <ul className="space-y-2">
-            {data.comments.map((c) => (
-              <li key={c.id} className="rounded-lg bg-white/[0.07] px-3 py-2">
-                <p className="flex items-baseline gap-2 text-xs">
-                  <span className="font-bold text-white">Anonymous</span>
-                  <span className="text-white/45">{ago(c.createdAt)}</span>
-                </p>
-                <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-white/90">{c.body}</p>
-              </li>
-            ))}
+            {data.comments.map((c) => {
+              const isEditing = editing?.id === c.id;
+              const busyRow = rowBusy === c.id;
+              return (
+                <li key={c.id} className={cn("rounded-lg px-3 py-2", c.mine ? "bg-[#fcd116]/[0.09] ring-1 ring-[#fcd116]/25" : "bg-white/[0.07]")}>
+                  <p className="flex items-baseline gap-2 text-xs">
+                    <span className="font-bold text-white">Anonymous</span>
+                    {c.mine ? <span className="rounded-full bg-[#fcd116] px-1.5 text-[10px] font-bold uppercase text-[#001a3a]">You</span> : null}
+                    <span className="text-white/45">{ago(c.createdAt)}</span>
+                  </p>
+                  {isEditing ? (
+                    <form
+                      className="mt-1.5"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void saveEdit();
+                      }}
+                    >
+                      <label className="sr-only" htmlFor={`edit-comment-${c.id}`}>
+                        Edit your comment
+                      </label>
+                      <textarea
+                        id={`edit-comment-${c.id}`}
+                        value={editing.draft}
+                        onChange={(e) => setEditing({ id: c.id, draft: e.target.value.slice(0, COMMENT_MAX) })}
+                        rows={3}
+                        autoFocus
+                        className="w-full resize-none rounded-lg border border-white/25 bg-black/40 px-2.5 py-2 text-sm text-white focus:border-[#fcd116] focus:outline-none"
+                      />
+                      <div className="mt-1 flex items-center justify-end gap-2">
+                        <span className="mr-auto text-[11px] tabular-nums text-white/45">
+                          {editing.draft.length}/{COMMENT_MAX}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(null);
+                            setRowError(null);
+                          }}
+                          className="h-10 rounded-full px-3 text-sm font-semibold text-white/80 hover:bg-white/10"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={busyRow || !editing.draft.trim() || editing.draft.trim() === c.body}
+                          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#fcd116] px-4 text-sm font-bold text-[#001a3a] disabled:opacity-50"
+                        >
+                          {busyRow ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                          Save
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-white/90">{c.body}</p>
+                  )}
+                  {c.mine && !isEditing ? (
+                    confirmDelete === c.id ? (
+                      <div className="mt-1.5 flex flex-wrap items-center justify-end gap-2" role="group" aria-label="Confirm delete">
+                        <span className="mr-auto text-xs font-semibold text-white/80">Delete this comment?</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(null)}
+                          className="h-10 rounded-full px-3 text-sm font-semibold text-white/80 hover:bg-white/10"
+                        >
+                          Keep
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void remove(c.id)}
+                          disabled={busyRow}
+                          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#ef4444] px-4 text-sm font-bold text-white disabled:opacity-50"
+                        >
+                          {busyRow ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Trash2 className="size-4" aria-hidden />}
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="mt-0.5 flex justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setConfirmDelete(null);
+                            setRowError(null);
+                            setEditing({ id: c.id, draft: c.body });
+                          }}
+                          aria-label="Edit your comment"
+                          className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-white/75 hover:bg-white/10 hover:text-white"
+                        >
+                          <Pencil className="size-3.5" aria-hidden />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(null);
+                            setRowError(null);
+                            setConfirmDelete(c.id);
+                          }}
+                          aria-label="Delete your comment"
+                          className="inline-flex h-10 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-[#fca5a5] hover:bg-white/10"
+                        >
+                          <Trash2 className="size-3.5" aria-hidden />
+                          Delete
+                        </button>
+                      </div>
+                    )
+                  ) : null}
+                  {rowError?.id === c.id ? (
+                    <p role="status" className="mt-1 text-[11px] font-semibold text-[#fca5a5]">
+                      {rowError.text}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="py-3 text-center text-xs text-white/50">No comments yet. Be the first.</p>

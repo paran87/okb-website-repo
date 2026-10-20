@@ -16,6 +16,8 @@ export interface GalleryComment {
   id: number;
   body: string;
   createdAt: string;
+  /** Written from this browser (same visitor id): it may be edited or deleted. The id itself is never sent. */
+  mine: boolean;
 }
 
 export interface Engagement {
@@ -63,8 +65,8 @@ export async function getEngagement(key: string, visitor: string | null): Promis
   try {
     const [reactions, comments] = await Promise.all([
       siteRest<{ visitor_id: string; reaction: Reaction }[]>(`okb_gallery_reactions?select=visitor_id,reaction&item_key=eq.${q(key)}&limit=10000`),
-      siteRest<{ id: number; body: string; created_at: string }[]>(
-        `okb_gallery_comments?select=id,body,created_at&item_key=eq.${q(key)}&hidden=eq.false&order=created_at.desc&limit=100`,
+      siteRest<{ id: number; visitor_id: string; body: string; created_at: string }[]>(
+        `okb_gallery_comments?select=id,visitor_id,body,created_at&item_key=eq.${q(key)}&hidden=eq.false&order=created_at.desc&limit=100`,
       ),
     ]);
     const counts = { like: 0, love: 0, clap: 0, wow: 0 };
@@ -73,7 +75,13 @@ export async function getEngagement(key: string, visitor: string | null): Promis
       if (r.reaction in counts) counts[r.reaction]++;
       if (visitor && r.visitor_id === visitor) mine = r.reaction;
     }
-    return { enabled: true, counts, mine, comments: (comments.data ?? []).map((c) => ({ id: c.id, body: c.body, createdAt: c.created_at })) };
+    return { enabled: true, counts, mine, comments: (comments.data ?? []).map((c) => ({
+        id: c.id,
+        body: c.body,
+        createdAt: c.created_at,
+        mine: Boolean(visitor) && c.visitor_id === visitor,
+      })),
+    };
   } catch (e) {
     if (e instanceof SiteDbMissingError || e instanceof SiteDbNotConfiguredError) return EMPTY;
     throw e;
@@ -119,7 +127,37 @@ export async function addComment(key: string, visitor: string, raw: unknown): Pr
   });
   const row = res.data?.[0];
   if (!row) throw new ApiError(502, "INTERNAL_ERROR", "The comment could not be saved.");
-  return { id: row.id, body: row.body, createdAt: row.created_at };
+  return { id: row.id, body: row.body, createdAt: row.created_at, mine: true };
+}
+
+/** The filter for one visible comment of this item written by this visitor; nobody else's comment ever matches. */
+function ownComment(key: string, visitor: string, id: unknown): string {
+  if (typeof id !== "number" || !Number.isSafeInteger(id) || id < 1) throw new ApiError(400, "VALIDATION_ERROR", "Unknown comment.");
+  return `okb_gallery_comments?id=eq.${id}&item_key=eq.${q(key)}&visitor_id=eq.${visitor}&hidden=eq.false`;
+}
+
+const NOT_YOURS = "This comment can only be changed from the browser it was written in.";
+
+/** Replaces the text of the visitor's own comment. */
+export async function editComment(key: string, visitor: string, id: unknown, raw: unknown): Promise<GalleryComment> {
+  const body = cleanComment(raw);
+  const res = await siteRest<{ id: number; body: string; created_at: string }[]>(`${ownComment(key, visitor, id)}&select=id,body,created_at`, {
+    method: "PATCH",
+    body: { body },
+    prefer: ["return=representation"],
+  });
+  const row = res.data?.[0];
+  if (!row) throw new ApiError(404, "NOT_FOUND", NOT_YOURS);
+  return { id: row.id, body: row.body, createdAt: row.created_at, mine: true };
+}
+
+/** Deletes the visitor's own comment for good. */
+export async function deleteComment(key: string, visitor: string, id: unknown): Promise<void> {
+  const res = await siteRest<{ id: number }[]>(`${ownComment(key, visitor, id)}&select=id`, {
+    method: "DELETE",
+    prefer: ["return=representation"],
+  });
+  if (!res.data?.length) throw new ApiError(404, "NOT_FOUND", NOT_YOURS);
 }
 
 export interface EngagementSummary {

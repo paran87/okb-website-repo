@@ -2,7 +2,17 @@ import type { NextRequest } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
 import { ApiError } from "@/lib/api/errors";
 import { ok } from "@/lib/api/response";
-import { addComment, getEngagement, getSummary, isVisitorId, REACTIONS, setReaction, type Reaction } from "@/features/gallery/server/engagement";
+import {
+  addComment,
+  deleteComment,
+  editComment,
+  getEngagement,
+  getSummary,
+  isVisitorId,
+  REACTIONS,
+  setReaction,
+  type Reaction,
+} from "@/features/gallery/server/engagement";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +23,11 @@ export const GET = withApiHandler(async (request: NextRequest) => {
   return ok(await getEngagement(key, isVisitorId(visitor) ? visitor : null));
 });
 
-/** { action: "react", key, visitor, reaction | null } or { action: "comment", key, visitor, body } */
+/**
+ * { action: "react", key, visitor, reaction | null }, { action: "comment", key, visitor, body },
+ * { action: "edit-comment", key, visitor, id, body } or { action: "delete-comment", key, visitor, id }
+ * (edit and delete only match comments written with the same visitor id).
+ */
 export const POST = withApiHandler(async (request: NextRequest) => {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (body?.action === "summary" && Array.isArray(body.keys)) return ok(await getSummary(body.keys as string[]));
@@ -27,6 +41,13 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   if (body.action === "comment") {
     const comment = await addComment(body.key, body.visitor, body.body);
     return ok({ comment }, { status: 201 });
+  }
+  if (body.action === "edit-comment") {
+    return ok({ comment: await editComment(body.key, body.visitor, body.id, body.body) });
+  }
+  if (body.action === "delete-comment") {
+    await deleteComment(body.key, body.visitor, body.id);
+    return ok({ deleted: true });
   }
   throw new ApiError(400, "VALIDATION_ERROR", "Unknown action.");
 });
