@@ -8,6 +8,8 @@ import { getPagasaWeatherBulletin } from "@/features/weather/services/pagasa.ser
 import type { FloodMapData, FloodMapLocation, FloodMapWeather } from "@/features/incident/types";
 import { floodSeverity } from "@/features/incident/lib/flood-severity";
 import { crossStreet, normalizeRoad, roadCandidates } from "@/features/incident/lib/road-match";
+import { MOBILE_REPORT_PLATFORM } from "@/features/reports/types";
+import { expiryReason, MOBILE_EXPIRY_MAX_HOURS, mobileExpiryHours } from "@/features/flood-report/lib/expiry";
 
 const HOUR = 3_600_000;
 
@@ -20,6 +22,10 @@ const HOUR = 3_600_000;
  *    and unknown weather counts as normal.
  * A newer report that says "subsided" or "no flooding" clears a location at once, whatever the weather, and a
  * report that gives the time the flood receded clears it at that time.
+ *
+ * Reports from the OKB mobile page clear by the weather their sender chose instead (2–3 h dry, 4–6 h rain;
+ * features/flood-report/lib/expiry.ts). A report past its own time no longer decides its place, so an older
+ * report that is still within its time can show.
  */
 export const FLOOD_MAP_RULE = { wetHours: 6, normalHours: 3 } as const;
 
@@ -124,7 +130,7 @@ export function buildFloodMap(
   now: Date = new Date(),
 ): FloodMapData {
   const activeHours = weather.state === "wet" ? FLOOD_MAP_RULE.wetHours : FLOOD_MAP_RULE.normalHours;
-  const since = now.getTime() - activeHours * HOUR;
+  const liveRain = weather.state === "wet";
   const seen = new Set<string>();
   const decided: Place[] = [];
   const locations: FloodMapLocation[] = [];
@@ -135,6 +141,8 @@ export function buildFloodMap(
   for (const record of ordered) {
     const reportedAt = messageTime(record);
     const at = Date.parse(reportedAt);
+    const fromMobile = record.platform === MOBILE_REPORT_PLATFORM;
+    const hours = fromMobile ? mobileExpiryHours(record.mobileWeather, liveRain) : activeHours;
     const admin = record.extraction?.administrative;
     for (const o of observeReport(record)) {
       const loc: ExtractedLocation | undefined = record.extraction?.locations?.[o.index];
@@ -143,6 +151,11 @@ export function buildFloodMap(
       const key = place ? `${place.road}${place.cross ? ` cor ${place.cross}` : ""}` : (o.key ?? `${record.id}:${o.index}`);
       // A newer report of this place already decided.
       if (seen.has(key) || (place && decided.some((d) => samePlace(d, place)))) continue;
+      // Past its own time: cleared by the weather rule, and it no longer speaks for the place.
+      if (isFlooded(o.condition) && (!Number.isFinite(at) || at < now.getTime() - hours * HOUR)) {
+        clearedByWeather++;
+        continue;
+      }
       const decide = () => {
         seen.add(key);
         if (place) decided.push(place);
@@ -159,11 +172,7 @@ export function buildFloodMap(
         clearedByReport++;
         continue;
       }
-      if (!Number.isFinite(at) || at < since) {
-        clearedByWeather++;
-        continue;
-      }
-      const clearsAt = Math.min(at + activeHours * HOUR, receded ?? Infinity);
+      const clearsAt = Math.min(at + hours * HOUR, receded ?? Infinity);
       locations.push({
         key,
         label: o.label,
@@ -185,6 +194,9 @@ export function buildFloodMap(
         reportedAt,
         groupName: record.source?.groupName ?? null,
         clearsAt: new Date(clearsAt).toISOString(),
+        photos: record.photos,
+        fromMobile,
+        clearRule: fromMobile ? expiryReason(record.mobileWeather, liveRain) : null,
       });
     }
   }
@@ -205,7 +217,7 @@ let memo: { at: number; kind: string; data: FloodMapData } | null = null;
 export async function getFloodMap(store: ReportStore): Promise<FloodMapData> {
   if (memo && memo.kind === store.kind && Date.now() - memo.at < 30_000) return memo.data;
   const to = new Date();
-  const from = new Date(to.getTime() - FLOOD_MAP_RULE.wetHours * HOUR);
+  const from = new Date(to.getTime() - Math.max(FLOOD_MAP_RULE.wetHours, MOBILE_EXPIRY_MAX_HOURS) * HOUR);
   const [reports, weather] = await Promise.all([store.listFloodReports({ from, to, limit: 400 }), floodMapWeather()]);
   const data = buildFloodMap(reports, weather, to);
   memo = { at: Date.now(), kind: store.kind, data };

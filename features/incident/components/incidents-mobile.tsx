@@ -7,6 +7,7 @@ import { CloudRain, List, Radio, Siren, Waves, X } from "lucide-react";
 import { LayerToggleCard } from "@/features/flood-monitoring/components/layer-toggle-card";
 import { FloodLayers, type FloodMapProps } from "@/features/incident/components/flood-map";
 import { FloodAlertPanel } from "@/features/incident/components/flood-alert-panel";
+import { PhotoCount } from "@/features/incident/components/flood-photos";
 import { positionsOf, useFloodSituation } from "@/features/incident/hooks/use-flood-situation";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
@@ -221,7 +222,7 @@ export function IncidentsMobile({ incidents, incidentCount }: { incidents: React
                           flood.weather.state === "wet"
                             ? `Flooded roads stay ${flood.rule.wetHours} h after their latest report while it rains.`
                             : `A flooded road is cleared ${flood.rule.normalHours} h after its latest report.`
-                        } A report of subsided / no flooding or a receding time clears the road.`
+                        } A report of subsided / no flooding or a receding time clears the road. OKB Mobile reports clear 2–3 h after they are sent in dry weather, 4–6 h in rain.`
                       : null
                   }
                   onSelect={(key) => {
@@ -280,7 +281,10 @@ function FloodedList({
                     <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: FLOOD_SEVERITY[l.severity].color }} aria-hidden />
                     <span className="truncate font-medium text-foreground">{l.label}</span>
                   </span>
-                  <span className="shrink-0 font-mono text-foreground">{formatMeters(l.heightM) ?? "—"}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <PhotoCount count={l.photos.length} />
+                    <span className="font-mono text-foreground">{formatMeters(l.heightM) ?? "—"}</span>
+                  </span>
                 </span>
                 <span className="block truncate pl-3.5 text-[11px] text-muted-foreground">
                   {FLOOD_SEVERITY[l.severity].label} · {formatRelative(l.reportedAt)}

@@ -8,6 +8,7 @@ import { invalidateAggregates } from "@/features/reports/server/service";
 import { getReportsConfig } from "@/features/reports/server/config";
 import { MOBILE_REPORT_PLATFORM } from "@/features/reports/types";
 import { FLOOD_LEVELS, inPhilippines, MAX_PHOTO_BYTES, MAX_PHOTOS, ROAD_STATUSES, WEATHER } from "@/features/flood-report/lib/options";
+import { floodMapWeather } from "@/features/incident/server/flood-map";
 import { buildMobileRecord, toPublicReport } from "@/features/flood-report/server/record";
 import type { FloodReportInput, PlaceName, PublicFloodReport, PublicFloodReportList } from "@/features/flood-report/types";
 
@@ -201,7 +202,8 @@ export async function submitReport(body: unknown): Promise<PublicFloodReport> {
   invalidateAggregates();
   memo = null;
   log.info({ id, photos: input.photos.length }, "Mobile flood report saved");
-  const view = toPublicReport({ id, status: record.status, created_at: record.createdAt, record });
+  const liveRain = (await floodMapWeather().catch(() => null))?.state === "wet";
+  const view = toPublicReport({ id, status: record.status, created_at: record.createdAt, record }, liveRain);
   if (!view) throw new StorageUnavailable("The report was saved but could not be shown.");
   return view;
 }
@@ -218,7 +220,7 @@ export async function listPublicReports(hours: number): Promise<PublicFloodRepor
   if (memo && memo.hours === hours && Date.now() - memo.at < 15_000) return memo.data;
   const db = supabase();
   const generatedAt = new Date().toISOString();
-  if (!db) return { generatedAt, hours, reports: [], configured: false };
+  if (!db) return { generatedAt, hours, liveRain: false, reports: [], configured: false };
   const params = new URLSearchParams({
     select: "id,status,created_at,record",
     platform: `eq.${MOBILE_REPORT_PLATFORM}`,
@@ -243,10 +245,12 @@ export async function listPublicReports(hours: number): Promise<PublicFloodRepor
     throw new StorageUnavailable("Flood reports could not be loaded.");
   }
   const rows = (await res.json()) as { id: string; status: string | null; created_at: string; record: unknown }[];
+  const liveRain = (await floodMapWeather().catch(() => null))?.state === "wet";
   const data = {
     generatedAt,
     hours,
-    reports: rows.map(toPublicReport).filter((r): r is PublicFloodReport => r !== null),
+    liveRain,
+    reports: rows.map((row) => toPublicReport(row, liveRain)).filter((r): r is PublicFloodReport => r !== null),
     configured: true,
   };
   memo = { at: Date.now(), hours, data };

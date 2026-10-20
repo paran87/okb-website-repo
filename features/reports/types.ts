@@ -209,6 +209,8 @@ export interface BridgeReportRecord {
   photos: ReportPhoto[];
   /** Sender's contact number (mobile reports, operators only; never on the public map). */
   contactNumber: string | null;
+  /** Weather the sender chose (mobile reports: decides how long the flood stays on the maps). */
+  mobileWeather: string | null;
   createdAt: string;
   updatedAt: string;
 }

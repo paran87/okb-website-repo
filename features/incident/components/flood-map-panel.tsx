@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/lib/constants";
 import { formatDateTime, formatMeters, formatRelative, formatShortDateTime } from "@/features/reports/lib/format";
 import { FloodAlertPanel, placeText } from "@/features/incident/components/flood-alert-panel";
+import { FloodPhotos } from "@/features/incident/components/flood-photos";
 import type { FloodMapProps } from "@/features/incident/components/flood-map";
 import { positionsOf, useFloodSituation, type PlacedLocation } from "@/features/incident/hooks/use-flood-situation";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
@@ -77,6 +78,7 @@ function WeatherStatus({ data }: { data: FloodMapData }) {
             ? `Flooded roads stay highlighted ${data.rule.wetHours} h after their latest report while it rains or a warning is in effect.`
             : `A flooded road is cleared ${data.rule.normalHours} h after its latest report (${data.rule.wetHours} h while it rains or a warning is in effect).`}{" "}
           A report that says subsided or no flooding, or gives the time the flood receded, clears the place (the same road and cross street, however it is worded).
+          Reports from the OKB mobile page clear by the weather their sender chose: 2–3 h dry, 4–6 h in rain (at least 4 h while it rains).
         </p>
       </div>
     </div>
@@ -182,6 +184,8 @@ function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: 
           {placeText(p)}
         </p>
       </button>
+      {/* Outside the card's button: each photo is its own button. */}
+      {l.photos.length ? <FloodPhotos photos={l.photos} label={l.label} size="sm" max={4} className="px-2.5 pb-1" /> : null}
       <div className="flex items-center gap-2 pl-2.5">
         <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground" title="Cleared at this time unless it is reported again">
           {l.reference}

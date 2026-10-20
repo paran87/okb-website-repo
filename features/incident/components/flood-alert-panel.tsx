@@ -7,6 +7,7 @@ import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { formatDateTime, formatMeters, formatRelative, formatShortDateTime } from "@/features/reports/lib/format";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
+import { FloodPhotos } from "@/features/incident/components/flood-photos";
 
 /** Where a flooded location is drawn on the map, in words. */
 export function placeText(p: PlacedLocation): string {
@@ -32,7 +33,12 @@ export function FloodAlertPanel({ placed, onClose, className }: { placed: Placed
     ["Area", area || null],
     ["DEO", l.deo],
     ["Reported", `${formatDateTime(l.reportedAt)} (${formatRelative(l.reportedAt)})`],
-    ["Clears", `${formatShortDateTime(l.clearsAt)}, unless reported again`],
+    [
+      "Clears",
+      l.fromMobile
+        ? `${formatShortDateTime(l.clearsAt)}${l.clearRule ? ` · ${l.clearRule} after the report` : ""}, unless it recedes earlier`
+        : `${formatShortDateTime(l.clearsAt)}, unless reported again`,
+    ],
     ["From", l.groupName],
     ["Reference", l.reference],
     ["On the map", placeText(placed)],
@@ -65,16 +71,19 @@ export function FloodAlertPanel({ placed, onClose, className }: { placed: Placed
           <X className="size-4" aria-hidden />
         </button>
       </header>
-      <dl className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2.5">
-        {rows
-          .filter((r): r is [string, string] => Boolean(r[1]))
-          .map(([k, v]) => (
-            <div key={k} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
-              <dt className="text-muted-foreground">{k}</dt>
-              <dd className="break-words text-foreground">{v}</dd>
-            </div>
-          ))}
-      </dl>
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2.5">
+        {l.photos.length ? <FloodPhotos photos={l.photos} label={l.label} /> : null}
+        <dl className="space-y-1">
+          {rows
+            .filter((r): r is [string, string] => Boolean(r[1]))
+            .map(([k, v]) => (
+              <div key={k} className="grid grid-cols-[5.5rem_minmax(0,1fr)] gap-2">
+                <dt className="text-muted-foreground">{k}</dt>
+                <dd className="break-words text-foreground">{v}</dd>
+              </div>
+            ))}
+        </dl>
+      </div>
       <footer className="border-t border-border px-2.5">
         <Link href={`${ROUTES.reports}/${l.reportId}`} className="inline-flex min-h-10 items-center font-semibold text-primary hover:underline">
           View report

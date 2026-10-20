@@ -11,12 +11,14 @@ import type { PublicFloodReport } from "../types";
 /** Metro Manila, where most reports come from. */
 const DEFAULT_CENTER: [number, number] = [121.02, 14.6];
 export const RECEDED_COLOR = "#0d9488";
+/** No receded time came and its weather time ran out (shown in the history views only). */
+export const CLEARED_COLOR = "#94a3b8";
 
 const loadMapLibre = () => import("maplibre-gl").then((mod) => mod.default);
 type MapLibre = Awaited<ReturnType<typeof loadMapLibre>>;
 
-export function reportColor(r: Pick<PublicFloodReport, "receded" | "severity">): string {
-  return r.receded ? RECEDED_COLOR : FLOOD_SEVERITY[r.severity].color;
+export function reportColor(r: Pick<PublicFloodReport, "receded" | "expired" | "severity">): string {
+  return r.receded ? RECEDED_COLOR : r.expired ? CLEARED_COLOR : FLOOD_SEVERITY[r.severity].color;
 }
 
 /** Round photo marker ringed in the severity color, with the depth under it. */
@@ -39,7 +41,8 @@ function markerElement(report: PublicFloodReport, onSelect: (id: string) => void
     ring.append(check);
   }
   const tag = document.createElement("span");
-  tag.textContent = report.receded ? "Receded" : report.depthM !== null ? formatDepth(report.depthM) : "Flood";
+  tag.textContent = report.receded ? "Receded" : report.expired ? "Cleared" : report.depthM !== null ? formatDepth(report.depthM) : "Flood";
+  if (!report.active) root.style.opacity = "0.75";
   tag.style.cssText = `margin-top:-6px;padding:1px 7px;border-radius:9999px;background:${color};color:#fff;font:700 11px/16px system-ui;box-shadow:0 2px 4px rgba(0,0,0,.3);white-space:nowrap;`;
   const tip = document.createElement("span");
   tip.style.cssText = `width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color};`;
@@ -65,8 +68,11 @@ export function FloodMap({
   onSelect,
   focus,
   user,
+  fitKey,
 }: {
   reports: PublicFloodReport[];
+  /** Frame all reports again when this changes (another time range). */
+  fitKey?: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
   /** Fly here when it changes (a new report, the user's position, a selected report). */
@@ -85,6 +91,10 @@ export function FloodMap({
   useEffect(() => {
     select.current = onSelect;
   }, [onSelect]);
+
+  useEffect(() => {
+    fitted.current = false;
+  }, [fitKey]);
 
   useEffect(() => {
     if (!container.current || map.current) return;
@@ -124,7 +134,7 @@ export function FloodMap({
     // Oldest first, so the newest reports are drawn on top.
     for (const r of [...reports].reverse()) {
       seen.add(r.id);
-      const signature = `${r.status}|${r.receded}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.latitude},${r.longitude}`;
+      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.latitude},${r.longitude}`;
       const existing = markers.current.get(r.id);
       if (existing?.signature === signature) continue;
       existing?.marker.remove();
@@ -149,7 +159,7 @@ export function FloodMap({
         m.fitBounds(bounds, { padding: { top: 140, bottom: 60, left: 50, right: 50 }, maxZoom: 15, duration: 0 });
       }
     }
-  }, [ready, reports]);
+  }, [ready, reports, fitKey]);
 
   // Lift the selected marker above the others.
   useEffect(() => {

@@ -6,10 +6,10 @@ import { listPublicReports, MAP_HOURS, submitReport } from "@/features/flood-rep
 
 export const dynamic = "force-dynamic";
 
-/** Public map: mobile flood reports of the last ?hours= (6, 24, 72 or 168; default 24). */
+/** Public map: mobile flood reports of the last ?hours= (6, 24, 72 or 168; default 6, which holds every report still on the map). */
 export const GET = withApiHandler(async (request: NextRequest) => {
   const asked = Number(request.nextUrl.searchParams.get("hours"));
-  const hours = (MAP_HOURS as readonly number[]).includes(asked) ? asked : 24;
+  const hours = (MAP_HOURS as readonly number[]).includes(asked) ? asked : 6;
   return ok(await listPublicReports(hours));
 });
 

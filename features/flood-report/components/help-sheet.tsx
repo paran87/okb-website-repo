@@ -2,9 +2,10 @@
 
 import { Camera, ClipboardList, Home, MapPin, Send, ShieldAlert } from "lucide-react";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
-import { FLOOD_LEVELS, formatDepth, MAX_PHOTOS, roadStatus } from "../lib/options";
+import { LIVE_RAIN_MIN_HOURS, MOBILE_EXPIRY_HOURS } from "../lib/expiry";
+import { FLOOD_LEVELS, formatDepth, MAX_PHOTOS, roadStatus, WEATHER } from "../lib/options";
 import { BottomSheet } from "./bottom-sheet";
-import { RECEDED_COLOR } from "./flood-map";
+import { CLEARED_COLOR, RECEDED_COLOR } from "./flood-map";
 
 const STEPS = [
   { icon: Camera, title: "Take photos of the flood", text: `Tap the round button. Take up to ${MAX_PHOTOS} photos; each one is stamped with the time and GPS location.` },
@@ -56,6 +57,11 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
               <span className="text-slate-500">The flood has gone down</span>
             </li>
             <li className="flex items-center gap-3 text-sm">
+              <span className="size-4 shrink-0 rounded-full" style={{ background: CLEARED_COLOR }} />
+              <span className="font-semibold text-slate-900">Cleared</span>
+              <span className="text-slate-500">No update; its time ran out (24h, 3d, 7d)</span>
+            </li>
+            <li className="flex items-center gap-3 text-sm">
               <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">✓</span>
               <span className="font-semibold text-slate-900">Verified</span>
               <span className="text-slate-500">Checked by OKB operators</span>
@@ -76,6 +82,31 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
               </div>
             ))}
           </div>
+        </section>
+
+        <section>
+          <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">When a report leaves the map</h3>
+          <p className="text-sm text-slate-600">
+            A report stays on the map until the time the flood receded, if the sender gave one. Otherwise it is cleared
+            automatically, depending on the weather in the report:
+          </p>
+          <div className="mt-2 overflow-hidden rounded-xl border border-slate-200 text-sm">
+            {WEATHER.map((w) => (
+              <div key={w.id} className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 last:border-0">
+                <span className="text-slate-900">
+                  <span aria-hidden className="mr-1.5">
+                    {w.emoji}
+                  </span>
+                  {w.label}
+                </span>
+                <span className="font-semibold text-slate-900">{MOBILE_EXPIRY_HOURS[w.id]} hours</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">
+            While PAGASA reports rain or a warning for Metro Manila, every report stays at least {LIVE_RAIN_MIN_HOURS} hours. Older
+            reports stay visible under 24h, 3d and 7d.
+          </p>
         </section>
 
         <section className="flex gap-3 rounded-2xl bg-red-50 p-3">

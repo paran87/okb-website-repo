@@ -82,6 +82,14 @@ export interface PublicFloodReport {
   startedAt: string | null;
   recededAt: string | null;
   receded: boolean;
+  /** No receded time came and its weather time ran out (2–3 h dry, 4–6 h rain). */
+  expired: boolean;
+  /** Still flooded on the map now (neither receded nor expired). */
+  active: boolean;
+  /** When it leaves the map (the receded time, or report time + its weather hours). */
+  clearsAt: string | null;
+  /** Why it clears then, e.g. "6 h (heavy rain)". */
+  clearRule: string | null;
   remarks: string | null;
   senderName: string | null;
   reportedAt: string;
@@ -91,6 +99,8 @@ export interface PublicFloodReport {
 export interface PublicFloodReportList {
   generatedAt: string;
   hours: number;
+  /** PAGASA measures rain or has a warning for Metro Manila now. */
+  liveRain: boolean;
   reports: PublicFloodReport[];
   /** False when report storage is not configured on the server. */
   configured: boolean;

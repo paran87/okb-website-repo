@@ -3,6 +3,7 @@ import { floodSeverity } from "@/features/incident/lib/flood-severity";
 import { reportReference } from "@/features/reports/lib/format";
 import { reportPhotoUrl } from "@/features/reports/server/record";
 import { MOBILE_REPORT_PLATFORM, type BridgeReportStatus } from "@/features/reports/types";
+import { expiryReason, mobileExpiryHours } from "@/features/flood-report/lib/expiry";
 import { floodLevel, formatDepth, roadStatus, weather } from "@/features/flood-report/lib/options";
 import type { FloodReportInput, PublicFloodReport } from "@/features/flood-report/types";
 
@@ -278,8 +279,15 @@ const obj = (v: unknown): Obj => (v && typeof v === "object" && !Array.isArray(v
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
-/** Public map view of a stored mobile report row (null when it has no usable position). */
-export function toPublicReport(row: { id: string; status: string | null; created_at: string; record: unknown }): PublicFloodReport | null {
+/**
+ * Public map view of a stored mobile report row (null when it has no usable position). `liveRain`: PAGASA
+ * measures rain or has a warning for Metro Manila now (keeps dry-weather reports at least 4 h).
+ */
+export function toPublicReport(
+  row: { id: string; status: string | null; created_at: string; record: unknown },
+  liveRain = false,
+  now = Date.now(),
+): PublicFloodReport | null {
   const record = obj(row.record);
   const m = obj(record.mobile);
   const lat = num(m.latitude);
@@ -289,7 +297,11 @@ export function toPublicReport(row: { id: string; status: string | null; created
   const level = floodLevel(str(m.level));
   const depth = num(m.depthM);
   const recededAt = str(m.recededAt);
-  const receded = recededAt !== null && Date.parse(recededAt) <= Date.now();
+  const receded = recededAt !== null && Date.parse(recededAt) <= now;
+  const weatherId = str(m.weather);
+  const expiresAt = Date.parse(row.created_at) + mobileExpiryHours(weatherId, liveRain) * 3_600_000;
+  const clearsAt = recededAt ? Math.min(Date.parse(recededAt), expiresAt) : expiresAt;
+  const expired = !receded && Number.isFinite(expiresAt) && expiresAt <= now;
   const status = (str(row.status) ?? "needs_review") as BridgeReportStatus;
   const photos = Array.isArray(m.photos)
     ? m.photos.flatMap((p) => {
@@ -322,10 +334,14 @@ export function toPublicReport(row: { id: string; status: string | null; created
     depthM: depth,
     severity: floodSeverity(depth),
     roadStatus: roadStatus(str(m.roadStatus))?.label ?? null,
-    weather: weather(str(m.weather))?.label ?? null,
+    weather: weather(weatherId)?.label ?? null,
     startedAt: str(m.startedAt),
     recededAt,
     receded,
+    expired,
+    active: !receded && !expired,
+    clearsAt: Number.isFinite(clearsAt) ? new Date(clearsAt).toISOString() : null,
+    clearRule: recededAt ? null : expiryReason(weatherId, liveRain),
     remarks: str(m.remarks),
     senderName: str(m.senderName),
     reportedAt: row.created_at,

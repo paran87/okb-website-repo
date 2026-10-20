@@ -15,37 +15,53 @@ import type { CapturedPhoto, PublicFloodReport, UploadedPhoto } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
-import { FloodMap, RECEDED_COLOR } from "./flood-map";
+import { CLEARED_COLOR, FloodMap, RECEDED_COLOR } from "./flood-map";
 import { HelpSheet } from "./help-sheet";
 import { ReportDetails } from "./report-details";
 import { ReportForm, SendProgress, type ReportFormValues } from "./report-form";
 
-const RANGES = [
-  { hours: 6, label: "6h" },
-  { hours: 24, label: "24h" },
-  { hours: 72, label: "3d" },
-  { hours: 168, label: "7d" },
-] as const;
+/** "Now": floods still on the map. The others also show reports that receded or cleared (history). */
+type Range = "now" | 24 | 72 | 168;
+const RANGES: { id: Range; label: string }[] = [
+  { id: "now", label: "Now" },
+  { id: 24, label: "24h" },
+  { id: 72, label: "3d" },
+  { id: 168, label: "7d" },
+];
 
 const LEGEND = [
   { label: "Low", color: FLOOD_SEVERITY.low.color },
   { label: "Medium", color: FLOOD_SEVERITY.medium.color },
   { label: "High", color: FLOOD_SEVERITY.high.color },
-  { label: "Receded", color: RECEDED_COLOR },
 ];
+const HISTORY_LEGEND = [
+  { label: "Receded", color: RECEDED_COLOR },
+  { label: "Cleared", color: CLEARED_COLOR },
+];
+
+/** Still flooded now (re-checked here so a report leaves the map on time between refreshes). */
+function isActive(r: PublicFloodReport, now: number): boolean {
+  return r.active && (!r.clearsAt || Date.parse(r.clearsAt) > now);
+}
 
 type Screen = "map" | "camera" | "form";
 type SendState = { stage: "uploading" | "saving"; progress: number } | { stage: "done"; report: PublicFloodReport } | null;
 
-function rangeLabel(hours: number): string {
-  return hours < 48 ? `last ${hours} h` : `last ${hours / 24} days`;
+function rangeLabel(range: Exclude<Range, "now">): string {
+  return range < 48 ? `last ${range} h` : `last ${range / 24} days`;
 }
 
 /** Mobile-only page: flood map, camera, form. */
 function PhoneApp() {
   const queryClient = useQueryClient();
-  const [hours, setHours] = useState<number>(24);
-  const reports = useFloodReports(hours);
+  const [range, setRange] = useState<Range>("now");
+  // Every report still on the map is at most 6 hours old.
+  const reports = useFloodReports(range === "now" ? 6 : range);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
   const [screen, setScreen] = useState<Screen>("map");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -69,8 +85,9 @@ function PhoneApp() {
   const list = useMemo(() => {
     const server = reports.data?.reports ?? [];
     const missing = mine.filter((m) => !server.some((r) => r.id === m.id));
-    return missing.length ? [...missing, ...server] : server;
-  }, [reports.data, mine]);
+    const all = missing.length ? [...missing, ...server] : server;
+    return range === "now" ? all.filter((r) => isActive(r, now)) : all;
+  }, [reports.data, mine, range, now]);
   const selected = list.find((r) => r.id === selectedId) ?? null;
 
   useEffect(() => {
@@ -79,7 +96,7 @@ function PhoneApp() {
     const id = new URLSearchParams(window.location.search).get("report");
     if (id) {
       setLinked(id);
-      setHours(168);
+      setRange(168);
     }
   }, []);
 
@@ -164,13 +181,13 @@ function PhoneApp() {
     }
   };
 
-  const active = list.filter((r) => !r.receded).length;
+  const active = list.filter((r) => isActive(r, now)).length;
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-slate-200">
       {/* The map stays mounted under the camera and form, but out of reach of taps and screen readers. */}
       <div className="relative min-h-0 flex-1" inert={screen !== "map"}>
-        <FloodMap reports={list} selectedId={selectedId} onSelect={selectReport} focus={focus} user={geo.fix} />
+        <FloodMap reports={list} selectedId={selectedId} onSelect={selectReport} focus={focus} user={geo.fix} fitKey={`${range}:${reports.isPlaceholderData ? "previous" : "loaded"}`} />
 
         {/* Header */}
         <div className="pointer-events-none absolute inset-x-0 top-0 space-y-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -186,7 +203,11 @@ function PhoneApp() {
                 </span>
                 {reports.isPending
                   ? "Loading reports…"
-                  : `${list.length} report${list.length === 1 ? "" : "s"}${active !== list.length ? ` · ${active} still flooded` : ""} · ${rangeLabel(hours)}`}
+                  : range === "now"
+                    ? active
+                      ? `${active} flooded area${active === 1 ? "" : "s"} now`
+                      : "No flooding reported now"
+                    : `${list.length} report${list.length === 1 ? "" : "s"} · ${active} still flooded · ${rangeLabel(range)}`}
               </p>
             </div>
             <button
@@ -202,14 +223,14 @@ function PhoneApp() {
             <div role="radiogroup" aria-label="Time range" className="pointer-events-auto flex rounded-full bg-white p-1 shadow-md">
               {RANGES.map((r) => (
                 <button
-                  key={r.hours}
+                  key={r.id}
                   type="button"
                   role="radio"
-                  aria-checked={hours === r.hours}
-                  onClick={() => setHours(r.hours)}
+                  aria-checked={range === r.id}
+                  onClick={() => setRange(r.id)}
                   className={cn(
                     "h-9 min-w-11 rounded-full px-3 text-sm font-semibold",
-                    hours === r.hours ? "bg-black text-white" : "text-slate-700",
+                    range === r.id ? "bg-black text-white" : "text-slate-700",
                   )}
                 >
                   {r.label}
@@ -227,7 +248,7 @@ function PhoneApp() {
         {/* Legend + locate */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
           <div className="pointer-events-auto flex flex-wrap gap-x-2.5 gap-y-1 rounded-xl bg-white/95 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-md">
-            {LEGEND.map((l) => (
+            {(range === "now" ? LEGEND : [...LEGEND, ...HISTORY_LEGEND]).map((l) => (
               <span key={l.label} className="flex items-center gap-1">
                 <span className="size-2.5 rounded-full" style={{ background: l.color }} />
                 {l.label}
@@ -246,8 +267,13 @@ function PhoneApp() {
 
         {reports.isSuccess && !list.length ? (
           <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-2xl bg-white/95 p-4 text-center shadow-lg">
-            <p className="font-bold text-slate-900">No flood reports in the {rangeLabel(hours)}</p>
+            <p className="font-bold text-slate-900">
+              {range === "now" ? "No flooding reported right now" : `No flood reports in the ${rangeLabel(range)}`}
+            </p>
             <p className="mt-1 text-sm text-slate-600">See a flooded street? Tap the round button below to send photos.</p>
+            {range === "now" ? (
+              <p className="mt-1 text-xs text-slate-500">Reports leave the map when the flood recedes, or after 2–6 hours depending on the weather.</p>
+            ) : null}
           </div>
         ) : null}
       </div>

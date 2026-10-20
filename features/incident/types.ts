@@ -1,6 +1,7 @@
 /**
  * Incident feature - domain types.
  */
+import type { ReportPhoto } from "@/features/reports/types";
 import type { FloodSeverity } from "./lib/flood-severity";
 
 export type { FloodSeverity } from "./lib/flood-severity";
@@ -50,6 +51,12 @@ export interface FloodMapLocation {
   groupName: string | null;
   /** When the highlight clears unless a newer report keeps it (ISO). */
   clearsAt: string;
+  /** Geotagged photos (reports from the OKB mobile page). */
+  photos: ReportPhoto[];
+  /** Sent from the OKB mobile page: it clears by its own weather rule (see `clearRule`). */
+  fromMobile: boolean;
+  /** Why it clears when it does, for mobile reports, e.g. "6 h (heavy rain)". */
+  clearRule: string | null;
 }
 
 export interface FloodMapData {

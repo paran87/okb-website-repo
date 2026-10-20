@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { BadgeCheck, ChevronLeft, ChevronRight, CloudRain, Clock, Navigation, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
+import { BadgeCheck, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, Navigation, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import { formatDepth } from "../lib/options";
@@ -163,7 +163,7 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold text-white" style={{ background: color }}>
-            {report.receded ? "Receded" : report.levelLabel ?? severity.label}
+            {report.receded ? "Receded" : report.expired ? "Cleared" : report.levelLabel ?? severity.label}
             {report.depthM !== null ? ` · ${formatDepth(report.depthM)}` : ""}
           </span>
           {report.verified ? (
@@ -190,7 +190,22 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
         <Row icon={TrafficCone} label="Road" value={report.roadStatus} />
         <Row icon={CloudRain} label="Weather" value={report.weather} />
         <Row icon={Clock} label="Flood started" value={clock(report.startedAt)} />
-        <Row icon={Clock} label="Flood receded" value={report.recededAt ? clock(report.recededAt) : "Not yet — still flooded"} />
+        <Row
+          icon={Clock}
+          label="Flood receded"
+          value={report.recededAt ? clock(report.recededAt) : report.expired ? "No update was sent" : "Not reported yet"}
+        />
+        <Row
+          icon={Hourglass}
+          label={report.active ? "Leaves the map" : "Left the map"}
+          value={
+            report.clearsAt
+              ? `${clock(report.clearsAt)}${report.clearRule ? ` · ${report.clearRule} after the report` : " · when it receded"}${
+                  report.active && report.clearRule ? ", unless the flood recedes earlier" : ""
+                }`
+              : null
+          }
+        />
         <Row icon={User} label="Reported by" value={report.senderName ?? "Anonymous"} />
       </div>
 
