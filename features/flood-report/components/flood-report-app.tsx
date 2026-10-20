@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleHelp, Copy, Home, Loader2, LocateFixed, Maximize, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
+import { CircleHelp, Copy, Home, Loader2, List, LocateFixed, Maximize, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { useFloodReports } from "../hooks/use-flood-reports";
@@ -15,6 +15,7 @@ import type { CapturedPhoto, CapturedVideo, FloodReportFormValues, MyFloodReport
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
+import { FloodList } from "./flood-list";
 import { FloodMap, pinAt } from "./flood-map";
 import { HelpSheet } from "./help-sheet";
 import { HelpTip } from "./help-tip";
@@ -69,6 +70,7 @@ function PhoneApp() {
   const [emptyClosed, setEmptyClosed] = useState<Range | null>(null);
   const [locating, setLocating] = useState(false);
   const [fitAllSignal, setFitAllSignal] = useState(0);
+  const [listOpen, setListOpen] = useState(false);
   const [focus, setFocus] = useState<{ latitude: number; longitude: number; zoom?: number; key: string } | null>(null);
   const [send, setSend] = useState<SendState>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -425,40 +427,73 @@ function PhoneApp() {
           ) : null}
         </div>
 
-        {/* Legend + locate */}
+        {/* Flooded areas list, or legend + map buttons */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
-          <MapLegendButton
-            history={range !== "now"}
-            onOpen={() => {
-              setSelectedId(null);
-              setLegendOpen(true);
-            }}
-          />
-          <div className="pointer-events-none flex flex-col items-end gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedId(null);
-              setFitAllSignal((n) => n + 1);
-            }}
-            disabled={!list.length}
-            aria-label="Show all flooded areas"
-            className="pointer-events-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg active:bg-slate-100 disabled:opacity-40"
-          >
-            <Maximize className="size-6" aria-hidden />
-          </button>
-          <button
-            type="button"
-            onClick={() => (geo.fix ? setFocus({ latitude: geo.fix.latitude, longitude: geo.fix.longitude, zoom: 15, key: `me-${Date.now()}` }) : setLocating(true))}
-            aria-label="Show my location"
-            className="pointer-events-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-blue-600 shadow-lg active:bg-slate-100"
-          >
-            <LocateFixed className={cn("size-6", locating && "animate-pulse")} aria-hidden />
-          </button>
-          </div>
+          {listOpen ? (
+            <FloodList
+              open
+              reports={list}
+              history={range !== "now"}
+              loading={reports.isPending}
+              onPick={(id) => {
+                setListOpen(false);
+                selectReport(id);
+              }}
+              onClose={() => setListOpen(false)}
+              className="w-full"
+            />
+          ) : (
+            <>
+              <MapLegendButton
+                history={range !== "now"}
+                onOpen={() => {
+                  setSelectedId(null);
+                  setLegendOpen(true);
+                }}
+              />
+              <div className="pointer-events-none flex flex-col items-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setListOpen(true);
+                  }}
+                  aria-label={`Show the list of flooded areas (${list.length})`}
+                  className="pointer-events-auto relative flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg active:bg-slate-100"
+                >
+                  <List className="size-6" aria-hidden />
+                  {list.length ? (
+                    <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[11px] font-bold leading-5 text-white ring-2 ring-white">
+                      {list.length}
+                    </span>
+                  ) : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setFitAllSignal((n) => n + 1);
+                  }}
+                  disabled={!list.length}
+                  aria-label="Show all flooded areas"
+                  className="pointer-events-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg active:bg-slate-100 disabled:opacity-40"
+                >
+                  <Maximize className="size-6" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => (geo.fix ? setFocus({ latitude: geo.fix.latitude, longitude: geo.fix.longitude, zoom: 15, key: `me-${Date.now()}` }) : setLocating(true))}
+                  aria-label="Show my location"
+                  className="pointer-events-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-blue-600 shadow-lg active:bg-slate-100"
+                >
+                  <LocateFixed className={cn("size-6", locating && "animate-pulse")} aria-hidden />
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
-        {reports.isSuccess && !list.length && emptyClosed !== range ? (
+        {reports.isSuccess && !list.length && emptyClosed !== range && !listOpen ? (
           <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-2xl bg-white/95 px-10 py-4 text-center shadow-lg">
             <button
               type="button"
@@ -478,7 +513,7 @@ function PhoneApp() {
           </div>
         ) : null}
 
-        <HelpTip hidden={screen !== "map" || Boolean(selected) || helpOpen || myOpen || legendOpen} onShowMe={() => setHelpOpen(true)} />
+        <HelpTip hidden={screen !== "map" || listOpen || Boolean(selected) || helpOpen || myOpen || legendOpen} onShowMe={() => setHelpOpen(true)} />
       </div>
 
       <ControlBar className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" inert={screen !== "map"}>
