@@ -2,6 +2,7 @@ import "server-only";
 import { buildFloodMap, FLOOD_MAP_RULE, reportObservations } from "@/features/incident/server/flood-map";
 import { pinOf, serverRoadIndex } from "@/features/incident/server/roads";
 import { getReportStore } from "@/features/reports/server/index";
+import { FLOOD_TYPES, PROCESSED_STATUSES, type ResolvedListQuery } from "@/features/reports/server/store";
 import { reportReference } from "@/features/reports/lib/format";
 import { messageTime } from "@/features/reports/lib/series";
 import { MOBILE_REPORT_PLATFORM, type BridgeReportRecord } from "@/features/reports/types";
@@ -97,23 +98,57 @@ export async function bridgePins(hours: number, weather: FloodMapWeather, now = 
   return pins;
 }
 
-/** Admin → Reports: WhatsApp / Viber flood reports of the last [days] (any review state), newest first. */
-export async function bridgeReportsForAdmin(days: number, weather: FloodMapWeather, now = new Date()): Promise<AdminBridgeReport[]> {
+const PROCESSED = new Set<string>(PROCESSED_STATUSES);
+const FLOOD = new Set<string>(FLOOD_TYPES);
+const isFloodReport = (r: BridgeReportRecord) => PROCESSED.has(r.status) && FLOOD.has(r.reportType ?? "");
+
+/**
+ * Admin → Reports: every WhatsApp / Viber message the OKB Bridge stored in the last [days] (null: all time),
+ * newest first: flood reports in any review state, and also messages classified as not flood reports or not
+ * processed, which Incoming Reports, the Archive and the AI Situation Summary list too, so they can be deleted.
+ */
+export async function bridgeReportsForAdmin(days: number | null, weather: FloodMapWeather, now = new Date()): Promise<AdminBridgeReport[]> {
   const store = getReportStore();
   if (!store) return [];
-  const from = new Date(now.getTime() - days * 24 * HOUR);
-  const [records, media] = await Promise.all([store.listFloodReports({ from, to: now, limit: 500 }), reportMediaIndex()]);
-  const current = new Set(buildFloodMap(records.filter((r) => r.status !== "rejected"), weather, now).locations.map((l) => `${l.reportId}|${l.key}`));
+  const query: ResolvedListQuery = {
+    terms: [],
+    idPrefix: null,
+    platform: null,
+    group: null,
+    status: "all",
+    reportType: null,
+    region: null,
+    province: null,
+    municipality: null,
+    office: null,
+    location: null,
+    from: days ? new Date(now.getTime() - days * 24 * HOUR) : null,
+    to: null,
+    offset: 0,
+    limit: 500,
+  };
+  // "All statuses" leaves out ignored messages; they are listed too.
+  const [listed, ignored, media] = await Promise.all([
+    store.listReports(query),
+    store.listReports({ ...query, status: "ignored" }),
+    reportMediaIndex(),
+  ]);
+  const records = [...listed.records, ...ignored.records].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const floods = records.filter(isFloodReport);
+  const current = new Set(buildFloodMap(floods.filter((r) => r.status !== "rejected"), weather, now).locations.map((l) => `${l.reportId}|${l.key}`));
   const liveRain = weather.state === "wet";
   const activeHours = liveRain ? FLOOD_MAP_RULE.wetHours : FLOOD_MAP_RULE.normalHours;
   return records.flatMap((record): AdminBridgeReport[] => {
     const source = sourceOf(record);
     if (!source) return [];
     const added = media.get(record.id) ?? NO_MEDIA;
+    const flood = isFloodReport(record);
+    const unprocessed = record.status === "received" || record.status === "processing" || record.status === "failed";
     return [
       {
         kind: "bridge",
         id: record.id,
+        messageType: flood ? "flood" : unprocessed ? "unprocessed" : "not_flood",
         reference: reportReference(record.id, record.createdAt),
         source,
         status: record.status,
@@ -122,7 +157,7 @@ export async function bridgeReportsForAdmin(days: number, weather: FloodMapWeath
         senderName: record.source?.senderName ?? null,
         text: record.source?.messageText ?? null,
         summary: record.summary,
-        locations: reportObservations(record, activeHours, liveRain).flatMap((o) =>
+        locations: (flood ? reportObservations(record, activeHours, liveRain) : []).flatMap((o) =>
           o.location
             ? [
                 {

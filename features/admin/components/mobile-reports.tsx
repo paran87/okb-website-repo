@@ -28,19 +28,30 @@ import type {
   UploadedPhoto,
 } from "@/features/flood-report/types";
 
-type Days = "1" | "7" | "30";
+type Days = "1" | "7" | "30" | "all";
 const PERIODS = [
   { value: "1" as const, label: "24 h" },
   { value: "7" as const, label: "7 days" },
   { value: "30" as const, label: "30 days" },
+  { value: "all" as const, label: "All time" },
 ];
-type SourceFilter = "all" | ReportSource;
+/** "other": WhatsApp / Viber messages that are not flood reports or were not processed. */
+type SourceFilter = "all" | ReportSource | "other";
 const SOURCES = [
   { value: "all" as const, label: "All" },
   { value: "okb_mobile" as const, label: "OKB Mobile" },
   { value: "whatsapp" as const, label: "WhatsApp" },
   { value: "viber" as const, label: "Viber" },
+  { value: "other" as const, label: "Other messages" },
 ];
+
+/** A WhatsApp / Viber message that is not a flood report, in words. */
+function messageKind(r: AdminBridgeReport): string | null {
+  if (r.messageType === "unprocessed") return r.status === "failed" ? "Processing failed" : "Not processed yet";
+  if (r.messageType === "not_flood") return r.status === "ignored" ? "Ignored (not a flood report)" : "Not a flood report";
+  return null;
+}
+const isOther = (r: AdminReport) => r.kind === "bridge" && r.messageType !== "flood";
 
 const listKey = (days: Days) => ["admin", "mobile-reports", days] as const;
 
@@ -49,7 +60,10 @@ const manila = (iso: string) =>
   new Date(iso).toLocaleString("en-PH", { timeZone: "Asia/Manila", dateStyle: "medium", timeStyle: "short" });
 
 const sourceOf = (r: AdminReport): ReportSource => (r.kind === "mobile" ? "okb_mobile" : r.source);
-const titleOf = (r: AdminReport) => (r.kind === "mobile" ? r.locationText : (r.locations[0]?.label ?? `${SOURCE_LABEL[r.source]} report`));
+const titleOf = (r: AdminReport) =>
+  r.kind === "mobile"
+    ? r.locationText
+    : (r.locations[0]?.label ?? `${SOURCE_LABEL[r.source]} ${r.messageType === "flood" ? "report" : "message"}`);
 const errorText = (e: unknown, fallback: string) => (e instanceof Error ? e.message : fallback);
 
 function keptPhotos(r: AdminMobileReport): UploadedPhoto[] {
@@ -114,14 +128,14 @@ export function MobileReportsAdmin() {
     placeholderData: keepPreviousData,
   });
   const reports = useMemo(() => {
-    const all = (list.data ?? []).filter((r) => source === "all" || sourceOf(r) === source);
+    const all = (list.data ?? []).filter((r) => source === "all" || (source === "other" ? isOther(r) : sourceOf(r) === source));
     const terms = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length) return all;
     return all.filter((r) => {
       const text = (
         r.kind === "mobile"
           ? [r.locationText, r.area, r.landmark, r.deo, r.senderName, r.contactNumber, r.reference, r.remarks]
-          : [r.reference, r.groupName, r.senderName, r.text, ...r.locations.map((l) => l.label)]
+          : [r.reference, r.groupName, r.senderName, r.text, messageKind(r), ...r.locations.map((l) => l.label)]
       )
         .join(" ")
         .toLowerCase();
@@ -302,9 +316,10 @@ export function MobileReportsAdmin() {
     <div className="space-y-4">
       <AdminCard bodyClassName="space-y-3">
         <p className="text-caption text-muted-foreground">
-          Flood reports from the OKB mobile page and from the WhatsApp / Viber flood monitoring groups. Add or remove photos and videos,
-          correct mobile reports, or delete a report (test, spam, duplicate). Changes show on the public map and in the Command Center
-          right away.
+          Flood reports from the OKB mobile page and every message from the WhatsApp / Viber flood monitoring groups (also those that
+          are not flood reports or were not processed, under “Other messages”). Add or remove photos and videos, correct mobile reports,
+          or delete a report (test, spam, duplicate). Changes show on the public map and in the Command Center right away; deleting
+          everything here also empties Incoming Reports, the Archive and the AI Situation Summary.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Segmented value={days} options={PERIODS} onChange={setDays} label="Period" />
@@ -346,7 +361,7 @@ export function MobileReportsAdmin() {
       ) : !reports.length ? (
         <AdminCard>
           <p className="text-center text-caption text-muted-foreground">
-            {q ? "No report matches the search." : source === "all" ? "No flood reports in this period." : `No ${SOURCES.find((s) => s.value === source)?.label} reports in this period.`}
+            {q ? "No report matches the search." : source === "all" ? "No flood reports in this period." : source === "other" ? "No other messages in this period." : `No ${SOURCES.find((s) => s.value === source)?.label} reports in this period.`}
           </p>
         </AdminCard>
       ) : (
@@ -718,9 +733,13 @@ function BridgeRow({ r }: { r: AdminBridgeReport }) {
         {r.groupName ?? SOURCE_LABEL[r.source]} · {formatDistanceToNowStrict(new Date(r.reportedAt), { addSuffix: true })}
       </span>
       <span className="flex flex-wrap gap-1 pt-0.5">
-        <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", onMap ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground")}>
-          {onMap ? "Flooded on the map" : r.locations.length ? "Off the map" : "No flooded location"}
-        </span>
+        {messageKind(r) ? (
+          <span className="rounded-full bg-info/15 px-2 py-0.5 text-[11px] font-bold text-info">{messageKind(r)}</span>
+        ) : (
+          <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-bold", onMap ? "bg-danger/15 text-danger" : "bg-muted text-muted-foreground")}>
+            {onMap ? "Flooded on the map" : r.locations.length ? "Off the map" : "No flooded location"}
+          </span>
+        )}
         {r.status === "needs_review" ? (
           <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-bold text-warning">Needs review</span>
         ) : null}
@@ -790,6 +809,7 @@ function BridgeFacts({ r }: { r: AdminBridgeReport }) {
           {SOURCE_LABEL[r.source]}
         </span>
         <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">Status: {r.status.replaceAll("_", " ")}</span>
+        {messageKind(r) ? <span className="rounded-full bg-info/15 px-2 py-0.5 text-info">{messageKind(r)}</span> : null}
       </div>
       <Facts
         rows={[

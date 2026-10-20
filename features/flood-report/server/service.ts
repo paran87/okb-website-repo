@@ -447,10 +447,11 @@ async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: 
 }
 
 /**
- * Admin → Reports: the reports of the last [days], newest first: OKB Mobile reports (any status, with the
- * operator-only fields) and WhatsApp / Viber flood reports, each with the photos and videos operators added.
+ * Admin → Reports: the reports of the last [days] (null: all time), newest first: OKB Mobile reports (any
+ * status, with the operator-only fields) and every WhatsApp / Viber message, each with the photos and videos
+ * operators added.
  */
-export async function listReportsForAdmin(days: number): Promise<AdminReport[]> {
+export async function listReportsForAdmin(days: number | null): Promise<AdminReport[]> {
   if (!supabase()) return [];
   const weather = await floodMapWeather().catch(() => null);
   const [mobile, bridge] = await Promise.all([
@@ -460,10 +461,10 @@ export async function listReportsForAdmin(days: number): Promise<AdminReport[]> 
   return [...mobile, ...bridge].sort((a, b) => b.reportedAt.localeCompare(a.reportedAt));
 }
 
-async function listMobileReportsForAdmin(days: number): Promise<AdminMobileReport[]> {
-  const since = new Date(Date.now() - days * 24 * 3_600_000).toISOString();
+async function listMobileReportsForAdmin(days: number | null): Promise<AdminMobileReport[]> {
+  const since = days ? `&created_at=gte.${new Date(Date.now() - days * 24 * 3_600_000).toISOString()}` : "";
   const res = await rest(
-    `${REPORTS}?select=id,status,created_at,record&platform=eq.${MOBILE_REPORT_PLATFORM}&created_at=gte.${since}&order=created_at.desc&limit=300`,
+    `${REPORTS}?select=id,status,created_at,record&platform=eq.${MOBILE_REPORT_PLATFORM}${since}&order=created_at.desc&limit=500`,
   );
   if (!res.ok) {
     log.error({ status: res.status }, "Admin flood report list rejected");

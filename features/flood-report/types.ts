@@ -154,6 +154,11 @@ export interface AdminMobileReport extends MyFloodReport {
 export interface AdminBridgeReport {
   kind: "bridge";
   id: string;
+  /**
+   * What the OKB Bridge made of the message: a flood report, a message classified as not a flood report
+   * (chat, ignored), or one not processed yet / failed. Incoming Reports and the Archive show all three.
+   */
+  messageType: "flood" | "not_flood" | "unprocessed";
   reference: string;
   source: Exclude<ReportSource, "okb_mobile">;
   status: BridgeReportStatus;
