@@ -18,6 +18,7 @@ import {
   FileText,
   Images,
   Menu,
+  MessageSquareWarning,
   Radio,
   X,
   type LucideIcon,
@@ -27,6 +28,7 @@ import { SiteHeaderAccent } from "@/components/public/site-header-accent";
 import { PUBLIC_NAV_ITEMS } from "@/lib/config/public-navigation";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
+import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 
 const BAGONG_PILIPINAS_LOGO = "/brand/bagong-pilipinas-logo.png";
 const DPWH_LOGO = "/brand/dpwh-logo.png";
@@ -377,6 +379,19 @@ export function SiteHeader() {
                     </motion.div>
                   );
                 })}
+
+                <motion.div variants={itemVariants}>
+                  <FeedbackButton className="okb-mobilenav-item w-full cursor-pointer text-left">
+                    <span className="okb-mobilenav-icon" aria-hidden>
+                      <MessageSquareWarning className="size-[1.15rem]" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="okb-mobilenav-label">Report a problem</span>
+                      <span className="okb-mobilenav-desc">Something wrong or not working? Tell the OKB team.</span>
+                    </span>
+                    <ChevronRight className="okb-mobilenav-chev size-4 shrink-0" aria-hidden />
+                  </FeedbackButton>
+                </motion.div>
 
                 {PUBLIC_NAV_ITEMS.filter((item) => item.emphasis).map((item) => (
                   <motion.div key={item.href} variants={itemVariants}>

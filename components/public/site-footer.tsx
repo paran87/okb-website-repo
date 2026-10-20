@@ -10,6 +10,7 @@ import {
   Mail,
   MapPin,
   Megaphone,
+  MessageSquareWarning,
   Phone,
   Radio,
   type LucideIcon,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/config/okb-framework";
 import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
+import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 
 const DPWH_SITE = "https://www.dpwh.gov.ph";
 const PROGRAM_EMAIL = "okb@dpwh.gov.ph";
@@ -114,6 +116,12 @@ export function SiteFooter() {
                   </li>
                 );
               })}
+              <li>
+                <FeedbackButton className="okb-foot-link cursor-pointer">
+                  <MessageSquareWarning className="okb-foot-link__icon" aria-hidden />
+                  <span>Report a problem</span>
+                </FeedbackButton>
+              </li>
             </ul>
           </nav>
 

@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "pino", "pino-pretty"],
   // Admin → Setup shows this SQL (read at runtime by app/api/admin/setup).
   outputFileTracingIncludes: {
-    "/api/admin/setup": ["./supabase/migrations/20261014000000_okb_site_admin.sql", "./supabase/migrations/20261016000000_okb_gallery_engagement.sql"],
+    "/api/admin/setup": ["./supabase/migrations/20261014000000_okb_site_admin.sql", "./supabase/migrations/20261016000000_okb_gallery_engagement.sql", "./supabase/migrations/20261020000000_okb_site_feedback.sql"],
     // The public flood map places WhatsApp / Viber report locations on the road network (features/incident/server/roads.ts).
     "/api/flood-reports": ["./public/data/road-network/roads.geojson"],
     // Sending or editing a mobile report traces its flooded stretch along the road network (features/flood-report/server/stretch.ts).

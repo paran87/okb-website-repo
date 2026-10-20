@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CloudSun, Globe, Menu } from "lucide-react";
+import { ArrowRight, CloudSun, Globe, Menu, MessageSquareWarning } from "lucide-react";
 import { useWeatherSummary } from "@/features/weather/hooks/use-weather-summary";
 import { CommandWordmark } from "@/components/brand/command-wordmark";
 import { ConnectionIndicator } from "@/components/layout/connection-indicator";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { StatusIndicator } from "@/components/ui/status-indicator";
+import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 import { AppIcons } from "@/lib/config/icons";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { useUiStore } from "@/lib/store/ui.store";
@@ -111,6 +112,11 @@ export function Header() {
           <StatusIndicator tone="online" pulse label="System OK" />
           <ConnectionIndicator />
         </div>
+
+        {/* Phones: in the navigation drawer instead, so the wordmark keeps its room. */}
+        <FeedbackButton className="hidden size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:flex">
+          <MessageSquareWarning className="size-4" aria-hidden />
+        </FeedbackButton>
 
         <ThemeSwitcher />
 

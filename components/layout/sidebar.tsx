@@ -4,11 +4,12 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { X } from "lucide-react";
+import { MessageSquareWarning, X } from "lucide-react";
 import { AppLogo } from "@/components/layout/app-logo";
 import { NavigationGroup } from "@/components/layout/navigation-group";
 import { NavigationItem } from "@/components/layout/navigation-item";
 import { SidebarFooter } from "@/components/layout/sidebar-footer";
+import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 import { NAV_ITEMS, type NavEntry } from "@/lib/config/navigation";
 import { ROUTES } from "@/lib/constants";
 import { hasPermission } from "@/lib/rbac/permissions";
@@ -173,7 +174,7 @@ export function Sidebar() {
                   onNavigate={closeMobile}
                 />
               </nav>
-              <div className="border-t border-border p-3">
+              <div className="flex items-center justify-between gap-2 border-t border-border p-2 pl-3">
                 <Link
                   href={ROUTES.settings}
                   onClick={closeMobile}
@@ -181,6 +182,11 @@ export function Sidebar() {
                 >
                   Settings
                 </Link>
+                {/* The header keeps this as an icon from sm up; on phones it lives here. */}
+                <FeedbackButton className="flex h-10 items-center gap-2 rounded-lg px-3 text-caption font-semibold text-muted-foreground hover:bg-muted hover:text-foreground">
+                  <MessageSquareWarning className="size-4" aria-hidden />
+                  Report a problem
+                </FeedbackButton>
               </div>
             </motion.aside>
           </div>

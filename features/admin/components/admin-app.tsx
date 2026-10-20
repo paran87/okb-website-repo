@@ -2,25 +2,27 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { BarChart3, Camera, Globe, Images, LayoutDashboard, Loader2, LogOut, Settings2, Users } from "lucide-react";
+import { BarChart3, Camera, Globe, Images, LayoutDashboard, Loader2, LogOut, MessageSquareWarning, Settings2, Users } from "lucide-react";
 import { OkbLogo } from "@/components/brand/okb-logo";
 import { ThemeSwitcher } from "@/components/layout/theme-switcher";
 import { AdminLogin } from "@/features/admin/components/admin-login";
 import { AdminSetup } from "@/features/admin/components/admin-setup";
 import { AnalyticsOverview } from "@/features/admin/components/analytics-overview";
+import { FeedbackAdmin } from "@/features/admin/components/feedback-admin";
 import { MediaManager } from "@/features/admin/components/media-manager";
 import { MobileReportsAdmin } from "@/features/admin/components/mobile-reports";
 import { VisitorLog } from "@/features/admin/components/visitor-log";
 import { useAdminState, useSignOut } from "@/features/admin/hooks/use-admin";
 import { cn } from "@/utils/cn";
 
-type Tab = "overview" | "visitors" | "media" | "reports" | "setup";
+type Tab = "overview" | "visitors" | "media" | "reports" | "feedback" | "setup";
 
 const TABS: { id: Tab; label: string; title: string; icon: ReactNode }[] = [
   { id: "overview", label: "Overview", title: "Visitors at a glance", icon: <BarChart3 className="size-5" aria-hidden /> },
   { id: "visitors", label: "Visitors", title: "Every visit, newest first", icon: <Users className="size-5" aria-hidden /> },
   { id: "media", label: "Media", title: "Photos & videos", icon: <Images className="size-5" aria-hidden /> },
   { id: "reports", label: "Reports", title: "Flood reports (OKB Mobile, WhatsApp, Viber)", icon: <Camera className="size-5" aria-hidden /> },
+  { id: "feedback", label: "Feedback", title: "Problems reported by visitors", icon: <MessageSquareWarning className="size-5" aria-hidden /> },
   { id: "setup", label: "Setup", title: "Setup & account", icon: <Settings2 className="size-5" aria-hidden /> },
 ];
 
@@ -28,7 +30,7 @@ function isTab(value: string): value is Tab {
   return TABS.some((t) => t.id === value);
 }
 
-/** The /admin page: sign-in gate, then Overview · Visitors · Media · Reports · Setup. */
+/** The /admin page: sign-in gate, then Overview · Visitors · Media · Reports · Feedback · Setup. */
 export function AdminApp() {
   const state = useAdminState();
   const signOut = useSignOut();
@@ -152,13 +154,14 @@ export function AdminApp() {
         {tab === "visitors" ? <VisitorLog onOpenSetup={() => go("setup")} /> : null}
         {tab === "media" ? <MediaManager onOpenSetup={() => go("setup")} /> : null}
         {tab === "reports" ? <MobileReportsAdmin /> : null}
+        {tab === "feedback" ? <FeedbackAdmin onOpenSetup={() => go("setup")} /> : null}
         {tab === "setup" ? <AdminSetup state={state.data} /> : null}
       </main>
 
       {/* Phone: thumb-reach bottom navigation. */}
       <nav
         aria-label="Admin sections"
-        className="admin-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="admin-bottom-nav fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-border pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {TABS.map((t) => (
           <button

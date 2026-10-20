@@ -9,7 +9,11 @@ import { supabaseProjectRef } from "@/features/admin/server/supabase";
 export const dynamic = "force-dynamic";
 
 /** Bundled with this route (next.config.ts → outputFileTracingIncludes). */
-const SETUP_SQL_FILES = ["supabase/migrations/20261014000000_okb_site_admin.sql", "supabase/migrations/20261016000000_okb_gallery_engagement.sql"];
+const SETUP_SQL_FILES = [
+  "supabase/migrations/20261014000000_okb_site_admin.sql",
+  "supabase/migrations/20261016000000_okb_gallery_engagement.sql",
+  "supabase/migrations/20261020000000_okb_site_feedback.sql",
+];
 
 /** The one-time SQL that creates the Admin tables, and the Supabase SQL editor link. */
 export const GET = withApiHandler(async (request: NextRequest) => {

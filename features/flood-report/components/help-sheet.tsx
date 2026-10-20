@@ -1,6 +1,7 @@
 "use client";
 
-import { Camera, ClipboardList, Home, MapPin, Send, ShieldAlert } from "lucide-react";
+import { Camera, ClipboardList, Home, MapPin, MessageSquareWarning, Send, ShieldAlert } from "lucide-react";
+import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 import { FLOOD_SEVERITY, SEVERITY_ORDER } from "@/features/incident/lib/flood-severity";
 import { LIVE_RAIN_MIN_HOURS, MOBILE_EXPIRY_HOURS } from "../lib/expiry";
 import { FLOOD_LEVELS, formatDepth, MAX_PHOTOS, roadStatus, WEATHER } from "../lib/options";
@@ -132,6 +133,11 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
           Your photos, the place and the flood details are shown on the public map. Your mobile number (if you give it) is seen only by
           OKB operators. The page needs your camera and location; nothing is recorded until you tap send.
         </p>
+
+        <FeedbackButton className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 active:bg-slate-100">
+          <MessageSquareWarning className="size-5" aria-hidden />
+          Report a problem with this page
+        </FeedbackButton>
       </div>
     </BottomSheet>
   );
