@@ -24,8 +24,8 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   const c = mediaCollection(body.collection);
   if (!c) throw new NotFoundError("Unknown collection");
   // Large files go straight to R2, which must allow this site (set up here, no switch to turn on).
-  await ensureDirectUploads(siteOrigin(request));
-  return ok(await createUploadTicket(c, body.fileName, body.contentType, body.size));
+  const directUploads = await ensureDirectUploads(siteOrigin(request));
+  return ok({ ...(await createUploadTicket(c, body.fileName, body.contentType, body.size)), directUploads });
 });
 
 /** Fallback for small files when the browser cannot upload to R2 directly (?collection&key, raw body). */

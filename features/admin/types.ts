@@ -118,8 +118,13 @@ export interface AdminMediaList {
   detailsAvailable: boolean;
 }
 
+/** Whether the bucket lets this site's browsers upload straight to it (see ensureDirectUploads). */
+export type DirectUploads = "ok" | "denied" | "error";
+
 export interface UploadTicket {
   key: string;
+  /** The bucket's state for direct uploads when the link was made (explains a blocked upload). */
+  directUploads?: DirectUploads;
   uploadUrl: string;
   contentType: string;
   /** Largest file the server-side fallback accepts when direct upload is blocked. */

@@ -145,7 +145,8 @@ export function useSetupSql(enabled: boolean) {
 export function useDirectUploads(enabled: boolean) {
   return useQuery({
     queryKey: adminKeys.cors,
-    queryFn: () => adminApi<{ origin: string; status: "enabled" | "disabled" | "unknown" }>("/api/admin/media/cors"),
+    queryFn: () =>
+      adminApi<{ origin: string; status: "enabled" | "disabled" | "unknown"; setup: "ok" | "denied" | "error" }>("/api/admin/media/cors"),
     enabled,
     staleTime: 5 * 60_000,
   });

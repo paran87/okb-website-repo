@@ -10,6 +10,6 @@ export const dynamic = "force-dynamic";
 export const GET = withApiHandler(async (request: NextRequest) => {
   requireAdmin(request);
   const origin = siteOrigin(request);
-  await ensureDirectUploads(origin);
-  return ok({ origin, status: await directUploadStatus(origin) });
+  const setup = await ensureDirectUploads(origin);
+  return ok({ origin, status: await directUploadStatus(origin), setup });
 });

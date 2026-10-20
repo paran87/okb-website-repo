@@ -10,8 +10,14 @@ import type { UploadTicket } from "@/features/admin/types";
  * bucket still refuses, files up to the server's limit go through the site.
  */
 
-const BLOCKED =
-  "The storage bucket did not accept the upload from this site. Try again in a minute; if it keeps failing, see Admin → Setup → Direct uploads.";
+/** Why the browser could not reach storage, from what the server found when it made the upload link. */
+function blockedMessage(state: UploadTicket["directUploads"]): string {
+  if (state === "denied") {
+    return "Files over 4 MB need a one-time setting in Cloudflare that this site's storage key is not allowed to make. Open Admin → Setup → Direct uploads, copy the rule and add it in Cloudflare.";
+  }
+  if (state === "error") return "The storage settings could not be checked just now. Please try again in a minute.";
+  return "The upload was cut off before it reached storage. Check the connection and try again.";
+}
 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -85,7 +91,7 @@ export async function uploadFile(
 
   // Blocked before reaching R2 (usually CORS): small files can go through this site.
   if (file.size > ticket.proxyLimit) {
-    throw new AdminApiError(BLOCKED, 0, "cors_blocked");
+    throw new AdminApiError(blockedMessage(ticket.directUploads), 0, "cors_blocked");
   }
   onProgress(0);
   const proxied = await put(
@@ -166,7 +172,7 @@ export async function uploadReportMedia(
       // Drop the parts already sent (also when the operator cancelled).
       void adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key, uploadId, abort: true }) }).catch(() => undefined);
       if (err instanceof AdminApiError && err.reason === "cors_blocked") {
-        throw new AdminApiError(BLOCKED, 0, "cors_blocked");
+        throw new AdminApiError(blockedMessage(ticket.directUploads), 0, "cors_blocked");
       }
       throw err;
     }
@@ -180,7 +186,7 @@ export async function uploadReportMedia(
   }
   if (direct !== 0) throw new AdminApiError(`Storage rejected the upload (${direct}).`, direct, "storage_error");
   if (file.size > ticket.proxyLimit) {
-    throw new AdminApiError(BLOCKED, 0, "cors_blocked");
+    throw new AdminApiError(blockedMessage(ticket.directUploads), 0, "cors_blocked");
   }
   onProgress(0);
   const proxied = await put(`${base}?key=${encodeURIComponent(ticket.key)}`, file, ticket.contentType, onProgress, signal);

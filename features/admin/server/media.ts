@@ -1,5 +1,6 @@
 import "server-only";
 import { ApiError, BadRequestError, ConflictError, NotFoundError } from "@/lib/api/errors";
+import { logger } from "@/lib/logger";
 import {
   MAX_UPLOAD_BYTES,
   mediaKindOf,
@@ -38,7 +39,7 @@ import {
   type MediaMeta,
   type MediaMetaFields,
 } from "@/features/admin/server/media-meta";
-import type { AdminMediaItem, AdminMediaList, MediaKind, UploadTicket } from "@/features/admin/types";
+import type { AdminMediaItem, AdminMediaList, DirectUploads, MediaKind, UploadTicket } from "@/features/admin/types";
 
 /**
  * Photos and videos the admin manages, stored in the operations R2 bucket.
@@ -297,7 +298,9 @@ function corsRule(origin: string): string {
     "<AllowedMethod>PUT</AllowedMethod>",
     "<AllowedMethod>GET</AllowedMethod>",
     "<AllowedMethod>HEAD</AllowedMethod>",
+    // "*" plus content-type by name: the single upload sends content-type, parts send no extra header.
     "<AllowedHeader>*</AllowedHeader>",
+    "<AllowedHeader>content-type</AllowedHeader>",
     "<ExposeHeader>ETag</ExposeHeader>",
     "<MaxAgeSeconds>3600</MaxAgeSeconds>",
     "</CORSRule>",
@@ -351,17 +354,20 @@ const allowedOrigins = new Set<string>();
 
 /**
  * Makes sure browsers on [origin] may upload straight to the bucket, adding the CORS rule when it is missing, so
- * large uploads work without anyone turning them on. Called before every upload link is handed out. False when
- * the rule could not be set (the R2 token cannot change bucket settings); the upload then reports it.
+ * large uploads work without anyone turning them on. Called before every upload link is handed out.
+ * "denied": the R2 token may not change bucket settings (the rule has to be added once in Cloudflare);
+ * "error": the bucket settings could not be read or written right now.
  */
-export async function ensureDirectUploads(origin: string): Promise<boolean> {
-  if (allowedOrigins.has(origin)) return true;
+export async function ensureDirectUploads(origin: string): Promise<DirectUploads> {
+  if (allowedOrigins.has(origin)) return "ok";
   try {
     await enableDirectUploads(origin);
     allowedOrigins.add(origin);
-    return true;
-  } catch {
-    return false;
+    return "ok";
+  } catch (err) {
+    const denied = err instanceof ApiError && (err.details as { reason?: string } | undefined)?.reason === "cors_denied";
+    logger.warn({ module: "admin-media", origin, denied, err: err instanceof Error ? err.message : err }, "Direct uploads could not be set up");
+    return denied ? "denied" : "error";
   }
 }
 

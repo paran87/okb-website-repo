@@ -207,6 +207,40 @@ function StorageCheckCard() {
   );
 }
 
+/** The CORS rule to add in Cloudflare when the server cannot add it itself (one time). */
+function CorsHelp({ origin, bucket, denied }: { origin: string; bucket: string | null; denied: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const rule = JSON.stringify(
+    [{ AllowedOrigins: [origin], AllowedMethods: ["PUT", "GET", "HEAD"], AllowedHeaders: ["*", "content-type"], ExposeHeaders: ["ETag"], MaxAgeSeconds: 3600 }],
+    null,
+    2,
+  );
+  return (
+    <div className="space-y-2">
+      <p>
+        {denied
+          ? "Could not be set up automatically: this site's R2 API token is not allowed to change bucket settings."
+          : "Could not be checked or set up right now."}{" "}
+        Files up to 4 MB still upload. For bigger files, add this rule once in Cloudflare → R2 → <Code>{bucket ?? "the bucket"}</Code> →
+        Settings → CORS policy (or give the R2 token Admin Read & Write and reload this page):
+      </p>
+      <pre className="max-w-full overflow-x-auto rounded-lg bg-background p-3 font-mono text-[11px] text-foreground">{rule}</pre>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard
+            ?.writeText(rule)
+            .then(() => setCopied(true))
+            .catch(() => undefined);
+        }}
+        className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-border px-3 text-caption font-semibold text-foreground hover:bg-muted"
+      >
+        <Copy className="size-4" aria-hidden /> {copied ? "Copied" : "Copy rule"}
+      </button>
+    </div>
+  );
+}
+
 export function AdminSetup({ state }: { state: AdminState }) {
   const cors = useDirectUploads(state.storage.configured);
   const signOut = useSignOut();
@@ -253,11 +287,7 @@ export function AdminSetup({ state }: { state: AdminState }) {
               {cors.data?.status === "enabled" ? (
                 "Set up automatically: browsers upload big files (up to 1 GB) straight to storage."
               ) : cors.data ? (
-                <>
-                  Could not be set up automatically: the R2 API token cannot change bucket settings. Files up to 4 MB still
-                  upload. In Cloudflare → R2 → <Code>{state.storage.bucket ?? "the bucket"}</Code> → Settings → CORS policy, allow{" "}
-                  <Code>{cors.data.origin}</Code> with methods PUT, GET, HEAD, all headers, and expose <Code>ETag</Code>.
-                </>
+                <CorsHelp origin={cors.data.origin} bucket={state.storage.bucket} denied={cors.data.setup === "denied"} />
               ) : (
                 "Checking…"
               )}

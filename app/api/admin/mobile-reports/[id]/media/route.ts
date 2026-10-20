@@ -23,8 +23,8 @@ export const POST = withApiHandler(async (request: NextRequest, { params }) => {
   const id = await assertReportExists((await params).id ?? "");
   const body = ticketSchema.parse(await request.json());
   // Large files go straight to R2, which must allow this site (set up here, no switch to turn on).
-  await ensureDirectUploads(siteOrigin(request));
-  return ok(await createMediaTicket(id, body.fileName, body.contentType, body.size));
+  const directUploads = await ensureDirectUploads(siteOrigin(request));
+  return ok({ ...(await createMediaTicket(id, body.fileName, body.contentType, body.size)), directUploads });
 });
 
 /** Fallback for small files when the browser cannot upload to R2 directly (?key, raw body). */
