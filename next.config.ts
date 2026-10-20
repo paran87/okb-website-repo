@@ -15,7 +15,9 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(self)",
+    // camera=(self): the flood report page (/report-flood) takes photos. It must be allowed on every page, because
+    // opening it from a Command Center link keeps the document (and its policy) of the page it came from.
+    value: "camera=(self), microphone=(), geolocation=(self)",
   },
 ];
 
@@ -149,16 +151,6 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
-      },
-      {
-        // The mobile flood report page takes photos with the phone camera (a later match wins).
-        source: "/report-flood",
-        headers: [
-          {
-            key: "Permissions-Policy",
-            value: "camera=(self), microphone=(), geolocation=(self)",
-          },
-        ],
       },
     ];
   },

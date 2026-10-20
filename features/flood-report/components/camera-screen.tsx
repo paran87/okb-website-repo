@@ -12,6 +12,8 @@ import { BarTile, ControlBar, ShutterButton } from "./bar";
 
 type CameraState = "starting" | "live" | "blocked" | "unsupported";
 
+const RELOAD_KEY = "okb-camera-policy-reload";
+
 /** The browser's name for the Android settings hint. */
 function browserName(): string {
   if (typeof navigator === "undefined") return "your browser";
@@ -62,6 +64,7 @@ export function CameraScreen({
   const [attempt, setAttempt] = useState(0);
   /** "denied" when the browser remembers a refusal: only its site settings can undo it. */
   const [permission, setPermission] = useState<PermissionState | null>(null);
+  const [reason, setReason] = useState<"system" | "dismissed" | "site" | "policy" | null>(null);
   const [torch, setTorch] = useState<{ supported: boolean; on: boolean }>({ supported: false, on: false });
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -89,6 +92,22 @@ export function CameraScreen({
         setCamera("unsupported");
         return;
       }
+      // A page that still carries an older "no camera" site policy (an old tab, a cached page) reloads once.
+      const policy = (document as Document & { permissionsPolicy?: { allowsFeature(f: string): boolean }; featurePolicy?: { allowsFeature(f: string): boolean } });
+      const allowed = (policy.permissionsPolicy ?? policy.featurePolicy)?.allowsFeature("camera");
+      if (allowed === false) {
+        let reloaded = false;
+        try {
+          reloaded = sessionStorage.getItem(RELOAD_KEY) === "1";
+          sessionStorage.setItem(RELOAD_KEY, "1");
+        } catch {
+          reloaded = true;
+        }
+        if (!reloaded) {
+          window.location.reload();
+          return;
+        }
+      }
       setCamera("starting");
       try {
         const s = await navigator.mediaDevices.getUserMedia({
@@ -108,10 +127,18 @@ export function CameraScreen({
         const caps = (track?.getCapabilities?.() ?? {}) as MediaTrackCapabilities & { torch?: boolean };
         setTorch({ supported: Boolean(caps.torch), on: false });
         setCamera("live");
+        try {
+          sessionStorage.removeItem(RELOAD_KEY);
+        } catch {
+          /* storage unavailable */
+        }
       } catch (err) {
         if (cancelled) return;
         const name = err instanceof DOMException ? err.name : "";
+        const message = err instanceof Error ? err.message.toLowerCase() : "";
         setCamera(name === "NotAllowedError" || name === "SecurityError" ? "blocked" : "unsupported");
+        // Chrome-based browsers say why: the phone denied the browser app, the prompt was dismissed, or the site is blocked.
+        setReason(message.includes("system") ? "system" : message.includes("dismiss") ? "dismissed" : allowed === false ? "policy" : "site");
         const state = await navigator.permissions
           ?.query({ name: "camera" as PermissionName })
           .then((p) => p.state)
@@ -242,7 +269,22 @@ export function CameraScreen({
                   <RefreshCw className="size-5" aria-hidden />
                   Try again
                 </button>
-                {camera === "blocked" && (permission === "denied" || attempt > 0) ? (
+                {camera === "blocked" && reason === "system" ? (
+                  <p className="max-w-xs text-sm text-white/80">
+                    Your phone does not let {browserName()} use the camera. Open phone <b>Settings → Apps → {browserName()} → Permissions →
+                    Camera → Allow</b>, then come back and tap Try again.
+                  </p>
+                ) : camera === "blocked" && reason === "dismissed" && permission !== "denied" ? (
+                  <p className="max-w-xs text-sm text-white/80">Tap Try again, then choose <b>Allow</b> when your phone asks.</p>
+                ) : camera === "blocked" && reason === "policy" ? (
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="max-w-xs text-sm text-white/80 underline underline-offset-4"
+                  >
+                    Reload this page, then tap the round button again.
+                  </button>
+                ) : camera === "blocked" && (permission === "denied" || attempt > 0) ? (
                   <ol className="max-w-xs list-decimal space-y-1 pl-5 text-left text-sm text-white/80">
                     <li>Tap the icon at the left of the web address.</li>
                     <li>
@@ -312,7 +354,7 @@ export function CameraScreen({
         </div>
 
         {/* Live GPS stamp (burned into each photo) */}
-        {stamp ? (
+        {stamp && camera === "live" ? (
           <div className="pointer-events-none absolute bottom-3 right-3 max-w-[85%] bg-black/45 px-3 py-2 text-right text-[13px] font-semibold leading-snug [text-shadow:0_1px_2px_rgba(0,0,0,.7)]">
             <p className="text-[10px] font-bold tracking-wider text-amber-300">OKB FLOOD REPORT</p>
             {stamp.map((line, i) => (
