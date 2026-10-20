@@ -40,6 +40,13 @@ export function removeMyReportKey(id: string) {
   save(readMyReportKeys().filter((k) => k.id !== id));
 }
 
+/** Forgets reports the server no longer has for this phone (deleted by OKB operators or from another tab). */
+export function forgetMyReportKeys(ids: string[]) {
+  if (!ids.length) return;
+  const gone = new Set(ids);
+  save(readMyReportKeys().filter((k) => !gone.has(k.id)));
+}
+
 export function myReportToken(id: string): string | null {
   return readMyReportKeys().find((k) => k.id === id)?.token ?? null;
 }

@@ -10,7 +10,7 @@ import { useGeolocation } from "../hooks/use-geolocation";
 import { useIsPhone } from "../hooks/use-is-phone";
 import { usePlace } from "../hooks/use-place";
 import { deleteReport, fetchMyReports, FloodReportApiError, sendReport, updateReport, uploadPhoto } from "../lib/api";
-import { addMyReportKey, readMyReportKeys, removeMyReportKey, type MyReportKey } from "../lib/my-reports";
+import { addMyReportKey, forgetMyReportKeys, readMyReportKeys, removeMyReportKey, type MyReportKey } from "../lib/my-reports";
 import type { CapturedPhoto, FloodReportFormValues, MyFloodReport, PublicFloodReport, UploadedPhoto } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
@@ -99,6 +99,13 @@ function PhoneApp() {
     refetchInterval: 60_000,
   });
   const myReports = useMemo(() => (keys.length ? (myQuery.data ?? []) : []), [keys.length, myQuery.data]);
+  // The server answers only for reports that still exist with this phone's key: forget the others, so "Mine"
+  // does not keep counting a report OKB operators deleted (or one deleted from another tab).
+  useEffect(() => {
+    if (!myQuery.isSuccess || myQuery.isFetching || !myQuery.data) return;
+    const found = new Set(myQuery.data.map((r) => r.id));
+    forgetMyReportKeys(keys.filter((k) => !found.has(k.id)).map((k) => k.id));
+  }, [myQuery.isSuccess, myQuery.isFetching, myQuery.data, keys]);
   const [myOpen, setMyOpen] = useState(false);
   const [ownId, setOwnId] = useState<string | null>(null);
   const [ownBusy, setOwnBusy] = useState(false);
