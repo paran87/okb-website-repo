@@ -56,7 +56,11 @@ function PhoneApp() {
   const [formError, setFormError] = useState<string | null>(null);
   const [linked, setLinked] = useState<string | null>(null);
   const reportId = useRef<string>("");
-  const geo = useGeolocation(screen !== "map" || locating);
+  // Location is asked only after the camera prompt is answered: Android browsers show one permission prompt
+  // at a time and may refuse the camera if both are asked together.
+  const [cameraSettled, setCameraSettled] = useState(false);
+  const onCameraSettled = useCallback(() => setCameraSettled(true), []);
+  const geo = useGeolocation(screen === "form" || (screen === "camera" && cameraSettled) || locating);
   const place = usePlace(screen !== "map" ? geo.fix : null);
 
   // Reports sent from this phone stay on the map even if a refresh comes from a server cache that is a few
@@ -275,6 +279,7 @@ function PhoneApp() {
             setScreen("form");
           }}
           onBack={() => setScreen("map")}
+          onCameraSettled={onCameraSettled}
         />
       ) : null}
       {screen === "form" ? (

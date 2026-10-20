@@ -12,6 +12,19 @@ import { BarTile, ControlBar, ShutterButton } from "./bar";
 
 type CameraState = "starting" | "live" | "blocked" | "unsupported";
 
+/** The browser's name for the Android settings hint. */
+function browserName(): string {
+  if (typeof navigator === "undefined") return "your browser";
+  if ("brave" in navigator) return "Brave";
+  const ua = navigator.userAgent;
+  if (/SamsungBrowser/i.test(ua)) return "Samsung Internet";
+  if (/Firefox/i.test(ua)) return "Firefox";
+  if (/EdgA/i.test(ua)) return "Edge";
+  if (/OPR|Opera/i.test(ua)) return "Opera";
+  if (/Chrome/i.test(ua)) return "Chrome";
+  return "your browser";
+}
+
 function placeLines(place: PlaceName | null): string[] {
   if (!place) return [];
   const first = [place.road, place.barangay].filter(Boolean).join(", ");
@@ -29,6 +42,7 @@ export function CameraScreen({
   onRemove,
   onSend,
   onBack,
+  onCameraSettled,
 }: {
   photos: CapturedPhoto[];
   geo: GeoState;
@@ -37,12 +51,17 @@ export function CameraScreen({
   onRemove: (id: string) => void;
   onSend: () => void;
   onBack: () => void;
+  /** Called once the camera is running or was refused, so the location prompt never competes with it. */
+  onCameraSettled: () => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const [camera, setCamera] = useState<CameraState>("starting");
   const [facing, setFacing] = useState<"environment" | "user">("environment");
+  const [attempt, setAttempt] = useState(0);
+  /** "denied" when the browser remembers a refusal: only its site settings can undo it. */
+  const [permission, setPermission] = useState<PermissionState | null>(null);
   const [torch, setTorch] = useState<{ supported: boolean; on: boolean }>({ supported: false, on: false });
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -91,7 +110,15 @@ export function CameraScreen({
         setCamera("live");
       } catch (err) {
         if (cancelled) return;
-        setCamera(err instanceof DOMException && err.name === "NotAllowedError" ? "blocked" : "unsupported");
+        const name = err instanceof DOMException ? err.name : "";
+        setCamera(name === "NotAllowedError" || name === "SecurityError" ? "blocked" : "unsupported");
+        const state = await navigator.permissions
+          ?.query({ name: "camera" as PermissionName })
+          .then((p) => p.state)
+          .catch(() => null);
+        if (!cancelled) setPermission(state ?? null);
+      } finally {
+        if (!cancelled) onCameraSettled();
       }
     }
     void start();
@@ -100,7 +127,9 @@ export function CameraScreen({
       stream.current?.getTracks().forEach((t) => t.stop());
       stream.current = null;
     };
-  }, [facing]);
+    // onCameraSettled is a stable callback from the parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [facing, attempt]);
 
   const stampInfo = useCallback(
     (takenAt: Date): StampInfo | null =>
@@ -125,10 +154,12 @@ export function CameraScreen({
 
   const shoot = async () => {
     if (full) return setNotice(`Maximum of ${MAX_PHOTOS} photos. Delete one to take another.`);
+    // Without the in-page camera the shutter asks for it again (never jumps to another app).
+    if (camera === "blocked" || camera === "unsupported") return setAttempt((n) => n + 1);
+    const v = video.current;
+    if (!v || camera !== "live" || !v.videoWidth) return setNotice("Starting the camera…");
     const info = stampInfo(new Date());
     if (!info) return setNotice(geo.error ?? "Waiting for your GPS location…");
-    const v = video.current;
-    if (!v || camera !== "live" || !v.videoWidth) return fileInput.current?.click();
     setBusy(true);
     setFlash(true);
     setTimeout(() => setFlash(false), 180);
@@ -197,21 +228,41 @@ export function CameraScreen({
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
             <Camera className="size-12 text-white/60" aria-hidden />
             {camera === "starting" ? (
-              <p className="text-white/80">Starting the camera…</p>
+              <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
             ) : (
               <>
-                <p className="text-white/90">
-                  {camera === "blocked"
-                    ? "Camera access is blocked. Allow the camera for this site in your browser settings, or use your camera app."
-                    : "This browser cannot open the camera here. Use your camera app instead."}
+                <p className="text-lg font-bold">
+                  {camera === "blocked" ? "Allow the camera to take photos here" : "The camera could not start"}
                 </p>
                 <button
                   type="button"
-                  onClick={() => fileInput.current?.click()}
-                  className="flex h-12 items-center gap-2 rounded-xl bg-white px-5 font-semibold text-black"
+                  onClick={() => setAttempt((n) => n + 1)}
+                  className="flex h-12 items-center gap-2 rounded-xl bg-white px-6 font-semibold text-black"
                 >
-                  <ImagePlus className="size-5" aria-hidden />
-                  Open camera app
+                  <RefreshCw className="size-5" aria-hidden />
+                  Try again
+                </button>
+                {camera === "blocked" && (permission === "denied" || attempt > 0) ? (
+                  <ol className="max-w-xs list-decimal space-y-1 pl-5 text-left text-sm text-white/80">
+                    <li>Tap the icon at the left of the web address.</li>
+                    <li>
+                      Open <b>Permissions</b> (or <b>Site settings</b>) → <b>Camera</b> → <b>Allow</b>.
+                    </li>
+                    <li>Come back and tap Try again.</li>
+                    <li className="text-white/60">
+                      Still blocked? Phone Settings → Apps → {browserName()} → Permissions → Camera → Allow.
+                    </li>
+                  </ol>
+                ) : camera === "unsupported" ? (
+                  <p className="max-w-xs text-sm text-white/70">Close other apps that use the camera, then try again.</p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => fileInput.current?.click()}
+                  className="flex min-h-11 items-center gap-2 px-3 text-sm font-medium text-white/70 underline underline-offset-4"
+                >
+                  <ImagePlus className="size-4" aria-hidden />
+                  Use the phone&apos;s camera app instead
                 </button>
               </>
             )}
