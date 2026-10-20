@@ -344,6 +344,16 @@ export function ReportDetailView({
               <InfoRow label="Group" value={s.groupName} />
               <InfoRow label="Sender" value={s.senderName} />
               {fromForm ? <InfoRow label="Contact number" value={r.contactNumber ?? "Not given"} mono={Boolean(r.contactNumber)} /> : null}
+              {fromForm ? (
+                <InfoRow
+                  label="Automated WhatsApp report"
+                  value={
+                    r.inConsolidated
+                      ? "Included (text and PDF with photos)"
+                      : "Not included (sent from an address outside OKB_MOBILE_REPORT_TEST_IPS)"
+                  }
+                />
+              ) : null}
               {s.senderId ? <InfoRow label="Sender identifier" value={s.senderId} mono /> : null}
               <InfoRow label="Message time" value={s.messageTimestamp ? formatDateTime(s.messageTimestamp) : null} hint={formatFull(s.messageTimestamp)} />
               <InfoRow label={fromForm ? "Received" : "Received by bridge"} value={formatDateTime(s.receivedAt ?? r.createdAt)} hint={formatFull(s.receivedAt ?? r.createdAt)} />

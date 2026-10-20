@@ -163,6 +163,30 @@ function checkReport(input: Omit<FloodReportInput, "id">, id: string, reportedAt
 }
 
 // ---------------------------------------------------------------------------
+// The bridge's automated WhatsApp report (TEXT / PDF) includes a mobile report only when it is marked
+// record.mobile.inConsolidated. OKB_MOBILE_REPORT_TEST_IPS lists the addresses whose reports are marked while
+// this is tested ("all" marks every report). Unset: none are marked.
+// ---------------------------------------------------------------------------
+
+function testIps(): { all: boolean; ips: Set<string> } {
+  const raw = (process.env.OKB_MOBILE_REPORT_TEST_IPS ?? "").trim();
+  const list = raw.split(/[\s,]+/).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return { all: list.includes("all") || list.includes("*"), ips: new Set(list) };
+}
+
+/** Whether reports sent from this address go into the automated WhatsApp report. */
+export function includedInConsolidated(ip: string): boolean {
+  const { all, ips } = testIps();
+  return all || ips.has(ip.trim().toLowerCase());
+}
+
+/** What /api/flood-reports/whoami shows: the caller's address and whether its reports are included. */
+export function whoAmI(ip: string) {
+  const { all, ips } = testIps();
+  return { ip, includedInConsolidated: includedInConsolidated(ip), mode: all ? "all" : ips.size ? "test-addresses" : "off" };
+}
+
+// ---------------------------------------------------------------------------
 // Sender's edit key: a random secret returned once when the report is sent and kept on the sender's phone.
 // Only its SHA-256 is stored (record.mobile.ownerTokenHash), so nobody can read it back from the database.
 // ---------------------------------------------------------------------------
@@ -179,7 +203,7 @@ function ownsReport(record: unknown, token: string): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function submitReport(body: unknown): Promise<SubmittedReport> {
+export async function submitReport(body: unknown, ip = ""): Promise<SubmittedReport> {
   const input = inputSchema.parse(body) as FloodReportInput;
   if (input.website) throw new BadRequestError("Report rejected.");
   const id = input.id.toLowerCase();
@@ -193,7 +217,8 @@ export async function submitReport(body: unknown): Promise<SubmittedReport> {
 
   const editToken = randomBytes(32).toString("base64url");
   const built = buildMobileRecord({ ...input, id });
-  const record = { ...built, mobile: { ...built.mobile, ownerTokenHash: hashToken(editToken) } };
+  const inConsolidated = includedInConsolidated(ip);
+  const record = { ...built, mobile: { ...built.mobile, ownerTokenHash: hashToken(editToken), inConsolidated } };
   const row = {
     id,
     message_id: id,
@@ -236,7 +261,7 @@ export async function submitReport(body: unknown): Promise<SubmittedReport> {
   const liveRain = (await floodMapWeather().catch(() => null))?.state === "wet";
   const view = toPublicReport({ id, status: record.status, created_at: record.createdAt, record }, liveRain);
   if (!view) throw new StorageUnavailable("The report was saved but could not be shown.");
-  return { report: view, editToken };
+  return { report: view, editToken, inConsolidated };
 }
 
 // ---------------------------------------------------------------------------
@@ -356,7 +381,7 @@ export async function updateMyReport(id: string, body: unknown): Promise<MyFlood
     status: nextStatus,
     updatedAt: at,
     review: { linkedMessageIds: [], ...review, history: [...history, entry].slice(-20) },
-    mobile: { ...rebuilt.mobile, ownerTokenHash: old.ownerTokenHash, editedAt: at },
+    mobile: { ...rebuilt.mobile, ownerTokenHash: old.ownerTokenHash, inConsolidated: old.inConsolidated === true, editedAt: at },
   };
   const res = await rest(`${REPORTS}?id=eq.${reportId}&platform=eq.${MOBILE_REPORT_PLATFORM}`, {
     method: "PATCH",

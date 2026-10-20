@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { withApiHandler } from "@/lib/api/handler";
 import { created, ok } from "@/lib/api/response";
-import { rateLimit } from "@/features/flood-report/server/rate-limit";
+import { clientIp, rateLimit } from "@/features/flood-report/server/rate-limit";
 import { listPublicReports, MAP_HOURS, submitReport } from "@/features/flood-report/server/service";
 
 export const dynamic = "force-dynamic";
@@ -16,5 +16,5 @@ export const GET = withApiHandler(async (request: NextRequest) => {
 /** A flood report from the mobile page (its photos are uploaded first through /api/flood-reports/photos). */
 export const POST = withApiHandler(async (request: NextRequest) => {
   rateLimit(request, "flood-report", 30, 10 * 60_000);
-  return created(await submitReport(await request.json()));
+  return created(await submitReport(await request.json(), clientIp(request)));
 });

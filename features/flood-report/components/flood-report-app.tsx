@@ -50,7 +50,7 @@ function isActive(r: PublicFloodReport, now: number): boolean {
 type Screen = "map" | "camera" | "form" | "edit" | "photos" | "add-photos";
 
 const errorText = (err: unknown) => (err instanceof FloodReportApiError ? err.message : "Something went wrong. Please try again.");
-type SendState = { stage: "uploading" | "saving"; progress: number } | { stage: "done"; report: PublicFloodReport } | null;
+type SendState = { stage: "uploading" | "saving"; progress: number } | { stage: "done"; report: PublicFloodReport; inConsolidated: boolean } | null;
 
 function rangeLabel(range: Exclude<Range, "now">): string {
   return range < 48 ? `last ${range} h` : `last ${range / 24} days`;
@@ -196,11 +196,11 @@ function PhoneApp() {
         uploaded.push({ key, latitude: p.latitude, longitude: p.longitude, accuracyM: p.accuracyM, takenAt: p.takenAt });
       }
       setSend({ stage: "saving", progress: 1 });
-      const { report, editToken } = await sendReport({ ...values, id, photos: uploaded });
+      const { report, editToken, inConsolidated } = await sendReport({ ...values, id, photos: uploaded });
       addMyReportKey(report.id, editToken);
       setMine((all) => [report, ...all]);
       void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
-      setSend({ stage: "done", report });
+      setSend({ stage: "done", report, inConsolidated });
     } catch (err) {
       setSend(null);
       setFormError(err instanceof FloodReportApiError ? err.message : "Something went wrong. Please try again.");
@@ -548,6 +548,7 @@ function PhoneApp() {
           progress={send.stage === "done" ? 1 : send.progress}
           total={photos.length}
           reference={send.stage === "done" ? send.report.reference : null}
+          inConsolidated={send.stage === "done" && send.inConsolidated}
           onViewMap={() => finish("map")}
           onAnother={() => finish("camera")}
         />

@@ -211,6 +211,8 @@ export interface BridgeReportRecord {
   contactNumber: string | null;
   /** Weather the sender chose (mobile reports: decides how long the flood stays on the maps). */
   mobileWeather: string | null;
+  /** Mobile reports: included in the bridge's automated WhatsApp report (null for other reports). */
+  inConsolidated: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -489,6 +491,7 @@ export interface ReportDetail {
   processingLog: ProcessingLogEntry[];
   photos: ReportPhoto[];
   contactNumber: string | null;
+  inConsolidated: boolean | null;
   actions: {
     canMarkReviewed: boolean;
     canReject: boolean;

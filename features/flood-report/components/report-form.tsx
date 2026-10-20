@@ -444,6 +444,7 @@ export function SendProgress({
   progress,
   total,
   reference,
+  inConsolidated = false,
   onViewMap,
   onAnother,
 }: {
@@ -451,6 +452,8 @@ export function SendProgress({
   progress: number;
   total: number;
   reference: string | null;
+  /** Goes into the automated WhatsApp report (a test address while that is tested). */
+  inConsolidated?: boolean;
   onViewMap: () => void;
   onAnother: () => void;
 }) {
@@ -467,6 +470,11 @@ export function SendProgress({
             Tap <b className="text-white">Mine</b> on the map to mark it receded, edit it or delete it. Only this phone can change it.
           </p>
           {reference ? <p className="font-mono text-sm text-amber-300">{reference}</p> : null}
+          {inConsolidated ? (
+            <p className="rounded-xl bg-white/10 px-3 py-2 text-sm text-emerald-300">
+              Included in the next automated WhatsApp report (text and PDF with your photos).
+            </p>
+          ) : null}
         </div>
         <div className="grid w-full max-w-xs gap-3">
           <button type="button" onClick={onViewMap} className="h-14 rounded-2xl bg-white text-base font-bold text-black">

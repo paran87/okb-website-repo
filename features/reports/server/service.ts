@@ -285,6 +285,7 @@ export async function getReportDetail(store: ReportStore, id: string): Promise<R
     processingLog,
     photos: record.photos,
     contactNumber: record.contactNumber,
+    inConsolidated: record.inConsolidated,
     actions: {
       canMarkReviewed: reviewEnabled && reviewable && Boolean(record.extraction),
       canReject: reviewEnabled && !busy && record.status !== "rejected",

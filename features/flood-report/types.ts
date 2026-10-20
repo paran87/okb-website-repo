@@ -100,6 +100,8 @@ export interface PublicFloodReport {
 export interface SubmittedReport {
   report: PublicFloodReport;
   editToken: string;
+  /** Goes into the bridge's automated WhatsApp report (sent from a test address, or open to all). */
+  inConsolidated: boolean;
 }
 
 /** The form answers of a report, as the edit form starts from them. */

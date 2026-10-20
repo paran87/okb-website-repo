@@ -72,8 +72,9 @@ export function depthOf(input: Pick<FloodReportInput, "level" | "depthCm">): num
 function depthText(input: FloodReportInput): string {
   const level = floodLevel(input.level);
   const depth = depthOf(input);
-  if (input.depthCm !== null && input.depthCm > 0) return `${depth !== null ? formatDepth(depth) : ""}${level ? ` (${level.label.toLowerCase()})` : ""}`;
-  return level ? `${level.label} (~${formatDepth(level.meters)} / ${level.inches})` : "Not stated";
+  // No brackets: the consolidated WhatsApp report puts this wording inside its own "Flooding (…)".
+  if (input.depthCm !== null && input.depthCm > 0) return `${depth !== null ? formatDepth(depth) : ""}${level ? `, ${level.label.toLowerCase()}` : ""}`;
+  return level ? `${level.label}, about ${formatDepth(level.meters)} / ${level.inches}` : "Not stated";
 }
 
 export function buildMobileRecord(input: FloodReportInput, now: Date = new Date()) {
