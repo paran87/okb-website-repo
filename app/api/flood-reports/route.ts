@@ -5,6 +5,8 @@ import { clientIp, rateLimit } from "@/features/flood-report/server/rate-limit";
 import { listPublicReports, MAP_HOURS, submitReport } from "@/features/flood-report/server/service";
 
 export const dynamic = "force-dynamic";
+// Room for the AI photo check when photos taken far apart may show a flooded stretch.
+export const maxDuration = 60;
 
 /** Public map: mobile flood reports of the last ?hours= (6, 24, 72 or 168; default 6, which holds every report still on the map). */
 export const GET = withApiHandler(async (request: NextRequest) => {

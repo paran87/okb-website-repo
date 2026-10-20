@@ -1,0 +1,411 @@
+import "server-only";
+import type { Position } from "geojson";
+import { logger } from "@/lib/logger";
+import { boxOf, linesOf, serverRoadList } from "@/features/incident/server/roads";
+import type { RoadFeature } from "@/features/road-network/types";
+import {
+  formatMeters,
+  STRETCH_ACCURACY_M,
+  STRETCH_MAX_DETOUR,
+  STRETCH_MAX_M,
+  STRETCH_MAX_SPAN_H,
+  STRETCH_MAX_SPEED_KMH,
+  STRETCH_MIN_M,
+  STRETCH_ON_ROAD_M,
+  type PhotoVerdict,
+  type StoredStretch,
+  type StretchResult,
+} from "@/features/flood-report/lib/stretch";
+import { checkPhotos, photoCheckConfigured } from "@/features/flood-report/server/photo-check";
+import type { UploadedPhoto } from "@/features/flood-report/types";
+
+/**
+ * Decides whether the photos of one OKB Mobile report show a flooded stretch of road (drawn from the first
+ * flooded photo to the last) or one spot (a pin), and why:
+ *
+ *  1. Photos with poor GPS (worse than ±50 m) are left out.
+ *  2. The two photos farthest apart are the ends. Closer than 50 m (or than their GPS error): one spot.
+ *     Farther than 2 km: too far for one flood report.
+ *  3. Photos taken more than 3 h apart, or faster than 60 km/h from one to the next, are not one walk through
+ *     one flood (a wrong or borrowed geotag).
+ *  4. Both ends must be on the DPWH road network (within 35 m of a national road) and connected by it, by a
+ *     route not much longer than the straight distance; otherwise they are on roads the network does not have,
+ *     or on different roads.
+ *  5. Only when all of that holds, AI looks at the photos (when an Anthropic API key is set). A photo that shows
+ *     no floodwater is dropped and the stretch is worked out again from the flooded photos only.
+ *
+ * Anything but a stretch leaves the report as one pin at the location the sender confirmed, with the reason
+ * stored for OKB operators.
+ */
+
+const log = logger.child({ module: "flood-stretch" });
+const HOUR = 3_600_000;
+
+type Photo = UploadedPhoto & { n: number };
+
+interface Geometry {
+  result: StretchResult;
+  reason: string;
+  line?: [number, number][];
+  lengthM?: number;
+  roads?: string[];
+  mid?: [number, number];
+  ends?: [number, number];
+}
+
+// ---- local meters ------------------------------------------------------------------------------------
+
+const KY = 111_320;
+const kxAt = (lat: number) => KY * Math.cos((lat * Math.PI) / 180);
+const dist = (a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) =>
+  Math.hypot((b.longitude - a.longitude) * kxAt((a.latitude + b.latitude) / 2), (b.latitude - a.latitude) * KY);
+
+const listN = (ns: number[]) => (ns.length === 1 ? `Photo ${ns[0]}` : `Photos ${ns.slice(0, -1).join(", ")} and ${ns.at(-1)}`);
+
+// ---- road graph --------------------------------------------------------------------------------------
+
+/** Road vertices this close (meters) on different lines are joined (section ends, crossings). */
+const LINK_M = 15;
+/** Lines are split so no two vertices are farther apart than this (meters). */
+const STEP_M = 20;
+
+interface Graph {
+  x: number[];
+  y: number[];
+  lng: number[];
+  lat: number[];
+  road: string[];
+  edges: { to: number; w: number }[][];
+}
+
+function buildGraph(roads: RoadFeature[], box: [number, number, number, number], lat0: number): Graph {
+  const kx = kxAt(lat0);
+  const g: Graph = { x: [], y: [], lng: [], lat: [], road: [], edges: [] };
+  const lineOf: number[] = [];
+  let lineId = 0;
+  const add = (p: Position, road: string, line: number) => {
+    const [lng = 0, lat = 0] = p;
+    g.x.push(lng * kx);
+    g.y.push(lat * KY);
+    g.lng.push(lng);
+    g.lat.push(lat);
+    g.road.push(road);
+    g.edges.push([]);
+    lineOf.push(line);
+    return g.x.length - 1;
+  };
+  const link = (a: number, b: number) => {
+    const w = Math.hypot((g.x[b] ?? 0) - (g.x[a] ?? 0), (g.y[b] ?? 0) - (g.y[a] ?? 0));
+    g.edges[a]?.push({ to: b, w });
+    g.edges[b]?.push({ to: a, w });
+  };
+  for (const road of roads) {
+    const [w, s, e, n] = boxOf(road);
+    if (e < box[0] || w > box[2] || n < box[1] || s > box[3]) continue;
+    for (const line of linesOf(road)) {
+      let prev: number | null = null;
+      let q: Position | null = null;
+      lineId++;
+      for (const p of line) {
+        if (q) {
+          // Split long segments so crossings and snapping find a vertex nearby.
+          const steps = Math.floor(Math.hypot(((p[0] ?? 0) - (q[0] ?? 0)) * kx, ((p[1] ?? 0) - (q[1] ?? 0)) * KY) / STEP_M);
+          for (let k = 1; k <= steps; k++) {
+            const t = k / (steps + 1);
+            const mid = add([(q[0] ?? 0) + ((p[0] ?? 0) - (q[0] ?? 0)) * t, (q[1] ?? 0) + ((p[1] ?? 0) - (q[1] ?? 0)) * t], road.properties.name, lineId);
+            if (prev !== null) link(prev, mid);
+            prev = mid;
+          }
+        }
+        const id = add(p, road.properties.name, lineId);
+        if (prev !== null) link(prev, id);
+        prev = id;
+        q = p;
+      }
+    }
+  }
+  // Join vertices of different lines that (nearly) touch: where sections meet and where roads cross.
+  const cell = new Map<string, number[]>();
+  const keyOf = (x: number, y: number) => `${Math.floor(x / LINK_M)},${Math.floor(y / LINK_M)}`;
+  g.x.forEach((x, i) => {
+    const k = keyOf(x, g.y[i] ?? 0);
+    const list = cell.get(k);
+    if (list) list.push(i);
+    else cell.set(k, [i]);
+  });
+  g.x.forEach((x, i) => {
+    const y = g.y[i] ?? 0;
+    const cx = Math.floor(x / LINK_M);
+    const cy = Math.floor(y / LINK_M);
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dy = -1; dy <= 1; dy++) {
+        for (const j of cell.get(`${cx + dx},${cy + dy}`) ?? []) {
+          if (j <= i || lineOf[j] === lineOf[i]) continue;
+          if (Math.hypot((g.x[j] ?? 0) - x, (g.y[j] ?? 0) - y) <= LINK_M) link(i, j);
+        }
+      }
+    }
+  });
+  return g;
+}
+
+/** The road vertex nearest to a point, within [maxM] meters. */
+function snap(g: Graph, p: { latitude: number; longitude: number }, maxM: number): number | null {
+  const kx = kxAt(p.latitude);
+  let best: { i: number; m: number } | null = null;
+  for (let i = 0; i < g.x.length; i++) {
+    const m = Math.hypot(((g.lng[i] ?? 0) - p.longitude) * kx, ((g.lat[i] ?? 0) - p.latitude) * KY);
+    if (m <= maxM && (!best || m < best.m)) best = { i, m };
+  }
+  return best?.i ?? null;
+}
+
+/** Shortest route along the roads (Dijkstra), as vertex ids; null when the roads do not connect. */
+function route(g: Graph, from: number, to: number): { path: number[]; m: number } | null {
+  const n = g.x.length;
+  const d = new Float64Array(n).fill(Infinity);
+  const prev = new Int32Array(n).fill(-1);
+  const heap: [number, number][] = [[0, from]];
+  d[from] = 0;
+  const push = (item: [number, number]) => {
+    heap.push(item);
+    let i = heap.length - 1;
+    while (i > 0) {
+      const parent = (i - 1) >> 1;
+      if ((heap[parent]?.[0] ?? 0) <= item[0]) break;
+      heap[i] = heap[parent] as [number, number];
+      i = parent;
+    }
+    heap[i] = item;
+  };
+  const pop = (): [number, number] | undefined => {
+    const top = heap[0];
+    const last = heap.pop();
+    if (!heap.length || !last) return top;
+    let i = 0;
+    for (;;) {
+      const l = 2 * i + 1;
+      const r = l + 1;
+      let m = -1;
+      let low = last[0];
+      if (l < heap.length && (heap[l]?.[0] ?? 0) < low) [m, low] = [l, heap[l]?.[0] ?? 0];
+      if (r < heap.length && (heap[r]?.[0] ?? 0) < low) m = r;
+      if (m < 0) break;
+      heap[i] = heap[m] as [number, number];
+      i = m;
+    }
+    heap[i] = last;
+    return top;
+  };
+  for (let item = pop(); item; item = pop()) {
+    const [du, u] = item;
+    if (du > (d[u] ?? Infinity)) continue;
+    if (u === to) break;
+    for (const { to: v, w } of g.edges[u] ?? []) {
+      const dv = du + w;
+      if (dv < (d[v] ?? Infinity)) {
+        d[v] = dv;
+        prev[v] = u;
+        push([dv, v]);
+      }
+    }
+  }
+  if (!Number.isFinite(d[to] ?? Infinity)) return null;
+  const path: number[] = [];
+  for (let v = to; v !== -1; v = prev[v] ?? -1) path.unshift(v);
+  return { path, m: d[to] ?? 0 };
+}
+
+const round6 = (v: number) => Math.round(v * 1e6) / 1e6;
+
+/** The point halfway along a route. */
+function halfway(g: Graph, path: number[], total: number): [number, number] {
+  let rest = total / 2;
+  for (let k = 1; k < path.length; k++) {
+    const a = path[k - 1] ?? 0;
+    const b = path[k] ?? 0;
+    const seg = Math.hypot((g.x[b] ?? 0) - (g.x[a] ?? 0), (g.y[b] ?? 0) - (g.y[a] ?? 0));
+    if (seg >= rest && seg > 0) {
+      const t = rest / seg;
+      return [round6((g.lng[a] ?? 0) + ((g.lng[b] ?? 0) - (g.lng[a] ?? 0)) * t), round6((g.lat[a] ?? 0) + ((g.lat[b] ?? 0) - (g.lat[a] ?? 0)) * t)];
+    }
+    rest -= seg;
+  }
+  const v = path[0] ?? 0;
+  return [round6(g.lng[v] ?? 0), round6(g.lat[v] ?? 0)];
+}
+
+// ---- the decision ------------------------------------------------------------------------------------
+
+/** Where the photos are, as the map should show them (no AI involved). */
+export async function placePhotos(photos: Photo[]): Promise<Geometry> {
+  if (photos.length < 2) return { result: "single_photo", reason: "One photo: shown as a pin at the reported location." };
+  const usable = photos.filter((p) => p.accuracyM === null || p.accuracyM <= STRETCH_ACCURACY_M);
+  if (usable.length < 2) {
+    return {
+      result: "low_accuracy",
+      reason: `The phone's GPS was not precise enough (worse than ±${STRETCH_ACCURACY_M} m) to draw a flooded stretch, so the report is one pin.`,
+    };
+  }
+
+  // The two photos farthest apart are the ends of the stretch.
+  let a = usable[0] as Photo;
+  let b = usable[1] as Photo;
+  let far = -1;
+  for (let i = 0; i < usable.length; i++) {
+    for (let j = i + 1; j < usable.length; j++) {
+      const m = dist(usable[i] as Photo, usable[j] as Photo);
+      if (m > far) [far, a, b] = [m, usable[i] as Photo, usable[j] as Photo];
+    }
+  }
+  if (a.n > b.n) [a, b] = [b, a];
+  const gpsError = (a.accuracyM ?? 0) + (b.accuracyM ?? 0);
+  if (far < Math.max(STRETCH_MIN_M, gpsError)) {
+    return {
+      result: "one_spot",
+      reason: `The photos were taken within ${formatMeters(Math.max(far, 1))} of each other (less than ${far < STRETCH_MIN_M ? `the ${STRETCH_MIN_M} m standard` : "the GPS error"}), so they show one spot.`,
+    };
+  }
+  if (far > STRETCH_MAX_M) {
+    return {
+      result: "too_far",
+      reason: `Photos ${a.n} and ${b.n} were taken ${formatMeters(far)} apart, too far for one flooded stretch (limit ${formatMeters(STRETCH_MAX_M)}). Shown as one pin at the reported location for OKB operators to check.`,
+    };
+  }
+
+  // One walk (or ride) through one flood: photos close in time, and no impossible speed between them.
+  const byTime = [...usable].sort((p, q) => Date.parse(p.takenAt) - Date.parse(q.takenAt));
+  const first = Date.parse(byTime[0]?.takenAt ?? "");
+  const last = Date.parse(byTime.at(-1)?.takenAt ?? "");
+  if (Number.isFinite(first) && Number.isFinite(last) && last - first > STRETCH_MAX_SPAN_H * HOUR) {
+    return {
+      result: "unrealistic",
+      reason: `The photos were taken ${((last - first) / HOUR).toFixed(1)} hours apart, so they show different moments, not one flooded stretch. Shown as one pin.`,
+    };
+  }
+  for (let k = 1; k < byTime.length; k++) {
+    const p = byTime[k - 1] as Photo;
+    const q = byTime[k] as Photo;
+    const m = dist(p, q);
+    const seconds = Math.abs(Date.parse(q.takenAt) - Date.parse(p.takenAt)) / 1000;
+    // At least 10 s, so GPS settling between two quick photos does not count as speed.
+    const kmh = (m / Math.max(10, seconds)) * 3.6;
+    if (m >= STRETCH_MIN_M && kmh > STRETCH_MAX_SPEED_KMH) {
+      return {
+        result: "unrealistic",
+        reason: `Photos ${p.n} and ${q.n} were taken ${formatMeters(m)} apart, only ${seconds < 60 ? `${Math.max(1, Math.round(seconds))} seconds` : `${Math.round(seconds / 60)} minutes`} after each other (over ${STRETCH_MAX_SPEED_KMH} km/h), faster than anyone moves through a flood, so their locations are not trusted. Shown as one pin.`,
+      };
+    }
+  }
+
+  const roads = await serverRoadList();
+  if (!roads) return { result: "off_network", reason: "The road network could not be loaded, so the report is one pin." };
+  const pad = 300 / KY;
+  const box: [number, number, number, number] = [
+    Math.min(a.longitude, b.longitude) - pad * 1.1,
+    Math.min(a.latitude, b.latitude) - pad,
+    Math.max(a.longitude, b.longitude) + pad * 1.1,
+    Math.max(a.latitude, b.latitude) + pad,
+  ];
+  const g = buildGraph(roads, box, (a.latitude + b.latitude) / 2);
+  const reach = (p: Photo) => STRETCH_ON_ROAD_M + Math.min(p.accuracyM ?? 0, 15);
+  const from = snap(g, a, reach(a));
+  const to = snap(g, b, reach(b));
+  if (from === null || to === null) {
+    const off = [from === null ? a.n : null, to === null ? b.n : null].filter((n): n is number => n !== null);
+    return {
+      result: "off_network",
+      reason: `${listN(off)} ${off.length === 1 ? "is" : "are"} not on a national road of the DPWH road network, so the stretch cannot be traced along the road. Shown as one pin.`,
+    };
+  }
+  const found = route(g, from, to);
+  if (!found) {
+    return {
+      result: "not_connected",
+      reason: `Photos ${a.n} and ${b.n} are on roads that do not connect on the DPWH road network, so they are not one flooded stretch. Shown as one pin.`,
+    };
+  }
+  if (found.m > far * STRETCH_MAX_DETOUR + 100) {
+    return {
+      result: "indirect",
+      reason: `The road route between photos ${a.n} and ${b.n} (${formatMeters(found.m)}) is much longer than the ${formatMeters(far)} between them, so they are likely on different roads. Shown as one pin.`,
+    };
+  }
+  // Roads the stretch runs along (not ones it only touches where it crosses them), in order.
+  const along = new Map<string, number>();
+  for (let k = 1; k < found.path.length; k++) {
+    const u = found.path[k - 1] ?? 0;
+    const v = found.path[k] ?? 0;
+    const name = g.road[v] ?? "";
+    if (name && name === g.road[u]) along.set(name, (along.get(name) ?? 0) + Math.hypot((g.x[v] ?? 0) - (g.x[u] ?? 0), (g.y[v] ?? 0) - (g.y[u] ?? 0)));
+  }
+  const names = [...along].filter(([, m]) => m >= 30).map(([name]) => name);
+  const line = found.path.map((v): [number, number] => [round6(g.lng[v] ?? 0), round6(g.lat[v] ?? 0)]);
+  return {
+    result: "stretch",
+    reason: `Flooded for about ${formatMeters(found.m)} along ${names.slice(0, 3).join(", ") || "the road"}, from photo ${a.n} to photo ${b.n}.`,
+    line,
+    lengthM: Math.round(found.m),
+    roads: names,
+    mid: halfway(g, found.path, found.m),
+    ends: [a.n, b.n],
+  };
+}
+
+const stored = (geo: Geometry, photoCheck: StoredStretch["photoCheck"], verdicts: Record<string, PhotoVerdict>): StoredStretch => ({
+  version: 1,
+  analyzedAt: new Date().toISOString(),
+  result: geo.result,
+  reason: geo.reason,
+  line: geo.line ?? null,
+  lengthM: geo.lengthM ?? null,
+  roads: geo.roads ?? [],
+  mid: geo.mid ?? null,
+  ends: geo.ends ?? null,
+  photoCheck,
+  verdicts,
+});
+
+/**
+ * The stretch of a report (stored with it). [known]: AI verdicts from an earlier analysis of the same photos,
+ * so an edit only sends the new photos to the AI.
+ */
+export async function analyzeStretch(photos: UploadedPhoto[], known: Record<string, PhotoVerdict> = {}): Promise<StoredStretch> {
+  const numbered = photos.map((p, i) => ({ ...p, n: i + 1 }));
+  try {
+    const geo = await placePhotos(numbered);
+    // Only a stretch needs the photos checked: a pin stays where the sender put it.
+    if (geo.result !== "stretch") return stored(geo, "not_needed", {});
+    if (!photoCheckConfigured()) return stored(geo, "not_configured", {});
+
+    const verdicts: Record<string, PhotoVerdict> = {};
+    for (const p of photos) if (known[p.key]) verdicts[p.key] = known[p.key] as PhotoVerdict;
+    const missing = photos.filter((p) => !verdicts[p.key]);
+    if (missing.length) {
+      const checked = await checkPhotos(photos.map((p) => p.key), missing.map((p) => p.key));
+      if (!checked) return stored(geo, "failed", verdicts);
+      Object.assign(verdicts, checked);
+    }
+
+    const dry = numbered.filter((p) => verdicts[p.key]?.flooded === "no");
+    if (!dry.length) return stored({ ...geo, reason: `${geo.reason} AI checked the photos for floodwater.` }, "ai", verdicts);
+    // Draw the stretch again from the photos that show floodwater only.
+    const wet = numbered.filter((p) => verdicts[p.key]?.flooded !== "no");
+    const again = await placePhotos(wet);
+    const dryText = `${listN(dry.map((p) => p.n))} ${dry.length === 1 ? "shows" : "show"} no floodwater (AI check)`;
+    if (again.result === "stretch") return stored({ ...again, reason: `${again.reason} ${dryText}, so the stretch ends at the flooded photos.` }, "ai", verdicts);
+    return stored(
+      {
+        result: "not_flooded",
+        reason: wet.length
+          ? `${dryText}, so the flood is shown as one pin instead of a stretch.`
+          : `${dryText}; the report is one pin at the reported location for OKB operators to check.`,
+      },
+      "ai",
+      verdicts,
+    );
+  } catch (err) {
+    log.warn({ err }, "Flood stretch analysis failed; the report stays one pin");
+    return stored({ result: "single_photo", reason: "The photo locations could not be analyzed; shown as one pin." }, "failed", {});
+  }
+}

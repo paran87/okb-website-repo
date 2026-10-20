@@ -34,12 +34,17 @@ export async function serverRoadIndex(): Promise<RoadIndex | null> {
   return (await serverRoads())?.index ?? null;
 }
 
-const linesOf = (road: RoadFeature): Position[][] =>
+/** The road sections themselves (null when the file could not be read). */
+export async function serverRoadList(): Promise<RoadFeature[] | null> {
+  return (await serverRoads())?.roads ?? null;
+}
+
+export const linesOf = (road: RoadFeature): Position[][] =>
   road.geometry.type === "LineString" ? [road.geometry.coordinates] : road.geometry.coordinates;
 
 /** Each road's bounding box [w, s, e, n] (computed once). */
 const boxes = new WeakMap<RoadFeature, [number, number, number, number]>();
-function boxOf(road: RoadFeature): [number, number, number, number] {
+export function boxOf(road: RoadFeature): [number, number, number, number] {
   let box = boxes.get(road);
   if (!box) {
     box = [Infinity, Infinity, -Infinity, -Infinity];

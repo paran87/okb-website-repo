@@ -182,6 +182,7 @@ export function reportObservations(record: BridgeReportRecord, activeHours: numb
             photos: record.photos,
             videos: [],
             fromMobile,
+            stretch: record.mobileStretch,
             clearRule: fromMobile ? expiryReason(record.mobileWeather, liveRain) : null,
           }
         : null,

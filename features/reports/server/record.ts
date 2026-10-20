@@ -9,6 +9,7 @@ import type {
   ExtractedLocation,
   ReportExtraction,
 } from "@/features/reports/types";
+import { readStretch } from "@/features/flood-report/lib/stretch";
 
 /**
  * Defensive reader for `okb_bridge_reports.record`. The JSONB is written by
@@ -286,6 +287,7 @@ export function parseRecord(row: ReportRow): BridgeReportRecord {
     photos: photos(obj(r.mobile)),
     contactNumber: str(obj(r.mobile).contactNumber),
     mobileWeather: str(obj(r.mobile).weather),
+    mobileStretch: readStretch(obj(r.mobile).stretch, 2).stretch,
     inConsolidated: r.mobile ? obj(r.mobile).inConsolidated === true : null,
     createdAt: row.created_at ?? str(r.createdAt) ?? new Date(0).toISOString(),
     updatedAt: row.updated_at ?? str(r.updatedAt) ?? row.created_at ?? new Date(0).toISOString(),

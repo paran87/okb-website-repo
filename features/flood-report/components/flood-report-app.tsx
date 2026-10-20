@@ -15,7 +15,7 @@ import type { CapturedPhoto, FloodReportFormValues, MyFloodReport, PublicFloodRe
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
-import { FloodMap } from "./flood-map";
+import { FloodMap, pinAt } from "./flood-map";
 import { HelpSheet } from "./help-sheet";
 import { HelpTip } from "./help-tip";
 import { MapLegendButton, MapLegendSheet } from "./map-legend";
@@ -134,7 +134,7 @@ function PhoneApp() {
     if (!r) return;
     setLinked(null);
     setSelectedId(r.id);
-    setFocus({ latitude: r.latitude, longitude: r.longitude, key: `link-${r.id}` });
+    setFocus({ ...pinAt(r), key: `link-${r.id}` });
   }, [linked, list]);
 
   // "Locate me": fly to the first fix, then stop following.
@@ -149,7 +149,7 @@ function PhoneApp() {
       setLegendOpen(false);
       setSelectedId(id);
       const r = list.find((x) => x.id === id);
-      if (r) setFocus({ latitude: r.latitude, longitude: r.longitude, key: `sel-${id}-${Date.now()}` });
+      if (r) setFocus({ ...pinAt(r), key: `sel-${id}-${Date.now()}` });
     },
     [list],
   );
@@ -207,7 +207,7 @@ function PhoneApp() {
     setScreen(next);
     if (next === "map" && report) {
       setSelectedId(report.id);
-      setFocus({ latitude: report.latitude, longitude: report.longitude, zoom: 16, key: `new-${report.id}` });
+      setFocus({ ...pinAt(report), zoom: report.stretch ? 15 : 16, key: `new-${report.id}` });
     }
   };
 
@@ -301,7 +301,7 @@ function PhoneApp() {
     setMyOpen(false);
     setSelectedId(id);
     const r = list.find((x) => x.id === id) ?? myReports.find((x) => x.id === id);
-    if (r) setFocus({ latitude: r.latitude, longitude: r.longitude, key: `mine-${id}-${Date.now()}` });
+    if (r) setFocus({ ...pinAt(r), key: `mine-${id}-${Date.now()}` });
   };
 
   const active = list.filter((r) => isActive(r, now)).length;

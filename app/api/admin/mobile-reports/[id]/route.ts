@@ -5,6 +5,8 @@ import { requireAdmin } from "@/features/admin/server/session";
 import { deleteReportAsOperator, updateReportAsOperator } from "@/features/flood-report/server/service";
 
 export const dynamic = "force-dynamic";
+// Room for the AI photo check when photos taken far apart may show a flooded stretch.
+export const maxDuration = 60;
 
 /** An operator corrects a mobile report: the full form and photo list (photos left out are deleted). */
 export const PATCH = withApiHandler(async (request: NextRequest, { params }) => {

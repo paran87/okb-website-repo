@@ -5,6 +5,7 @@ import { reportPhotoUrl } from "@/features/reports/server/record";
 import { MOBILE_REPORT_PLATFORM, type BridgeReportStatus } from "@/features/reports/types";
 import { expiryReason, mobileExpiryHours } from "@/features/flood-report/lib/expiry";
 import { floodLevel, formatDepth, roadStatus, weather } from "@/features/flood-report/lib/options";
+import { readStretch } from "@/features/flood-report/lib/stretch";
 import type { FloodReportFormValues, FloodReportInput, MyFloodReport, PlaceName, PublicFloodReport } from "@/features/flood-report/types";
 
 /**
@@ -332,6 +333,7 @@ export function toPublicReport(
     verified: status === "approved",
     latitude: lat,
     longitude: lng,
+    ...readStretch(m.stretch, photos.length),
     locationText: str(m.locationText) ?? "Reported location",
     landmark: str(m.landmark),
     area: [str(place.barangay), str(place.city)].filter(Boolean).join(", ") || null,

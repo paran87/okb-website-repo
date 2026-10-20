@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { BadgeCheck, Building2, CameraOff, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, MessageSquareText, Navigation, Play, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
+import { BadgeCheck, Building2, CameraOff, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, MessageSquareText, Navigation, Play, Route, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import { formatDepth } from "../lib/options";
@@ -254,6 +254,7 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
       <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 px-3">
         <Row icon={Ruler} label="Flood height" value={report.depthM !== null ? `${report.levelLabel ?? "Flood"} (about ${formatDepth(report.depthM)})` : report.levelLabel} />
         <Row icon={TrafficCone} label="Road" value={report.roadStatus} />
+        <Row icon={Route} label={report.stretch ? "Flooded stretch" : "Photo locations"} value={report.placement} />
         <Row icon={Building2} label="DPWH office (DEO)" value={report.deo} />
         <Row icon={CloudRain} label="Weather" value={report.weather} />
         <Row icon={Clock} label="Flood started" value={clock(report.startedAt)} />

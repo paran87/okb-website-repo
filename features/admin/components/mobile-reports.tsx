@@ -617,6 +617,7 @@ function MobileFacts({ r }: { r: AdminMobileReport }) {
         rows={[
           ["Flood height", r.levelLabel ? `${r.levelLabel}${r.depthM !== null ? ` (${Math.round(r.depthM * 100)} cm)` : ""}` : null],
           ["Road", r.roadStatus],
+          [r.stretch ? "Flooded stretch" : "Photo locations", r.placement],
           ["DEO", r.deo ?? "Not given"],
           ["Weather", r.weather],
           ["Started", r.startedAt ? manila(r.startedAt) : null],

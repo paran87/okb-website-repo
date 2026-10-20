@@ -68,6 +68,8 @@ export async function bridgePins(hours: number, weather: FloodMapWeather, now = 
         verified: record.status === "approved",
         latitude: at.latitude,
         longitude: at.longitude,
+        stretch: null,
+        placement: null,
         locationText: loc.label,
         landmark: loc.landmark,
         area: [loc.barangay, loc.municipality].filter(Boolean).join(", ") || null,

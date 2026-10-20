@@ -8,6 +8,7 @@
 import type { FloodSeverity } from "@/features/incident/lib/flood-severity";
 import type { BridgeReportStatus, ReportPhoto, ReportVideo } from "@/features/reports/types";
 import type { FloodLevelId, RoadStatusId, WeatherId } from "./lib/options";
+import type { FloodStretch } from "./lib/stretch";
 
 export type { ReportPhoto, ReportVideo };
 
@@ -87,6 +88,10 @@ export interface PublicFloodReport {
   verified: boolean;
   latitude: number;
   longitude: number;
+  /** OKB Mobile: the flooded road between photos taken far apart (null: one pin). */
+  stretch: FloodStretch | null;
+  /** OKB Mobile with 2+ photos: how their locations were placed (a stretch, or why one pin). */
+  placement: string | null;
   locationText: string;
   landmark: string | null;
   area: string | null;

@@ -40,6 +40,14 @@ function useRoads() {
   return { roads, failed };
 }
 
+/** A mobile report's flooded stretch as sent (between its photos), else its roads matched by name. */
+function placeLocation(index: ReturnType<typeof buildRoadIndex> | null, location: FloodMapLocation): ResolvedLocation | null {
+  if (location.stretch) {
+    return { lines: [location.stretch.line], point: null, matched: location.stretch.roads, basis: "stretch", places: 1 };
+  }
+  return index ? resolveLocation(index, location) : null;
+}
+
 export function positionsOf(p: PlacedLocation): Position[] {
   return [...p.resolved.lines.flat(), ...(p.resolved.point ? [p.resolved.point] : [])];
 }
@@ -61,7 +69,7 @@ export function useFloodSituation() {
     if (!locations || (!index && !roadsFailed)) return [];
     const unplaced: ResolvedLocation = { lines: [], point: null, matched: [], basis: "none", places: 0 };
     return locations
-      .map((location) => ({ location, resolved: index ? resolveLocation(index, location) : unplaced }))
+      .map((location) => ({ location, resolved: placeLocation(index, location) ?? unplaced }))
       .sort(
         (a, b) =>
           SEVERITY_RANK[b.location.severity] - SEVERITY_RANK[a.location.severity] ||

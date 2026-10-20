@@ -5,6 +5,8 @@ import { rateLimit } from "@/features/flood-report/server/rate-limit";
 import { deleteMyReport, updateMyReport } from "@/features/flood-report/server/service";
 
 export const dynamic = "force-dynamic";
+// Room for the AI photo check when photos taken far apart may show a flooded stretch.
+export const maxDuration = 60;
 
 /** The sender edits their report: the full form, the photo list and the edit key ({ token, … }). */
 export const PATCH = withApiHandler(async (request: NextRequest, { params }) => {

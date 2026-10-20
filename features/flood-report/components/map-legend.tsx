@@ -5,6 +5,7 @@ import { FLOOD_SEVERITY, floodSeverity } from "@/features/incident/lib/flood-sev
 import { cn } from "@/utils/cn";
 import { MOBILE_EXPIRY_HOURS } from "../lib/expiry";
 import { FLOOD_LEVELS, roadStatus } from "../lib/options";
+import { STRETCH_MIN_M } from "../lib/stretch";
 import type { PublicFloodReport } from "../types";
 import { BottomSheet } from "./bottom-sheet";
 import { CLEARED_COLOR, RECEDED_COLOR } from "./flood-map";
@@ -58,6 +59,7 @@ export function legendKeyOf(r: Pick<PublicFloodReport, "receded" | "expired" | "
 
 /** Pins from WhatsApp / Viber groups. */
 const groupPins = (reports: PublicFloodReport[]) => reports.filter((r) => r.source !== "okb_mobile").length;
+const stretches = (reports: PublicFloodReport[]) => reports.filter((r) => r.stretch).length;
 
 /** MMDA flood heights that fall in a depth level ("Gutter deep (8 in)"). */
 function levelsOf(key: LegendKey): string[] {
@@ -152,6 +154,20 @@ export function MapLegendSheet({
                 means no photos were added yet.
               </p>
               {groupPins(reports) ? <p className="text-xs font-semibold text-slate-500">{groupPins(reports)} on the map</p> : null}
+            </div>
+          </li>
+          <li className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
+            <span className="relative mt-2.5 h-1.5 w-5 shrink-0 rounded-full bg-orange-500 ring-2 ring-white" aria-hidden>
+              <span className="absolute -left-1 -top-[3px] size-3 rounded-full border-2 border-white bg-orange-500" />
+              <span className="absolute -right-1 -top-[3px] size-3 rounded-full border-2 border-white bg-orange-500" />
+            </span>
+            <div>
+              <p className="font-bold text-slate-900">Flooded stretch</p>
+              <p className="text-sm text-slate-600">
+                A report whose photos were taken at least {STRETCH_MIN_M} m apart on the same road is drawn along the road, from the first
+                flooded photo (a dot) to the last. Its pin sits halfway.
+              </p>
+              {stretches(reports) ? <p className="text-xs font-semibold text-slate-500">{stretches(reports)} on the map</p> : null}
             </div>
           </li>
           <li className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">

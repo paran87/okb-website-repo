@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Map as MapLibreMap, Marker } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap, MapMouseEvent, Marker } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getMapStyle } from "@/features/map/config/map-styles";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
+import { isStyleReady } from "@/features/map/services/map.service";
 import { formatDepth } from "../lib/options";
 import type { PublicFloodReport } from "../types";
 
@@ -19,6 +20,69 @@ const SPOT_DEG = 0.0003;
 
 const loadMapLibre = () => import("maplibre-gl").then((mod) => mod.default);
 type MapLibre = Awaited<ReturnType<typeof loadMapLibre>>;
+
+/** Where a report's pin sits: halfway along its flooded stretch, else at its reported location. */
+export function pinAt(r: Pick<PublicFloodReport, "latitude" | "longitude" | "stretch">): { latitude: number; longitude: number } {
+  return r.stretch ? { latitude: r.stretch.mid[1], longitude: r.stretch.mid[0] } : { latitude: r.latitude, longitude: r.longitude };
+}
+
+const STRETCH_SOURCE = "okb-flood-stretches";
+const STRETCH_HIT = "okb-flood-stretch-hit";
+
+/** The flooded stretches (lines, and a dot at each end where the end photos were taken). */
+function stretchData(reports: PublicFloodReport[]): GeoJSON.FeatureCollection {
+  const features: GeoJSON.Feature[] = [];
+  // Oldest first, so the newest stretches are drawn on top.
+  for (const r of [...reports].reverse()) {
+    if (!r.stretch) continue;
+    const properties = { id: r.id, color: reportColor(r), opacity: r.active ? 0.95 : 0.6 };
+    features.push({ type: "Feature", geometry: { type: "LineString", coordinates: r.stretch.line }, properties });
+    const first = r.stretch.line[0];
+    const last = r.stretch.line.at(-1);
+    for (const end of [first, last]) if (end) features.push({ type: "Feature", geometry: { type: "Point", coordinates: end }, properties });
+  }
+  return { type: "FeatureCollection", features };
+}
+
+/** Adds the stretch layers under the photo markers (once the style is ready). */
+function addStretchLayers(m: MapLibreMap, data: GeoJSON.FeatureCollection) {
+  if (m.getSource(STRETCH_SOURCE)) return;
+  m.addSource(STRETCH_SOURCE, { type: "geojson", data });
+  const line = ["==", ["geometry-type"], "LineString"] as ["==", ["geometry-type"], string];
+  const width = (scale: number) => ["interpolate", ["linear"], ["zoom"], 11, 3 * scale, 14, 6 * scale, 17, 12 * scale] as unknown as number;
+  m.addLayer({
+    id: "okb-flood-stretch-casing",
+    type: "line",
+    source: STRETCH_SOURCE,
+    filter: line,
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#ffffff", "line-width": width(1.6), "line-opacity": ["get", "opacity"] },
+  });
+  m.addLayer({
+    id: "okb-flood-stretch-line",
+    type: "line",
+    source: STRETCH_SOURCE,
+    filter: line,
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": ["get", "color"], "line-width": width(1), "line-opacity": ["get", "opacity"] },
+  });
+  m.addLayer({
+    id: "okb-flood-stretch-ends",
+    type: "circle",
+    source: STRETCH_SOURCE,
+    filter: ["==", ["geometry-type"], "Point"],
+    paint: { "circle-radius": 6, "circle-color": ["get", "color"], "circle-stroke-color": "#ffffff", "circle-stroke-width": 2.5 },
+  });
+  // A wide, invisible line so a finger can tap the stretch.
+  m.addLayer({
+    id: STRETCH_HIT,
+    type: "line",
+    source: STRETCH_SOURCE,
+    filter: line,
+    layout: { "line-cap": "round" },
+    paint: { "line-color": "#000000", "line-opacity": 0, "line-width": 28 },
+  });
+}
 
 export function reportColor(r: Pick<PublicFloodReport, "receded" | "expired" | "severity">): string {
   return r.receded ? RECEDED_COLOR : r.expired ? CLEARED_COLOR : FLOOD_SEVERITY[r.severity].color;
@@ -155,9 +219,10 @@ export function FloodMap({
     const spots: { latitude: number; longitude: number; ids: string[] }[] = [];
     const groupOf = new Map<string, string[]>();
     for (const r of reports) {
-      let spot = spots.find((g) => Math.abs(g.latitude - r.latitude) < SPOT_DEG && Math.abs(g.longitude - r.longitude) < SPOT_DEG);
+      const at = pinAt(r);
+      let spot = spots.find((g) => Math.abs(g.latitude - at.latitude) < SPOT_DEG && Math.abs(g.longitude - at.longitude) < SPOT_DEG);
       if (!spot) {
-        spot = { latitude: r.latitude, longitude: r.longitude, ids: [] };
+        spot = { ...at, ids: [] };
         spots.push(spot);
       }
       spot.ids.push(r.id);
@@ -174,13 +239,14 @@ export function FloodMap({
     for (const r of [...reports].reverse()) {
       seen.add(r.id);
       const offset = offsetOf(r);
-      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.source}|${r.latitude},${r.longitude}|${offset.join(",")}`;
+      const at = pinAt(r);
+      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.source}|${at.latitude},${at.longitude}|${offset.join(",")}`;
       const existing = markers.current.get(r.id);
       if (existing?.signature === signature) continue;
       existing?.marker.remove();
       const element = markerElement(r, (id) => select.current(id));
       const label = element.getAttribute("aria-label") ?? "";
-      const marker = new maplibre.Marker({ element, anchor: "bottom", offset }).setLngLat([r.longitude, r.latitude]).addTo(m);
+      const marker = new maplibre.Marker({ element, anchor: "bottom", offset }).setLngLat([at.longitude, at.latitude]).addTo(m);
       // MapLibre labels every marker "Map marker" when it is added: keep the report's own label.
       element.setAttribute("aria-label", label);
       markers.current.set(r.id, { marker, signature });
@@ -193,15 +259,54 @@ export function FloodMap({
     }
     if (!fitted.current && reports.length) {
       fitted.current = true;
-      if (reports.length === 1) {
+      if (reports.length === 1 && !reports[0]!.stretch) {
         m.jumpTo({ center: [reports[0]!.longitude, reports[0]!.latitude], zoom: 14 });
       } else {
         const bounds = new maplibre.LngLatBounds();
-        for (const r of reports) bounds.extend([r.longitude, r.latitude]);
+        for (const r of reports) {
+          const at = pinAt(r);
+          bounds.extend([at.longitude, at.latitude]);
+          for (const p of r.stretch?.line ?? []) bounds.extend(p);
+        }
         m.fitBounds(bounds, { padding: { top: 140, bottom: 60, left: 50, right: 50 }, maxZoom: 15, duration: 0 });
       }
     }
   }, [ready, reports, fitKey]);
+
+  // The flooded stretches, drawn as soon as the style is ready (and redrawn when the reports change).
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    const data = stretchData(reports);
+    const draw = () => {
+      if (!isStyleReady(m)) return false;
+      const source = m.getSource(STRETCH_SOURCE) as GeoJSONSource | undefined;
+      if (source) source.setData(data);
+      else addStretchLayers(m, data);
+      return true;
+    };
+    if (draw()) return;
+    m.on("style.load", draw);
+    return () => {
+      m.off("style.load", draw);
+    };
+  }, [ready, reports]);
+
+  // Tapping a stretch opens its report.
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    const onTap = (e: MapMouseEvent) => {
+      if (!m.getLayer(STRETCH_HIT)) return;
+      const hit = m.queryRenderedFeatures(e.point, { layers: [STRETCH_HIT] })[0];
+      const id = hit?.properties?.id;
+      if (typeof id === "string") select.current(id);
+    };
+    m.on("click", onTap);
+    return () => {
+      m.off("click", onTap);
+    };
+  }, [ready]);
 
   // Lift the selected marker above the others.
   useEffect(() => {

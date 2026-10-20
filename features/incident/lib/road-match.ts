@@ -281,7 +281,7 @@ export interface ResolvedLocation {
   /** Road names drawn. */
   matched: string[];
   /** How it was placed, for the list. */
-  basis: "intersection" | "coordinates" | "road" | "point" | "none";
+  basis: "intersection" | "coordinates" | "road" | "point" | "stretch" | "none";
   /** Places it was drawn at (more than 1: two crossings of the same road names). */
   places: number;
 }

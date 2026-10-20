@@ -2,6 +2,7 @@
  * Incident feature - domain types.
  */
 import type { ReportPhoto, ReportVideo } from "@/features/reports/types";
+import type { FloodStretch } from "@/features/flood-report/lib/stretch";
 import type { FloodSeverity } from "./lib/flood-severity";
 
 export type { FloodSeverity } from "./lib/flood-severity";
@@ -57,6 +58,8 @@ export interface FloodMapLocation {
   videos: ReportVideo[];
   /** Sent from the OKB mobile page: it clears by its own weather rule (see `clearRule`). */
   fromMobile: boolean;
+  /** OKB Mobile: the flooded road between photos taken far apart, drawn instead of matching road names. */
+  stretch: FloodStretch | null;
   /** Why it clears when it does, for mobile reports, e.g. "6 h (heavy rain)". */
   clearRule: string | null;
 }

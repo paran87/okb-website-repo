@@ -12,6 +12,8 @@ import { floodMapWeather } from "@/features/incident/server/flood-map";
 import { bridgePins, bridgeReportsForAdmin } from "@/features/flood-report/server/bridge-reports";
 import { deleteAllMedia, NO_MEDIA, reportMediaIndex } from "@/features/flood-report/server/media";
 import { buildMobileRecord, depthOf, toMyReport, toPublicReport } from "@/features/flood-report/server/record";
+import { analyzeStretch } from "@/features/flood-report/server/stretch";
+import type { StoredStretch } from "@/features/flood-report/lib/stretch";
 import type {
   AdminMobileReport,
   AdminReport,
@@ -224,7 +226,9 @@ export async function submitReport(body: unknown, ip = ""): Promise<SubmittedRep
   const editToken = randomBytes(32).toString("base64url");
   const built = buildMobileRecord({ ...input, id });
   const inConsolidated = includedInConsolidated(ip);
-  const record = { ...built, mobile: { ...built.mobile, ownerTokenHash: hashToken(editToken), inConsolidated } };
+  // Photos taken far apart may show a flooded stretch of road rather than one spot.
+  const stretch = await analyzeStretch(input.photos);
+  const record = { ...built, mobile: { ...built.mobile, ownerTokenHash: hashToken(editToken), inConsolidated, stretch } };
   const row = {
     id,
     message_id: id,
@@ -391,6 +395,14 @@ async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: 
 
   const createdAt = new Date(row.created_at);
   const rebuilt = buildMobileRecord({ ...input, id: reportId }, createdAt);
+  // The stretch is worked out again when the photos changed; photos the AI already checked keep their verdict.
+  const oldStretch = (old.stretch ?? null) as StoredStretch | null;
+  const samePhotos =
+    Array.isArray(old.photos) &&
+    old.photos.length === input.photos.length &&
+    input.photos.every((p, i) => (old.photos as { key?: unknown }[])[i]?.key === p.key);
+  const stretch =
+    oldStretch && samePhotos && oldStretch.photoCheck !== "failed" ? oldStretch : await analyzeStretch(input.photos, oldStretch?.verdicts ?? {});
   const at = new Date().toISOString();
   const review = (row.record.review ?? {}) as { linkedMessageIds?: unknown; history?: unknown };
   const history = Array.isArray(review.history) ? review.history : [];
@@ -409,6 +421,7 @@ async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: 
       ...rebuilt.mobile,
       ownerTokenHash: old.ownerTokenHash,
       inConsolidated: old.inConsolidated === true,
+      stretch,
       editedAt: at,
       ...(editor.kind === "operator" ? { operatorEditedAt: at, operatorEditedBy: editor.name.slice(0, 100) } : {}),
     },

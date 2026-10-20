@@ -8,6 +8,7 @@ import { formatDateTime, formatMeters, formatRelative, formatShortDateTime } fro
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { FloodPhotos } from "@/features/incident/components/flood-photos";
+import { formatMeters as formatLength } from "@/features/flood-report/lib/stretch";
 
 /** Where a flooded location is drawn on the map, in words. */
 export function placeText(p: PlacedLocation): string {
@@ -18,6 +19,10 @@ export function placeText(p: PlacedLocation): string {
   if (r.basis === "coordinates") return `Shown on ${r.matched.join(", ")} at the reported coordinates`;
   if (r.basis === "road") return `Shown along ${r.matched[0]}`;
   if (r.basis === "point") return "Shown at the reported coordinates";
+  if (r.basis === "stretch") {
+    const s = p.location.stretch;
+    return `Shown along the flooded stretch between the sender's photos${s ? ` (${formatLength(s.lengthM)}${r.matched.length ? ` on ${r.matched.slice(0, 3).join(", ")}` : ""})` : ""}`;
+  }
   return "Not on the map: the road is not in the DPWH road network";
 }
 

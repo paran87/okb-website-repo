@@ -12,6 +12,7 @@
  *    sends to the browser. They are human-readable views; raw JSON never reaches
  *    the primary UI.
  */
+import type { FloodStretch } from "@/features/flood-report/lib/stretch";
 
 // ---------------------------------------------------------------------------
 // OKB Bridge record (backend-owned; read-only from the Command Center)
@@ -218,6 +219,8 @@ export interface BridgeReportRecord {
   contactNumber: string | null;
   /** Weather the sender chose (mobile reports: decides how long the flood stays on the maps). */
   mobileWeather: string | null;
+  /** Mobile reports: the flooded road between photos taken far apart (features/flood-report/lib/stretch.ts). */
+  mobileStretch: FloodStretch | null;
   /** Mobile reports: included in the bridge's automated WhatsApp report (null for other reports). */
   inConsolidated: boolean | null;
   createdAt: string;
