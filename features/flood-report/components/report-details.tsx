@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { BadgeCheck, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, Navigation, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
+import { BadgeCheck, CameraOff, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, MessageSquareText, Navigation, Play, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import { formatDepth } from "../lib/options";
-import type { PublicFloodReport, ReportPhoto } from "../types";
+import type { PublicFloodReport } from "../types";
 import { reportColor } from "./flood-map";
 
 function clock(iso: string | null): string | null {
@@ -14,14 +14,33 @@ function clock(iso: string | null): string | null {
   return new Date(iso).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
-/** Full-screen swipeable photo viewer. */
+/** WhatsApp / Viber, as the map names the source. */
+export const SOURCE_LABEL = { okb_mobile: "OKB Mobile", whatsapp: "WhatsApp", viber: "Viber" } as const;
+export const SOURCE_COLOR = { okb_mobile: "#0f172a", whatsapp: "#1fa855", viber: "#7360f2" } as const;
+
+/** A report's photos then videos, as the viewer shows them. */
+export function mediaOf(report: Pick<PublicFloodReport, "photos" | "videos" | "locationText">): ViewerItem[] {
+  return [
+    ...report.photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${report.locationText}` })),
+    ...report.videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${report.locationText}`, video: true })),
+  ];
+}
+
+export interface ViewerItem {
+  url: string;
+  alt: string;
+  /** A video (played with controls) instead of a photo. */
+  video?: boolean;
+}
+
+/** Full-screen swipeable photo (and video) viewer. */
 export function PhotoViewer({
   photos,
   index,
   onClose,
   onIndex,
 }: {
-  photos: { url: string; alt: string }[];
+  photos: ViewerItem[];
   index: number | null;
   onClose: () => void;
   onIndex: (i: number) => void;
@@ -44,8 +63,9 @@ export function PhotoViewer({
       className="fixed inset-0 z-[60] flex flex-col bg-black"
       role="dialog"
       aria-modal="true"
-      aria-label="Photo"
-      onTouchStart={(e) => setTouchX(e.touches[0]?.clientX ?? null)}
+      aria-label={photo.video ? "Video" : "Photo"}
+      // A drag on the video (its seek bar) is not a swipe to the next item.
+      onTouchStart={(e) => setTouchX((e.target as Element).closest("video") ? null : (e.touches[0]?.clientX ?? null))}
       onTouchEnd={(e) => {
         const end = e.changedTouches[0]?.clientX;
         if (touchX === null || end === undefined) return;
@@ -58,13 +78,17 @@ export function PhotoViewer({
         <span className="text-sm font-semibold">
           {index + 1} / {photos.length}
         </span>
-        <button type="button" onClick={onClose} aria-label="Close photo" className="flex size-11 items-center justify-center rounded-full bg-white/15">
+        <button type="button" onClick={onClose} aria-label={photo.video ? "Close video" : "Close photo"} className="flex size-11 items-center justify-center rounded-full bg-white/15">
           <X className="size-6" aria-hidden />
         </button>
       </div>
       <div className="relative flex min-h-0 flex-1 items-center justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route */}
-        <img src={photo.url} alt={photo.alt} className="max-h-full max-w-full object-contain" />
+        {photo.video ? (
+          <video key={photo.url} src={photo.url} controls autoPlay playsInline aria-label={photo.alt} className="max-h-full max-w-full" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route
+          <img src={photo.url} alt={photo.alt} className="max-h-full max-w-full object-contain" />
+        )}
         {index > 0 ? (
           <button
             type="button"
@@ -104,13 +128,19 @@ function Row({ icon: Icon, label, value }: { icon: typeof Clock; label: string; 
   );
 }
 
-/** What a tapped flood report shows: photos, depth, road, weather, times. */
+/**
+ * What a tapped flood report shows: photos and videos, depth, road, weather, times. A WhatsApp / Viber report
+ * shows its message text (and says when no photos were added to it).
+ */
 export function ReportDetails({ report }: { report: PublicFloodReport }) {
   const [viewer, setViewer] = useState<number | null>(null);
   const [slide, setSlide] = useState(0);
   const color = reportColor(report);
   const severity = FLOOD_SEVERITY[report.severity];
-  const photos = report.photos.map((p: ReportPhoto, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${report.locationText}` }));
+  const photos = mediaOf(report);
+  const fromGroup = report.source !== "okb_mobile";
+  const videos = report.videos.length;
+  const shots = report.photos.length;
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${report.latitude},${report.longitude}`;
 
   const share = async () => {
@@ -140,10 +170,21 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
                 type="button"
                 onClick={() => setViewer(i)}
                 className="relative aspect-[4/3] w-full shrink-0 snap-center bg-slate-200"
-                aria-label={`Open photo ${i + 1}`}
+                aria-label={p.video ? `Play video ${i + 1 - shots}` : `Open photo ${i + 1}`}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route */}
-                <img src={p.url} alt={p.alt} loading="lazy" className="size-full object-cover" />
+                {p.video ? (
+                  <>
+                    <video src={`${p.url}#t=0.1`} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
+                    <span className="absolute inset-0 grid place-items-center">
+                      <span className="grid size-14 place-items-center rounded-full bg-black/60 text-white">
+                        <Play className="size-7 translate-x-0.5" aria-hidden />
+                      </span>
+                    </span>
+                  </>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route
+                  <img src={p.url} alt={p.alt} loading="lazy" className="size-full object-cover" />
+                )}
               </button>
             ))}
           </div>
@@ -155,8 +196,17 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
             </div>
           ) : null}
           <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
-            {photos.length} photo{photos.length === 1 ? "" : "s"}
+            {[shots ? `${shots} photo${shots === 1 ? "" : "s"}` : "", videos ? `${videos} video${videos === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ")}
           </span>
+        </div>
+      ) : fromGroup ? (
+        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-3 text-slate-500">
+          <CameraOff className="size-6 shrink-0" aria-hidden />
+          <p className="text-sm">
+            <span className="font-semibold text-slate-700">No photos uploaded</span>
+            <br />
+            OKB operators add photos and videos when they have them.
+          </p>
         </div>
       ) : null}
 
@@ -166,6 +216,15 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
             {report.receded ? "Receded" : report.expired ? "Cleared" : report.levelLabel ?? severity.label}
             {report.depthM !== null ? ` · ${formatDepth(report.depthM)}` : ""}
           </span>
+          {fromGroup ? (
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white"
+              style={{ background: SOURCE_COLOR[report.source] }}
+            >
+              <MessageSquareText className="size-4" aria-hidden />
+              {SOURCE_LABEL[report.source]} report
+            </span>
+          ) : null}
           {report.verified ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
               <BadgeCheck className="size-4" aria-hidden />
@@ -184,6 +243,13 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
           Reported {formatDistanceToNowStrict(new Date(report.reportedAt), { addSuffix: true })} · {report.reference}
         </p>
       </div>
+
+      {report.text ? (
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Report as sent on {SOURCE_LABEL[report.source]}</p>
+          <p className="mt-1 max-h-72 overflow-y-auto whitespace-pre-line break-words text-[15px] text-slate-900">{report.text}</p>
+        </div>
+      ) : null}
 
       <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 px-3">
         <Row icon={Ruler} label="Flood height" value={report.depthM !== null ? `${report.levelLabel ?? "Flood"} (about ${formatDepth(report.depthM)})` : report.levelLabel} />
@@ -206,7 +272,11 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
               : null
           }
         />
-        <Row icon={User} label="Reported by" value={report.senderName ?? "Anonymous"} />
+        <Row
+          icon={User}
+          label="Reported by"
+          value={fromGroup ? `A flood monitoring group on ${SOURCE_LABEL[report.source]}` : (report.senderName ?? "Anonymous")}
+        />
       </div>
 
       {report.remarks ? (

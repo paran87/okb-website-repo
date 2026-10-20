@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string; title: string; icon: ReactNode }[] = [
   { id: "overview", label: "Overview", title: "Visitors at a glance", icon: <BarChart3 className="size-5" aria-hidden /> },
   { id: "visitors", label: "Visitors", title: "Every visit, newest first", icon: <Users className="size-5" aria-hidden /> },
   { id: "media", label: "Media", title: "Photos & videos", icon: <Images className="size-5" aria-hidden /> },
-  { id: "reports", label: "Reports", title: "OKB Mobile flood reports", icon: <Camera className="size-5" aria-hidden /> },
+  { id: "reports", label: "Reports", title: "Flood reports (OKB Mobile, WhatsApp, Viber)", icon: <Camera className="size-5" aria-hidden /> },
   { id: "setup", label: "Setup", title: "Setup & account", icon: <Settings2 className="size-5" aria-hidden /> },
 ];
 

@@ -24,18 +24,35 @@ export function reportColor(r: Pick<PublicFloodReport, "receded" | "expired" | "
   return r.receded ? RECEDED_COLOR : r.expired ? CLEARED_COLOR : FLOOD_SEVERITY[r.severity].color;
 }
 
-/** Round photo marker ringed in the severity color, with the depth under it. */
+const MESSAGE_ICON =
+  '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;inset:0;margin:auto" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>';
+const SMALL_MESSAGE_ICON =
+  '<svg viewBox="0 0 24 24" width="11" height="11" fill="#fff" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+
+/** Round photo marker ringed in the severity color, with the depth under it (a message icon for WhatsApp / Viber text). */
 function markerElement(report: PublicFloodReport, onSelect: (id: string) => void): HTMLElement {
   const root = document.createElement("button");
   root.type = "button";
   root.className = "okb-flood-marker";
-  root.setAttribute("aria-label", `Flood report at ${report.locationText}`);
+  root.setAttribute("aria-label", `${report.source === "okb_mobile" ? "Flood report" : report.source === "viber" ? "Viber flood report" : "WhatsApp flood report"} at ${report.locationText}`);
   root.style.cssText = "display:flex;flex-direction:column;align-items:center;background:none;border:0;padding:0;cursor:pointer;";
   const color = reportColor(report);
   const ring = document.createElement("span");
   ring.style.cssText = `position:relative;display:block;width:46px;height:46px;border-radius:9999px;border:4px solid ${color};background:#e2e8f0 center/cover no-repeat;box-shadow:0 4px 10px rgba(0,0,0,.35);`;
   const photo = report.photos[0];
   if (photo) ring.style.backgroundImage = `url("${photo.url}")`;
+  else if (report.source !== "okb_mobile") {
+    // A WhatsApp / Viber report without photos: a message icon instead of a photo.
+    ring.style.background = "#f8fafc";
+    ring.innerHTML = MESSAGE_ICON;
+  }
+  if (report.source !== "okb_mobile") {
+    const badge = document.createElement("span");
+    badge.title = report.source === "viber" ? "Viber report" : "WhatsApp report";
+    badge.style.cssText = `position:absolute;left:-6px;bottom:-4px;width:18px;height:18px;border-radius:9999px;background:${report.source === "viber" ? "#7360f2" : "#1fa855"};box-shadow:0 0 0 2px #fff;display:grid;place-items:center;`;
+    badge.innerHTML = SMALL_MESSAGE_ICON;
+    ring.append(badge);
+  }
   if (report.verified) {
     const check = document.createElement("span");
     check.textContent = "✓";
@@ -157,13 +174,15 @@ export function FloodMap({
     for (const r of [...reports].reverse()) {
       seen.add(r.id);
       const offset = offsetOf(r);
-      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.latitude},${r.longitude}|${offset.join(",")}`;
+      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.source}|${r.latitude},${r.longitude}|${offset.join(",")}`;
       const existing = markers.current.get(r.id);
       if (existing?.signature === signature) continue;
       existing?.marker.remove();
-      const marker = new maplibre.Marker({ element: markerElement(r, (id) => select.current(id)), anchor: "bottom", offset })
-        .setLngLat([r.longitude, r.latitude])
-        .addTo(m);
+      const element = markerElement(r, (id) => select.current(id));
+      const label = element.getAttribute("aria-label") ?? "";
+      const marker = new maplibre.Marker({ element, anchor: "bottom", offset }).setLngLat([r.longitude, r.latitude]).addTo(m);
+      // MapLibre labels every marker "Map marker" when it is added: keep the report's own label.
+      element.setAttribute("aria-label", label);
       markers.current.set(r.id, { marker, signature });
     }
     for (const [id, { marker }] of markers.current) {

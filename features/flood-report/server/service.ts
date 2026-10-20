@@ -9,9 +9,12 @@ import { getReportsConfig } from "@/features/reports/server/config";
 import { MOBILE_REPORT_PLATFORM } from "@/features/reports/types";
 import { FLOOD_LEVELS, inPhilippines, MAX_PHOTO_BYTES, MAX_PHOTOS, ROAD_STATUSES, WEATHER } from "@/features/flood-report/lib/options";
 import { floodMapWeather } from "@/features/incident/server/flood-map";
+import { bridgePins, bridgeReportsForAdmin } from "@/features/flood-report/server/bridge-reports";
+import { deleteAllMedia, NO_MEDIA, reportMediaIndex } from "@/features/flood-report/server/media";
 import { buildMobileRecord, depthOf, toMyReport, toPublicReport } from "@/features/flood-report/server/record";
 import type {
   AdminMobileReport,
+  AdminReport,
   FloodReportInput,
   MyFloodReport,
   PlaceName,
@@ -428,9 +431,21 @@ async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: 
   return view;
 }
 
-/** Admin → Reports: mobile reports of the last [days] (any status), newest first, with the operator-only fields. */
-export async function listReportsForAdmin(days: number): Promise<AdminMobileReport[]> {
+/**
+ * Admin → Reports: the reports of the last [days], newest first: OKB Mobile reports (any status, with the
+ * operator-only fields) and WhatsApp / Viber flood reports, each with the photos and videos operators added.
+ */
+export async function listReportsForAdmin(days: number): Promise<AdminReport[]> {
   if (!supabase()) return [];
+  const weather = await floodMapWeather().catch(() => null);
+  const [mobile, bridge] = await Promise.all([
+    listMobileReportsForAdmin(days),
+    weather ? bridgeReportsForAdmin(days, weather) : Promise.resolve([]),
+  ]);
+  return [...mobile, ...bridge].sort((a, b) => b.reportedAt.localeCompare(a.reportedAt));
+}
+
+async function listMobileReportsForAdmin(days: number): Promise<AdminMobileReport[]> {
   const since = new Date(Date.now() - days * 24 * 3_600_000).toISOString();
   const res = await rest(
     `${REPORTS}?select=id,status,created_at,record&platform=eq.${MOBILE_REPORT_PLATFORM}&created_at=gte.${since}&order=created_at.desc&limit=300`,
@@ -439,7 +454,7 @@ export async function listReportsForAdmin(days: number): Promise<AdminMobileRepo
     log.error({ status: res.status }, "Admin flood report list rejected");
     throw new StorageUnavailable("Mobile reports could not be loaded.");
   }
-  const liveRain = await liveRainNow();
+  const [liveRain, media] = await Promise.all([liveRainNow(), reportMediaIndex()]);
   return ((await res.json()) as Row[]).flatMap((row): AdminMobileReport[] => {
     const view = toMyReport(row, liveRain);
     if (!view) return [];
@@ -447,6 +462,9 @@ export async function listReportsForAdmin(days: number): Promise<AdminMobileRepo
     return [
       {
         ...view,
+        kind: "mobile",
+        // Photos stay the report's own (the edit form saves that list); videos are the operators'.
+        videos: (media.get(row.id) ?? NO_MEDIA).videos,
         contactNumber: typeof m.contactNumber === "string" ? m.contactNumber : null,
         inConsolidated: m.inConsolidated === true,
         hasEditKey: typeof m.ownerTokenHash === "string",
@@ -462,6 +480,9 @@ async function removeReport(row: Row, by: string): Promise<void> {
   if (linked.ok && ((await linked.json()) as unknown[]).length) {
     throw new ConflictError("OKB operators already made this report part of an incident, so it can no longer be deleted.");
   }
+  // Its rows in the bridge's automated reports would block the delete; a sent report keeps its own list of ids.
+  const items = await rest(`okb_bridge_consolidated_report_items?report_id=eq.${row.id}`, { method: "DELETE", prefer: "return=minimal" });
+  if (!items.ok && items.status !== 404) log.warn({ status: items.status }, "Consolidated report rows of a deleted report not removed");
   const res = await rest(`${REPORTS}?id=eq.${row.id}&platform=eq.${MOBILE_REPORT_PLATFORM}`, { method: "DELETE", prefer: "return=minimal" });
   if (res.status === 409) {
     throw new ConflictError("OKB operators already made this report part of an incident, so it can no longer be deleted.");
@@ -475,6 +496,7 @@ async function removeReport(row: Row, by: string): Promise<void> {
     : [];
   const cfg = getOperationsR2Config();
   if (cfg) await Promise.all(photos.map((k) => deleteObject(cfg, k).catch((err) => log.warn({ err, key: k }, "Photo of deleted report not removed from R2"))));
+  await deleteAllMedia(row.id);
   invalidateAggregates();
   memo = null;
   log.info({ id: row.id, photos: photos.length, by }, "Mobile flood report deleted");
@@ -486,14 +508,65 @@ export async function deleteMyReport(id: string, body: unknown): Promise<void> {
 }
 
 /**
- * An OKB operator deletes a mobile report (spam, a duplicate, a test, or one sent before senders had edit keys).
- * WhatsApp/Viber reports are never deleted here: the bridge owns them.
+ * An OKB operator deletes a report (spam, a duplicate, a test, or a mobile report sent before senders had edit
+ * keys). A mobile report is deleted here; a WhatsApp / Viber report is deleted through the OKB Bridge, which
+ * keeps it in memory for its automated reports.
  */
 export async function deleteReportAsOperator(id: string, operator: string): Promise<void> {
   if (!UUID.test(id)) throw new NotFoundError("Report not found.");
+  const by = `operator ${operator}`.slice(0, 120);
   const row = (await rows([id.toLowerCase()]))[0];
-  if (!row) throw new NotFoundError("Only reports sent from the OKB mobile page can be deleted here.");
-  await removeReport(row, `operator ${operator}`.slice(0, 120));
+  if (row) return removeReport(row, by);
+  await deleteBridgeReport(id.toLowerCase(), by);
+}
+
+/** The stored report's id (any source), or NotFound. */
+export async function assertReportExists(id: string): Promise<string> {
+  if (!UUID.test(id)) throw new NotFoundError("Report not found.");
+  const res = await rest(`${REPORTS}?select=id&id=eq.${id.toLowerCase()}&limit=1`);
+  if (!res.ok) throw new StorageUnavailable("The report could not be checked. Please try again.");
+  if (!((await res.json()) as unknown[]).length) throw new NotFoundError("This report no longer exists.");
+  return id.toLowerCase();
+}
+
+async function deleteBridgeReport(id: string, by: string): Promise<void> {
+  await assertReportExists(id);
+  const linked = await rest(`okb_command_incidents?select=id&report_id=eq.${id}&limit=1`);
+  if (linked.ok && ((await linked.json()) as unknown[]).length) {
+    throw new ConflictError("OKB operators already made this report part of an incident, so it can no longer be deleted.");
+  }
+  const cfg = getReportsConfig();
+  if (!cfg.bridgeApiUrl || !cfg.bridgeAdminToken) {
+    throw new StorageUnavailable("Deleting WhatsApp / Viber reports needs OKB_BRIDGE_API_URL and OKB_BRIDGE_ADMIN_TOKEN on the server.");
+  }
+  let res: Response;
+  try {
+    res = await fetch(`${cfg.bridgeApiUrl}/api/v1/reports/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${cfg.bridgeAdminToken}` },
+      cache: "no-store",
+      // The bridge runs on a free Render instance that may need to wake up.
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch (err) {
+    log.error({ err }, "OKB Bridge report delete failed (network)");
+    throw new StorageUnavailable("The OKB Bridge backend did not respond. The report was not deleted.");
+  }
+  if (res.status === 409) throw new ConflictError("The OKB Bridge is still processing this report. Try again in a minute.");
+  if (res.status === 404) {
+    const text = await res.text().catch(() => "");
+    // An older bridge without the delete endpoint answers "not found" for the route itself.
+    if (!/report not found/i.test(text)) {
+      throw new StorageUnavailable("The OKB Bridge backend cannot delete reports yet. Redeploy it with the latest version.");
+    }
+  } else if (!res.ok) {
+    log.error({ status: res.status }, "OKB Bridge report delete rejected");
+    throw new StorageUnavailable("The OKB Bridge backend rejected the delete. The report was not deleted.");
+  }
+  await deleteAllMedia(id);
+  invalidateAggregates();
+  memo = null;
+  log.info({ id, by }, "WhatsApp / Viber report deleted");
 }
 
 // ---------------------------------------------------------------------------
@@ -503,7 +576,10 @@ export async function deleteReportAsOperator(id: string, operator: string): Prom
 export const MAP_HOURS = [6, 24, 72, 168] as const;
 let memo: { at: number; hours: number; data: PublicFloodReportList } | null = null;
 
-/** Mobile reports of the last [hours] for the public map (rejected reports are left out). 15-second memo. */
+/**
+ * Reports of the last [hours] for the public map: OKB Mobile reports and WhatsApp / Viber flood reports
+ * (rejected reports are left out), with the photos and videos operators added. 15-second memo.
+ */
 export async function listPublicReports(hours: number): Promise<PublicFloodReportList> {
   if (memo && memo.hours === hours && Date.now() - memo.at < 15_000) return memo.data;
   const db = supabase();
@@ -533,12 +609,30 @@ export async function listPublicReports(hours: number): Promise<PublicFloodRepor
     throw new StorageUnavailable("Flood reports could not be loaded.");
   }
   const rows = (await res.json()) as { id: string; status: string | null; created_at: string; record: unknown }[];
-  const liveRain = (await floodMapWeather().catch(() => null))?.state === "wet";
+  const weather = await floodMapWeather().catch(() => null);
+  const liveRain = weather?.state === "wet";
+  const [media, bridge] = await Promise.all([
+    reportMediaIndex(),
+    // WhatsApp / Viber reports: a failure leaves them out, never the mobile reports.
+    weather
+      ? bridgePins(hours, weather).catch((err) => {
+          log.warn({ err }, "WhatsApp / Viber reports left off the public map");
+          return [] as PublicFloodReport[];
+        })
+      : Promise.resolve([] as PublicFloodReport[]),
+  ]);
+  const mobile = rows
+    .map((row) => toPublicReport(row, liveRain))
+    .filter((r): r is PublicFloodReport => r !== null)
+    .map((r) => {
+      const added = media.get(r.id);
+      return added ? { ...r, photos: [...r.photos, ...added.photos], videos: added.videos } : r;
+    });
   const data = {
     generatedAt,
     hours,
     liveRain,
-    reports: rows.map((row) => toPublicReport(row, liveRain)).filter((r): r is PublicFloodReport => r !== null),
+    reports: [...mobile, ...bridge].sort((a, b) => b.reportedAt.localeCompare(a.reportedAt)),
     configured: true,
   };
   memo = { at: Date.now(), hours, data };

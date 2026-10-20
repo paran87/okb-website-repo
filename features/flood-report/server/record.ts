@@ -323,6 +323,9 @@ export function toPublicReport(
     : [];
   return {
     id: row.id,
+    reportId: row.id,
+    source: "okb_mobile",
+    text: null,
     reference: reportReference(row.id, row.created_at),
     status,
     verified: status === "approved",
@@ -347,6 +350,7 @@ export function toPublicReport(
     senderName: str(m.senderName),
     reportedAt: row.created_at,
     photos,
+    videos: [],
   };
 }
 

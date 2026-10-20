@@ -185,7 +185,7 @@ function LocationCard({ p, selected, onSelect }: { p: PlacedLocation; selected: 
         </p>
       </button>
       {/* Outside the card's button: each photo is its own button. */}
-      {l.photos.length ? <FloodPhotos photos={l.photos} label={l.label} size="sm" max={4} className="px-2.5 pb-1" /> : null}
+      {l.photos.length || l.videos.length ? <FloodPhotos photos={l.photos} videos={l.videos} label={l.label} size="sm" max={4} className="px-2.5 pb-1" /> : null}
       <div className="flex items-center gap-2 pl-2.5">
         <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground" title="Cleared at this time unless it is reported again">
           {l.reference}

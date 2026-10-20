@@ -1,23 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Camera } from "lucide-react";
-import type { ReportPhoto } from "@/features/reports/types";
-import { PhotoViewer } from "@/features/flood-report/components/report-details";
+import { Camera, Play } from "lucide-react";
+import type { ReportPhoto, ReportVideo } from "@/features/reports/types";
+import { PhotoViewer, type ViewerItem } from "@/features/flood-report/components/report-details";
 import { cn } from "@/utils/cn";
 
 /**
- * Geotagged photos of a flooded location (reports sent from the OKB mobile page). Tapping one opens the
- * full-screen viewer (swipe or arrows between photos).
+ * Photos and videos of a flooded location (geotagged photos sent from the OKB mobile page, and media OKB
+ * operators added). Tapping one opens the full-screen viewer (swipe or arrows between them).
  */
 export function FloodPhotos({
   photos,
+  videos = [],
   label,
   size = "md",
   max,
   className,
 }: {
   photos: ReportPhoto[];
+  videos?: ReportVideo[];
   /** Place name, for the photos' alt text. */
   label: string;
   size?: "sm" | "md";
@@ -26,29 +28,41 @@ export function FloodPhotos({
   className?: string;
 }) {
   const [open, setOpen] = useState<number | null>(null);
-  if (!photos.length) return null;
-  const shown = max ? photos.slice(0, max) : photos;
-  const more = photos.length - shown.length;
-  const viewer = photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${label}` }));
+  const viewer: ViewerItem[] = [
+    ...photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${label}` })),
+    ...videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${label}`, video: true })),
+  ];
+  if (!viewer.length) return null;
+  const shown = max ? viewer.slice(0, max) : viewer;
+  const more = viewer.length - shown.length;
   return (
     <>
-      <div className={cn("flex gap-1.5 overflow-x-auto [scrollbar-width:thin]", className)} aria-label={`${photos.length} geotagged photo${photos.length === 1 ? "" : "s"}`}>
+      <div className={cn("flex gap-1.5 overflow-x-auto [scrollbar-width:thin]", className)} aria-label={`${viewer.length} photo${viewer.length === 1 ? "" : "s"} and video${viewer.length === 1 ? "" : "s"}`}>
         {shown.map((p, i) => (
           <button
-            key={p.key}
+            key={p.url}
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(i);
             }}
-            aria-label={`Open photo ${i + 1} of ${photos.length}`}
+            aria-label={`Open ${p.video ? "video" : "photo"} ${i + 1} of ${viewer.length}`}
             className={cn(
               "relative shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-border",
               size === "sm" ? "h-10 w-14" : "h-16 w-24",
             )}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element -- streamed from R2 through /api/flood-reports/photo */}
-            <img src={p.url} alt="" loading="lazy" className="size-full object-cover" />
+            {p.video ? (
+              <>
+                <video src={`${p.url}#t=0.1`} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
+                <span className="absolute inset-0 grid place-items-center">
+                  <Play className="size-5 rounded-full bg-black/60 p-1 text-white" aria-hidden />
+                </span>
+              </>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element -- streamed from R2 through our own routes
+              <img src={p.url} alt="" loading="lazy" className="size-full object-cover" />
+            )}
             {more > 0 && i === shown.length - 1 ? (
               <span className="absolute inset-0 grid place-items-center bg-black/55 text-[12px] font-bold text-white">+{more}</span>
             ) : null}

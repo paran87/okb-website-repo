@@ -1,4 +1,5 @@
 import "server-only";
+import { reportMediaIndex } from "@/features/flood-report/server/media";
 import type { BridgeReportRecord, ExtractedField, ExtractedLocation } from "@/features/reports/types";
 import type { ReportStore } from "@/features/reports/server/store";
 import { isClear, isFlooded, locationKey, observeReport, provided } from "@/features/reports/lib/observations";
@@ -75,7 +76,7 @@ function num(field: ExtractedField<number> | null | undefined): number | null {
 }
 
 /** A place on the road network as reports name it: the road and, when given, the cross street. */
-interface Place {
+export interface Place {
   road: string;
   cross: string | null;
 }
@@ -119,6 +120,76 @@ function recededAt(loc: ExtractedLocation, reportedAt: number): number | null {
   return t;
 }
 
+/** One location a report speaks about: its place and what the report says there. */
+export interface ReportObservation {
+  /** Index of the location in the report's extraction. */
+  index: number;
+  key: string;
+  place: Place | null;
+  flooded: boolean;
+  clear: boolean;
+  /** When the report says the flood receded (null when not given). */
+  recededAt: number | null;
+  /** The location as the maps draw it (flooded observations only). */
+  location: FloodMapLocation | null;
+}
+
+/** What a report says about each location it names, as the maps read it (no rule about newer reports or time). */
+export function reportObservations(record: BridgeReportRecord, activeHours: number, liveRain: boolean): ReportObservation[] {
+  const reportedAt = messageTime(record);
+  const at = Date.parse(reportedAt);
+  const fromMobile = record.platform === MOBILE_REPORT_PLATFORM;
+  const hours = fromMobile ? mobileExpiryHours(record.mobileWeather, liveRain) : activeHours;
+  const admin = record.extraction?.administrative;
+  const out: ReportObservation[] = [];
+  for (const o of observeReport(record)) {
+    const loc: ExtractedLocation | undefined = record.extraction?.locations?.[o.index];
+    if (!loc) continue;
+    const place = placeOf(loc, o.label);
+    const key = place ? `${place.road}${place.cross ? ` cor ${place.cross}` : ""}` : (o.key ?? `${record.id}:${o.index}`);
+    const flooded = isFlooded(o.condition);
+    const receded = flooded ? recededAt(loc, at) : null;
+    const clearsAt = Math.min(at + hours * HOUR, receded ?? Infinity);
+    out.push({
+      index: o.index,
+      key,
+      place,
+      flooded,
+      clear: isClear(o.condition),
+      recededAt: receded,
+      location: flooded
+        ? {
+            key,
+            label: o.label,
+            roads: roadCandidates(text(loc.roadName), o.label, text(loc.landmark)),
+            landmark: text(loc.landmark),
+            barangay: text(loc.barangay) ?? text(admin?.barangay),
+            municipality: text(loc.municipality) ?? text(admin?.municipality),
+            province: text(loc.province) ?? text(admin?.province),
+            deo: text(admin?.districtEngineeringOffice),
+            latitude: num(loc.latitude),
+            longitude: num(loc.longitude),
+            heightM: o.heightM,
+            heightRaw: o.heightRaw,
+            heightApproximate: o.heightApproximate,
+            severity: o.condition === "flooded" ? floodSeverity(o.heightM) : "unmeasured",
+            roadStatus: o.roadStatus,
+            reportId: record.id,
+            reference: reportReference(record.id, record.createdAt),
+            reportedAt,
+            groupName: record.source?.groupName ?? null,
+            clearsAt: Number.isFinite(clearsAt) ? new Date(clearsAt).toISOString() : reportedAt,
+            photos: record.photos,
+            videos: [],
+            fromMobile,
+            clearRule: fromMobile ? expiryReason(record.mobileWeather, liveRain) : null,
+          }
+        : null,
+    });
+  }
+  return out;
+}
+
 /**
  * Flooded locations for the map from processed reports (newest first): the latest report of each place
  * decides, whatever its wording. Flooded → highlighted while recent enough for the weather, until the time it
@@ -139,20 +210,14 @@ export function buildFloodMap(
 
   const ordered = [...reports].sort((a, b) => Date.parse(messageTime(b)) - Date.parse(messageTime(a)));
   for (const record of ordered) {
-    const reportedAt = messageTime(record);
-    const at = Date.parse(reportedAt);
-    const fromMobile = record.platform === MOBILE_REPORT_PLATFORM;
-    const hours = fromMobile ? mobileExpiryHours(record.mobileWeather, liveRain) : activeHours;
-    const admin = record.extraction?.administrative;
-    for (const o of observeReport(record)) {
-      const loc: ExtractedLocation | undefined = record.extraction?.locations?.[o.index];
-      if (!loc) continue;
-      const place = placeOf(loc, o.label);
-      const key = place ? `${place.road}${place.cross ? ` cor ${place.cross}` : ""}` : (o.key ?? `${record.id}:${o.index}`);
+    const at = Date.parse(messageTime(record));
+    const hours = record.platform === MOBILE_REPORT_PLATFORM ? mobileExpiryHours(record.mobileWeather, liveRain) : activeHours;
+    for (const o of reportObservations(record, activeHours, liveRain)) {
+      const { key, place } = o;
       // A newer report of this place already decided.
       if (seen.has(key) || (place && decided.some((d) => samePlace(d, place)))) continue;
       // Past its own time: cleared by the weather rule, and it no longer speaks for the place.
-      if (isFlooded(o.condition) && (!Number.isFinite(at) || at < now.getTime() - hours * HOUR)) {
+      if (o.flooded && (!Number.isFinite(at) || at < now.getTime() - hours * HOUR)) {
         clearedByWeather++;
         continue;
       }
@@ -160,44 +225,18 @@ export function buildFloodMap(
         seen.add(key);
         if (place) decided.push(place);
       };
-      if (isClear(o.condition)) {
+      if (o.clear) {
         decide();
         clearedByReport++;
         continue;
       }
-      if (!isFlooded(o.condition)) continue; // nothing said about flooding here
+      if (!o.flooded || !o.location) continue; // nothing said about flooding here
       decide();
-      const receded = recededAt(loc, at);
-      if (receded !== null && receded <= now.getTime()) {
+      if (o.recededAt !== null && o.recededAt <= now.getTime()) {
         clearedByReport++;
         continue;
       }
-      const clearsAt = Math.min(at + hours * HOUR, receded ?? Infinity);
-      locations.push({
-        key,
-        label: o.label,
-        roads: roadCandidates(text(loc.roadName), o.label, text(loc.landmark)),
-        landmark: text(loc.landmark),
-        barangay: text(loc.barangay) ?? text(admin?.barangay),
-        municipality: text(loc.municipality) ?? text(admin?.municipality),
-        province: text(loc.province) ?? text(admin?.province),
-        deo: text(admin?.districtEngineeringOffice),
-        latitude: num(loc.latitude),
-        longitude: num(loc.longitude),
-        heightM: o.heightM,
-        heightRaw: o.heightRaw,
-        heightApproximate: o.heightApproximate,
-        severity: o.condition === "flooded" ? floodSeverity(o.heightM) : "unmeasured",
-        roadStatus: o.roadStatus,
-        reportId: record.id,
-        reference: reportReference(record.id, record.createdAt),
-        reportedAt,
-        groupName: record.source?.groupName ?? null,
-        clearsAt: new Date(clearsAt).toISOString(),
-        photos: record.photos,
-        fromMobile,
-        clearRule: fromMobile ? expiryReason(record.mobileWeather, liveRain) : null,
-      });
+      locations.push(o.location);
     }
   }
   return {
@@ -218,8 +257,20 @@ export async function getFloodMap(store: ReportStore): Promise<FloodMapData> {
   if (memo && memo.kind === store.kind && Date.now() - memo.at < 30_000) return memo.data;
   const to = new Date();
   const from = new Date(to.getTime() - Math.max(FLOOD_MAP_RULE.wetHours, MOBILE_EXPIRY_MAX_HOURS) * HOUR);
-  const [reports, weather] = await Promise.all([store.listFloodReports({ from, to, limit: 400 }), floodMapWeather()]);
-  const data = buildFloodMap(reports, weather, to);
+  const [reports, weather, media] = await Promise.all([
+    store.listFloodReports({ from, to, limit: 400 }),
+    floodMapWeather(),
+    reportMediaIndex(),
+  ]);
+  const built = buildFloodMap(reports, weather, to);
+  // Photos and videos OKB operators added in Admin → Reports.
+  const data = {
+    ...built,
+    locations: built.locations.map((l) => {
+      const added = media.get(l.reportId);
+      return added ? { ...l, photos: [...l.photos, ...added.photos], videos: added.videos } : l;
+    }),
+  };
   memo = { at: Date.now(), kind: store.kind, data };
   return data;
 }

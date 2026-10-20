@@ -72,7 +72,7 @@ export function FloodAlertPanel({ placed, onClose, className }: { placed: Placed
         </button>
       </header>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2.5">
-        {l.photos.length ? <FloodPhotos photos={l.photos} label={l.label} /> : null}
+        {l.photos.length || l.videos.length ? <FloodPhotos photos={l.photos} videos={l.videos} label={l.label} /> : null}
         <dl className="space-y-1">
           {rows
             .filter((r): r is [string, string] => Boolean(r[1]))

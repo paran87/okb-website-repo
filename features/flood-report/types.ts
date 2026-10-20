@@ -6,10 +6,13 @@
  * `okb_mobile`) so it shows in Incoming Reports and on the flood maps next to the WhatsApp/Viber reports.
  */
 import type { FloodSeverity } from "@/features/incident/lib/flood-severity";
-import type { BridgeReportStatus, ReportPhoto } from "@/features/reports/types";
+import type { BridgeReportStatus, ReportPhoto, ReportVideo } from "@/features/reports/types";
 import type { FloodLevelId, RoadStatusId, WeatherId } from "./lib/options";
 
-export type { ReportPhoto };
+export type { ReportPhoto, ReportVideo };
+
+/** Where a report came from: the OKB mobile page, or a WhatsApp / Viber group (through the OKB Bridge). */
+export type ReportSource = "okb_mobile" | "whatsapp" | "viber";
 
 /** Where a photo was taken, as the phone reported it. */
 export interface PhotoGeotag {
@@ -63,9 +66,18 @@ export interface FloodReportInput {
   website?: string;
 }
 
-/** One report on the public map (no contact number; the sender's name only when they gave one). */
+/**
+ * One report on the public map (no contact number; the sender's name only when they gave one). A WhatsApp or
+ * Viber report shows its message text instead of form answers, one pin per flooded location it names.
+ */
 export interface PublicFloodReport {
+  /** Pin id: the report id (OKB Mobile), or `<report id>~<location index>` (WhatsApp / Viber). */
   id: string;
+  /** The stored report this pin belongs to. */
+  reportId: string;
+  source: ReportSource;
+  /** WhatsApp / Viber: the message as sent (phone numbers and e-mail addresses removed). */
+  text: string | null;
   reference: string;
   status: BridgeReportStatus;
   verified: boolean;
@@ -94,6 +106,8 @@ export interface PublicFloodReport {
   senderName: string | null;
   reportedAt: string;
   photos: ReportPhoto[];
+  /** Videos OKB operators added (Admin → Reports). */
+  videos: ReportVideo[];
 }
 
 /** What POST /api/flood-reports returns: the report and the sender's secret edit key (shown only this once). */
@@ -117,12 +131,34 @@ export interface MyFloodReport extends PublicFloodReport {
 
 /** Admin → Reports: a mobile report with the fields only operators see. */
 export interface AdminMobileReport extends MyFloodReport {
+  kind: "mobile";
   contactNumber: string | null;
   inConsolidated: boolean;
   /** The sender can still change it from their phone. */
   hasEditKey: boolean;
   operatorEditedBy: string | null;
 }
+
+/** Admin → Reports: a WhatsApp / Viber flood report (the bridge's); operators add photos and videos or delete it. */
+export interface AdminBridgeReport {
+  kind: "bridge";
+  id: string;
+  reference: string;
+  source: Exclude<ReportSource, "okb_mobile">;
+  status: BridgeReportStatus;
+  reportedAt: string;
+  groupName: string | null;
+  senderName: string | null;
+  /** The message as sent (operators see it in full). */
+  text: string | null;
+  summary: string | null;
+  /** Flooded locations it names, as they show on the maps. */
+  locations: { label: string; levelLabel: string | null; depthM: number | null; roadStatus: string | null; onMap: boolean }[];
+  photos: ReportPhoto[];
+  videos: ReportVideo[];
+}
+
+export type AdminReport = AdminMobileReport | AdminBridgeReport;
 
 export interface PublicFloodReportList {
   generatedAt: string;

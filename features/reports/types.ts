@@ -38,6 +38,13 @@ export interface ReportPhoto {
   takenAt: string | null;
 }
 
+/** A video an OKB operator added to a report (Admin → Reports), streamed through this site. */
+export interface ReportVideo {
+  key: string;
+  /** Same-origin URL that streams the video (with seeking). */
+  url: string;
+}
+
 /** Processing / review states written by the bridge backend. */
 export type BridgeReportStatus =
   | "received"

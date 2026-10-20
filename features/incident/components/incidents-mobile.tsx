@@ -282,7 +282,7 @@ function FloodedList({
                     <span className="truncate font-medium text-foreground">{l.label}</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
-                    <PhotoCount count={l.photos.length} />
+                    <PhotoCount count={l.photos.length + l.videos.length} />
                     <span className="font-mono text-foreground">{formatMeters(l.heightM) ?? "—"}</span>
                   </span>
                 </span>

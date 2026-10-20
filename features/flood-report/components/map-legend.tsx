@@ -1,6 +1,6 @@
 "use client";
 
-import { Info } from "lucide-react";
+import { Info, MessageSquareText } from "lucide-react";
 import { FLOOD_SEVERITY, floodSeverity } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import { MOBILE_EXPIRY_HOURS } from "../lib/expiry";
@@ -55,6 +55,9 @@ export function legendKeyOf(r: Pick<PublicFloodReport, "receded" | "expired" | "
   if (r.expired) return "cleared";
   return r.severity === "unmeasured" ? null : r.severity;
 }
+
+/** Pins from WhatsApp / Viber groups. */
+const groupPins = (reports: PublicFloodReport[]) => reports.filter((r) => r.source !== "okb_mobile").length;
 
 /** MMDA flood heights that fall in a depth level ("Gutter deep (8 in)"). */
 function levelsOf(key: LegendKey): string[] {
@@ -136,6 +139,19 @@ export function MapLegendSheet({
             <div>
               <p className="font-bold text-slate-900">Verified</p>
               <p className="text-sm text-slate-600">OKB operators checked the report and its photos.</p>
+            </div>
+          </li>
+          <li className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
+            <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#1fa855] text-white">
+              <MessageSquareText className="size-3" aria-hidden />
+            </span>
+            <div>
+              <p className="font-bold text-slate-900">WhatsApp / Viber report</p>
+              <p className="text-sm text-slate-600">
+                Sent to a flood monitoring group (green WhatsApp, violet Viber). Tap it to read the report as it was sent; a message icon
+                means no photos were added yet.
+              </p>
+              {groupPins(reports) ? <p className="text-xs font-semibold text-slate-500">{groupPins(reports)} on the map</p> : null}
             </div>
           </li>
           <li className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">

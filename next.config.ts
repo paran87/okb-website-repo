@@ -53,6 +53,8 @@ const nextConfig: NextConfig = {
   // Admin → Setup shows this SQL (read at runtime by app/api/admin/setup).
   outputFileTracingIncludes: {
     "/api/admin/setup": ["./supabase/migrations/20261014000000_okb_site_admin.sql", "./supabase/migrations/20261016000000_okb_gallery_engagement.sql"],
+    // The public flood map places WhatsApp / Viber report locations on the road network (features/incident/server/roads.ts).
+    "/api/flood-reports": ["./public/data/road-network/roads.geojson"],
   },
   experimental: {
     optimizePackageImports: [

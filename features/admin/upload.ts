@@ -10,7 +10,7 @@ import type { UploadTicket } from "@/features/admin/types";
  * the site instead.
  */
 
-function put(
+export function put(
   url: string,
   file: File,
   contentType: string,
@@ -71,6 +71,44 @@ export async function uploadFile(
     onProgress,
     signal,
   );
+  if (proxied < 200 || proxied >= 300) {
+    throw new AdminApiError(proxied === 0 ? "Upload failed. Check your connection." : `Upload failed (${proxied}).`, proxied, null);
+  }
+  return ticket.key;
+}
+
+/**
+ * Adds one photo or video to a flood report (Admin → Reports), the same way: straight to R2, or through this
+ * site for small files when the bucket does not allow direct uploads yet.
+ */
+export async function uploadReportMedia(
+  reportId: string,
+  file: Blob & { name?: string },
+  fileName: string,
+  onProgress: (fraction: number) => void,
+  signal: AbortSignal,
+): Promise<string> {
+  const base = `/api/admin/mobile-reports/${encodeURIComponent(reportId)}/media`;
+  const ticket = await adminApi<UploadTicket>(base, {
+    method: "POST",
+    body: jsonBody({ fileName, contentType: file.type, size: file.size }),
+    signal,
+  });
+  const direct = await put(ticket.uploadUrl, file as File, ticket.contentType, onProgress, signal);
+  if (direct >= 200 && direct < 300) {
+    await adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key }), signal });
+    return ticket.key;
+  }
+  if (direct !== 0) throw new AdminApiError(`Storage rejected the upload (${direct}).`, direct, "storage_error");
+  if (file.size > ticket.proxyLimit) {
+    throw new AdminApiError(
+      "Large videos need direct uploads. Turn them on under Media → Direct uploads, then retry.",
+      0,
+      "cors_blocked",
+    );
+  }
+  onProgress(0);
+  const proxied = await put(`${base}?key=${encodeURIComponent(ticket.key)}`, file as File, ticket.contentType, onProgress, signal);
   if (proxied < 200 || proxied >= 300) {
     throw new AdminApiError(proxied === 0 ? "Upload failed. Check your connection." : `Upload failed (${proxied}).`, proxied, null);
   }
