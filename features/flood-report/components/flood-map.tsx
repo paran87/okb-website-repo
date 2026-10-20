@@ -157,6 +157,23 @@ function userDot(): HTMLElement {
   return el;
 }
 
+/** The default view: every report (and flooded stretch) in one frame, clear of the header and the bottom buttons. */
+function frameAll(m: MapLibreMap, maplibre: MapLibre, reports: PublicFloodReport[], duration: number) {
+  if (!reports.length) return;
+  if (reports.length === 1 && !reports[0]!.stretch) {
+    const only = reports[0]!;
+    m.easeTo({ center: [only.longitude, only.latitude], zoom: 14, duration });
+    return;
+  }
+  const bounds = new maplibre.LngLatBounds();
+  for (const r of reports) {
+    const at = pinAt(r);
+    bounds.extend([at.longitude, at.latitude]);
+    for (const p of r.stretch?.line ?? []) bounds.extend(p);
+  }
+  m.fitBounds(bounds, { padding: { top: 150, bottom: 80, left: 50, right: 50 }, maxZoom: 15, duration });
+}
+
 /** Full-screen map of the public flood reports. */
 export function FloodMap({
   reports,
@@ -165,10 +182,13 @@ export function FloodMap({
   focus,
   user,
   fitKey,
+  fitAllSignal = 0,
 }: {
   reports: PublicFloodReport[];
   /** Frame all reports again when this changes (another time range). */
   fitKey?: string;
+  /** Frame all reports again (animated) each time this number changes. */
+  fitAllSignal?: number;
   selectedId: string | null;
   onSelect: (id: string) => void;
   /** Fly here when it changes (a new report, the user's position, a selected report). */
@@ -293,19 +313,21 @@ export function FloodMap({
     }
     if (!fitted.current && reports.length) {
       fitted.current = true;
-      if (reports.length === 1 && !reports[0]!.stretch) {
-        m.jumpTo({ center: [reports[0]!.longitude, reports[0]!.latitude], zoom: 14 });
-      } else {
-        const bounds = new maplibre.LngLatBounds();
-        for (const r of reports) {
-          const at = pinAt(r);
-          bounds.extend([at.longitude, at.latitude]);
-          for (const p of r.stretch?.line ?? []) bounds.extend(p);
-        }
-        m.fitBounds(bounds, { padding: { top: 140, bottom: 60, left: 50, right: 50 }, maxZoom: 15, duration: 0 });
-      }
+      frameAll(m, maplibre, reports, 0);
     }
   }, [ready, reports, fitKey]);
+
+  // The "show all flooded areas" button.
+  const latest = useRef(reports);
+  useEffect(() => {
+    latest.current = reports;
+  }, [reports]);
+  useEffect(() => {
+    const m = map.current;
+    const maplibre = lib.current;
+    if (!fitAllSignal || !ready || !m || !maplibre) return;
+    frameAll(m, maplibre, latest.current, 600);
+  }, [fitAllSignal, ready]);
 
   // The flooded stretches, drawn as soon as the style is ready (and redrawn when the reports change).
   useEffect(() => {

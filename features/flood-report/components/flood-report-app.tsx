@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleHelp, Copy, Home, Loader2, LocateFixed, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
+import { CircleHelp, Copy, Home, Loader2, LocateFixed, Maximize, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { useFloodReports } from "../hooks/use-flood-reports";
@@ -68,6 +68,7 @@ function PhoneApp() {
   // The time range whose "no reports" card was closed (it shows again for another range).
   const [emptyClosed, setEmptyClosed] = useState<Range | null>(null);
   const [locating, setLocating] = useState(false);
+  const [fitAllSignal, setFitAllSignal] = useState(0);
   const [focus, setFocus] = useState<{ latitude: number; longitude: number; zoom?: number; key: string } | null>(null);
   const [send, setSend] = useState<SendState>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -355,7 +356,7 @@ function PhoneApp() {
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-slate-200">
       {/* The map stays mounted under the camera and form, but out of reach of taps and screen readers. */}
       <div className="relative min-h-0 flex-1" inert={screen !== "map"}>
-        <FloodMap reports={list} selectedId={selectedId} onSelect={selectReport} focus={focus} user={geo.fix} fitKey={`${range}:${reports.isPlaceholderData ? "previous" : "loaded"}`} />
+        <FloodMap reports={list} selectedId={selectedId} onSelect={selectReport} focus={focus} user={geo.fix} fitKey={`${range}:${reports.isPlaceholderData ? "previous" : "loaded"}`} fitAllSignal={fitAllSignal} />
 
         {/* Header */}
         <div className="pointer-events-none absolute inset-x-0 top-0 space-y-2 p-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -433,6 +434,19 @@ function PhoneApp() {
               setLegendOpen(true);
             }}
           />
+          <div className="pointer-events-none flex flex-col items-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedId(null);
+              setFitAllSignal((n) => n + 1);
+            }}
+            disabled={!list.length}
+            aria-label="Show all flooded areas"
+            className="pointer-events-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-slate-800 shadow-lg active:bg-slate-100 disabled:opacity-40"
+          >
+            <Maximize className="size-6" aria-hidden />
+          </button>
           <button
             type="button"
             onClick={() => (geo.fix ? setFocus({ latitude: geo.fix.latitude, longitude: geo.fix.longitude, zoom: 15, key: `me-${Date.now()}` }) : setLocating(true))}
@@ -441,6 +455,7 @@ function PhoneApp() {
           >
             <LocateFixed className={cn("size-6", locating && "animate-pulse")} aria-hidden />
           </button>
+          </div>
         </div>
 
         {reports.isSuccess && !list.length && emptyClosed !== range ? (
