@@ -22,12 +22,10 @@ import {
   FRAMEWORK_META,
 } from "@/lib/config/okb-framework";
 import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
-import { APP, PUBLIC_ROUTES } from "@/lib/constants";
+import { APP, CONTACT, PUBLIC_ROUTES } from "@/lib/constants";
 import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 
 const DPWH_SITE = "https://www.dpwh.gov.ph";
-const PROGRAM_EMAIL = "okb@dpwh.gov.ph";
-const PROGRAM_HOTLINE = "(02) 165-02";
 const PROGRAM_ADDRESS = "Bonifacio Drive, Port Area, Manila";
 
 
@@ -135,11 +133,11 @@ export function SiteFooter() {
               </li>
               <li>
                 <Mail className="okb-foot-contact__icon" aria-hidden />
-                <a href={`mailto:${PROGRAM_EMAIL}`}>{PROGRAM_EMAIL}</a>
+                <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
               </li>
               <li>
                 <Phone className="okb-foot-contact__icon" aria-hidden />
-                <a href="tel:16502">{PROGRAM_HOTLINE}</a>
+                <a href={CONTACT.phoneHref}>{CONTACT.phone}</a>
               </li>
             </ul>
 

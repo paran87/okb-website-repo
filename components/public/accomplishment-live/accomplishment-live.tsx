@@ -44,6 +44,7 @@ import { RegionCard, RegionSheet, WaterwaySheet, type Selection } from "@/compon
 import { ResourcesSection } from "@/components/public/accomplishment-live/resources-section";
 import { compact, Empty, int, km, Meter, ProgressRing, stampText } from "@/components/public/accomplishment-live/shared";
 import { UpdatesSection } from "@/components/public/accomplishment-live/updates-section";
+import { CONTACT } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 
 const PREFS_KEY = "okb.public-accomplishment.prefs";
@@ -421,8 +422,8 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
       <p className="pt-1 text-xs leading-relaxed text-[var(--dpwh-muted)]">
         From the OKB Single Source of Truth (SSOT v2), compiled from DPWH regional and district office reports to the OKB Secretariat. Volumes follow the
         accomplishment log where it has entries. Spotted a discrepancy? Email{" "}
-        <a href="mailto:okb@dpwh.gov.ph" className="font-semibold text-[var(--dpwh-blue)] underline-offset-2 hover:underline">
-          okb@dpwh.gov.ph
+        <a href={`mailto:${CONTACT.email}`} className="font-semibold text-[var(--dpwh-blue)] underline-offset-2 hover:underline">
+          {CONTACT.email}
         </a>
         .
       </p>

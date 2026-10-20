@@ -2,6 +2,7 @@ import "server-only";
 import { randomBytes, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { ApiError, BadRequestError, NotFoundError, ValidationError } from "@/lib/api/errors";
+import { CONTACT } from "@/lib/constants";
 import { logger } from "@/lib/logger";
 import { siteRest } from "@/features/admin/server/supabase";
 import { parseAgent } from "@/features/admin/server/user-agent";
@@ -142,7 +143,7 @@ export async function submitFeedback(form: FormData, userAgent: string): Promise
     }
     log.error({ err }, "Feedback not saved");
     // The sender does not need to know about the Admin tables; tell them where else to go.
-    throw new ApiError(503, "INTERNAL_ERROR", "Your report could not be sent right now. Please try again later, or e-mail okb@dpwh.gov.ph.");
+    throw new ApiError(503, "INTERNAL_ERROR", `Your report could not be sent right now. Please try again later, or e-mail ${CONTACT.email}.`);
   }
   log.info({ id, category: input.category, area: input.area, screenshot: Boolean(screenshotKey) }, "Feedback received");
   return { reference: feedbackReference(id) };

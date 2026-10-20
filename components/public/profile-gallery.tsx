@@ -11,13 +11,12 @@ import {
   X,
 } from "lucide-react";
 import { PROFILE_SLIDES } from "@/lib/config/profile-slides";
+import { CONTACT } from "@/lib/constants";
 import { PublicPageContainer } from "@/components/public/public-page-container";
 import { Portal } from "@/components/ui/portal";
 import { useEscapeKey, useLockBodyScroll } from "@/hooks/use-overlay";
 
 const TOTAL = PROFILE_SLIDES.length;
-const PROGRAM_EMAIL = "okb@dpwh.gov.ph";
-const PROGRAM_HOTLINE = "(02) 165-02";
 
 export function ProfileGallery() {
   const [index, setIndex] = useState(0);
@@ -206,18 +205,18 @@ export function ProfileGallery() {
         </div>
 
         <div className="okb-folio-contact">
-          <a href="tel:16502" className="okb-folio-contact__item">
+          <a href={CONTACT.phoneHref} className="okb-folio-contact__item">
             <Phone aria-hidden />
             <span>
-              <em>Hotline</em>
-              {PROGRAM_HOTLINE}
+              <em>Phone</em>
+              {CONTACT.phone}
             </span>
           </a>
-          <a href={`mailto:${PROGRAM_EMAIL}`} className="okb-folio-contact__item">
+          <a href={`mailto:${CONTACT.email}`} className="okb-folio-contact__item">
             <Mail aria-hidden />
             <span>
               <em>Program desk</em>
-              {PROGRAM_EMAIL}
+              {CONTACT.email}
             </span>
           </a>
         </div>

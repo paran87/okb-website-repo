@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PublicPageHero, PublicPageSection } from "@/components/public";
-import { APP, PUBLIC_ROUTES } from "@/lib/constants";
+import { APP, CONTACT, PUBLIC_ROUTES } from "@/lib/constants";
 
 export const metadata = {
   title: "Contact",
@@ -57,16 +57,20 @@ export default function ContactPage() {
                   Email
                 </dt>
                 <dd className="mt-1">
-                  <a href="mailto:okb@dpwh.gov.ph" className="okb-public-link">
-                    okb@dpwh.gov.ph
+                  <a href={`mailto:${CONTACT.email}`} className="okb-public-link">
+                    {CONTACT.email}
                   </a>
                 </dd>
               </div>
               <div>
                 <dt className="okb-public-label">
-                  Hotline
+                  Phone
                 </dt>
-                <dd className="mt-1 text-[#1a1a1a]">(02) 165-02</dd>
+                <dd className="mt-1">
+                  <a href={CONTACT.phoneHref} className="okb-public-link">
+                    {CONTACT.phone}
+                  </a>
+                </dd>
               </div>
             </dl>
           </div>

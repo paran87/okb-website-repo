@@ -10,6 +10,14 @@ export const APP = {
   program: "Oplan Kontra Baha",
 } as const;
 
+/** Program contact shown on the website (footer, Contact, Portfolio, Accomplishment). */
+export const CONTACT = {
+  email: "bragz87@gmail.com",
+  phone: "Direct Line (053) 323.1008; Local No. 43234",
+  /** Dials the direct line, then the local number after a pause. */
+  phoneHref: "tel:+63533231008,43234",
+} as const;
+
 /** Public Oplan Kontra Baha website routes. */
 export const PUBLIC_ROUTES = {
   home: "/",

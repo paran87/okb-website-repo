@@ -26,6 +26,7 @@ import {
   type VisibleRegion,
 } from "@/features/accomplishment/lib/rollup";
 import type { AccomplishmentData } from "@/features/accomplishment/types";
+import { CONTACT } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 
 const PREFS_KEY = "okb.progress.prefs";
@@ -448,8 +449,8 @@ export function AccomplishmentView({ data }: { data: AccomplishmentData }) {
         <footer className="text-xs leading-relaxed text-muted-foreground">
           From the OKB Single Source of Truth, based on reports to the OKB Secretariat and regional office pages. Spotted a
           discrepancy? Email{" "}
-          <a href="mailto:okb@dpwh.gov.ph" className="font-medium text-primary underline-offset-2 hover:underline">
-            okb@dpwh.gov.ph
+          <a href={`mailto:${CONTACT.email}`} className="font-medium text-primary underline-offset-2 hover:underline">
+            {CONTACT.email}
           </a>
           .
         </footer>
