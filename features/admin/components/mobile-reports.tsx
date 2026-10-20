@@ -115,7 +115,7 @@ export function MobileReportsAdmin() {
     return all.filter((r) => {
       const text = (
         r.kind === "mobile"
-          ? [r.locationText, r.area, r.landmark, r.senderName, r.contactNumber, r.reference, r.remarks]
+          ? [r.locationText, r.area, r.landmark, r.deo, r.senderName, r.contactNumber, r.reference, r.remarks]
           : [r.reference, r.groupName, r.senderName, r.text, ...r.locations.map((l) => l.label)]
       )
         .join(" ")
@@ -617,6 +617,7 @@ function MobileFacts({ r }: { r: AdminMobileReport }) {
         rows={[
           ["Flood height", r.levelLabel ? `${r.levelLabel}${r.depthM !== null ? ` (${Math.round(r.depthM * 100)} cm)` : ""}` : null],
           ["Road", r.roadStatus],
+          ["DEO", r.deo ?? "Not given"],
           ["Weather", r.weather],
           ["Started", r.startedAt ? manila(r.startedAt) : null],
           ["Receded", r.recededAt ? manila(r.recededAt) : "Not reported"],

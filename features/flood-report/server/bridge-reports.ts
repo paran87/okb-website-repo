@@ -71,6 +71,7 @@ export async function bridgePins(hours: number, weather: FloodMapWeather, now = 
         locationText: loc.label,
         landmark: loc.landmark,
         area: [loc.barangay, loc.municipality].filter(Boolean).join(", ") || null,
+        deo: loc.deo,
         levelLabel: loc.heightRaw,
         depthM: loc.heightM,
         severity: loc.severity,

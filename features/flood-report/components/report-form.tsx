@@ -8,6 +8,7 @@ import {
   FLOOD_LEVELS,
   formatCoordinates,
   formatDepth,
+  NCR_DEOS,
   ROAD_STATUSES,
   WEATHER,
   type FloodLevelId,
@@ -109,6 +110,11 @@ export function ReportForm({
 
   const [locationText, setLocationText] = useState(initial?.locationText ?? place?.road ?? place?.label ?? "");
   const [landmark, setLandmark] = useState(initial?.landmark ?? "");
+  // "" = not sure (left blank), one of the Metro Manila DEOs, or "other" (typed in).
+  const [deoChoice, setDeoChoice] = useState<string>(() =>
+    !initial?.deo ? "" : (NCR_DEOS as readonly string[]).includes(initial.deo) ? initial.deo : "other",
+  );
+  const [deoOther, setDeoOther] = useState(() => (initial?.deo && !(NCR_DEOS as readonly string[]).includes(initial.deo) ? initial.deo : ""));
   const [level, setLevel] = useState<FloodLevelId | null>(initial?.level ?? null);
   const [depthCm, setDepthCm] = useState(initial?.depthCm ? String(initial.depthCm) : "");
   const [road, setRoad] = useState<RoadStatusId | null>(initial?.roadStatus ?? null);
@@ -122,6 +128,9 @@ export function ReportForm({
   const [contact, setContact] = useState(initial?.contactNumber ?? "");
   const [website, setWebsite] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // DEO of the nearest national road (from the place lookup): offered, never filled in on its own.
+  const nearest = place?.nearestDeo ?? null;
 
   // The street name may arrive after the form opens; fill it in unless the sender already typed one.
   const suggested = place?.road ?? place?.label ?? "";
@@ -179,6 +188,7 @@ export function ReportForm({
       locationText: locationText.trim(),
       landmark: landmark.trim() || null,
       place: initial ? initial.place : place,
+      deo: deoChoice === "other" ? deoOther.trim() || null : deoChoice || null,
       level,
       depthCm: cm,
       roadStatus: road,
@@ -257,6 +267,52 @@ export function ReportForm({
               ) : null}
             </Section>
           </div>
+
+          <Section title="DPWH District Engineering Office (DEO)" hint="Optional. Choose it if you know which DEO covers this area.">
+            <select
+              className={input}
+              value={deoChoice}
+              onChange={(e) => setDeoChoice(e.target.value)}
+              aria-label="District Engineering Office"
+            >
+              <option value="">Not sure (leave blank)</option>
+              {NCR_DEOS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+              <option value="other">Other DEO…</option>
+            </select>
+            {deoChoice === "other" ? (
+              <input
+                className={input}
+                value={deoOther}
+                onChange={(e) => setDeoOther(e.target.value)}
+                placeholder="DEO name, e.g. Rizal 1st DEO"
+                maxLength={120}
+                autoComplete="off"
+                aria-label="Other District Engineering Office"
+              />
+            ) : null}
+            {nearest && !deoChoice ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if ((NCR_DEOS as readonly string[]).includes(nearest)) setDeoChoice(nearest);
+                  else {
+                    setDeoChoice("other");
+                    setDeoOther(nearest);
+                  }
+                }}
+                className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-dashed border-blue-300 bg-blue-50 px-3 py-2 text-left text-sm text-blue-800 active:bg-blue-100"
+              >
+                <MapPin className="size-4 shrink-0" aria-hidden />
+                <span>
+                  Nearest national road is under <b>{nearest}</b>. Tap to use it.
+                </span>
+              </button>
+            ) : null}
+          </Section>
 
           <div data-form-error={firstError === "level" ? "" : undefined}>
             <Section title="How deep is the flood?" hint="Compare with the gutter, tires or your body." error={err("level")}>

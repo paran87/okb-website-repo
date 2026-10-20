@@ -57,6 +57,27 @@ export const WEATHER: readonly { id: WeatherId; label: string; emoji: string }[]
   { id: "thunderstorm", label: "Thunderstorm", emoji: "🌩️" },
 ];
 
+/**
+ * DPWH District Engineering Offices in Metro Manila (as named on the road network), shown as short names
+ * ("North Manila DEO") so they fit the DEO column of the automated report's PDF.
+ */
+export const NCR_DEOS = [
+  "North Manila DEO",
+  "South Manila DEO",
+  "Metro Manila 1st DEO",
+  "Metro Manila 2nd DEO",
+  "Metro Manila 3rd DEO",
+  "Quezon City 1st DEO",
+  "Quezon City 2nd DEO",
+  "Malabon-Navotas DEO",
+  "Las Piñas-Muntinlupa DEO",
+] as const;
+
+/** "North Manila District Engineering Office" → "North Manila DEO". */
+export function shortDeo(name: string): string {
+  return name.replace(/\s*District\s+Engineering\s+Office\b/i, " DEO").replace(/\s+/g, " ").trim();
+}
+
 export const MAX_PHOTOS = 5;
 
 /** Largest photo the server accepts (the page sends ~0.3–0.8 MB JPEGs; Vercel caps a request at 4.5 MB). */

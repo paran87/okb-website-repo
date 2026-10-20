@@ -37,6 +37,8 @@ export interface PlaceName {
   city: string | null;
   province: string | null;
   region: string | null;
+  /** DEO of the nearest national road (a suggestion for the form; not saved with the place). */
+  nearestDeo?: string | null;
 }
 
 /** Body of POST /api/flood-reports. */
@@ -51,6 +53,8 @@ export interface FloodReportInput {
   locationText: string;
   landmark: string | null;
   place: PlaceName | null;
+  /** DPWH District Engineering Office, when the sender knows it ("North Manila DEO"). */
+  deo: string | null;
   level: FloodLevelId;
   /** Measured depth in centimeters when the sender knows it (overrides the level's depth). */
   depthCm: number | null;
@@ -86,6 +90,8 @@ export interface PublicFloodReport {
   locationText: string;
   landmark: string | null;
   area: string | null;
+  /** DPWH District Engineering Office, when the report names one. */
+  deo: string | null;
   levelLabel: string | null;
   depthM: number | null;
   severity: FloodSeverity;

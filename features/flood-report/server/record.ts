@@ -212,7 +212,7 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
       },
       administrative: {
         region: field(place?.region ?? null),
-        districtEngineeringOffice: field(null),
+        districtEngineeringOffice: field(input.deo),
         province: field(place?.province ?? null),
         municipality: field(place?.city ?? null),
         barangay: field(place?.barangay ?? null),
@@ -258,6 +258,7 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
       locationText: input.locationText,
       landmark: input.landmark,
       place,
+      deo: input.deo,
       level: input.level,
       depthM: depth,
       roadStatus: input.roadStatus,
@@ -334,6 +335,7 @@ export function toPublicReport(
     locationText: str(m.locationText) ?? "Reported location",
     landmark: str(m.landmark),
     area: [str(place.barangay), str(place.city)].filter(Boolean).join(", ") || null,
+    deo: str(m.deo),
     levelLabel: level?.label ?? null,
     depthM: depth,
     severity: floodSeverity(depth),
@@ -382,6 +384,7 @@ export function toMyReport(
     locationText: view.locationText,
     landmark: str(m.landmark),
     place,
+    deo: str(m.deo),
     level: (level?.id ?? "knee") as FloodReportFormValues["level"],
     // A depth that is not the gauge level's own was typed in centimeters.
     depthCm: depth !== null && level && Math.abs(depth - level.meters) > 0.001 ? Math.round(depth * 100) : null,

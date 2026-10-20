@@ -128,6 +128,8 @@ const inputSchema = z.object({
       region: z.string().max(200).nullable(),
     })
     .nullable(),
+  // Optional: older pages (and senders who do not know it) send none.
+  deo: optionalText(120),
   level: z.enum(FLOOD_LEVELS.map((l) => l.id) as [string, ...string[]]),
   depthCm: z.number().min(1).max(1000).nullable(),
   roadStatus: z.enum(ROAD_STATUSES.map((r) => r.id) as [string, ...string[]]),
@@ -377,7 +379,7 @@ async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: 
 
   // Only the receded time changed: no need for operators to verify the report again.
   const same = (a: unknown, b: unknown) => (a ?? null) === (b ?? null);
-  const fields = ["level", "roadStatus", "weather", "startedAt", "locationText", "landmark", "remarks", "senderName", "contactNumber"] as const;
+  const fields = ["level", "roadStatus", "weather", "startedAt", "locationText", "landmark", "deo", "remarks", "senderName", "contactNumber"] as const;
   const recededOnly =
     fields.every((f) => same(old[f], input[f])) &&
     same(old.depthM, depthOf(input)) &&
