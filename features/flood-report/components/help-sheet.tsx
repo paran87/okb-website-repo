@@ -42,7 +42,7 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-black ring-1 ring-slate-300">
               <Home className="size-5" aria-hidden />
             </span>
-            <p className="self-center text-sm text-slate-600">The home button goes back to the OKB Command Center dashboard.</p>
+            <p className="self-center text-sm text-slate-600">The home button opens Incidents in the OKB Command Center.</p>
           </li>
         </ol>
 

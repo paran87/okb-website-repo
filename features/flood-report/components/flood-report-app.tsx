@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronUp, CircleHelp, Copy, Home, Loader2, List, LocateFixed, Maximize, MapPin, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
-import { PUBLIC_ROUTES } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { useFloodReports } from "../hooks/use-flood-reports";
 import { useGeolocation } from "../hooks/use-geolocation";
@@ -531,7 +531,7 @@ function PhoneApp() {
       </div>
 
       <ControlBar className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" inert={screen !== "map"}>
-        <BarTile label="Home" href={PUBLIC_ROUTES.commandCenter} align="start">
+        <BarTile label="Home" href={ROUTES.incidents} align="start">
           <Home className="size-8" aria-hidden />
         </BarTile>
         <ShutterButton label="Take a picture of the flooded area" onClick={() => setScreen("camera")} />
@@ -733,9 +733,9 @@ function DesktopNotice() {
             </button>
           </div>
         </div>
-        <a href={PUBLIC_ROUTES.commandCenter} className="inline-flex h-11 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold hover:bg-white/15">
+        <a href={ROUTES.incidents} className="inline-flex h-11 items-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold hover:bg-white/15">
           <Home className="size-4" aria-hidden />
-          Back to the Command Center
+          Back to Incidents
         </a>
       </div>
     </main>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
 import { ArrowLeft, Camera, Flashlight, FlashlightOff, Home, ImagePlus, LocateFixed, Play, RefreshCw, SendHorizontal, Trash2, Video, X } from "lucide-react";
-import { PUBLIC_ROUTES } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { capturePhoto, decodeImage, stampLines, type StampInfo } from "../lib/capture";
 import { MAX_PHOTOS, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from "../lib/options";
@@ -551,7 +551,7 @@ export function CameraScreen({
         </div>
       ) : null}
       <ControlBar className="pb-3">
-        <BarTile label="Home" href={PUBLIC_ROUTES.commandCenter} align="start" onClick={leaveHome}>
+        <BarTile label="Home" href={ROUTES.incidents} align="start" onClick={leaveHome}>
           <Home className="size-8" aria-hidden />
         </BarTile>
         {mode === "video" && canRecord ? (
