@@ -27,6 +27,7 @@ import type {
   ReportVideo,
   UploadedPhoto,
 } from "@/features/flood-report/types";
+import type { BridgeReportStatus, ReviewAction } from "@/features/reports/types";
 
 type Days = "1" | "7" | "30" | "all";
 const PERIODS = [
@@ -52,6 +53,50 @@ function messageKind(r: AdminBridgeReport): string | null {
   return null;
 }
 const isOther = (r: AdminReport) => r.kind === "bridge" && r.messageType !== "flood";
+
+/** Review applies to OKB Mobile reports and WhatsApp / Viber flood reports, with the bridge's rules. */
+function canReview(r: AdminReport, action: ReviewAction): boolean {
+  if (r.kind === "bridge" && r.messageType !== "flood") return false;
+  if (action === "approve") return r.status === "extracted" || r.status === "needs_review";
+  if (action === "reject") return r.status !== "rejected";
+  return r.status === "approved" || r.status === "rejected";
+}
+
+type BulkAction = "delete" | "approve" | "reject";
+const skipped = (n: number, why: string) => (n > 0 ? ` ${n} ticked report${n === 1 ? "" : "s"} ${why} and ${n === 1 ? "is" : "are"} skipped.` : "");
+const BULK: Record<BulkAction, { verb: string; past: string; doing: string; skip: string; confirm: (n: number, of: number) => string }> = {
+  approve: {
+    verb: "Approve",
+    past: "Approved",
+    doing: "Approving",
+    skip: "already approved, rejected, or not flood reports",
+    confirm: (n, of) => `Approve ${n} report${n === 1 ? "" : "s"}? They show as verified on the maps.${skipped(of - n, "can't be approved")}`,
+  },
+  reject: {
+    verb: "Reject",
+    past: "Rejected",
+    doing: "Rejecting",
+    skip: "already rejected, or not flood reports",
+    confirm: (n, of) => `Reject ${n} report${n === 1 ? "" : "s"}? They leave the maps (they can be reopened later).${skipped(of - n, "can't be rejected")}`,
+  },
+  delete: {
+    verb: "Delete",
+    past: "Deleted",
+    doing: "Deleting",
+    skip: "",
+    confirm: (n) => `Delete ${n} report${n === 1 ? "" : "s"} for good? Mobile reports lose their photos; WhatsApp / Viber reports are also deleted from the OKB Bridge.`,
+  },
+};
+
+const STATUS_FILTERS = [
+  { value: "any" as const, label: "Any status" },
+  { value: "review" as const, label: "Needs review" },
+  { value: "approved" as const, label: "Approved" },
+  { value: "rejected" as const, label: "Rejected" },
+];
+type StatusFilter = (typeof STATUS_FILTERS)[number]["value"];
+const statusMatches = (r: AdminReport, f: StatusFilter) =>
+  f === "any" || (f === "review" ? r.status === "extracted" || r.status === "needs_review" : r.status === f);
 
 const listKey = (days: Days) => ["admin", "mobile-reports", days] as const;
 
@@ -106,6 +151,7 @@ export function MobileReportsAdmin() {
   const queryClient = useQueryClient();
   const [days, setDays] = useState<Days>("7");
   const [source, setSource] = useState<SourceFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("any");
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -116,8 +162,12 @@ export function MobileReportsAdmin() {
   // Select mode: tapping a report ticks it; the bar at the bottom deletes the ticked reports.
   const [selecting, setSelecting] = useState(false);
   const [ticked, setTicked] = useState<Set<string>>(() => new Set());
-  const [bulk, setBulk] = useState<{ stage: "confirm" } | { stage: "deleting"; done: number; total: number } | null>(null);
-  const [bulkResult, setBulkResult] = useState<{ deleted: number; failed: { label: string; reason: string }[] } | null>(null);
+  const [bulk, setBulk] = useState<{ stage: "confirm"; action: BulkAction } | { stage: "running"; action: BulkAction; done: number; total: number } | null>(
+    null,
+  );
+  const [bulkResult, setBulkResult] = useState<{ action: BulkAction; done: number; skipped: number; failed: { label: string; reason: string }[] } | null>(
+    null,
+  );
   const photoInput = useRef<HTMLInputElement>(null);
   const mediaInput = useRef<HTMLInputElement>(null);
 
@@ -128,7 +178,9 @@ export function MobileReportsAdmin() {
     placeholderData: keepPreviousData,
   });
   const reports = useMemo(() => {
-    const all = (list.data ?? []).filter((r) => source === "all" || (source === "other" ? isOther(r) : sourceOf(r) === source));
+    const all = (list.data ?? []).filter(
+      (r) => (source === "all" || (source === "other" ? isOther(r) : sourceOf(r) === source)) && statusMatches(r, statusFilter),
+    );
     const terms = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     if (!terms.length) return all;
     return all.filter((r) => {
@@ -141,7 +193,7 @@ export function MobileReportsAdmin() {
         .toLowerCase();
       return terms.every((t) => text.includes(t));
     });
-  }, [list.data, q, source]);
+  }, [list.data, q, source, statusFilter]);
   const open = (list.data ?? []).find((r) => r.id === openId) ?? null;
   // Only ticked reports that the current period, source and search still show are counted and deleted.
   const chosen = reports.filter((r) => ticked.has(r.id));
@@ -277,26 +329,61 @@ export function MobileReportsAdmin() {
     setBulkResult(null);
   };
 
-  /** Deletes the ticked reports one by one (a WhatsApp / Viber delete waits for the OKB Bridge); failures stay ticked. */
-  const removePicked = async () => {
-    const targets = chosen;
+  /** The new review status of these reports, in the list (and "verified" on mobile reports). */
+  const applyStatus = (next: Map<string, BridgeReportStatus>) =>
+    queryClient.setQueryData<AdminReport[]>(listKey(days), (old) =>
+      old?.map((x) => {
+        const status = next.get(x.id);
+        if (!status) return x;
+        return x.kind === "mobile" ? { ...x, status, verified: status === "approved" } : { ...x, status };
+      }),
+    );
+
+  const review = (r: AdminReport, action: ReviewAction) =>
+    adminApi<{ status: BridgeReportStatus }>(`/api/admin/mobile-reports/${r.id}/review`, { method: "POST", body: JSON.stringify({ action }) });
+
+  const reviewOne = async (r: AdminReport, action: ReviewAction) => {
+    setBusy(`review-${action}`);
+    setError(null);
+    try {
+      const { status } = await review(r, action);
+      applyStatus(new Map([[r.id, status]]));
+      void refresh();
+    } catch (e) {
+      setError(errorText(e, "The review could not be saved."));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const eligible = (action: BulkAction) => (action === "delete" ? chosen : chosen.filter((r) => canReview(r, action)));
+
+  /**
+   * Runs one action on the ticked reports, one by one (WhatsApp / Viber reports wait for the OKB Bridge).
+   * Reports the action does not apply to are skipped; failures stay ticked with their reason.
+   */
+  const runBulk = async (action: BulkAction) => {
+    const targets = eligible(action);
     const failed: { label: string; reason: string }[] = [];
-    const deleted: string[] = [];
+    const doneIds: string[] = [];
+    const statuses = new Map<string, BridgeReportStatus>();
     setBulkResult(null);
     for (const [i, r] of targets.entries()) {
-      setBulk({ stage: "deleting", done: i, total: targets.length });
+      setBulk({ stage: "running", action, done: i, total: targets.length });
       try {
-        await adminApi(`/api/admin/mobile-reports/${r.id}`, { method: "DELETE" });
-        deleted.push(r.id);
+        if (action === "delete") await adminApi(`/api/admin/mobile-reports/${r.id}`, { method: "DELETE" });
+        else statuses.set(r.id, (await review(r, action)).status);
+        doneIds.push(r.id);
       } catch (e) {
-        failed.push({ label: `${r.reference} · ${titleOf(r)}`, reason: errorText(e, "Could not be deleted.") });
+        failed.push({ label: `${r.reference} · ${titleOf(r)}`, reason: errorText(e, "Failed.") });
       }
     }
-    const gone = new Set(deleted);
-    queryClient.setQueryData<AdminReport[]>(listKey(days), (old) => (old ? old.filter((x) => !gone.has(x.id)) : old));
-    setTicked((old) => new Set([...old].filter((id) => !gone.has(id))));
+    const done = new Set(doneIds);
+    if (action === "delete") queryClient.setQueryData<AdminReport[]>(listKey(days), (old) => (old ? old.filter((x) => !done.has(x.id)) : old));
+    else applyStatus(statuses);
+    setTicked((old) => new Set([...old].filter((id) => !done.has(id))));
     setBulk(null);
-    setBulkResult({ deleted: deleted.length, failed });
+    setBulkResult({ action, done: doneIds.length, skipped: chosen.length - targets.length, failed });
     void refresh();
   };
 
@@ -317,13 +404,14 @@ export function MobileReportsAdmin() {
       <AdminCard bodyClassName="space-y-3">
         <p className="text-caption text-muted-foreground">
           Flood reports from the OKB mobile page and every message from the WhatsApp / Viber flood monitoring groups (also those that
-          are not flood reports or were not processed, under “Other messages”). Add or remove photos and videos, correct mobile reports,
-          or delete a report (test, spam, duplicate). Changes show on the public map and in the Command Center right away; deleting
+          are not flood reports or were not processed, under “Other messages”). Approve, reject or reopen reports (one, or many with
+          Select), add or remove photos and videos, correct mobile reports, or delete a report (test, spam, duplicate). Changes show on the public map and in the Command Center right away; deleting
           everything here also empties Incoming Reports, the Archive and the AI Situation Summary.
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Segmented value={days} options={PERIODS} onChange={setDays} label="Period" />
           <Segmented value={source} options={SOURCES} onChange={setSource} label="Source" />
+          <Segmented value={statusFilter} options={STATUS_FILTERS} onChange={setStatusFilter} label="Review status" />
           <label className="relative min-w-0 flex-1 basis-56">
             <span className="sr-only">Search reports</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -407,8 +495,9 @@ export function MobileReportsAdmin() {
             {bulkResult ? (
               <div className="space-y-1 text-caption" role="status">
                 <p className="font-semibold text-foreground">
-                  {bulkResult.deleted ? `Deleted ${bulkResult.deleted} report${bulkResult.deleted === 1 ? "" : "s"}.` : "Nothing was deleted."}
-                  {bulkResult.failed.length ? ` ${bulkResult.failed.length} could not be deleted (still ticked):` : ""}
+                  {bulkResult.done ? `${BULK[bulkResult.action].past} ${bulkResult.done} report${bulkResult.done === 1 ? "" : "s"}.` : `Nothing was ${BULK[bulkResult.action].past.toLowerCase()}.`}
+                  {bulkResult.skipped ? ` ${bulkResult.skipped} skipped (${BULK[bulkResult.action].skip}).` : ""}
+                  {bulkResult.failed.length ? ` ${bulkResult.failed.length} failed (still ticked):` : ""}
                 </p>
                 {bulkResult.failed.length ? (
                   <ul className="max-h-24 space-y-0.5 overflow-y-auto text-danger">
@@ -421,22 +510,26 @@ export function MobileReportsAdmin() {
                 ) : null}
               </div>
             ) : null}
-            {bulk?.stage === "deleting" ? (
+            {bulk?.stage === "running" ? (
               <p className="flex h-10 items-center gap-2 text-caption font-semibold text-foreground" role="status">
                 <Loader2 className="size-4 animate-spin" aria-hidden />
-                Deleting {bulk.done + 1} of {bulk.total}… keep this page open.
+                {BULK[bulk.action].doing} {bulk.done + 1} of {bulk.total}… keep this page open.
               </p>
             ) : bulk?.stage === "confirm" ? (
               <div className="flex flex-wrap items-center gap-2">
-                <p className="mr-auto min-w-0 basis-full text-caption text-foreground sm:basis-auto">
-                  Delete {chosen.length} report{chosen.length === 1 ? "" : "s"} for good? Mobile reports lose their photos; WhatsApp / Viber reports
-                  are also deleted from the OKB Bridge.
-                </p>
+                <p className="mr-auto min-w-0 basis-full text-caption text-foreground sm:basis-auto">{BULK[bulk.action].confirm(eligible(bulk.action).length, chosen.length)}</p>
                 <Button variant="ghost" size="sm" onClick={() => setBulk(null)} className="h-10">
                   Keep
                 </Button>
-                <Button variant="danger" size="sm" onClick={() => void removePicked()} leftIcon={<Trash2 className="size-4" aria-hidden />} className="h-10">
-                  Delete {chosen.length}
+                <Button
+                  variant={bulk.action === "approve" ? "primary" : "danger"}
+                  size="sm"
+                  disabled={!eligible(bulk.action).length}
+                  onClick={() => void runBulk(bulk.action)}
+                  leftIcon={bulk.action === "delete" ? <Trash2 className="size-4" aria-hidden /> : undefined}
+                  className="h-10"
+                >
+                  {BULK[bulk.action].verb} {eligible(bulk.action).length}
                 </Button>
               </div>
             ) : (
@@ -455,19 +548,24 @@ export function MobileReportsAdmin() {
                 >
                   {reports.length && reports.every((r) => ticked.has(r.id)) ? "Unselect all" : `Select all (${reports.length})`}
                 </button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  disabled={!chosen.length}
-                  onClick={() => {
-                    setBulkResult(null);
-                    setBulk({ stage: "confirm" });
-                  }}
-                  leftIcon={<Trash2 className="size-4" aria-hidden />}
-                  className="h-10"
-                >
-                  Delete{chosen.length ? ` ${chosen.length}` : ""}
-                </Button>
+                <div className="flex basis-full flex-wrap justify-end gap-2 sm:basis-auto">
+                  {(["approve", "reject", "delete"] as const).map((action) => (
+                    <Button
+                      key={action}
+                      variant={action === "delete" ? "danger" : action === "approve" ? "primary" : "outline"}
+                      size="sm"
+                      disabled={!chosen.length}
+                      onClick={() => {
+                        setBulkResult(null);
+                        setBulk({ stage: "confirm", action });
+                      }}
+                      leftIcon={action === "delete" ? <Trash2 className="size-4" aria-hidden /> : undefined}
+                      className="h-10"
+                    >
+                      {BULK[action].verb}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -538,6 +636,30 @@ export function MobileReportsAdmin() {
         {open ? (
           <div className="space-y-4">
             {open.kind === "mobile" ? <MobileFacts r={open} /> : <BridgeFacts r={open} />}
+
+            {canReview(open, "approve") || canReview(open, "reject") || canReview(open, "reopen") ? (
+              <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border p-3">
+                <p className="mr-auto text-caption text-muted-foreground">
+                  Review: <span className="font-semibold text-foreground">{open.status.replaceAll("_", " ")}</span>
+                  {open.status === "approved" ? " · shown as verified on the maps" : open.status === "rejected" ? " · off the maps" : ""}
+                </p>
+                {(["approve", "reject", "reopen"] as const)
+                  .filter((action) => canReview(open, action))
+                  .map((action) => (
+                    <Button
+                      key={action}
+                      size="sm"
+                      variant={action === "approve" ? "primary" : "outline"}
+                      isLoading={busy === `review-${action}`}
+                      disabled={busy !== null}
+                      onClick={() => void reviewOne(open, action)}
+                      className="h-10"
+                    >
+                      {action === "approve" ? "Approve" : action === "reject" ? "Reject" : "Reopen for review"}
+                    </Button>
+                  ))}
+              </section>
+            ) : null}
 
             {open.kind === "mobile" ? (
               <section className="space-y-2">
@@ -740,8 +862,12 @@ function BridgeRow({ r }: { r: AdminBridgeReport }) {
             {onMap ? "Flooded on the map" : r.locations.length ? "Off the map" : "No flooded location"}
           </span>
         )}
-        {r.status === "needs_review" ? (
+        {r.messageType === "flood" && (r.status === "needs_review" || r.status === "extracted") ? (
           <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-bold text-warning">Needs review</span>
+        ) : r.status === "approved" ? (
+          <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-bold text-success">Approved</span>
+        ) : r.status === "rejected" ? (
+          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">Rejected</span>
         ) : null}
         {!r.photos.length && !r.videos.length ? (
           <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-bold text-muted-foreground">No photos</span>

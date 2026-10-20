@@ -592,6 +592,11 @@ async function deleteBridgeReport(id: string, by: string): Promise<void> {
 export const MAP_HOURS = [6, 24, 72, 168] as const;
 let memo: { at: number; hours: number; data: PublicFloodReportList } | null = null;
 
+/** Drops the public map's 15-second memo (after a report changed elsewhere, e.g. a review). */
+export function invalidatePublicReports(): void {
+  memo = null;
+}
+
 /**
  * Reports of the last [hours] for the public map: OKB Mobile reports and WhatsApp / Viber flood reports
  * (rejected reports are left out), with the photos and videos operators added. 15-second memo.
