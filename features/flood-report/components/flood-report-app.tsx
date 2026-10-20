@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleHelp, Copy, Home, Loader2, List, LocateFixed, Maximize, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
+import { ChevronUp, CircleHelp, Copy, Home, Loader2, List, LocateFixed, Maximize, MapPin, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { useFloodReports } from "../hooks/use-flood-reports";
@@ -71,7 +71,9 @@ function PhoneApp() {
   const [locating, setLocating] = useState(false);
   const [fitAllSignal, setFitAllSignal] = useState(0);
   const [listOpen, setListOpen] = useState(false);
-  const [focus, setFocus] = useState<{ latitude: number; longitude: number; zoom?: number; key: string } | null>(null);
+  // The details sheet is put aside to look at the selected flood on the map.
+  const [peek, setPeek] = useState(false);
+  const [focus, setFocus] = useState<{ latitude: number; longitude: number; zoom?: number; key: string; road?: [number, number][] } | null>(null);
   const [send, setSend] = useState<SendState>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [linked, setLinked] = useState<string | null>(null);
@@ -161,6 +163,7 @@ function PhoneApp() {
   const selectReport = useCallback(
     (id: string) => {
       setLegendOpen(false);
+      setPeek(false);
       setSelectedId(id);
       const r = list.find((x) => x.id === id);
       if (r) setFocus({ ...pinAt(r), key: `sel-${id}-${Date.now()}` });
@@ -444,13 +447,24 @@ function PhoneApp() {
             />
           ) : (
             <>
-              <MapLegendButton
-                history={range !== "now"}
-                onOpen={() => {
-                  setSelectedId(null);
-                  setLegendOpen(true);
-                }}
-              />
+              {peek && selected ? (
+                <button
+                  type="button"
+                  onClick={() => setPeek(false)}
+                  className="pointer-events-auto flex min-h-12 min-w-0 items-center gap-2 rounded-full bg-black/85 px-4 text-sm font-semibold text-white shadow-lg active:bg-black"
+                >
+                  <ChevronUp className="size-5 shrink-0" aria-hidden />
+                  <span className="truncate">Back to the report</span>
+                </button>
+              ) : (
+                <MapLegendButton
+                  history={range !== "now"}
+                  onOpen={() => {
+                    setSelectedId(null);
+                    setLegendOpen(true);
+                  }}
+                />
+              )}
               <div className="pointer-events-none flex flex-col items-end gap-2">
                 <button
                   type="button"
@@ -528,9 +542,10 @@ function PhoneApp() {
 
       <BottomSheet
         // Hidden (not closed) while the edit, photo or camera screens are open over the map; back on return.
-        open={Boolean(selected) && screen === "map"}
+        open={Boolean(selected) && screen === "map" && !peek}
         onClose={() => {
           setSelectedId(null);
+          setPeek(false);
           setOwnError(null);
         }}
         title={selectedIsMine ? "Your flood report" : "Flood report"}
@@ -562,6 +577,17 @@ function PhoneApp() {
                 <Loader2 className="size-4 animate-spin" aria-hidden /> Loading your controls…
               </p>
             ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                setPeek(true);
+                setFocus({ ...pinAt(selected), road: selected.stretch?.line, zoom: 18, key: `road-${selected.id}-${Date.now()}` });
+              }}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-base font-semibold text-white active:bg-blue-700"
+            >
+              <MapPin className="size-5" aria-hidden />
+              Show on the map
+            </button>
             <ReportDetails report={selected} />
           </div>
         ) : null}

@@ -200,7 +200,14 @@ export function FloodMap({
   selectedId: string | null;
   onSelect: (id: string) => void;
   /** Fly here when it changes (a new report, the user's position, a selected report). */
-  focus: { latitude: number; longitude: number; zoom?: number; key: string } | null;
+  focus: {
+    latitude: number;
+    longitude: number;
+    zoom?: number;
+    key: string;
+    /** Zoom in on this flooded road (its stretch) as far as it fits, with nothing over the map. */
+    road?: [number, number][];
+  } | null;
   user: { latitude: number; longitude: number } | null;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -403,12 +410,18 @@ export function FloodMap({
     if (lastFocus.current === focus.key) return;
     lastFocus.current = focus.key;
     fitted.current = true;
+    if (focus.road && focus.road.length > 1 && lib.current) {
+      const bounds = new lib.current.LngLatBounds();
+      for (const p of focus.road) bounds.extend(p);
+      m.fitBounds(bounds, { padding: { top: 150, bottom: 110, left: 60, right: 60 }, maxZoom: focus.zoom ?? 18, duration: 900 });
+      return;
+    }
     m.flyTo({
       center: [focus.longitude, focus.latitude],
-      zoom: Math.max(m.getZoom(), focus.zoom ?? 15),
+      zoom: focus.road ? (focus.zoom ?? 18) : Math.max(m.getZoom(), focus.zoom ?? 15),
       duration: 900,
-      // Keep the point visible above the details sheet.
-      offset: [0, -120],
+      // Keep the point visible above the details sheet (no sheet when zooming in on the road).
+      offset: [0, focus.road ? 0 : -120],
     });
     // Only a new focus key moves the map.
     // eslint-disable-next-line react-hooks/exhaustive-deps
