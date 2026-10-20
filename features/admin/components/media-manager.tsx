@@ -18,7 +18,6 @@ import {
   UploadCloud,
   X,
   XCircle,
-  Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -36,9 +35,7 @@ import { formatBytes, formatDate, formatTime } from "@/features/admin/format";
 import {
   useCollections,
   useDeleteMedia,
-  useDirectUploads,
   useEditMedia,
-  useEnableDirectUploads,
   useMedia,
   usePurgeMedia,
   useRestoreMedia,
@@ -227,58 +224,6 @@ function UploadList({
         ))}
       </ul>
     </AdminCard>
-  );
-}
-
-// ------------------------------------------------------------------ direct uploads (CORS)
-
-function DirectUploads() {
-  const status = useDirectUploads(true);
-  const enable = useEnableDirectUploads();
-  const [showHelp, setShowHelp] = useState(false);
-  if (!status.data || status.data.status === "enabled") return null;
-  const origin = status.data.origin;
-  const denied = enable.error instanceof AdminApiError && enable.error.reason === "cors_denied";
-  const rule = JSON.stringify(
-    [{ AllowedOrigins: [origin], AllowedMethods: ["PUT", "GET", "HEAD"], AllowedHeaders: ["*"], ExposeHeaders: ["ETag"], MaxAgeSeconds: 3600 }],
-    null,
-    2,
-  );
-  return (
-    <Notice
-      tone="info"
-      title="Turn on direct uploads for large videos"
-      action={
-        <button
-          type="button"
-          onClick={() => enable.mutate()}
-          disabled={enable.isPending}
-          className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-info px-4 text-caption font-semibold text-white dark:text-slate-950 disabled:opacity-60"
-        >
-          {enable.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Zap className="size-4" aria-hidden />}
-          Turn on
-        </button>
-      }
-    >
-      <p>
-        Photos and videos up to 4 MB upload right away. Bigger files go straight from your browser to the storage
-        bucket, which has to allow this site first.
-      </p>
-      {denied || showHelp ? (
-        <div className="mt-2 space-y-2">
-          <p>
-            {denied ? "The storage key cannot change this setting. " : ""}In Cloudflare → R2 → your bucket → Settings →
-            CORS policy, add:
-          </p>
-          <pre className="max-w-full overflow-x-auto rounded-lg bg-background p-3 font-mono text-[11px] text-foreground">{rule}</pre>
-        </div>
-      ) : (
-        <button type="button" onClick={() => setShowHelp(true)} className="mt-1 h-8 text-caption font-semibold text-info underline">
-          Or set it up in Cloudflare
-        </button>
-      )}
-      {enable.error && !denied ? <p className="mt-1 text-danger">{enable.error.message}</p> : null}
-    </Notice>
   );
 }
 
@@ -767,7 +712,6 @@ export function MediaManager({ onOpenSetup }: { onOpenSetup: () => void }) {
       </div>
       {collection ? <p className="-mt-1 text-[11px] leading-4 text-muted-foreground">{collection.description}</p> : null}
 
-      <DirectUploads />
 
       {/* Upload drop zone */}
       {view === "files" ? (

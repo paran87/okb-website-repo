@@ -151,14 +151,6 @@ export function useDirectUploads(enabled: boolean) {
   });
 }
 
-export function useEnableDirectUploads() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => adminApi<{ origin: string; status: "enabled" }>("/api/admin/media/cors", { method: "POST" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.cors }),
-  });
-}
-
 export function useStorageCheck() {
   return useMutation({
     mutationFn: () => adminApi<StorageCheck>("/api/admin/storage-check", { method: "POST" }),

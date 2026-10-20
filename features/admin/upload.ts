@@ -5,10 +5,37 @@ import type { UploadTicket } from "@/features/admin/types";
 
 /**
  * Uploads one file: the server hands out a signed link and the browser sends
- * the file straight to R2 (no size cap from this site). When the bucket does
- * not allow this site yet (CORS), files up to the server's limit go through
- * the site instead.
+ * the file straight to R2 (no size cap from this site). The server makes sure
+ * the bucket allows this site (CORS) before it hands out the link; if the
+ * bucket still refuses, files up to the server's limit go through the site.
  */
+
+const BLOCKED =
+  "The storage bucket did not accept the upload from this site. Try again in a minute; if it keeps failing, see Admin → Setup → Direct uploads.";
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * put() with retries when the upload is blocked or the storage answers with a server error: a CORS rule the
+ * server just added can take a few seconds to apply, and mobile connections drop.
+ */
+async function putRetrying(
+  url: string,
+  file: Blob,
+  contentType: string,
+  onProgress: (fraction: number) => void,
+  signal: AbortSignal,
+  delays = [2000, 5000],
+): Promise<number> {
+  let status = await put(url, file, contentType, onProgress, signal);
+  for (const delay of delays) {
+    if (status !== 0 && status < 500) break;
+    onProgress(0);
+    await wait(delay);
+    status = await put(url, file, contentType, onProgress, signal);
+  }
+  return status;
+}
 
 export function put(
   url: string,
@@ -45,7 +72,7 @@ export async function uploadFile(
     signal,
   });
 
-  const direct = await put(ticket.uploadUrl, file, ticket.contentType, onProgress, signal);
+  const direct = await putRetrying(ticket.uploadUrl, file, ticket.contentType, onProgress, signal);
   if (direct >= 200 && direct < 300) {
     await adminApi("/api/admin/media/upload/complete", {
       method: "POST",
@@ -58,11 +85,7 @@ export async function uploadFile(
 
   // Blocked before reaching R2 (usually CORS): small files can go through this site.
   if (file.size > ticket.proxyLimit) {
-    throw new AdminApiError(
-      "Large files need direct uploads. Turn them on under Media → Direct uploads, then retry.",
-      0,
-      "cors_blocked",
-    );
+    throw new AdminApiError(BLOCKED, 0, "cors_blocked");
   }
   onProgress(0);
   const proxied = await put(
@@ -78,13 +101,13 @@ export async function uploadFile(
   return ticket.key;
 }
 
-/** Parts sent at the same time, and tries per part. */
+/** Parts sent at the same time, and the waits before each new try of a part that failed. */
 const PARALLEL_PARTS = 4;
-const PART_TRIES = 3;
+const PART_RETRY_DELAYS = [1000, 3000, 6000];
 
 /**
- * Sends a file's parts to their signed links, PARALLEL_PARTS at a time; a part that fails is sent again (up to
- * PART_TRIES). Throws with the last status when a part cannot be sent (0: blocked before reaching R2).
+ * Sends a file's parts to their signed links, PARALLEL_PARTS at a time; a part that fails is sent again after
+ * each of PART_RETRY_DELAYS. Throws with the last status when a part cannot be sent (0: blocked before reaching R2).
  */
 async function putParts(
   file: Blob,
@@ -100,14 +123,15 @@ async function putParts(
       const i = next++;
       const slice = file.slice(i * multipart.partSize, Math.min(file.size, (i + 1) * multipart.partSize));
       let status = 0;
-      for (let attempt = 1; attempt <= PART_TRIES; attempt++) {
+      for (let attempt = 0; attempt <= PART_RETRY_DELAYS.length; attempt++) {
+        if (attempt) await wait(PART_RETRY_DELAYS[attempt - 1] as number);
         status = await put(multipart.partUrls[i] as string, slice, "", (f) => {
           loaded[i] = f * slice.size;
           report();
         }, signal);
         if (status >= 200 && status < 300) break;
         loaded[i] = 0;
-        if (attempt < PART_TRIES) await new Promise((r) => setTimeout(r, 1000 * attempt));
+        report();
       }
       if (status < 200 || status >= 300) throw new AdminApiError(status ? `Storage rejected part ${i + 1} (${status}).` : "blocked", status, status ? "storage_error" : "cors_blocked");
       loaded[i] = slice.size;
@@ -142,25 +166,21 @@ export async function uploadReportMedia(
       // Drop the parts already sent (also when the operator cancelled).
       void adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key, uploadId, abort: true }) }).catch(() => undefined);
       if (err instanceof AdminApiError && err.reason === "cors_blocked") {
-        throw new AdminApiError("Large videos need direct uploads. Turn them on under Media → Direct uploads, then retry.", 0, "cors_blocked");
+        throw new AdminApiError(BLOCKED, 0, "cors_blocked");
       }
       throw err;
     }
     await adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key, uploadId, partCount: partUrls.length }), signal });
     return ticket.key;
   }
-  const direct = await put(ticket.uploadUrl, file, ticket.contentType, onProgress, signal);
+  const direct = await putRetrying(ticket.uploadUrl, file, ticket.contentType, onProgress, signal);
   if (direct >= 200 && direct < 300) {
     await adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key }), signal });
     return ticket.key;
   }
   if (direct !== 0) throw new AdminApiError(`Storage rejected the upload (${direct}).`, direct, "storage_error");
   if (file.size > ticket.proxyLimit) {
-    throw new AdminApiError(
-      "Large videos need direct uploads. Turn them on under Media → Direct uploads, then retry.",
-      0,
-      "cors_blocked",
-    );
+    throw new AdminApiError(BLOCKED, 0, "cors_blocked");
   }
   onProgress(0);
   const proxied = await put(`${base}?key=${encodeURIComponent(ticket.key)}`, file, ticket.contentType, onProgress, signal);

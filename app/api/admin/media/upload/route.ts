@@ -4,8 +4,8 @@ import { BadRequestError, NotFoundError } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { ok } from "@/lib/api/response";
 import { mediaCollection } from "@/features/admin/collections";
-import { createUploadTicket, PROXY_LIMIT, proxyUpload } from "@/features/admin/server/media";
-import { requireAdmin } from "@/features/admin/server/session";
+import { createUploadTicket, ensureDirectUploads, PROXY_LIMIT, proxyUpload } from "@/features/admin/server/media";
+import { requireAdmin, siteOrigin } from "@/features/admin/server/session";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -23,6 +23,8 @@ export const POST = withApiHandler(async (request: NextRequest) => {
   const body = ticketSchema.parse(await request.json());
   const c = mediaCollection(body.collection);
   if (!c) throw new NotFoundError("Unknown collection");
+  // Large files go straight to R2, which must allow this site (set up here, no switch to turn on).
+  await ensureDirectUploads(siteOrigin(request));
   return ok(await createUploadTicket(c, body.fileName, body.contentType, body.size));
 });
 

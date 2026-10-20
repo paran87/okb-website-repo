@@ -86,6 +86,13 @@ export function assertSameOrigin(request: NextRequest): void {
   if (!sameOrigin) throw new ApiError(403, "FORBIDDEN", "Cross-origin request rejected");
 }
 
+/** This site's origin as the browser sees it ("https://okb-ousc.site"). */
+export function siteOrigin(request: NextRequest): string {
+  const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? request.nextUrl.host;
+  const proto = request.headers.get("x-forwarded-proto") ?? request.nextUrl.protocol.replace(":", "");
+  return `${proto}://${host}`;
+}
+
 /** Resolves the signed-in admin, or throws 401 (403 when no admin key is configured). */
 export function requireAdmin(request: NextRequest, opts: { mutating?: boolean } = {}): string {
   if (opts.mutating) assertSameOrigin(request);

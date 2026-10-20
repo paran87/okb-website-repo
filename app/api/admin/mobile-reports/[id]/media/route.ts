@@ -3,7 +3,8 @@ import { z } from "zod";
 import { BadRequestError } from "@/lib/api/errors";
 import { withApiHandler } from "@/lib/api/handler";
 import { ok } from "@/lib/api/response";
-import { requireAdmin } from "@/features/admin/server/session";
+import { ensureDirectUploads } from "@/features/admin/server/media";
+import { requireAdmin, siteOrigin } from "@/features/admin/server/session";
 import { createMediaTicket, deleteMedia, MEDIA_PROXY_LIMIT, proxyMediaUpload } from "@/features/flood-report/server/media";
 import { assertReportExists } from "@/features/flood-report/server/service";
 
@@ -21,6 +22,8 @@ export const POST = withApiHandler(async (request: NextRequest, { params }) => {
   requireAdmin(request, { mutating: true });
   const id = await assertReportExists((await params).id ?? "");
   const body = ticketSchema.parse(await request.json());
+  // Large files go straight to R2, which must allow this site (set up here, no switch to turn on).
+  await ensureDirectUploads(siteOrigin(request));
   return ok(await createMediaTicket(id, body.fileName, body.contentType, body.size));
 });
 

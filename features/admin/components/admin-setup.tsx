@@ -250,9 +250,17 @@ export function AdminSetup({ state }: { state: AdminState }) {
               ok={cors.data ? cors.data.status === "enabled" : null}
               title="Direct uploads (large videos)"
             >
-              {cors.data?.status === "enabled"
-                ? "Browsers can upload big files straight to storage."
-                : "Turn on from the Media tab. Files up to 4 MB upload without it."}
+              {cors.data?.status === "enabled" ? (
+                "Set up automatically: browsers upload big files (up to 1 GB) straight to storage."
+              ) : cors.data ? (
+                <>
+                  Could not be set up automatically: the R2 API token cannot change bucket settings. Files up to 4 MB still
+                  upload. In Cloudflare → R2 → <Code>{state.storage.bucket ?? "the bucket"}</Code> → Settings → CORS policy, allow{" "}
+                  <Code>{cors.data.origin}</Code> with methods PUT, GET, HEAD, all headers, and expose <Code>ETag</Code>.
+                </>
+              ) : (
+                "Checking…"
+              )}
             </Check>
           </ul>
         </AdminCard>

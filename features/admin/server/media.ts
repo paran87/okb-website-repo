@@ -346,6 +346,25 @@ export async function enableDirectUploads(origin: string): Promise<void> {
   }
 }
 
+/** Origins already allowed on this server instance (the bucket's CORS rules are checked once per origin). */
+const allowedOrigins = new Set<string>();
+
+/**
+ * Makes sure browsers on [origin] may upload straight to the bucket, adding the CORS rule when it is missing, so
+ * large uploads work without anyone turning them on. Called before every upload link is handed out. False when
+ * the rule could not be set (the R2 token cannot change bucket settings); the upload then reports it.
+ */
+export async function ensureDirectUploads(origin: string): Promise<boolean> {
+  if (allowedOrigins.has(origin)) return true;
+  try {
+    await enableDirectUploads(origin);
+    allowedOrigins.add(origin);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------- public gallery
 
 export interface GalleryItem {
