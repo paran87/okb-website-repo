@@ -85,6 +85,14 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
         </section>
 
         <section>
+          <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">Change or delete your report</h3>
+          <p className="text-sm text-slate-600">
+            Tap <b>Mine</b> at the top of the map (or your report on the map) to say the flood has receded, edit the details, delete or
+            add photos, or delete the report. Only the phone and browser it was sent from can change it.
+          </p>
+        </section>
+
+        <section>
           <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">When a report leaves the map</h3>
           <p className="text-sm text-slate-600">
             A report stays on the map until the time the flood receded, if the sender gave one. Otherwise it is cleared

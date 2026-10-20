@@ -14,7 +14,7 @@ function plain(status: number, message: string): Response {
 
 /**
  * Streams a mobile flood report photo from R2 (?key=flood-reports/...). Public, like the map that shows
- * it; keys are random, and photos never change once stored, so browsers and the CDN may keep them.
+ * it; keys are random. Senders can delete their photos, so the CDN keeps a copy for 5 minutes only.
  */
 export async function GET(request: NextRequest): Promise<Response> {
   const key = request.nextUrl.searchParams.get("key") ?? "";
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
   if (!upstream.ok) return plain(upstream.status === 404 ? 404 : 502, "The photo could not be loaded.");
   const headers = new Headers({
-    "Cache-Control": "public, max-age=604800, immutable",
+    "Cache-Control": "public, max-age=3600, s-maxage=300",
     "Content-Type": "image/jpeg",
   });
   const size = upstream.headers.get("content-length");

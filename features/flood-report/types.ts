@@ -96,6 +96,23 @@ export interface PublicFloodReport {
   photos: ReportPhoto[];
 }
 
+/** What POST /api/flood-reports returns: the report and the sender's secret edit key (shown only this once). */
+export interface SubmittedReport {
+  report: PublicFloodReport;
+  editToken: string;
+}
+
+/** The form answers of a report, as the edit form starts from them. */
+export type FloodReportFormValues = Omit<FloodReportInput, "id" | "photos" | "website">;
+
+/** A report sent from this phone (checked with its edit key): the map view plus what the edit form needs. */
+export interface MyFloodReport extends PublicFloodReport {
+  form: FloodReportFormValues;
+  /** False once OKB operators rejected it (it can still be deleted). */
+  editable: boolean;
+  editedAt: string | null;
+}
+
 export interface PublicFloodReportList {
   generatedAt: string;
   hours: number;

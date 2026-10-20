@@ -5,7 +5,7 @@ import { reportPhotoUrl } from "@/features/reports/server/record";
 import { MOBILE_REPORT_PLATFORM, type BridgeReportStatus } from "@/features/reports/types";
 import { expiryReason, mobileExpiryHours } from "@/features/flood-report/lib/expiry";
 import { floodLevel, formatDepth, roadStatus, weather } from "@/features/flood-report/lib/options";
-import type { FloodReportInput, PublicFloodReport } from "@/features/flood-report/types";
+import type { FloodReportFormValues, FloodReportInput, MyFloodReport, PlaceName, PublicFloodReport } from "@/features/flood-report/types";
 
 /**
  * Turns a mobile flood report into an `okb_bridge_reports` record in the same shape the OKB Bridge writes
@@ -347,4 +347,46 @@ export function toPublicReport(
     reportedAt: row.created_at,
     photos,
   };
+}
+
+/** The sender's own view of a stored report: the map view plus the form answers to edit. */
+export function toMyReport(
+  row: { id: string; status: string | null; created_at: string; record: unknown },
+  liveRain = false,
+): MyFloodReport | null {
+  const view = toPublicReport(row, liveRain);
+  if (!view) return null;
+  const m = obj(obj(row.record).mobile);
+  const level = floodLevel(str(m.level));
+  const depth = num(m.depthM);
+  const placeObj = obj(m.place);
+  const place: PlaceName | null = str(placeObj.label)
+    ? {
+        label: str(placeObj.label) as string,
+        road: str(placeObj.road),
+        barangay: str(placeObj.barangay),
+        city: str(placeObj.city),
+        province: str(placeObj.province),
+        region: str(placeObj.region),
+      }
+    : null;
+  const form: FloodReportFormValues = {
+    latitude: view.latitude,
+    longitude: view.longitude,
+    accuracyM: num(m.accuracyM),
+    locationText: view.locationText,
+    landmark: str(m.landmark),
+    place,
+    level: (level?.id ?? "knee") as FloodReportFormValues["level"],
+    // A depth that is not the gauge level's own was typed in centimeters.
+    depthCm: depth !== null && level && Math.abs(depth - level.meters) > 0.001 ? Math.round(depth * 100) : null,
+    roadStatus: (roadStatus(str(m.roadStatus))?.id ?? "passable_all") as FloodReportFormValues["roadStatus"],
+    weather: (weather(str(m.weather))?.id ?? "cloudy") as FloodReportFormValues["weather"],
+    startedAt: str(m.startedAt) ?? row.created_at,
+    recededAt: str(m.recededAt),
+    remarks: str(m.remarks),
+    senderName: str(m.senderName),
+    contactNumber: str(m.contactNumber),
+  };
+  return { ...view, form, editable: view.status !== "rejected" && view.status !== "ignored", editedAt: str(m.editedAt) };
 }

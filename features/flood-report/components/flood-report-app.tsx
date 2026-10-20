@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { CircleHelp, Copy, Home, LocateFixed, Monitor, RefreshCw, Smartphone } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CircleHelp, Copy, Home, Loader2, LocateFixed, Monitor, RefreshCw, Smartphone, UserRound } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
@@ -10,13 +10,15 @@ import { useFloodReports } from "../hooks/use-flood-reports";
 import { useGeolocation } from "../hooks/use-geolocation";
 import { useIsPhone } from "../hooks/use-is-phone";
 import { usePlace } from "../hooks/use-place";
-import { FloodReportApiError, sendReport, uploadPhoto } from "../lib/api";
-import type { CapturedPhoto, PublicFloodReport, UploadedPhoto } from "../types";
+import { deleteReport, fetchMyReports, FloodReportApiError, sendReport, updateReport, uploadPhoto } from "../lib/api";
+import { addMyReportKey, readMyReportKeys, removeMyReportKey, type MyReportKey } from "../lib/my-reports";
+import type { CapturedPhoto, FloodReportFormValues, MyFloodReport, PublicFloodReport, UploadedPhoto } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
 import { CLEARED_COLOR, FloodMap, RECEDED_COLOR } from "./flood-map";
 import { HelpSheet } from "./help-sheet";
+import { MyReportActions, MyReportPhotos, MyReportsSheet } from "./my-report";
 import { ReportDetails } from "./report-details";
 import { ReportForm, SendProgress, type ReportFormValues } from "./report-form";
 
@@ -44,7 +46,10 @@ function isActive(r: PublicFloodReport, now: number): boolean {
   return r.active && (!r.clearsAt || Date.parse(r.clearsAt) > now);
 }
 
-type Screen = "map" | "camera" | "form";
+/** "edit", "photos" and "add-photos" work on one of this phone's reports (`ownId`). */
+type Screen = "map" | "camera" | "form" | "edit" | "photos" | "add-photos";
+
+const errorText = (err: unknown) => (err instanceof FloodReportApiError ? err.message : "Something went wrong. Please try again.");
 type SendState = { stage: "uploading" | "saving"; progress: number } | { stage: "done"; report: PublicFloodReport } | null;
 
 function rangeLabel(range: Exclude<Range, "now">): string {
@@ -76,8 +81,37 @@ function PhoneApp() {
   // at a time and may refuse the camera if both are asked together.
   const [cameraSettled, setCameraSettled] = useState(false);
   const onCameraSettled = useCallback(() => setCameraSettled(true), []);
-  const geo = useGeolocation(screen === "form" || (screen === "camera" && cameraSettled) || locating);
-  const place = usePlace(screen !== "map" ? geo.fix : null);
+  const capturing = screen === "camera" || screen === "add-photos";
+  const geo = useGeolocation(screen === "form" || (capturing && cameraSettled) || locating);
+  const place = usePlace(capturing || screen === "form" ? geo.fix : null);
+
+  // Reports sent from this phone (their edit keys are kept in this browser).
+  const [keys, setKeys] = useState<MyReportKey[]>([]);
+  useEffect(() => {
+    const load = () => setKeys(readMyReportKeys());
+    load();
+    window.addEventListener("okb-my-reports", load);
+    window.addEventListener("storage", load);
+    return () => {
+      window.removeEventListener("okb-my-reports", load);
+      window.removeEventListener("storage", load);
+    };
+  }, []);
+  const myQuery = useQuery({
+    queryKey: ["flood-reports", "mine", keys.map((k) => k.id).join(",")],
+    queryFn: () => fetchMyReports(keys.map(({ id, token }) => ({ id, token }))),
+    enabled: keys.length > 0,
+    staleTime: 20_000,
+    refetchInterval: 60_000,
+  });
+  const myReports = useMemo(() => (keys.length ? (myQuery.data ?? []) : []), [keys.length, myQuery.data]);
+  const [myOpen, setMyOpen] = useState(false);
+  const [ownId, setOwnId] = useState<string | null>(null);
+  const [ownBusy, setOwnBusy] = useState(false);
+  const [ownError, setOwnError] = useState<string | null>(null);
+  const [extra, setExtra] = useState<CapturedPhoto[]>([]);
+  const own = myReports.find((r) => r.id === ownId) ?? null;
+  const tokenOf = (id: string) => keys.find((k) => k.id === id)?.token ?? null;
 
   // Reports sent from this phone stay on the map even if a refresh comes from a server cache that is a few
   // seconds older than the report.
@@ -88,7 +122,9 @@ function PhoneApp() {
     const all = missing.length ? [...missing, ...server] : server;
     return range === "now" ? all.filter((r) => isActive(r, now)) : all;
   }, [reports.data, mine, range, now]);
-  const selected = list.find((r) => r.id === selectedId) ?? null;
+  const selected = list.find((r) => r.id === selectedId) ?? myReports.find((r) => r.id === selectedId) ?? null;
+  const selectedMine = selectedId ? (myReports.find((r) => r.id === selectedId) ?? null) : null;
+  const selectedIsMine = selectedId ? keys.some((k) => k.id === selectedId) : false;
 
   useEffect(() => {
     reportId.current = crypto.randomUUID();
@@ -160,7 +196,8 @@ function PhoneApp() {
         uploaded.push({ key, latitude: p.latitude, longitude: p.longitude, accuracyM: p.accuracyM, takenAt: p.takenAt });
       }
       setSend({ stage: "saving", progress: 1 });
-      const report = await sendReport({ ...values, id, photos: uploaded });
+      const { report, editToken } = await sendReport({ ...values, id, photos: uploaded });
+      addMyReportKey(report.id, editToken);
       setMine((all) => [report, ...all]);
       void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
       setSend({ stage: "done", report });
@@ -179,6 +216,99 @@ function PhoneApp() {
       setSelectedId(report.id);
       setFocus({ latitude: report.latitude, longitude: report.longitude, zoom: 16, key: `new-${report.id}` });
     }
+  };
+
+  // ---- the sender's own reports ----
+
+  const formOf = (r: MyFloodReport): FloodReportFormValues => r.form;
+  const keptPhotos = (r: MyFloodReport): UploadedPhoto[] =>
+    r.photos.map((p) => ({
+      key: p.key,
+      latitude: p.latitude ?? r.latitude,
+      longitude: p.longitude ?? r.longitude,
+      accuracyM: p.accuracyM,
+      takenAt: p.takenAt ?? r.reportedAt,
+    }));
+
+  /** Saves one of this phone's reports and refreshes the map and "My reports". */
+  const saveOwn = async (r: MyFloodReport, values: FloodReportFormValues, photos: UploadedPhoto[]): Promise<boolean> => {
+    const token = tokenOf(r.id);
+    if (!token) return false;
+    setOwnBusy(true);
+    setOwnError(null);
+    try {
+      const updated = await updateReport(r.id, token, values, photos);
+      setMine((all) => all.map((x) => (x.id === updated.id ? updated : x)));
+      queryClient.setQueryData<MyFloodReport[]>(["flood-reports", "mine", keys.map((k) => k.id).join(",")], (old) =>
+        old ? old.map((x) => (x.id === updated.id ? updated : x)) : old,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
+      return true;
+    } catch (err) {
+      setOwnError(errorText(err));
+      return false;
+    } finally {
+      setOwnBusy(false);
+    }
+  };
+
+  const markReceded = async (r: MyFloodReport, when: "now" | "pick") => {
+    if (when === "pick") {
+      setOwnId(r.id);
+      setOwnError(null);
+      setScreen("edit");
+      return;
+    }
+    await saveOwn(r, { ...formOf(r), recededAt: new Date().toISOString() }, keptPhotos(r));
+  };
+
+  const removeOwn = async (r: MyFloodReport) => {
+    const token = tokenOf(r.id);
+    if (!token) return;
+    setOwnBusy(true);
+    setOwnError(null);
+    try {
+      await deleteReport(r.id, token);
+      removeMyReportKey(r.id);
+      setMine((all) => all.filter((x) => x.id !== r.id));
+      setSelectedId(null);
+      void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
+    } catch (err) {
+      setOwnError(errorText(err));
+    } finally {
+      setOwnBusy(false);
+    }
+  };
+
+  /** Uploads the new captures and adds them to the report being managed. */
+  const addOwnPhotos = async () => {
+    if (!own || !extra.length) return setScreen("photos");
+    setScreen("photos");
+    setOwnBusy(true);
+    setOwnError(null);
+    try {
+      const added: UploadedPhoto[] = [];
+      for (const p of extra) {
+        const key = p.key ?? (await uploadPhoto(own.id, p.blob, () => undefined));
+        p.key = key;
+        added.push({ key, latitude: p.latitude, longitude: p.longitude, accuracyM: p.accuracyM, takenAt: p.takenAt });
+      }
+      setOwnBusy(false);
+      if (await saveOwn(own, formOf(own), [...keptPhotos(own), ...added])) {
+        extra.forEach((p) => URL.revokeObjectURL(p.url));
+        setExtra([]);
+      }
+    } catch (err) {
+      setOwnError(errorText(err));
+      setOwnBusy(false);
+    }
+  };
+
+  const openOwn = (id: string) => {
+    setMyOpen(false);
+    setSelectedId(id);
+    const r = list.find((x) => x.id === id) ?? myReports.find((x) => x.id === id);
+    if (r) setFocus({ latitude: r.latitude, longitude: r.longitude, key: `mine-${id}-${Date.now()}` });
   };
 
   const active = list.filter((r) => isActive(r, now)).length;
@@ -237,6 +367,17 @@ function PhoneApp() {
                 </button>
               ))}
             </div>
+            {keys.length ? (
+              <button
+                type="button"
+                onClick={() => setMyOpen(true)}
+                className="pointer-events-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-blue-600 px-3.5 text-sm font-semibold text-white shadow-md active:bg-blue-700"
+              >
+                <UserRound className="size-4" aria-hidden />
+                Mine
+                <span className="rounded-full bg-white/25 px-1.5 text-xs tabular-nums">{keys.length}</span>
+              </button>
+            ) : null}
           </div>
           {reports.isError ? (
             <p className="pointer-events-auto w-fit rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow">
@@ -288,9 +429,47 @@ function PhoneApp() {
         </BarTile>
       </ControlBar>
 
-      <BottomSheet open={Boolean(selected)} onClose={() => setSelectedId(null)} title="Flood report">
-        {selected ? <ReportDetails key={selected.id} report={selected} /> : null}
+      <BottomSheet
+        // Hidden (not closed) while the edit, photo or camera screens are open over the map; back on return.
+        open={Boolean(selected) && screen === "map"}
+        onClose={() => {
+          setSelectedId(null);
+          setOwnError(null);
+        }}
+        title={selectedIsMine ? "Your flood report" : "Flood report"}
+      >
+        {selected ? (
+          <div key={selected.id} className="space-y-4">
+            {selectedMine ? (
+              <>
+                <MyReportActions
+                  report={selectedMine}
+                  busy={ownBusy}
+                  onReceded={(when) => void markReceded(selectedMine, when)}
+                  onEdit={() => {
+                    setOwnId(selectedMine.id);
+                    setOwnError(null);
+                    setScreen("edit");
+                  }}
+                  onPhotos={() => {
+                    setOwnId(selectedMine.id);
+                    setOwnError(null);
+                    setScreen("photos");
+                  }}
+                  onDelete={() => void removeOwn(selectedMine)}
+                />
+                {ownError && screen === "map" ? <p className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{ownError}</p> : null}
+              </>
+            ) : selectedIsMine && myQuery.isPending ? (
+              <p className="flex items-center gap-2 text-sm text-slate-600">
+                <Loader2 className="size-4 animate-spin" aria-hidden /> Loading your controls…
+              </p>
+            ) : null}
+            <ReportDetails report={selected} />
+          </div>
+        ) : null}
       </BottomSheet>
+      <MyReportsSheet open={myOpen} onClose={() => setMyOpen(false)} reports={myReports} loading={myQuery.isFetching} onOpen={openOwn} />
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       {screen === "camera" ? (
@@ -307,6 +486,58 @@ function PhoneApp() {
           onBack={() => setScreen("map")}
           onCameraSettled={onCameraSettled}
         />
+      ) : null}
+      {screen === "edit" && own ? (
+        <ReportForm
+          key={own.id}
+          photos={own.photos.map((p) => ({ id: p.key, url: p.url, latitude: p.latitude, longitude: p.longitude, accuracyM: p.accuracyM, takenAt: p.takenAt }))}
+          place={own.form.place}
+          initial={own.form}
+          error={ownError}
+          onBack={() => setScreen("map")}
+          onSubmit={(values) => {
+            const { website: _website, ...form } = values;
+            void _website;
+            void saveOwn(own, form, keptPhotos(own)).then((ok) => ok && setScreen("map"));
+          }}
+        />
+      ) : null}
+      {screen === "photos" && own ? (
+        <MyReportPhotos
+          report={own}
+          busy={ownBusy}
+          error={ownError}
+          onBack={() => setScreen("map")}
+          onRemove={(key) => void saveOwn(own, formOf(own), keptPhotos(own).filter((p) => p.key !== key))}
+          onAdd={() => {
+            setOwnError(null);
+            setScreen("add-photos");
+          }}
+        />
+      ) : null}
+      {screen === "add-photos" && own ? (
+        <CameraScreen
+          photos={extra}
+          geo={geo}
+          place={place}
+          max={Math.max(0, 5 - own.photos.length)}
+          onAdd={(p) => setExtra((all) => [...all, p])}
+          onRemove={(id) =>
+            setExtra((all) => {
+              const gone = all.find((p) => p.id === id);
+              if (gone) URL.revokeObjectURL(gone.url);
+              return all.filter((p) => p.id !== id);
+            })
+          }
+          onSend={() => void addOwnPhotos()}
+          onBack={() => setScreen("photos")}
+          onCameraSettled={onCameraSettled}
+        />
+      ) : null}
+      {ownBusy && screen === "edit" ? (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 text-white" role="status">
+          <Loader2 className="mr-2 size-6 animate-spin" aria-hidden /> Saving your changes…
+        </div>
       ) : null}
       {screen === "form" ? (
         <ReportForm photos={photos} place={place} error={formError} onBack={() => setScreen("camera")} onSubmit={(v) => void submit(v)} />

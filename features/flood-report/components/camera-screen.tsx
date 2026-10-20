@@ -45,6 +45,7 @@ export function CameraScreen({
   onSend,
   onBack,
   onCameraSettled,
+  max = MAX_PHOTOS,
 }: {
   photos: CapturedPhoto[];
   geo: GeoState;
@@ -55,6 +56,8 @@ export function CameraScreen({
   onBack: () => void;
   /** Called once the camera is running or was refused, so the location prompt never competes with it. */
   onCameraSettled: () => void;
+  /** Most photos to take now (fewer when adding to a report that already has some). */
+  max?: number;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
@@ -71,7 +74,7 @@ export function CameraScreen({
   const [notice, setNotice] = useState<string | null>(null);
   const [preview, setPreview] = useState<CapturedPhoto | null>(null);
   const [now, setNow] = useState(() => new Date());
-  const full = photos.length >= MAX_PHOTOS;
+  const full = photos.length >= max;
   const fix = geo.fix;
 
   useEffect(() => {
@@ -180,7 +183,7 @@ export function CameraScreen({
   );
 
   const shoot = async () => {
-    if (full) return setNotice(`Maximum of ${MAX_PHOTOS} photos. Delete one to take another.`);
+    if (full) return setNotice(`Maximum of ${max} photo${max === 1 ? "" : "s"}. Delete one to take another.`);
     // Without the in-page camera the shutter asks for it again (never jumps to another app).
     if (camera === "blocked" || camera === "unsupported") return setAttempt((n) => n + 1);
     const v = video.current;
@@ -387,7 +390,7 @@ export function CameraScreen({
       {/* Captures (max 5) */}
       <div className="shrink-0 bg-black px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1.5">
-          {Array.from({ length: MAX_PHOTOS }, (_, i) => {
+          {Array.from({ length: max }, (_, i) => {
             const p = photos[i];
             return p ? (
               <button
@@ -408,7 +411,7 @@ export function CameraScreen({
           })}
         </div>
         <p className="mt-1 text-center text-[11px] text-white/50">
-          {photos.length}/{MAX_PHOTOS} photos · tap a photo to view or delete
+          {photos.length}/{max} photos · tap a photo to view or delete
         </p>
       </div>
 

@@ -14,9 +14,19 @@ import {
   type RoadStatusId,
   type WeatherId,
 } from "../lib/options";
-import type { CapturedPhoto, FloodReportInput, PlaceName } from "../types";
+import type { FloodReportFormValues, FloodReportInput, PlaceName } from "../types";
 
 export type ReportFormValues = Omit<FloodReportInput, "id" | "photos">;
+
+/** A photo shown at the top of the form (a new capture, or a photo already sent). */
+export interface FormPhoto {
+  id: string;
+  url: string;
+  latitude: number | null;
+  longitude: number | null;
+  accuracyM: number | null;
+  takenAt: string | null;
+}
 
 /** "YYYY-MM-DDTHH:mm" in the phone's time zone, for <input type="datetime-local">. */
 function localInput(date: Date): string {
@@ -63,48 +73,58 @@ function Chip({ active, onClick, children, className }: { active: boolean; onCli
   );
 }
 
-/** The short form shown after tapping send. */
+/** The short form shown after tapping send; with `initial`, the same form edits a report already sent. */
 export function ReportForm({
   photos,
   place,
   error,
   onBack,
   onSubmit,
+  initial,
 }: {
-  photos: CapturedPhoto[];
+  photos: FormPhoto[];
   place: PlaceName | null;
   error: string | null;
   onBack: () => void;
   onSubmit: (values: ReportFormValues) => void;
+  /** Editing: the report's current answers (its location stays where it was reported). */
+  initial?: FloodReportFormValues;
 }) {
+  const editing = Boolean(initial);
   // The most accurate photo position is the report's location.
-  const spot = useMemo(
-    () => [...photos].sort((a, b) => (a.accuracyM ?? 9999) - (b.accuracyM ?? 9999))[0] ?? null,
+  const spot = useMemo(() => {
+    if (initial) return { latitude: initial.latitude, longitude: initial.longitude, accuracyM: initial.accuracyM };
+    const best = [...photos]
+      .filter((p) => p.latitude !== null && p.longitude !== null)
+      .sort((a, b) => (a.accuracyM ?? 9999) - (b.accuracyM ?? 9999))[0];
+    return best ? { latitude: best.latitude as number, longitude: best.longitude as number, accuracyM: best.accuracyM } : null;
+  }, [photos, initial]);
+  const earliest = useMemo(
+    () => new Date(Math.min(...photos.map((p) => (p.takenAt ? Date.parse(p.takenAt) : Date.now())), Date.now())),
     [photos],
   );
-  const earliest = useMemo(() => new Date(Math.min(...photos.map((p) => Date.parse(p.takenAt)), Date.now())), [photos]);
 
-  const [locationText, setLocationText] = useState(place?.road ?? place?.label ?? "");
-  const [landmark, setLandmark] = useState("");
-  const [level, setLevel] = useState<FloodLevelId | null>(null);
-  const [depthCm, setDepthCm] = useState("");
-  const [road, setRoad] = useState<RoadStatusId | null>(null);
-  const [roadTouched, setRoadTouched] = useState(false);
-  const [sky, setSky] = useState<WeatherId | null>(null);
-  const [startedAt, setStartedAt] = useState(() => localInput(earliest));
-  const [receded, setReceded] = useState(false);
-  const [recededAt, setRecededAt] = useState(() => localInput(new Date()));
-  const [remarks, setRemarks] = useState("");
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+  const [locationText, setLocationText] = useState(initial?.locationText ?? place?.road ?? place?.label ?? "");
+  const [landmark, setLandmark] = useState(initial?.landmark ?? "");
+  const [level, setLevel] = useState<FloodLevelId | null>(initial?.level ?? null);
+  const [depthCm, setDepthCm] = useState(initial?.depthCm ? String(initial.depthCm) : "");
+  const [road, setRoad] = useState<RoadStatusId | null>(initial?.roadStatus ?? null);
+  const [roadTouched, setRoadTouched] = useState(editing);
+  const [sky, setSky] = useState<WeatherId | null>(initial?.weather ?? null);
+  const [startedAt, setStartedAt] = useState(() => localInput(initial ? new Date(initial.startedAt) : earliest));
+  const [receded, setReceded] = useState(Boolean(initial?.recededAt));
+  const [recededAt, setRecededAt] = useState(() => localInput(initial?.recededAt ? new Date(initial.recededAt) : new Date()));
+  const [remarks, setRemarks] = useState(initial?.remarks ?? "");
+  const [name, setName] = useState(initial?.senderName ?? "");
+  const [contact, setContact] = useState(initial?.contactNumber ?? "");
   const [website, setWebsite] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // The street name may arrive after the form opens; fill it in unless the sender already typed one.
   const suggested = place?.road ?? place?.label ?? "";
   useEffect(() => {
-    if (suggested) setLocationText((current) => current || suggested);
-  }, [suggested]);
+    if (suggested && !editing) setLocationText((current) => current || suggested);
+  }, [suggested, editing]);
 
   // A field's message goes away as soon as it is answered.
   const clear = (key: string) =>
@@ -155,7 +175,7 @@ export function ReportForm({
       accuracyM: spot.accuracyM,
       locationText: locationText.trim(),
       landmark: landmark.trim() || null,
-      place,
+      place: initial ? initial.place : place,
       level,
       depthCm: cm,
       roadStatus: road,
@@ -175,12 +195,17 @@ export function ReportForm({
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-slate-100 text-slate-900">
       <header className="flex shrink-0 items-center gap-2 bg-black px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
-        <button type="button" onClick={onBack} aria-label="Back to camera" className="flex size-11 items-center justify-center rounded-full bg-white/15">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label={editing ? "Cancel editing" : "Back to camera"}
+          className="flex size-11 items-center justify-center rounded-full bg-white/15"
+        >
           <ArrowLeft className="size-6" aria-hidden />
         </button>
         <div className="min-w-0">
-          <h2 className="text-lg font-bold leading-tight">Flood details</h2>
-          <p className="text-xs text-white/70">A few taps, then send</p>
+          <h2 className="text-lg font-bold leading-tight">{editing ? "Edit your report" : "Flood details"}</h2>
+          <p className="text-xs text-white/70">{editing ? "Your changes show on the map right away" : "A few taps, then send"}</p>
         </div>
       </header>
 
@@ -189,7 +214,7 @@ export function ReportForm({
           {/* Photos */}
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
             {photos.map((p, i) => (
-              // eslint-disable-next-line @next/next/no-img-element -- local object URL
+              // eslint-disable-next-line @next/next/no-img-element -- local object URL or our photo route
               <img key={p.id} src={p.url} alt={`Photo ${i + 1}`} className="h-20 w-28 shrink-0 rounded-lg object-cover ring-1 ring-slate-300" />
             ))}
           </div>
@@ -392,7 +417,9 @@ export function ReportForm({
 
           {error ? <p className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{error}</p> : null}
           <p className="text-xs text-slate-500">
-            By sending, you agree that your photos and these details are shown on the public flood map and used by the OKB Command Center.
+            {editing
+              ? "To add or remove photos, use Manage photos on your report."
+              : "By sending, you agree that your photos and these details are shown on the public flood map and used by the OKB Command Center."}
           </p>
         </div>
       </div>
@@ -404,7 +431,7 @@ export function ReportForm({
           className="mx-auto flex h-14 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-black text-base font-bold text-white active:bg-slate-800"
         >
           <SendHorizontal className="size-5" aria-hidden />
-          Send report · {photos.length} photo{photos.length === 1 ? "" : "s"}
+          {editing ? "Save changes" : `Send report · ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
         </button>
       </div>
     </div>
@@ -436,6 +463,9 @@ export function SendProgress({
         <div className="space-y-2">
           <h2 className="text-2xl font-bold">Report sent. Salamat!</h2>
           <p className="text-white/75">Your report is now on the flood map. OKB operators will verify it from your photos.</p>
+          <p className="text-sm text-white/60">
+            Tap <b className="text-white">Mine</b> on the map to mark it receded, edit it or delete it. Only this phone can change it.
+          </p>
           {reference ? <p className="font-mono text-sm text-amber-300">{reference}</p> : null}
         </div>
         <div className="grid w-full max-w-xs gap-3">

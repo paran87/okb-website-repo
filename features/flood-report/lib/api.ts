@@ -1,4 +1,12 @@
-import type { FloodReportInput, PlaceName, PublicFloodReport, PublicFloodReportList } from "../types";
+import type {
+  FloodReportFormValues,
+  FloodReportInput,
+  MyFloodReport,
+  PlaceName,
+  PublicFloodReportList,
+  SubmittedReport,
+  UploadedPhoto,
+} from "../types";
 
 /** Browser calls to the Command Center's /api/flood-reports/* routes. */
 
@@ -47,11 +55,44 @@ export function fetchPlace(lat: number, lng: number): Promise<PlaceName | null> 
   return call(`/api/flood-reports/geocode?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}`);
 }
 
-export function sendReport(input: FloodReportInput): Promise<PublicFloodReport> {
+export function sendReport(input: FloodReportInput): Promise<SubmittedReport> {
   return call("/api/flood-reports", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
+  });
+}
+
+/** The reports this phone sent (checked with the edit keys it kept). */
+export function fetchMyReports(items: { id: string; token: string }[]): Promise<MyFloodReport[]> {
+  if (!items.length) return Promise.resolve([]);
+  return call("/api/flood-reports/mine", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items }),
+    cache: "no-store",
+  });
+}
+
+/** Saves the edited form and photo list of one of this phone's reports. */
+export function updateReport(
+  id: string,
+  token: string,
+  values: FloodReportFormValues,
+  photos: UploadedPhoto[],
+): Promise<MyFloodReport> {
+  return call(`/api/flood-reports/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...values, photos, token }),
+  });
+}
+
+export function deleteReport(id: string, token: string): Promise<{ deleted: boolean }> {
+  return call(`/api/flood-reports/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
   });
 }
 
