@@ -142,6 +142,14 @@ function markerElement(report: PublicFloodReport, onSelect: (id: string) => void
   tag.style.cssText = `margin-top:-6px;padding:1px 7px;border-radius:9999px;background:${color};color:#fff;font:700 11px/16px system-ui;box-shadow:0 2px 4px rgba(0,0,0,.3);white-space:nowrap;`;
   const tip = document.createElement("span");
   tip.style.cssText = `width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid ${color};`;
+  if (report.active) {
+    // A pulsing ring behind the photo, in the flood's color, to catch the eye (still when motion is reduced).
+    const pulse = document.createElement("span");
+    pulse.className = "motion-safe:animate-ping";
+    pulse.setAttribute("aria-hidden", "true");
+    pulse.style.cssText = `position:absolute;top:0;left:50%;margin-left:-23px;width:46px;height:46px;border-radius:9999px;background:${color};opacity:.6;pointer-events:none;`;
+    root.append(pulse);
+  }
   root.append(ring, tag, tip);
   root.addEventListener("click", (e) => {
     e.stopPropagation();
