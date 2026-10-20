@@ -5,7 +5,7 @@ import type { Map as MapLibreMap } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { useMapContext } from "@/features/map/context/map-context";
 import { makeRemovedMapInert, useMapStore } from "@/features/map/store/map.store";
-import { mapService } from "@/features/map/services/map.service";
+import { isTouchScreen, mapService } from "@/features/map/services/map.service";
 import { layerService } from "@/features/map/services/layer.service";
 import { MapLayerRenderer } from "@/features/map/components/map-layer-renderer";
 import { MapEventBridge } from "@/features/map/components/map-event-bridge";
@@ -92,13 +92,35 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
         });
         mapRef.current = map;
 
+        // Phones and tablets: a two-finger pinch only zooms. With rotation on, a pinch whose fingers turn a
+        // little also starts turning the map, and the zoom stutters and lands on a tilted bearing.
+        if (isTouchScreen()) map.touchZoomRotate.disableRotation();
+
+        // While the map moves, marker animations pause (globals.css): fewer layers to redraw per frame.
+        const container = map.getContainer();
+        map.on("movestart", () => container.classList.add("okb-map-moving"));
+        map.on("moveend", () => container.classList.remove("okb-map-moving"));
+
         map.addControl(
           new maplibregl.AttributionControl({ compact: true }),
           "bottom-left",
         );
 
-        map.on("load", async () => {
-          if (cancelled) return;
+        // Ready as soon as the style is in: the map draws, takes gestures and accepts layers from then on.
+        // "load" waits for every tile in view as well, which on a slow phone connection kept the loading
+        // overlay (and its touch block) up for many seconds; it stays as a fallback.
+        let started = false;
+        // Phones: credits start collapsed behind their "i" button, so they do not cover the map controls.
+        const collapseCredits = () => {
+          if (map.getContainer().offsetWidth > 640) return;
+          map
+            .getContainer()
+            .querySelector(".maplibregl-ctrl-attrib.maplibregl-compact")
+            ?.classList.remove("maplibregl-compact-show");
+        };
+        const onReady = async () => {
+          if (cancelled || started) return;
+          started = true;
           try {
             const activeLayers = useMapStore.getState().layers;
             for (const config of activeLayers) {
@@ -114,18 +136,17 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
           }
 
           if (cancelled) return;
-          // Phones: credits start collapsed behind their "i" button, so they do not cover the map controls.
-          if (map.getContainer().offsetWidth <= 640) {
-            map
-              .getContainer()
-              .querySelector(".maplibregl-ctrl-attrib.maplibregl-compact")
-              ?.classList.remove("maplibregl-compact-show");
-          }
+          collapseCredits();
           setScaleLabel(mapService.getScaleLabel(map));
           map.resize();
           isReadyRef.current = true;
           setStatus("ready");
           onMapReady?.(map);
+        };
+        map.once("style.load", () => void onReady());
+        map.once("load", () => {
+          void onReady();
+          if (!cancelled) collapseCredits();
         });
 
         map.on("error", (e) => {

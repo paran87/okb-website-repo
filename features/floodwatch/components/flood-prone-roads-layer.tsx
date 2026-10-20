@@ -7,6 +7,7 @@ import type { PlacedArea } from "@/features/floodwatch/lib/place-areas";
 import { MAP_LABEL_FONT } from "@/features/map/config/map-styles";
 import { popupService } from "@/features/map/services/popup.service";
 import { isLiveMap, useMapStore } from "@/features/map/store/map.store";
+import { isStyleReady } from "@/features/map/services/map.service";
 
 /** The flood-prone stretch of road (Flood Monitoring). */
 export const FLOOD_PRONE_ROAD_COLOR = "#f97316";
@@ -197,7 +198,7 @@ export function FloodProneRoadsLayer({
     };
     const apply = () => {
       if (!isLiveMap(map)) return true;
-      if (!map.isStyleLoaded()) return false;
+      if (!isStyleReady(map)) return false;
       sync(map);
       for (const id of LAYERS) map.setLayoutProperty(id, "visibility", visible ? "visible" : "none");
       return true;

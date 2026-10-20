@@ -52,6 +52,7 @@
 
   /* ---- Glass & grid ---- */
   --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-solid: rgba(255, 255, 255, 0.94);
   --glass-border: rgba(148, 163, 184, 0.35);
   --grid-line: rgba(100, 116, 139, 0.08);
 
@@ -151,6 +152,7 @@
   --critical: #dc2626;
 
   --glass-bg: rgba(13, 20, 32, 0.72);
+  --glass-bg-solid: rgba(13, 20, 32, 0.93);
   --glass-border: rgba(148, 163, 184, 0.14);
   --grid-line: rgba(148, 163, 184, 0.06);
 
@@ -428,6 +430,29 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
+}
+
+/*
+ * Phones and tablets on a map page: a blurred panel over the map has to re-blur the map behind it on every
+ * frame of a pan or pinch, which is what made the maps lag and miss pinches. Panels there are drawn nearly
+ * opaque instead. While the map moves, marker animations (the pulsing flood alerts) pause.
+ */
+@media (pointer: coarse) {
+  body:has(.maplibregl-map) :is(.glass, [class*="backdrop-blur"]) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  body:has(.maplibregl-map) .glass {
+    background-color: var(--glass-bg-solid);
+  }
+}
+.okb-map-moving .maplibregl-marker,
+.okb-map-moving .maplibregl-marker * {
+  animation-play-state: paused !important;
+}
+/* The flood alert's pulsing ring (incident flood map): hidden while the map moves, the red disc stays. */
+.okb-map-moving [data-flood-alert] > span:first-child {
+  display: none;
 }
 
 @utility text-glow {

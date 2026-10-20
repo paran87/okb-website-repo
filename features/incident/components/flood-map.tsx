@@ -6,6 +6,7 @@ import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap, MapMou
 import { MapEngine } from "@/features/map/components/map-engine";
 import { NCR_MAP_VIEW } from "@/features/map/config/default-view";
 import { isLiveMap, useMapStore } from "@/features/map/store/map.store";
+import { isStyleReady } from "@/features/map/services/map.service";
 
 export interface FloodLineProps {
   key: string;
@@ -239,7 +240,7 @@ export function FloodLayers({ lines, points, selectedKey, focus, onSelect, visib
     const apply = () => {
       // Another part of the page may still be adding its layers (Dashboard): wait until the style is ready.
       if (!isLiveMap(map)) return true;
-      if (!map.isStyleLoaded()) return false;
+      if (!isStyleReady(map)) return false;
       sync(map);
       map.setFilter("fm-selected", expr(["==", ["get", "key"], selectedKey ?? ""]));
       for (const id of ["fm-selected", "fm-casing", "fm-line", "fm-point"]) {

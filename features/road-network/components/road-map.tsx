@@ -22,6 +22,7 @@ import {
   type ExpresswayFeature,
   type RoadFeature,
 } from "@/features/road-network/types";
+import { isStyleReady } from "@/features/map/services/map.service";
 
 export type Selection = { kind: "road" | "expressway"; id: number } | null;
 
@@ -315,7 +316,7 @@ function RoadMapLayers({
   }, [map, status]);
 
   useEffect(() => {
-    if (!map || status !== "ready" || !map.isStyleLoaded()) return;
+    if (!map || status !== "ready" || !isStyleReady(map)) return;
     syncSources(map);
     ensureLayers(map);
 

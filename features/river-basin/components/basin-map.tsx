@@ -32,6 +32,7 @@ import {
   WEATHER_BASEMAP_STYLES,
 } from "@/features/map/config/map-styles";
 import { useMapStore } from "@/features/map/store/map.store";
+import { isStyleReady } from "@/features/map/services/map.service";
 
 const BASIN_COLOR = "#0284c7";
 const SHED_COLOR = "#d97706";
@@ -246,7 +247,7 @@ function BasinMapOverlay({ slug, label }: BasinMapProps) {
   /** Idempotent: (re)creates sources/layers, e.g. after a basemap switch. */
   const sync = useCallback(() => {
     const data = dataRef.current;
-    if (!map || !data || !map.isStyleLoaded()) return;
+    if (!map || !data || !isStyleReady(map)) return;
 
     const setSource = (id: string, geojson: FeatureCollection) => {
       const existing = map.getSource(id);

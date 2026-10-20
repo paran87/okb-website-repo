@@ -13,7 +13,8 @@ export function MapLoading({
   return (
     <div
       className={cn(
-        "absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm",
+        // Never blocks the map underneath: gestures work as soon as anything is drawn.
+        "pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-background/80",
         className,
       )}
       role="status"

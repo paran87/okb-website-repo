@@ -21,9 +21,11 @@ export function GisMapControls({ className }: { className?: string }) {
   const zoomIn = () => map?.zoomIn({ duration: 250 });
   const zoomOut = () => map?.zoomOut({ duration: 250 });
 
+  // Only the buttons take touches: the columns are as wide as their widest item, and an invisible strip
+  // beside the buttons that swallowed touches made pinches there fail.
   return (
     <div className={cn("pointer-events-none flex flex-col gap-2", className)}>
-      <div className="pointer-events-auto flex flex-col items-end gap-1.5">
+      <div className="flex flex-col items-end gap-1.5 [&>*]:pointer-events-auto">
         <div className="glass flex flex-col overflow-hidden rounded-lg shadow-panel">
           <IconButton
             icon={ZoomIn}
@@ -66,8 +68,8 @@ export function GisMapControls({ className }: { className?: string }) {
         />
       </div>
 
-      <div className="pointer-events-auto flex flex-wrap items-end gap-2">
-        <div className="glass rounded-md px-2.5 py-1.5 shadow-panel">
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="glass pointer-events-none rounded-md px-2.5 py-1.5 shadow-panel">
           <div
             className="mb-1 h-1 rounded-sm bg-foreground/80"
             style={{ width: 80 }}
@@ -79,7 +81,7 @@ export function GisMapControls({ className }: { className?: string }) {
           <button
             type="button"
             onClick={() => void copyCoordinates()}
-            className="glass flex items-center gap-2 rounded-md px-2.5 py-1.5 font-mono text-map-label shadow-panel transition-colors hover:text-foreground"
+            className="glass pointer-events-auto flex items-center gap-2 rounded-md px-2.5 py-1.5 font-mono text-map-label shadow-panel transition-colors hover:text-foreground"
             title="Copy coordinates"
           >
             <span className="text-foreground">{formatted.decimal}</span>

@@ -21,6 +21,7 @@ import {
   type OverlayId,
   type UrbCode,
 } from "@/features/waterways/config";
+import { isStyleReady } from "@/features/map/services/map.service";
 
 export interface OverlayState {
   on: boolean;
@@ -119,7 +120,7 @@ function WaterwaysLayers({
   }, [map, status]);
 
   useEffect(() => {
-    if (!map || status !== "ready" || !map.isStyleLoaded()) return;
+    if (!map || status !== "ready" || !isStyleReady(map)) return;
     const clear = (m: MapLibreMap) => {
       for (const layer of m.getStyle().layers ?? [])
         if (layer.id.startsWith("ww-")) m.removeLayer(layer.id);

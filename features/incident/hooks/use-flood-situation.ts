@@ -17,6 +17,14 @@ export interface PlacedLocation {
   resolved: ResolvedLocation;
 }
 
+/** One road index per session (the road network is loaded once): opening the page again does not rebuild it. */
+const roadIndexes = new WeakMap<RoadFeature[], ReturnType<typeof buildRoadIndex>>();
+function roadIndexOf(roads: RoadFeature[]) {
+  let index = roadIndexes.get(roads);
+  if (!index) roadIndexes.set(roads, (index = buildRoadIndex(roads)));
+  return index;
+}
+
 function useRoads() {
   const [roads, setRoads] = useState<RoadFeature[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -43,20 +51,23 @@ export function positionsOf(p: PlacedLocation): Position[] {
 export function useFloodSituation() {
   const query = useFloodMap();
   const { roads, failed: roadsFailed } = useRoads();
-  const index = useMemo(() => (roads ? buildRoadIndex(roads) : null), [roads]);
+  const index = useMemo(() => (roads ? roadIndexOf(roads) : null), [roads]);
   const data = query.data;
+  // The data is refreshed every minute with a new generatedAt; its locations keep their identity while they
+  // are unchanged (React Query structural sharing), so the map is only redrawn when the floods change.
+  const locations = data?.locations;
 
   const placed = useMemo<PlacedLocation[]>(() => {
-    if (!data || (!index && !roadsFailed)) return [];
+    if (!locations || (!index && !roadsFailed)) return [];
     const unplaced: ResolvedLocation = { lines: [], point: null, matched: [], basis: "none", places: 0 };
-    return data.locations
+    return locations
       .map((location) => ({ location, resolved: index ? resolveLocation(index, location) : unplaced }))
       .sort(
         (a, b) =>
           SEVERITY_RANK[b.location.severity] - SEVERITY_RANK[a.location.severity] ||
           Date.parse(b.location.reportedAt) - Date.parse(a.location.reportedAt),
       );
-  }, [data, index, roadsFailed]);
+  }, [locations, index, roadsFailed]);
 
   const lines = useMemo<FloodLineFeature[]>(
     () =>

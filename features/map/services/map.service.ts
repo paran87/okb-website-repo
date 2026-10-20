@@ -14,6 +14,19 @@ import {
 import { layerService } from "@/features/map/services/layer.service";
 import { useMapStore } from "@/features/map/store/map.store";
 
+/**
+ * The basemap style is in, so sources and layers can be added. Unlike map.isStyleLoaded(), this does not
+ * also wait for every tile in view to finish loading (many seconds on a slow phone connection).
+ */
+export function isStyleReady(map: MapLibreMap): boolean {
+  return Boolean((map as unknown as { style?: { _loaded?: boolean } }).style?._loaded);
+}
+
+/** A phone or tablet (touch is the main input). */
+export function isTouchScreen(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+}
+
 /** Map instance lifecycle helpers. */
 export const mapService = {
   createOptions(
@@ -21,9 +34,10 @@ export const mapService = {
     styleId: MapStyleId,
     maxBounds?: LngLatBoundsLike,
   ) {
-    // Phones and tablets: a lighter renderer and a pinch that only zooms/rotates (no two-finger tilt),
-    // so the map keeps up with the fingers and the gesture is not read as a tilt.
-    const touch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+    // Phones and tablets: a lighter renderer (no fade, no antialiasing, at most 2 device pixels per CSS pixel:
+    // a 3x screen otherwise draws 2.25 times as many pixels per frame) and a pinch that only zooms (rotation
+    // is turned off in MapContainer, two-finger tilt here), so the map keeps up with the fingers.
+    const touch = isTouchScreen();
     return {
       container: undefined as unknown as HTMLElement,
       style: getMapStyle(styleId),
@@ -36,6 +50,7 @@ export const mapService = {
       maxBounds,
       attributionControl: false as const,
       fadeDuration: touch ? 0 : 200,
+      ...(touch ? { pixelRatio: Math.min(window.devicePixelRatio || 1, 2) } : {}),
       antialias: !touch,
       touchPitch: false,
       pitchWithRotate: false,
