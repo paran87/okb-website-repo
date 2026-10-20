@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { ROUTES } from "@/lib/constants";
+import { ReportFloodFab } from "@/features/flood-report/components/report-flood-fab";
 
 /** Route-aware shell wrapper — dashboard and map routes use full-bleed layout. */
 export function CommandShell({ children }: { children: ReactNode }) {
@@ -36,6 +37,8 @@ export function CommandShell({ children }: { children: ReactNode }) {
       }
     >
       {children}
+      {/* Full-screen map pages (on phones): a round button that leaves the map's panels clear. */}
+      <ReportFloodFab round={(isFullBleed && pathname !== ROUTES.dashboard && pathname !== ROUTES.dashboardAlt) || isFullBleedMobile} />
     </AppShell>
   );
 }
