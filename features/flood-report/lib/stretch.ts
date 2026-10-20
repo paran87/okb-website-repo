@@ -10,7 +10,7 @@ export const STRETCH_MIN_M = 50;
 export const STRETCH_MAX_M = 2000;
 /** Photos whose GPS is less precise than this (± meters) are not used to draw a stretch. */
 export const STRETCH_ACCURACY_M = 50;
-/** A photo this far (meters) from a national road is not on the DPWH road network. */
+/** A photo this far (meters) from a national road (or an OpenStreetMap street) is not on it. */
 export const STRETCH_ON_ROAD_M = 35;
 /** The road route may be this much longer than the straight distance (ratio, plus 100 m) before it counts as another road. */
 export const STRETCH_MAX_DETOUR = 1.6;
@@ -46,7 +46,8 @@ export interface PhotoVerdict {
 
 /** Stored with the report (`record.mobile.stretch`). */
 export interface StoredStretch {
-  version: 1;
+  /** 2: OpenStreetMap streets are tried when the photos are not on a national road. */
+  version: 1 | 2;
   analyzedAt: string;
   result: StretchResult;
   /** Why, in plain words (shown in the details sheet and to operators). */

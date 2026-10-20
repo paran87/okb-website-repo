@@ -28,9 +28,9 @@ import type { UploadedPhoto } from "@/features/flood-report/types";
  *     Farther than 2 km: too far for one flood report.
  *  3. Photos taken more than 3 h apart, or faster than 60 km/h from one to the next, are not one walk through
  *     one flood (a wrong or borrowed geotag).
- *  4. Both ends must be on the DPWH road network (within 35 m of a national road) and connected by it, by a
- *     route not much longer than the straight distance; otherwise they are on roads the network does not have,
- *     or on different roads.
+ *  4. Both ends must be within 35 m of a road, connected by it by a route not much longer than the straight
+ *     distance: first the DPWH national road network, else OpenStreetMap streets (OSRM); otherwise they are off
+ *     the roads, or on different roads.
  *  5. Only when all of that holds, AI looks at the photos (when an Anthropic API key is set). A photo that shows
  *     no floodwater is dropped and the stretch is worked out again from the flooded photos only.
  *
@@ -298,6 +298,17 @@ export async function placePhotos(photos: Photo[]): Promise<Geometry> {
     }
   }
 
+  // National roads first (the program's network); streets from OpenStreetMap when the photos are not on one.
+  const national = await nationalRoute(a, b, far);
+  if (national.result === "stretch") return national;
+  const street = await streetRoute(a, b, far);
+  return street ?? national;
+}
+
+const reachOf = (p: Photo) => STRETCH_ON_ROAD_M + Math.min(p.accuracyM ?? 0, 15);
+
+/** The stretch along the DPWH national road network (roads.geojson), or why there is none. */
+async function nationalRoute(a: Photo, b: Photo, far: number): Promise<Geometry> {
   const roads = await serverRoadList();
   if (!roads) return { result: "off_network", reason: "The road network could not be loaded, so the report is one pin." };
   const pad = 300 / KY;
@@ -308,9 +319,8 @@ export async function placePhotos(photos: Photo[]): Promise<Geometry> {
     Math.max(a.latitude, b.latitude) + pad,
   ];
   const g = buildGraph(roads, box, (a.latitude + b.latitude) / 2);
-  const reach = (p: Photo) => STRETCH_ON_ROAD_M + Math.min(p.accuracyM ?? 0, 15);
-  const from = snap(g, a, reach(a));
-  const to = snap(g, b, reach(b));
+  const from = snap(g, a, reachOf(a));
+  const to = snap(g, b, reachOf(b));
   if (from === null || to === null) {
     const off = [from === null ? a.n : null, to === null ? b.n : null].filter((n): n is number => n !== null);
     return {
@@ -352,8 +362,87 @@ export async function placePhotos(photos: Photo[]): Promise<Geometry> {
   };
 }
 
+// ---- streets that are not national roads (OpenStreetMap) ---------------------------------------------
+
+/**
+ * OSRM on OpenStreetMap, walking profile (FOSSGIS, the service openstreetmap.org uses for directions): the street
+ * route between two points and how far each point is from a street. Walking, so one-way streets do not bend
+ * the route. Used only for reports whose photos are far apart and off the national roads, so a few requests a day.
+ */
+const OSRM = "https://routing.openstreetmap.de/routed-foot/route/v1/foot";
+
+interface OsrmRoute {
+  code: string;
+  routes?: { distance: number; geometry: { coordinates: [number, number][] }; legs?: { steps?: { name?: string; distance: number }[] }[] }[];
+  waypoints?: { distance: number }[];
+}
+
+/** The point halfway along a [lng, lat] line. */
+function lineHalfway(line: [number, number][]): [number, number] {
+  const seg = (p: [number, number], q: [number, number]) => dist({ latitude: p[1], longitude: p[0] }, { latitude: q[1], longitude: q[0] });
+  let rest = line.reduce((sum, p, i) => (i ? sum + seg(line[i - 1] as [number, number], p) : 0), 0) / 2;
+  for (let i = 1; i < line.length; i++) {
+    const p = line[i - 1] as [number, number];
+    const q = line[i] as [number, number];
+    const d = seg(p, q);
+    if (d >= rest && d > 0) return [round6(p[0] + ((q[0] - p[0]) * rest) / d), round6(p[1] + ((q[1] - p[1]) * rest) / d)];
+    rest -= d;
+  }
+  const first = line[0] ?? [0, 0];
+  return [round6(first[0]), round6(first[1])];
+}
+
+/** The stretch along OpenStreetMap streets, or why there is none; null when the routing service did not answer. */
+async function streetRoute(a: Photo, b: Photo, far: number): Promise<Geometry | null> {
+  let data: OsrmRoute;
+  try {
+    const res = await fetch(`${OSRM}/${a.longitude},${a.latitude};${b.longitude},${b.latitude}?overview=full&geometries=geojson&steps=true`, {
+      headers: { "User-Agent": "OKB Command Center (okb-ousc.site)" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) throw new Error(`OSRM ${res.status}`);
+    data = (await res.json()) as OsrmRoute;
+  } catch (err) {
+    log.warn({ err }, "Street routing (OpenStreetMap) unavailable; only national roads were tried");
+    return null;
+  }
+  const found = data.routes?.[0];
+  const [wa, wb] = data.waypoints ?? [];
+  if (data.code !== "Ok" || !found || !wa || !wb) return null;
+  const off = [wa.distance > reachOf(a) ? a.n : null, wb.distance > reachOf(b) ? b.n : null].filter((n): n is number => n !== null);
+  if (off.length) {
+    return {
+      result: "off_network",
+      reason: `${listN(off)} ${off.length === 1 ? "is" : "are"} not on a national road or a mapped street (more than ${STRETCH_ON_ROAD_M} m away), so the stretch cannot be traced along the road. Shown as one pin.`,
+    };
+  }
+  if (found.distance > far * STRETCH_MAX_DETOUR + 100) {
+    return {
+      result: "indirect",
+      reason: `The street route between photos ${a.n} and ${b.n} (${formatMeters(found.distance)}) is much longer than the ${formatMeters(far)} between them, so they are likely on different streets. Shown as one pin.`,
+    };
+  }
+  const line = found.geometry.coordinates.map(([x, y]): [number, number] => [round6(x), round6(y)]);
+  if (line.length < 2) return null;
+  const along = new Map<string, number>();
+  for (const step of found.legs?.flatMap((l) => l.steps ?? []) ?? []) {
+    if (step.name) along.set(step.name, (along.get(step.name) ?? 0) + step.distance);
+  }
+  const names = [...along].filter(([, m]) => m >= 30).map(([name]) => name);
+  return {
+    result: "stretch",
+    reason: `Flooded for about ${formatMeters(found.distance)} along ${names.slice(0, 3).join(", ") || "the street"} (a local street, from OpenStreetMap), from photo ${a.n} to photo ${b.n}.`,
+    line,
+    lengthM: Math.round(found.distance),
+    roads: names,
+    mid: lineHalfway(line),
+    ends: [a.n, b.n],
+  };
+}
+
 const stored = (geo: Geometry, photoCheck: StoredStretch["photoCheck"], verdicts: Record<string, PhotoVerdict>): StoredStretch => ({
-  version: 1,
+  version: 2,
   analyzedAt: new Date().toISOString(),
   result: geo.result,
   reason: geo.reason,

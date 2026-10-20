@@ -402,7 +402,10 @@ async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: 
     old.photos.length === input.photos.length &&
     input.photos.every((p, i) => (old.photos as { key?: unknown }[])[i]?.key === p.key);
   const stretch =
-    oldStretch && samePhotos && oldStretch.photoCheck !== "failed" ? oldStretch : await analyzeStretch(input.photos, oldStretch?.verdicts ?? {});
+    // Reports analysed before streets were tried (version 1) are checked again unless they already had a stretch.
+    oldStretch && samePhotos && oldStretch.photoCheck !== "failed" && (oldStretch.version === 2 || oldStretch.result === "stretch")
+      ? oldStretch
+      : await analyzeStretch(input.photos, oldStretch?.verdicts ?? {});
   const at = new Date().toISOString();
   const review = (row.record.review ?? {}) as { linkedMessageIds?: unknown; history?: unknown };
   const history = Array.isArray(review.history) ? review.history : [];
