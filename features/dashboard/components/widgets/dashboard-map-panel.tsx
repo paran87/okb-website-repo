@@ -56,7 +56,7 @@ export function DashboardMapPanel({ className, placed, lines, points, ready }: D
         className="h-full min-h-[280px] w-full lg:min-h-[360px] xl:min-h-0"
       />
       <FloodProneRoadsLayer placed={floodProne.placed} appearance="network" />
-      <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} />
+      <FloodLayers lines={lines} points={points} selectedKey={selected} focus={focus} onSelect={select} alerts />
 
       <ul
         className="glass pointer-events-none absolute left-3 top-12 z-20 space-y-1 rounded-lg px-2 py-1.5 text-[10px] font-medium text-foreground shadow-panel"
