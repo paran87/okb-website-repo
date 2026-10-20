@@ -1,0 +1,466 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ArrowLeft, Check, MapPin, SendHorizontal } from "lucide-react";
+import { FLOOD_SEVERITY, floodSeverity } from "@/features/incident/lib/flood-severity";
+import { cn } from "@/utils/cn";
+import {
+  FLOOD_LEVELS,
+  formatCoordinates,
+  formatDepth,
+  ROAD_STATUSES,
+  WEATHER,
+  type FloodLevelId,
+  type RoadStatusId,
+  type WeatherId,
+} from "../lib/options";
+import type { CapturedPhoto, FloodReportInput, PlaceName } from "../types";
+
+export type ReportFormValues = Omit<FloodReportInput, "id" | "photos">;
+
+/** "YYYY-MM-DDTHH:mm" in the phone's time zone, for <input type="datetime-local">. */
+function localInput(date: Date): string {
+  const d = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return d.toISOString().slice(0, 16);
+}
+
+function fromLocalInput(value: string): string | null {
+  const t = new Date(value);
+  return Number.isNaN(t.getTime()) ? null : t.toISOString();
+}
+
+function Section({ title, hint, children, error }: { title: string; hint?: string; children: ReactNode; error?: string | null }) {
+  return (
+    <section className="space-y-2.5">
+      <div>
+        <h3 className="text-base font-bold text-slate-900">{title}</h3>
+        {hint ? <p className="text-sm text-slate-500">{hint}</p> : null}
+      </div>
+      {children}
+      {error ? <p className="text-sm font-medium text-red-600">{error}</p> : null}
+    </section>
+  );
+}
+
+const input =
+  "h-12 w-full rounded-xl border border-slate-300 bg-white px-3.5 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20";
+
+function Chip({ active, onClick, children, className }: { active: boolean; onClick: () => void; children: ReactNode; className?: string }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={active}
+      onClick={onClick}
+      className={cn(
+        "min-h-11 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-colors",
+        active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-800 active:bg-slate-100",
+        className,
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** The short form shown after tapping send. */
+export function ReportForm({
+  photos,
+  place,
+  error,
+  onBack,
+  onSubmit,
+}: {
+  photos: CapturedPhoto[];
+  place: PlaceName | null;
+  error: string | null;
+  onBack: () => void;
+  onSubmit: (values: ReportFormValues) => void;
+}) {
+  // The most accurate photo position is the report's location.
+  const spot = useMemo(
+    () => [...photos].sort((a, b) => (a.accuracyM ?? 9999) - (b.accuracyM ?? 9999))[0] ?? null,
+    [photos],
+  );
+  const earliest = useMemo(() => new Date(Math.min(...photos.map((p) => Date.parse(p.takenAt)), Date.now())), [photos]);
+
+  const [locationText, setLocationText] = useState(place?.road ?? place?.label ?? "");
+  const [landmark, setLandmark] = useState("");
+  const [level, setLevel] = useState<FloodLevelId | null>(null);
+  const [depthCm, setDepthCm] = useState("");
+  const [road, setRoad] = useState<RoadStatusId | null>(null);
+  const [roadTouched, setRoadTouched] = useState(false);
+  const [sky, setSky] = useState<WeatherId | null>(null);
+  const [startedAt, setStartedAt] = useState(() => localInput(earliest));
+  const [receded, setReceded] = useState(false);
+  const [recededAt, setRecededAt] = useState(() => localInput(new Date()));
+  const [remarks, setRemarks] = useState("");
+  const [name, setName] = useState("");
+  const [contact, setContact] = useState("");
+  const [website, setWebsite] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // The street name may arrive after the form opens; fill it in unless the sender already typed one.
+  const suggested = place?.road ?? place?.label ?? "";
+  useEffect(() => {
+    if (suggested) setLocationText((current) => current || suggested);
+  }, [suggested]);
+
+  // A field's message goes away as soon as it is answered.
+  const clear = (key: string) =>
+    setErrors((e) => {
+      if (!(key in e)) return e;
+      const { [key]: _gone, ...rest } = e;
+      void _gone;
+      return rest;
+    });
+
+  const chooseLevel = (id: FloodLevelId) => {
+    clear("level");
+    setLevel(id);
+    if (!roadTouched) setRoad(FLOOD_LEVELS.find((l) => l.id === id)?.road ?? null);
+  };
+
+  const quickStart = (minutesAgo: number) => {
+    clear("time");
+    setStartedAt(localInput(new Date(Date.now() - minutesAgo * 60_000)));
+  };
+
+  const submit = () => {
+    const next: Record<string, string> = {};
+    const started = fromLocalInput(startedAt);
+    const recededIso = receded ? fromLocalInput(recededAt) : null;
+    const cm = depthCm.trim() ? Number(depthCm) : null;
+    if (locationText.trim().length < 2) next.location = "Enter the street or place.";
+    if (!level) next.level = "Choose the flood height.";
+    if (cm !== null && (!Number.isFinite(cm) || cm < 1 || cm > 1000)) next.level = "Enter the depth in centimeters (1–1000).";
+    if (!road) next.road = "Choose the road condition.";
+    if (!sky) next.weather = "Choose the weather.";
+    if (!started) next.time = "Enter when the flood started.";
+    else if (Date.parse(started) > Date.now() + 5 * 60_000) next.time = "The start time cannot be in the future.";
+    if (receded && !recededIso) next.time = "Enter when the flood receded.";
+    if (started && recededIso && Date.parse(recededIso) < Date.parse(started)) next.time = "The flood cannot recede before it started.";
+    if (recededIso && Date.parse(recededIso) > Date.now() + 5 * 60_000) next.time = "The receded time cannot be in the future.";
+    if (contact.trim() && !/^\+?[0-9\s-]{7,20}$/.test(contact.trim())) next.contact = "Enter a valid mobile number, or leave it empty.";
+    setErrors(next);
+    if (Object.keys(next).length || !spot || !level || !road || !sky || !started) {
+      requestAnimationFrame(() =>
+        document.querySelector("[data-form-error]")?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      );
+      return;
+    }
+    onSubmit({
+      latitude: spot.latitude,
+      longitude: spot.longitude,
+      accuracyM: spot.accuracyM,
+      locationText: locationText.trim(),
+      landmark: landmark.trim() || null,
+      place,
+      level,
+      depthCm: cm,
+      roadStatus: road,
+      weather: sky,
+      startedAt: started,
+      recededAt: recededIso,
+      remarks: remarks.trim() || null,
+      senderName: name.trim() || null,
+      contactNumber: contact.trim() || null,
+      website,
+    });
+  };
+
+  const err = (key: string) => (errors[key] ? errors[key] : null);
+  const firstError = Object.keys(errors)[0];
+
+  return (
+    <div className="fixed inset-0 z-30 flex flex-col bg-slate-100 text-slate-900">
+      <header className="flex shrink-0 items-center gap-2 bg-black px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+        <button type="button" onClick={onBack} aria-label="Back to camera" className="flex size-11 items-center justify-center rounded-full bg-white/15">
+          <ArrowLeft className="size-6" aria-hidden />
+        </button>
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold leading-tight">Flood details</h2>
+          <p className="text-xs text-white/70">A few taps, then send</p>
+        </div>
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto max-w-md space-y-6 px-4 py-4">
+          {/* Photos */}
+          <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+            {photos.map((p, i) => (
+              // eslint-disable-next-line @next/next/no-img-element -- local object URL
+              <img key={p.id} src={p.url} alt={`Photo ${i + 1}`} className="h-20 w-28 shrink-0 rounded-lg object-cover ring-1 ring-slate-300" />
+            ))}
+          </div>
+
+          <div data-form-error={firstError === "location" ? "" : undefined}>
+            <Section title="Where is the flood?" error={err("location")}>
+              <input
+                className={input}
+                value={locationText}
+                onChange={(e) => {
+                  clear("location");
+                  setLocationText(e.target.value);
+                }}
+                placeholder="Street or place, e.g. España Blvd"
+                maxLength={200}
+                autoComplete="off"
+              />
+              <input
+                className={input}
+                value={landmark}
+                onChange={(e) => setLandmark(e.target.value)}
+                placeholder="Nearest landmark or corner (optional)"
+                maxLength={200}
+                autoComplete="off"
+              />
+              {spot ? (
+                <p className="flex items-start gap-1.5 text-sm text-slate-500">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden />
+                  <span>
+                    {place ? `${place.label} · ` : ""}
+                    {formatCoordinates(spot.latitude, spot.longitude, 5)}
+                    {spot.accuracyM !== null ? ` (±${Math.round(spot.accuracyM)} m)` : ""}
+                  </span>
+                </p>
+              ) : null}
+            </Section>
+          </div>
+
+          <div data-form-error={firstError === "level" ? "" : undefined}>
+            <Section title="How deep is the flood?" hint="Compare with the gutter, tires or your body." error={err("level")}>
+              <div role="radiogroup" aria-label="Flood height" className="grid grid-cols-2 gap-2">
+                {FLOOD_LEVELS.map((l) => (
+                  <Chip key={l.id} active={level === l.id} onClick={() => chooseLevel(l.id)} className="flex items-center gap-2.5">
+                    <span className="h-8 w-1.5 shrink-0 rounded-full" style={{ background: FLOOD_SEVERITY[floodSeverity(l.meters)].color }} />
+                    <span>
+                      {l.label}
+                      <span className={cn("block text-xs font-normal", level === l.id ? "text-white/75" : "text-slate-500")}>
+                        {l.inches} · {formatDepth(l.meters)}
+                      </span>
+                    </span>
+                  </Chip>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <span className="shrink-0">Exact depth if measured:</span>
+                <input
+                  className={cn(input, "h-11 w-24")}
+                  inputMode="numeric"
+                  value={depthCm}
+                  onChange={(e) => {
+                    clear("level");
+                    setDepthCm(e.target.value.replace(/[^\d]/g, "").slice(0, 4));
+                  }}
+                  placeholder="cm"
+                  aria-label="Exact depth in centimeters"
+                />
+                <span>cm</span>
+              </label>
+            </Section>
+          </div>
+
+          <div data-form-error={firstError === "road" ? "" : undefined}>
+            <Section title="Can vehicles pass?" error={err("road")}>
+              <div role="radiogroup" aria-label="Road condition" className="grid gap-2">
+                {ROAD_STATUSES.map((r) => (
+                  <Chip
+                    key={r.id}
+                    active={road === r.id}
+                    onClick={() => {
+                      clear("road");
+                      setRoad(r.id);
+                      setRoadTouched(true);
+                    }}
+                  >
+                    {r.label}
+                  </Chip>
+                ))}
+              </div>
+            </Section>
+          </div>
+
+          <div data-form-error={firstError === "weather" ? "" : undefined}>
+            <Section title="Weather right now" error={err("weather")}>
+              <div role="radiogroup" aria-label="Weather" className="grid grid-cols-2 gap-2">
+                {WEATHER.map((w) => (
+                  <Chip
+                    key={w.id}
+                    active={sky === w.id}
+                    onClick={() => {
+                      clear("weather");
+                      setSky(w.id);
+                    }}
+                  >
+                    <span aria-hidden className="mr-1.5">
+                      {w.emoji}
+                    </span>
+                    {w.label}
+                  </Chip>
+                ))}
+              </div>
+            </Section>
+          </div>
+
+          <div data-form-error={firstError === "time" ? "" : undefined}>
+            <Section title="When did the flood start?" error={err("time")}>
+              <input type="datetime-local" className={input} value={startedAt} max={localInput(new Date())} onChange={(e) => {
+                  clear("time");
+                  setStartedAt(e.target.value);
+                }}
+              />
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["Just now", 0],
+                  ["30 min ago", 30],
+                  ["1 hr ago", 60],
+                  ["2 hrs ago", 120],
+                  ["3 hrs ago", 180],
+                ].map(([label, minutes]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => quickStart(minutes as number)}
+                    className="h-10 rounded-full border border-slate-300 bg-white px-3.5 text-sm font-medium text-slate-700 active:bg-slate-100"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div role="radiogroup" aria-label="Has the flood receded?" className="grid grid-cols-2 gap-2 pt-1">
+                <Chip active={!receded} onClick={() => setReceded(false)}>
+                  Still flooded
+                </Chip>
+                <Chip active={receded} onClick={() => setReceded(true)}>
+                  Already receded
+                </Chip>
+              </div>
+              {receded ? (
+                <label className="block space-y-1.5">
+                  <span className="text-sm font-medium text-slate-600">Time the flood receded</span>
+                  <input type="datetime-local" className={input} value={recededAt} max={localInput(new Date())} onChange={(e) => {
+                      clear("time");
+                      setRecededAt(e.target.value);
+                    }}
+                  />
+                </label>
+              ) : null}
+            </Section>
+          </div>
+
+          <Section title="Other details" hint="Optional: stranded vehicles, clogged drainage, rising water…">
+            <textarea
+              className={cn(input, "h-24 resize-none py-3")}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              maxLength={1000}
+              placeholder="Anything operators should know"
+            />
+          </Section>
+
+          <div data-form-error={firstError === "contact" ? "" : undefined}>
+            <Section title="About you" hint="Optional. Leave empty to report anonymously." error={err("contact")}>
+              <input className={input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name (optional)" maxLength={80} autoComplete="name" />
+              <input
+                className={input}
+                value={contact}
+                onChange={(e) => {
+                  clear("contact");
+                  setContact(e.target.value);
+                }}
+                placeholder="Mobile number (optional)"
+                inputMode="tel"
+                maxLength={20}
+                autoComplete="tel"
+              />
+              <p className="text-xs text-slate-500">Your name is shown with the report. Your number is seen only by OKB operators.</p>
+            </Section>
+          </div>
+
+          {/* Honeypot for bots; hidden from people and screen readers. */}
+          <input
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+            className="absolute -left-[9999px] h-px w-px opacity-0"
+            name="website"
+          />
+
+          {error ? <p className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{error}</p> : null}
+          <p className="text-xs text-slate-500">
+            By sending, you agree that your photos and these details are shown on the public flood map and used by the OKB Command Center.
+          </p>
+        </div>
+      </div>
+
+      <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
+        <button
+          type="button"
+          onClick={submit}
+          className="mx-auto flex h-14 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-black text-base font-bold text-white active:bg-slate-800"
+        >
+          <SendHorizontal className="size-5" aria-hidden />
+          Send report · {photos.length} photo{photos.length === 1 ? "" : "s"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Upload / save progress, then the confirmation. */
+export function SendProgress({
+  stage,
+  progress,
+  total,
+  reference,
+  onViewMap,
+  onAnother,
+}: {
+  stage: "uploading" | "saving" | "done";
+  progress: number;
+  total: number;
+  reference: string | null;
+  onViewMap: () => void;
+  onAnother: () => void;
+}) {
+  if (stage === "done") {
+    return (
+      <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-black px-8 text-center text-white">
+        <span className="flex size-20 items-center justify-center rounded-full bg-emerald-500">
+          <Check className="size-11" strokeWidth={3} aria-hidden />
+        </span>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">Report sent. Salamat!</h2>
+          <p className="text-white/75">Your report is now on the flood map. OKB operators will verify it from your photos.</p>
+          {reference ? <p className="font-mono text-sm text-amber-300">{reference}</p> : null}
+        </div>
+        <div className="grid w-full max-w-xs gap-3">
+          <button type="button" onClick={onViewMap} className="h-14 rounded-2xl bg-white text-base font-bold text-black">
+            View on map
+          </button>
+          <button type="button" onClick={onAnother} className="h-12 rounded-2xl border border-white/30 font-semibold">
+            Report another flood
+          </button>
+        </div>
+      </div>
+    );
+  }
+  const pct = Math.round(progress * 100);
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-black/90 px-8 text-center text-white" role="status">
+      <SendHorizontal className="size-10 animate-pulse" aria-hidden />
+      <div className="space-y-1">
+        <p className="text-lg font-bold">{stage === "uploading" ? `Uploading photos…` : "Saving your report…"}</p>
+        <p className="text-sm text-white/70">{stage === "uploading" ? `${Math.min(total, Math.floor(progress * total) + 1)} of ${total}` : "Almost done"}</p>
+      </div>
+      <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-white/20">
+        <div className="h-full rounded-full bg-amber-400 transition-[width] duration-200" style={{ width: `${stage === "saving" ? 100 : pct}%` }} />
+      </div>
+      <p className="text-xs text-white/50">Keep this page open.</p>
+    </div>
+  );
+}

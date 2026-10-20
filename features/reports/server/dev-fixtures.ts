@@ -155,6 +155,8 @@ function record(s: Spec): BridgeReportRecord {
       : null,
     processing: { attempts: processed ? 1 : 0, lastAttemptAt: processed ? s.at : null, lastError: null },
     review: { linkedMessageIds: [], history: [] },
+    photos: [],
+    contactNumber: null,
     createdAt: new Date(Date.parse(s.at) + 40_000).toISOString(),
     updatedAt: new Date(Date.parse(s.at) + 90_000).toISOString(),
   };

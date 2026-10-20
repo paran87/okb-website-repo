@@ -1,17 +1,18 @@
 import "server-only";
 import { z } from "zod";
 import { NotFoundError, ValidationError } from "@/lib/api/errors";
-import type {
-  BridgeReportRecord,
-  CountBucket,
-  IncidentSummary,
-  LocationHistory,
-  ReportAnalytics,
-  ReportDetail,
-  ReportFacets,
-  ReportListItem,
-  ReportListResult,
-  SituationSummary,
+import {
+  MOBILE_REPORT_PLATFORM,
+  type BridgeReportRecord,
+  type CountBucket,
+  type IncidentSummary,
+  type LocationHistory,
+  type ReportAnalytics,
+  type ReportDetail,
+  type ReportFacets,
+  type ReportListItem,
+  type ReportListResult,
+  type SituationSummary,
 } from "@/features/reports/types";
 import {
   manilaDayKey,
@@ -239,7 +240,9 @@ export async function getReportDetail(store: ReportStore, id: string): Promise<R
   const record = await store.getReport(id);
   if (!record) throw new NotFoundError("Report not found");
 
-  const canCompare = Boolean(record.extraction) && FLOOD_TYPES.has(record.reportType ?? "");
+  const mobile = record.platform === MOBILE_REPORT_PLATFORM;
+  // Mobile reports come from unrelated people at unrelated places, so they do not form a monitoring series.
+  const canCompare = !mobile && Boolean(record.extraction) && FLOOD_TYPES.has(record.reportType ?? "");
   const [candidates, incidents, processingLog] = await Promise.all([
     canCompare ? seriesCandidates(store, record) : Promise.resolve([]),
     store.incidentsForReports([record.id]),
@@ -248,7 +251,9 @@ export async function getReportDetail(store: ReportStore, id: string): Promise<R
   const series = canCompare ? buildSeries(record, candidates) : null;
   const reviewable = record.status === "extracted" || record.status === "needs_review";
   const busy = record.status === "processing";
-  const reviewUnavailableReason = !store.reviewEnabled
+  // Mobile reports are written by the Command Center itself and reviewed in Supabase directly.
+  const reviewEnabled = store.reviewEnabled || (mobile && store.kind === "supabase");
+  const reviewUnavailableReason = !reviewEnabled
     ? "Review actions require OKB_BRIDGE_API_URL and OKB_BRIDGE_ADMIN_TOKEN on the server."
     : null;
 
@@ -272,16 +277,18 @@ export async function getReportDetail(store: ReportStore, id: string): Promise<R
     series: series?.comparison ?? null,
     seriesNote: series
       ? series.note
-      : record.extraction
+      : mobile || record.extraction
         ? null
         : "Monitoring comparison is available after AI extraction completes.",
     incidents: incidents ?? [],
     incidentStorage: incidents === null ? "not_configured" : "ready",
     processingLog,
+    photos: record.photos,
+    contactNumber: record.contactNumber,
     actions: {
-      canMarkReviewed: store.reviewEnabled && reviewable && Boolean(record.extraction),
-      canReject: store.reviewEnabled && !busy && record.status !== "rejected",
-      canReopen: store.reviewEnabled && (record.status === "approved" || record.status === "rejected"),
+      canMarkReviewed: reviewEnabled && reviewable && Boolean(record.extraction),
+      canReject: reviewEnabled && !busy && record.status !== "rejected",
+      canReopen: reviewEnabled && (record.status === "approved" || record.status === "rejected"),
       canCreateIncident: incidents !== null && !busy,
       reviewUnavailableReason,
     },

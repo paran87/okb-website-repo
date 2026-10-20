@@ -1,13 +1,14 @@
 import "server-only";
 import { ConflictError, NotFoundError } from "@/lib/api/errors";
 import { logger } from "@/lib/logger";
-import type {
-  IncidentRecord,
-  IncidentSeverity,
-  IncidentStatus,
-  IncidentSummary,
-  ProcessingLogEntry,
-  ReviewAction,
+import {
+  MOBILE_REPORT_PLATFORM,
+  type IncidentRecord,
+  type IncidentSeverity,
+  type IncidentStatus,
+  type IncidentSummary,
+  type ProcessingLogEntry,
+  type ReviewAction,
 } from "@/features/reports/types";
 import type { ReportsConfig } from "@/features/reports/server/config";
 import { parseRecord, type ReportRow } from "@/features/reports/server/record";
@@ -27,10 +28,12 @@ import {
  * pagination all run in the database; the browser only receives one page of
  * already-shaped DTOs.
  *
- * Writes to `okb_bridge_reports` are NEVER made here: the bridge backend keeps
- * reports in memory and would overwrite them. Reviews go through the bridge
- * REST API instead. The only table this module writes is
- * `okb_command_incidents` (owned by the Command Center).
+ * Writes to bridge reports in `okb_bridge_reports` are NEVER made here: the
+ * bridge backend keeps its reports in memory and would overwrite them. Reviews
+ * go through the bridge REST API instead. The exceptions are mobile reports
+ * (platform `okb_mobile`): the Command Center created those rows itself and the
+ * bridge never writes them, so their reviews are saved here directly. The other
+ * table this module writes is `okb_command_incidents` (owned by the Command Center).
  */
 
 const REPORTS = "okb_bridge_reports";
@@ -120,12 +123,12 @@ export function createSupabaseStore(config: ReportsConfig): ReportStore {
   async function rest(
     table: string,
     params: URLSearchParams,
-    opts: { method?: "GET" | "POST"; body?: unknown; count?: boolean } = {},
+    opts: { method?: "GET" | "POST" | "PATCH"; body?: unknown; count?: boolean } = {},
   ): Promise<RestResult> {
     const url = `${baseUrl}/rest/v1/${table}?${params.toString()}`;
     const prefer: string[] = [];
     if (opts.count) prefer.push("count=exact");
-    if (opts.method === "POST") prefer.push("return=representation");
+    if (opts.method === "POST" || opts.method === "PATCH") prefer.push("return=representation");
     let res: Response;
     try {
       res = await fetch(url, {
@@ -341,6 +344,47 @@ export function createSupabaseStore(config: ReportsConfig): ReportStore {
     },
 
     async review(id: string, action: ReviewAction, reviewer: string, notes: string | null) {
+      const own = await rest(
+        REPORTS,
+        new URLSearchParams({ select: "platform,status,record", id: `eq.${id}`, platform: `eq.${MOBILE_REPORT_PLATFORM}`, limit: "1" }),
+      );
+      const mobile = (own.data as { status: string | null; record: Record<string, unknown> }[])[0];
+      if (mobile) {
+        // Same rules as the bridge's review endpoint (lib/reports.js).
+        const status = mobile.status ?? "needs_review";
+        let next: string;
+        if (action === "approve") {
+          if (status !== "extracted" && status !== "needs_review") throw new ConflictError(`Cannot approve a report in status ${status}.`);
+          next = "approved";
+        } else if (action === "reject") {
+          next = "rejected";
+        } else {
+          if (status !== "approved" && status !== "rejected") throw new ConflictError("Only approved or rejected reports can be reopened.");
+          next = "needs_review";
+        }
+        const at = new Date().toISOString();
+        const record = mobile.record ?? {};
+        const review = (record.review && typeof record.review === "object" ? record.review : {}) as {
+          linkedMessageIds?: unknown;
+          history?: unknown;
+        };
+        const history = Array.isArray(review.history) ? review.history : [];
+        const entry = { action, at, reviewer: reviewer.slice(0, 100), notes: notes ? notes.slice(0, 1000) : null };
+        await rest(REPORTS, new URLSearchParams({ id: `eq.${id}`, select: "id" }), {
+          method: "PATCH",
+          body: {
+            status: next,
+            updated_at: at,
+            record: {
+              ...record,
+              status: next,
+              updatedAt: at,
+              review: { linkedMessageIds: [], ...review, history: [...history, entry].slice(-20) },
+            },
+          },
+        });
+        return;
+      }
       if (!config.bridgeApiUrl || !config.bridgeAdminToken) {
         throw new ReportsBackendError("Review actions are not configured (OKB_BRIDGE_API_URL / OKB_BRIDGE_ADMIN_TOKEN).");
       }

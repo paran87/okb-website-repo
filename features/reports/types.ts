@@ -20,6 +20,24 @@
 /** Messaging platforms the bridge captures. New platforms appear as new ids. */
 export type ReportPlatform = "whatsapp" | "viber" | (string & {});
 
+/**
+ * Reports the public send from the OKB mobile flood report page (/report-flood). The Command Center writes
+ * these rows into okb_bridge_reports itself (the bridge never sees them as messages), so they are reviewed
+ * here directly instead of through the bridge API.
+ */
+export const MOBILE_REPORT_PLATFORM = "okb_mobile";
+
+/** A geotagged photo attached to a mobile report (stored in Cloudflare R2). */
+export interface ReportPhoto {
+  key: string;
+  /** Same-origin URL that streams the photo. */
+  url: string;
+  latitude: number | null;
+  longitude: number | null;
+  accuracyM: number | null;
+  takenAt: string | null;
+}
+
 /** Processing / review states written by the bridge backend. */
 export type BridgeReportStatus =
   | "received"
@@ -187,6 +205,10 @@ export interface BridgeReportRecord {
     linkedMessageIds: string[];
     history: ReviewHistoryEntry[];
   };
+  /** Geotagged photos (mobile reports only; WhatsApp media stays in the Operations tab). */
+  photos: ReportPhoto[];
+  /** Sender's contact number (mobile reports, operators only; never on the public map). */
+  contactNumber: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -463,6 +485,8 @@ export interface ReportDetail {
   incidents: IncidentSummary[];
   incidentStorage: IncidentStorageState;
   processingLog: ProcessingLogEntry[];
+  photos: ReportPhoto[];
+  contactNumber: string | null;
   actions: {
     canMarkReviewed: boolean;
     canReject: boolean;

@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ClipboardCopy,
+  Camera,
   ExternalLink,
   FileText,
   GitCompareArrows,
@@ -26,7 +27,13 @@ import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
-import type { ExtractedField, ExtractedLocation, ReportDetail, ReviewAction } from "@/features/reports/types";
+import {
+  MOBILE_REPORT_PLATFORM,
+  type ExtractedField,
+  type ExtractedLocation,
+  type ReportDetail,
+  type ReviewAction,
+} from "@/features/reports/types";
 import { formatClock, formatDateTime, formatFull, formatMeters } from "@/features/reports/lib/format";
 import {
   INCIDENT_STATUS_META,
@@ -251,6 +258,8 @@ export function ReportDetailView({
   const ex = r.extraction;
   const meta = r.extractionMeta;
   const status = statusMeta(r.status);
+  // Mobile reports are typed into a form by the sender: no AI is involved.
+  const fromForm = r.source.platform === MOBILE_REPORT_PLATFORM;
 
   return (
     <div className="space-y-4">
@@ -269,7 +278,11 @@ export function ReportDetailView({
         <h2 className="text-heading text-foreground">
           {ex?.reportTitle.status === "provided" ? ex.reportTitle.value : reportTypeLabel(r.reportType)}
         </h2>
-        <p className="text-caption text-muted-foreground">{status.hint}</p>
+        <p className="text-caption text-muted-foreground">
+          {fromForm && (r.status === "needs_review" || r.status === "extracted")
+            ? "Sent by a member of the public from the OKB mobile page. Check the geotagged photos, then mark it reviewed or reject it (rejected reports leave the public map)."
+            : status.hint}
+        </p>
         <div className="flex flex-wrap items-start gap-2">
           <ReviewBar report={r} />
           <Button
@@ -294,6 +307,34 @@ export function ReportDetailView({
         </div>
       </div>
 
+      {r.photos.length ? (
+        <OpsSection title={`Geotagged photos · ${r.photos.length}`} icon={Camera}>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            {r.photos.map((p, i) => (
+              <a
+                key={p.key}
+                href={p.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group relative block aspect-[4/3] overflow-hidden rounded-lg bg-muted ring-1 ring-border"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- streamed from R2 through /api/flood-reports/photo */}
+                <img src={p.url} alt={`Photo ${i + 1}`} loading="lazy" className="size-full object-cover transition-transform group-hover:scale-105" />
+                {p.latitude !== null && p.longitude !== null ? (
+                  <span className="absolute inset-x-0 bottom-0 truncate bg-black/55 px-1.5 py-0.5 font-mono text-[10px] text-white">
+                    {p.latitude.toFixed(5)}, {p.longitude.toFixed(5)}
+                    {p.accuracyM !== null ? ` ±${Math.round(p.accuracyM)} m` : ""}
+                  </span>
+                ) : null}
+              </a>
+            ))}
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Taken on the sender&apos;s phone with the GPS position stamped on the image and written in its EXIF data. Tap a photo to open it full size.
+          </p>
+        </OpsSection>
+      ) : null}
+
       <div className={cn("grid gap-4", variant === "page" && "xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]")}>
         <div className="min-w-0 space-y-4">
           {/* Traceability */}
@@ -302,9 +343,10 @@ export function ReportDetailView({
               <InfoRow label="Source" value={platformLabel(s.platform)} />
               <InfoRow label="Group" value={s.groupName} />
               <InfoRow label="Sender" value={s.senderName} />
+              {fromForm ? <InfoRow label="Contact number" value={r.contactNumber ?? "Not given"} mono={Boolean(r.contactNumber)} /> : null}
               {s.senderId ? <InfoRow label="Sender identifier" value={s.senderId} mono /> : null}
               <InfoRow label="Message time" value={s.messageTimestamp ? formatDateTime(s.messageTimestamp) : null} hint={formatFull(s.messageTimestamp)} />
-              <InfoRow label="Received by bridge" value={formatDateTime(s.receivedAt ?? r.createdAt)} hint={formatFull(s.receivedAt ?? r.createdAt)} />
+              <InfoRow label={fromForm ? "Received" : "Received by bridge"} value={formatDateTime(s.receivedAt ?? r.createdAt)} hint={formatFull(s.receivedAt ?? r.createdAt)} />
               <InfoRow label="Report ID" value={<span>{r.reference} <span className="text-muted-foreground">· {r.id}</span></span>} mono />
               <InfoRow label="Source message ID" value={s.clientMessageId ?? r.messageId} mono />
               <InfoRow
@@ -313,7 +355,7 @@ export function ReportDetailView({
                   r.reportType ? (
                     <span className="inline-flex flex-wrap items-center gap-2">
                       {reportTypeLabel(r.reportType)}
-                      <AiTag label={`AI · ${r.classification?.confidence ?? "?"} confidence`} />
+                      {fromForm ? null : <AiTag label={`AI · ${r.classification?.confidence ?? "?"} confidence`} />}
                     </span>
                   ) : null
                 }
@@ -327,7 +369,7 @@ export function ReportDetailView({
 
           {/* AI summary — separate from source */}
           {r.aiSummary ? (
-            <AiPanel title="AI Summary" footer={meta?.extractedAt ? <span>· {formatDateTime(meta.extractedAt)}</span> : null}>
+            <AiPanel title={fromForm ? "Summary" : "AI Summary"} footer={meta?.extractedAt ? <span>· {formatDateTime(meta.extractedAt)}</span> : null}>
               <div className="whitespace-pre-line">{r.aiSummary}</div>
             </AiPanel>
           ) : (
@@ -344,7 +386,7 @@ export function ReportDetailView({
 
           {/* Original message */}
           <OpsSection
-            title="Source report · original message"
+            title={fromForm ? "Source report · as sent from the mobile form" : "Source report · original message"}
             icon={FileText}
             actions={
               s.messageText ? (
@@ -367,8 +409,9 @@ export function ReportDetailView({
               <p className="text-caption text-muted-foreground">The message has no text (media-only message).</p>
             )}
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Preserved exactly as received from {platformLabel(s.platform)} · {s.groupName ?? "unnamed group"} · {s.senderName ?? "unknown sender"}.
-              AI processing never modifies it.
+              {fromForm
+                ? "Written from the sender's form answers when the report was received. It is never changed afterwards."
+                : `Preserved exactly as received from ${platformLabel(s.platform)} · ${s.groupName ?? "unnamed group"} · ${s.senderName ?? "unknown sender"}. AI processing never modifies it.`}
             </p>
           </OpsSection>
         </div>
@@ -474,7 +517,11 @@ export function ReportDetailView({
           ) : null}
 
           {/* AI extracted information */}
-          <OpsSection title="AI extracted information" icon={ListTree} actions={<AiTag label="AI-extracted" />}>
+          <OpsSection
+            title={fromForm ? "Submitted information" : "AI extracted information"}
+            icon={ListTree}
+            actions={fromForm ? null : <AiTag label="AI-extracted" />}
+          >
             {ex ? (
               <div className="space-y-4">
                 <dl className="divide-y divide-border/60">

@@ -1,0 +1,228 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { formatDistanceToNowStrict } from "date-fns";
+import { BadgeCheck, ChevronLeft, ChevronRight, CloudRain, Clock, Navigation, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
+import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
+import { cn } from "@/utils/cn";
+import { formatDepth } from "../lib/options";
+import type { PublicFloodReport, ReportPhoto } from "../types";
+import { reportColor } from "./flood-map";
+
+function clock(iso: string | null): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
+/** Full-screen swipeable photo viewer. */
+export function PhotoViewer({
+  photos,
+  index,
+  onClose,
+  onIndex,
+}: {
+  photos: { url: string; alt: string }[];
+  index: number | null;
+  onClose: () => void;
+  onIndex: (i: number) => void;
+}) {
+  const [touchX, setTouchX] = useState<number | null>(null);
+  useEffect(() => {
+    if (index === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") onIndex(Math.min(photos.length - 1, index + 1));
+      if (e.key === "ArrowLeft") onIndex(Math.max(0, index - 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, photos.length, onClose, onIndex]);
+  if (index === null || !photos[index]) return null;
+  const photo = photos[index];
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex flex-col bg-black"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Photo"
+      onTouchStart={(e) => setTouchX(e.touches[0]?.clientX ?? null)}
+      onTouchEnd={(e) => {
+        const end = e.changedTouches[0]?.clientX;
+        if (touchX === null || end === undefined) return;
+        if (end - touchX < -50) onIndex(Math.min(photos.length - 1, index + 1));
+        if (end - touchX > 50) onIndex(Math.max(0, index - 1));
+        setTouchX(null);
+      }}
+    >
+      <div className="flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+        <span className="text-sm font-semibold">
+          {index + 1} / {photos.length}
+        </span>
+        <button type="button" onClick={onClose} aria-label="Close photo" className="flex size-11 items-center justify-center rounded-full bg-white/15">
+          <X className="size-6" aria-hidden />
+        </button>
+      </div>
+      <div className="relative flex min-h-0 flex-1 items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route */}
+        <img src={photo.url} alt={photo.alt} className="max-h-full max-w-full object-contain" />
+        {index > 0 ? (
+          <button
+            type="button"
+            onClick={() => onIndex(index - 1)}
+            aria-label="Previous photo"
+            className="absolute left-2 flex size-11 items-center justify-center rounded-full bg-black/50 text-white"
+          >
+            <ChevronLeft className="size-6" aria-hidden />
+          </button>
+        ) : null}
+        {index < photos.length - 1 ? (
+          <button
+            type="button"
+            onClick={() => onIndex(index + 1)}
+            aria-label="Next photo"
+            className="absolute right-2 flex size-11 items-center justify-center rounded-full bg-black/50 text-white"
+          >
+            <ChevronRight className="size-6" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+      <div className="h-[max(1rem,env(safe-area-inset-bottom))]" />
+    </div>
+  );
+}
+
+function Row({ icon: Icon, label, value }: { icon: typeof Clock; label: string; value: string | null }) {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-3 py-2.5">
+      <Icon className="mt-0.5 size-5 shrink-0 text-slate-400" aria-hidden />
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        <p className="break-words text-[15px] text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+/** What a tapped flood report shows: photos, depth, road, weather, times. */
+export function ReportDetails({ report }: { report: PublicFloodReport }) {
+  const [viewer, setViewer] = useState<number | null>(null);
+  const [slide, setSlide] = useState(0);
+  const color = reportColor(report);
+  const severity = FLOOD_SEVERITY[report.severity];
+  const photos = report.photos.map((p: ReportPhoto, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${report.locationText}` }));
+  const directions = `https://www.google.com/maps/dir/?api=1&destination=${report.latitude},${report.longitude}`;
+
+  const share = async () => {
+    const text = `Flood report: ${report.levelLabel ?? "Flooding"} at ${report.locationText}${report.area ? `, ${report.area}` : ""}`;
+    const url = `${window.location.origin}${window.location.pathname}?report=${report.id}`;
+    if (navigator.share) {
+      await navigator.share({ title: "OKB flood report", text, url }).catch(() => undefined);
+    } else {
+      await navigator.clipboard?.writeText(`${text} ${url}`).catch(() => undefined);
+    }
+  };
+
+  return (
+    <div className="space-y-4 pb-2">
+      {photos.length ? (
+        <div className="relative -mx-4">
+          <div
+            className="flex snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none]"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              setSlide(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+            }}
+          >
+            {photos.map((p, i) => (
+              <button
+                key={p.url}
+                type="button"
+                onClick={() => setViewer(i)}
+                className="relative aspect-[4/3] w-full shrink-0 snap-center bg-slate-200"
+                aria-label={`Open photo ${i + 1}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route */}
+                <img src={p.url} alt={p.alt} loading="lazy" className="size-full object-cover" />
+              </button>
+            ))}
+          </div>
+          {photos.length > 1 ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+              {photos.map((p, i) => (
+                <span key={p.url} className={cn("h-1.5 rounded-full bg-white/70 shadow transition-all", i === slide ? "w-5 bg-white" : "w-1.5")} />
+              ))}
+            </div>
+          ) : null}
+          <span className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
+            {photos.length} photo{photos.length === 1 ? "" : "s"}
+          </span>
+        </div>
+      ) : null}
+
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold text-white" style={{ background: color }}>
+            {report.receded ? "Receded" : report.levelLabel ?? severity.label}
+            {report.depthM !== null ? ` · ${formatDepth(report.depthM)}` : ""}
+          </span>
+          {report.verified ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+              <BadgeCheck className="size-4" aria-hidden />
+              Verified by OKB
+            </span>
+          ) : (
+            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Not yet verified</span>
+          )}
+        </div>
+        <div>
+          <p className="text-xl font-bold leading-tight text-slate-900">{report.locationText}</p>
+          {report.area ? <p className="text-sm text-slate-600">{report.area}</p> : null}
+          {report.landmark ? <p className="text-sm text-slate-600">Near {report.landmark}</p> : null}
+        </div>
+        <p className="text-sm text-slate-500">
+          Reported {formatDistanceToNowStrict(new Date(report.reportedAt), { addSuffix: true })} · {report.reference}
+        </p>
+      </div>
+
+      <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 px-3">
+        <Row icon={Ruler} label="Flood height" value={report.depthM !== null ? `${report.levelLabel ?? "Flood"} (about ${formatDepth(report.depthM)})` : report.levelLabel} />
+        <Row icon={TrafficCone} label="Road" value={report.roadStatus} />
+        <Row icon={CloudRain} label="Weather" value={report.weather} />
+        <Row icon={Clock} label="Flood started" value={clock(report.startedAt)} />
+        <Row icon={Clock} label="Flood receded" value={report.recededAt ? clock(report.recededAt) : "Not yet — still flooded"} />
+        <Row icon={User} label="Reported by" value={report.senderName ?? "Anonymous"} />
+      </div>
+
+      {report.remarks ? (
+        <div className="rounded-2xl bg-slate-50 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Remarks</p>
+          <p className="mt-1 whitespace-pre-line break-words text-[15px] text-slate-900">{report.remarks}</p>
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-2">
+        <a
+          href={directions}
+          target="_blank"
+          rel="noreferrer"
+          className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white active:bg-slate-700"
+        >
+          <Navigation className="size-4" aria-hidden />
+          Directions
+        </a>
+        <button
+          type="button"
+          onClick={() => void share()}
+          className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 active:bg-slate-100"
+        >
+          <Share2 className="size-4" aria-hidden />
+          Share
+        </button>
+      </div>
+      <p className="text-center text-xs text-slate-400">Avoid this area if you can. Never walk or drive through floodwater.</p>
+
+      <PhotoViewer photos={photos} index={viewer} onClose={() => setViewer(null)} onIndex={setViewer} />
+    </div>
+  );
+}

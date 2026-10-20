@@ -12,6 +12,7 @@ import type {
 const PLATFORM_LABELS: Record<string, string> = {
   whatsapp: "WhatsApp",
   viber: "Viber",
+  okb_mobile: "OKB Mobile",
 };
 
 export function platformLabel(platform: string | null | undefined): string {
@@ -19,13 +20,15 @@ export function platformLabel(platform: string | null | undefined): string {
   return PLATFORM_LABELS[platform] ?? platform.charAt(0).toUpperCase() + platform.slice(1);
 }
 
-/** Dot + text classes per platform (WhatsApp green, Viber violet-blue, others cyan). */
+/** Dot + text classes per platform (WhatsApp green, Viber violet-blue, OKB Mobile orange, others cyan). */
 export function platformTone(platform: string | null | undefined): { dot: string; text: string; ring: string } {
   switch (platform) {
     case "whatsapp":
       return { dot: "bg-[#25d366]", text: "text-[#16a34a] dark:text-[#4ade80]", ring: "border-[#25d366]/40" };
     case "viber":
       return { dot: "bg-[#7360f2]", text: "text-[#6d5ae6] dark:text-[#a99cff]", ring: "border-[#7360f2]/40" };
+    case "okb_mobile":
+      return { dot: "bg-[#f97316]", text: "text-[#c2410c] dark:text-[#fdba74]", ring: "border-[#f97316]/40" };
     default:
       return { dot: "bg-info", text: "text-info", ring: "border-info/40" };
   }

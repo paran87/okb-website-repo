@@ -22,6 +22,8 @@ export const PUBLIC_ROUTES = {
   gallery: "/gallery",
   contact: "/contact",
   commandCenter: "/command",
+  /** Mobile-only page where the public sends geotagged flood reports. */
+  reportFlood: "/report-flood",
 } as const;
 
 /** Official memorandum PDF presented on the OKB Framework page. */

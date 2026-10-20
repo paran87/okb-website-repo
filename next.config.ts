@@ -150,6 +150,16 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         headers: securityHeaders,
       },
+      {
+        // The mobile flood report page takes photos with the phone camera (a later match wins).
+        source: "/report-flood",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=(self)",
+          },
+        ],
+      },
     ];
   },
 };

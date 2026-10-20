@@ -1,6 +1,6 @@
-import { ShieldCheck, type LucideIcon } from "lucide-react";
+import { Camera, ShieldCheck, type LucideIcon } from "lucide-react";
 import { AppIcons } from "@/lib/config/icons";
-import { ROUTES } from "@/lib/constants";
+import { PUBLIC_ROUTES, ROUTES } from "@/lib/constants";
 import { Permission } from "@/lib/rbac/permissions";
 
 /** Shared fields for every navigation entry. */
@@ -132,6 +132,14 @@ export const NAV_ITEMS: readonly NavEntry[] = [
         label: "Incoming Reports",
         href: ROUTES.reportsIncoming,
         icon: AppIcons.reportsIncoming,
+        permission: Permission.REPORT_VIEW,
+      },
+      {
+        // Full-screen mobile page (no sidebar) where anyone sends geotagged flood photos.
+        type: "link",
+        label: "Report a Flood",
+        href: PUBLIC_ROUTES.reportFlood,
+        icon: Camera,
         permission: Permission.REPORT_VIEW,
       },
       {

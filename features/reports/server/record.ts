@@ -1,6 +1,7 @@
 import "server-only";
 import type {
   BridgeReportRecord,
+  ReportPhoto,
   BridgeReportStatus,
   BridgeReportType,
   BridgeSourceMessage,
@@ -181,6 +182,33 @@ function source(v: unknown, platform: string | null): BridgeSourceMessage {
   };
 }
 
+const PHOTO_KEY = /^flood-reports\/[\w\-/]+\.jpg$/;
+
+/** Photo URL served by this site (mobile report photos are public, like the map that shows them). */
+export function reportPhotoUrl(key: string): string {
+  return `/api/flood-reports/photo?key=${encodeURIComponent(key)}`;
+}
+
+/** Geotagged photos of a mobile report (`record.mobile.photos`); anything malformed is skipped. */
+function photos(mobile: Obj): ReportPhoto[] {
+  if (!Array.isArray(mobile.photos)) return [];
+  return mobile.photos.flatMap((p): ReportPhoto[] => {
+    const o = obj(p);
+    const key = str(o.key);
+    if (!key || !PHOTO_KEY.test(key) || key.includes("..")) return [];
+    return [
+      {
+        key,
+        url: reportPhotoUrl(key),
+        latitude: num(o.latitude),
+        longitude: num(o.longitude),
+        accuracyM: num(o.accuracyM),
+        takenAt: str(o.takenAt),
+      },
+    ];
+  });
+}
+
 /** Row columns override the JSON where both exist (the backend writes them together). */
 export interface ReportRow {
   id: string;
@@ -255,6 +283,8 @@ export function parseRecord(row: ReportRow): BridgeReportRecord {
           })
         : [],
     },
+    photos: photos(obj(r.mobile)),
+    contactNumber: str(obj(r.mobile).contactNumber),
     createdAt: row.created_at ?? str(r.createdAt) ?? new Date(0).toISOString(),
     updatedAt: row.updated_at ?? str(r.updatedAt) ?? row.created_at ?? new Date(0).toISOString(),
   };
