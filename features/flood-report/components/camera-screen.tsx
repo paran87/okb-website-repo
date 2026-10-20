@@ -7,7 +7,7 @@ import { cn } from "@/utils/cn";
 import { capturePhoto, decodeImage, stampLines, type StampInfo } from "../lib/capture";
 import { MAX_PHOTOS, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from "../lib/options";
 import type { GeoState } from "../hooks/use-geolocation";
-import type { CapturedPhoto, CapturedVideo, PlaceName } from "../types";
+import type { CapturedPhoto, CapturedVideo, PlaceName, TrackPoint } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 
 type CameraState = "starting" | "live" | "blocked" | "unsupported";
@@ -98,6 +98,9 @@ export function CameraScreen({
   const [recording, setRecording] = useState<{ startedAt: number; bytes: number } | null>(null);
   const [videoPreview, setVideoPreview] = useState(false);
   const recorder = useRef<MediaRecorder | null>(null);
+  /** Where the phone is while a video is filmed (one fix a second or so), and the video's last frame. */
+  const track = useRef<{ startedAt: number; points: TrackPoint[]; lastAt: number | null }>({ startedAt: 0, points: [], lastAt: null });
+  const endFrame = useRef<Blob | null>(null);
   const canRecord = Boolean(onVideo) && recorderType() !== null;
   const full = photos.length >= max;
   const fix = geo.fix;
@@ -125,6 +128,18 @@ export function CameraScreen({
     },
     [],
   );
+
+  // While filming, keep each new GPS fix: a video filmed on the move is drawn along the road it covered.
+  useEffect(() => {
+    if (!recording || !fix || fix.at === track.current.lastAt) return;
+    track.current.lastAt = fix.at;
+    track.current.points.push({
+      latitude: fix.latitude,
+      longitude: fix.longitude,
+      accuracyM: fix.accuracyM,
+      t: Math.max(0, Math.round((Date.now() - track.current.startedAt) / 100) / 10),
+    });
+  }, [recording, fix]);
 
   useEffect(() => {
     let cancelled = false;
@@ -261,6 +276,12 @@ export function CameraScreen({
     const chunks: Blob[] = [];
     let bytes = 0;
     const startedAt = Date.now();
+    track.current = {
+      startedAt,
+      points: [{ latitude: info.latitude, longitude: info.longitude, accuracyM: info.accuracyM, t: 0 }],
+      lastAt: fix?.at ?? null,
+    };
+    endFrame.current = null;
     let rec: MediaRecorder;
     try {
       rec = new MediaRecorder(s, { mimeType: type, videoBitsPerSecond: VIDEO_BITRATE });
@@ -273,7 +294,7 @@ export function CameraScreen({
       bytes += e.data.size;
       setRecording((r) => (r ? { ...r, bytes } : r));
       // Stop before the size limit, or at the longest length.
-      if ((bytes >= MAX_VIDEO_BYTES - VIDEO_MARGIN || Date.now() - startedAt >= MAX_VIDEO_SECONDS * 1000) && rec.state === "recording") rec.stop();
+      if ((bytes >= MAX_VIDEO_BYTES - VIDEO_MARGIN || Date.now() - startedAt >= MAX_VIDEO_SECONDS * 1000) && rec.state === "recording") void stopRecording();
     };
     rec.onstop = () => {
       recorder.current = null;
@@ -292,6 +313,8 @@ export function CameraScreen({
         accuracyM: info.accuracyM,
         takenAt: info.takenAt.toISOString(),
         durationS: Math.round((Date.now() - startedAt) / 1000),
+        endPoster: endFrame.current,
+        track: track.current.points.slice(0, 900),
       });
       navigator.vibrate?.(30);
     };
@@ -301,9 +324,18 @@ export function CameraScreen({
     navigator.vibrate?.(30);
   };
 
-  const stopRecording = () => {
+  /** Stops filming; the last frame is kept first, stamped with where the video ended. */
+  const stopRecording = async () => {
     const r = recorder.current;
-    if (r && r.state === "recording") r.stop();
+    if (!r || r.state !== "recording" || endFrame.current) return;
+    const v = video.current;
+    const info = stampInfo(new Date());
+    endFrame.current = new Blob();
+    if (v && info && v.videoWidth) {
+      endFrame.current = await capturePhoto(v, v.videoWidth, v.videoHeight, info).catch(() => new Blob());
+    }
+    if (!endFrame.current.size) endFrame.current = null;
+    if (r.state === "recording") r.stop();
   };
 
   const removeVideo = () => {
@@ -525,7 +557,7 @@ export function CameraScreen({
         {mode === "video" && canRecord ? (
           <ShutterButton
             label={recording ? "Stop recording" : "Record video"}
-            onClick={() => (recording ? stopRecording() : void startRecording())}
+            onClick={() => void (recording ? stopRecording() : startRecording())}
             video
             recording={Boolean(recording)}
             disabled={!recording && Boolean(recorded)}

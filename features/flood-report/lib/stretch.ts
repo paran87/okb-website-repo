@@ -19,6 +19,13 @@ export const STRETCH_MAX_SPEED_KMH = 60;
 /** Photos taken further apart in time than this (hours) show different moments of the flood. */
 export const STRETCH_MAX_SPAN_H = 3;
 
+/** A video counts as filmed on the move when the phone went at least this far (meters) from its start to its end. */
+export const VIDEO_MOVE_MIN_M = 10;
+/** GPS fixes of a video less precise than this (± meters) are left out. */
+export const VIDEO_TRACK_ACCURACY_M = 30;
+/** The start and the end of a video are the average of its fixes in its first and last seconds. */
+export const VIDEO_END_SECONDS = 3;
+
 /**
  * How the photos of a report were placed:
  *  - stretch: drawn along the road between the two farthest flooded photos;

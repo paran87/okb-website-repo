@@ -265,6 +265,8 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
       videos: videos.map((v) => ({
         key: v.key,
         posterKey: v.posterKey,
+        endPosterKey: v.endPosterKey ?? null,
+        track: v.track ?? [],
         latitude: v.latitude,
         longitude: v.longitude,
         accuracyM: v.accuracyM,
@@ -351,7 +353,8 @@ export function toPublicReport(
     verified: status === "approved",
     latitude: lat,
     longitude: lng,
-    ...readStretch(m.stretch, photos.length),
+    // A video counts too: its stretch (or why it is one pin) is worth showing.
+    ...readStretch(m.stretch, photos.length + (Array.isArray(m.videos) && m.videos.length ? 2 : 0)),
     locationText: str(m.locationText) ?? "Reported location",
     landmark: str(m.landmark),
     area: [str(place.barangay), str(place.city)].filter(Boolean).join(", ") || null,

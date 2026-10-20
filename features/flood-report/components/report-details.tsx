@@ -256,7 +256,11 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
       <div className="divide-y divide-slate-100 rounded-2xl border border-slate-200 px-3">
         <Row icon={Ruler} label="Flood height" value={report.depthM !== null ? `${report.levelLabel ?? "Flood"} (about ${formatDepth(report.depthM)})` : report.levelLabel} />
         <Row icon={TrafficCone} label="Road" value={report.roadStatus} />
-        <Row icon={Route} label={report.stretch ? "Flooded stretch" : "Photo locations"} value={report.placement} />
+        <Row
+          icon={Route}
+          label={report.stretch ? "Flooded stretch" : report.videos.length && report.photos.length < 2 ? "Where the video was filmed" : "Photo locations"}
+          value={report.placement}
+        />
         <Row icon={Building2} label="DPWH office (DEO)" value={report.deo} />
         <Row icon={CloudRain} label="Weather" value={report.weather} />
         <Row icon={Clock} label="Flood started" value={clock(report.startedAt)} />

@@ -29,10 +29,22 @@ export interface UploadedPhoto extends PhotoGeotag {
   key: string;
 }
 
+/** One GPS fix recorded while a video was filmed (t: seconds since the start of the video). */
+export interface TrackPoint {
+  latitude: number;
+  longitude: number;
+  accuracyM: number | null;
+  t: number;
+}
+
 /** A video recorded on the page and uploaded to R2: where recording started, and its first frame as a JPEG. */
 export interface UploadedVideo extends PhotoGeotag {
   key: string;
   posterKey: string;
+  /** Its last frame (with the GPS stamp of where it ended), when the page sent one. */
+  endPosterKey?: string | null;
+  /** Where the phone was while filming (about one fix a second). */
+  track?: TrackPoint[];
   durationS: number | null;
 }
 
@@ -203,9 +215,13 @@ export interface CapturedVideo extends PhotoGeotag {
   /** First frame with the GPS stamp (JPEG). */
   poster: Blob;
   posterUrl: string;
+  /** Last frame with the GPS stamp of where it ended (JPEG). */
+  endPoster: Blob | null;
+  track: TrackPoint[];
   durationS: number;
   key?: string;
   posterKey?: string;
+  endPosterKey?: string;
 }
 
 /** A photo taken on the page and not sent yet (browser only). */

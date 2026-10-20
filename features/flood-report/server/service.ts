@@ -143,10 +143,21 @@ function storedVideos(mobile: Record<string, unknown>): UploadedVideo[] {
     const o = (v ?? {}) as Record<string, unknown>;
     if (typeof o.key !== "string" || !VIDEO_KEY.test(o.key) || typeof o.posterKey !== "string" || !PHOTO_KEY.test(o.posterKey)) return [];
     const num = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : null);
+    const track = Array.isArray(o.track)
+      ? o.track.flatMap((p) => {
+          const q = (p ?? {}) as Record<string, unknown>;
+          const lat = num(q.latitude);
+          const lng = num(q.longitude);
+          const t = num(q.t);
+          return lat === null || lng === null || t === null ? [] : [{ latitude: lat, longitude: lng, accuracyM: num(q.accuracyM), t }];
+        })
+      : [];
     return [
       {
         key: o.key,
         posterKey: o.posterKey,
+        endPosterKey: typeof o.endPosterKey === "string" && PHOTO_KEY.test(o.endPosterKey) ? o.endPosterKey : null,
+        track,
         latitude: num(o.latitude) ?? 0,
         longitude: num(o.longitude) ?? 0,
         accuracyM: num(o.accuracyM),
@@ -198,6 +209,19 @@ const inputSchema = z.object({
       z.object({
         key: z.string().regex(VIDEO_KEY, "Invalid video"),
         posterKey: z.string().regex(PHOTO_KEY, "Invalid video"),
+        endPosterKey: z.string().regex(PHOTO_KEY, "Invalid video").nullish(),
+        // Where the phone was while filming (about one fix a second; at most 15 minutes' worth).
+        track: z
+          .array(
+            z.object({
+              latitude: z.number().min(-90).max(90),
+              longitude: z.number().min(-180).max(180),
+              accuracyM: z.number().min(0).max(100_000).nullable(),
+              t: z.number().min(0).max(MAX_VIDEO_SECONDS + 60),
+            }),
+          )
+          .max(900)
+          .optional(),
         latitude: z.number().min(-90).max(90),
         longitude: z.number().min(-180).max(180),
         accuracyM: z.number().min(0).max(100_000).nullable(),
@@ -261,7 +285,9 @@ function checkReport(input: Omit<FloodReportInput, "id">, id: string, reportedAt
     if (!photo.key.includes(`/${id}/`)) throw new ValidationError("A photo does not belong to this report.");
   }
   for (const video of input.videos ?? []) {
-    if (!video.key.includes(`/${id}/`) || !video.posterKey.includes(`/${id}/`)) throw new ValidationError("A video does not belong to this report.");
+    if (!video.key.includes(`/${id}/`) || !video.posterKey.includes(`/${id}/`) || (video.endPosterKey && !video.endPosterKey.includes(`/${id}/`))) {
+      throw new ValidationError("A video does not belong to this report.");
+    }
   }
   if (new Set(input.photos.map((p) => p.key)).size !== input.photos.length) throw new ValidationError("A photo was sent twice.");
 }
@@ -319,8 +345,12 @@ export async function submitReport(body: unknown, ip = ""): Promise<SubmittedRep
   const present = await Promise.all(input.photos.map((p) => objectExists(cfg, p.key).catch(() => false)));
   if (present.some((ok) => !ok)) throw new ValidationError("A photo did not finish uploading. Please send again.");
   for (const video of input.videos ?? []) {
-    const [size, poster] = await Promise.all([storedSize(video.key), objectExists(cfg, video.posterKey).catch(() => false)]);
-    if (size === null || !poster) throw new ValidationError("The video did not finish uploading. Please send again.");
+    const [size, poster, endPoster] = await Promise.all([
+      storedSize(video.key),
+      objectExists(cfg, video.posterKey).catch(() => false),
+      video.endPosterKey ? objectExists(cfg, video.endPosterKey).catch(() => false) : Promise.resolve(true),
+    ]);
+    if (size === null || !poster || !endPoster) throw new ValidationError("The video did not finish uploading. Please send again.");
     if (size > MAX_VIDEO_BYTES) throw new ValidationError("The video is too large (50 MB at most).");
   }
 
@@ -328,7 +358,7 @@ export async function submitReport(body: unknown, ip = ""): Promise<SubmittedRep
   const built = buildMobileRecord({ ...input, id });
   const inConsolidated = includedInConsolidated(ip);
   // Photos taken far apart may show a flooded stretch of road rather than one spot.
-  const stretch = await analyzeStretch(input.photos);
+  const stretch = await analyzeStretch(input.photos, {}, input.videos ?? []);
   const record = { ...built, mobile: { ...built.mobile, ownerTokenHash: hashToken(editToken), inConsolidated, stretch } };
   const row = {
     id,
@@ -508,7 +538,7 @@ async function applyEdit(row: Row, edited: Omit<FloodReportInput, "id">, editor:
     // Reports analysed before streets were tried (version 1) are checked again unless they already had a stretch.
     oldStretch && samePhotos && oldStretch.photoCheck !== "failed" && (oldStretch.version === 2 || oldStretch.result === "stretch")
       ? oldStretch
-      : await analyzeStretch(input.photos, oldStretch?.verdicts ?? {});
+      : await analyzeStretch(input.photos, oldStretch?.verdicts ?? {}, input.videos ?? []);
   const at = new Date().toISOString();
   const review = (row.record.review ?? {}) as { linkedMessageIds?: unknown; history?: unknown };
   const history = Array.isArray(review.history) ? review.history : [];
@@ -617,7 +647,9 @@ async function removeReport(row: Row, by: string): Promise<void> {
     ? ((row.record.mobile as { photos: { key?: unknown }[] }).photos.map((p) => p.key).filter((k): k is string => typeof k === "string" && PHOTO_KEY.test(k)))
     : [];
   // The video and its first frame go too.
-  photos.push(...storedVideos((row.record.mobile ?? {}) as Record<string, unknown>).flatMap((v) => [v.key, v.posterKey]));
+  photos.push(
+    ...storedVideos((row.record.mobile ?? {}) as Record<string, unknown>).flatMap((v) => [v.key, v.posterKey, ...(v.endPosterKey ? [v.endPosterKey] : [])]),
+  );
   const cfg = getOperationsR2Config();
   if (cfg) await Promise.all(photos.map((k) => deleteObject(cfg, k).catch((err) => log.warn({ err, key: k }, "Photo of deleted report not removed from R2"))));
   await deleteAllMedia(row.id);

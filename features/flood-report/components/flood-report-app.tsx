@@ -192,7 +192,7 @@ function PhoneApp() {
     const id = reportId.current;
     const current = [...photos];
     // Progress by bytes: a video is far larger than the photos.
-    const sizes = [...current.map((p) => (p.key ? 0 : p.blob.size)), video && !video.key ? video.blob.size + video.poster.size : 0];
+    const sizes = [...current.map((p) => (p.key ? 0 : p.blob.size)), video && !video.key ? video.blob.size + video.poster.size + (video.endPoster?.size ?? 0) : 0];
     const total = Math.max(1, sizes.reduce((a, b) => a + b, 0));
     let done = 0;
     const step = (size: number) => (f: number) => setSend({ stage: "uploading", progress: (done + f * size) / total });
@@ -212,16 +212,20 @@ function PhoneApp() {
       }
       const videos: UploadedVideo[] = [];
       if (video) {
-        let { key, posterKey } = video;
+        let { key, posterKey, endPosterKey } = video;
         if (!posterKey) posterKey = await uploadPhoto(id, video.poster, step(video.poster.size));
         done += video.poster.size;
+        if (video.endPoster && !endPosterKey) endPosterKey = await uploadPhoto(id, video.endPoster, step(video.endPoster.size));
+        done += video.endPoster?.size ?? 0;
         if (!key) key = await uploadVideo(id, video.blob, step(video.blob.size));
         done += video.blob.size;
         // Remember the keys so a retry does not upload the video again.
-        setVideo((v) => (v ? { ...v, key, posterKey } : v));
+        setVideo((v) => (v ? { ...v, key, posterKey, endPosterKey } : v));
         videos.push({
           key,
           posterKey,
+          endPosterKey: endPosterKey ?? null,
+          track: video.track,
           latitude: video.latitude,
           longitude: video.longitude,
           accuracyM: video.accuracyM,
