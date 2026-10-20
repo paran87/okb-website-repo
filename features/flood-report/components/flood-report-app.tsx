@@ -17,6 +17,7 @@ import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
 import { FloodMap } from "./flood-map";
 import { HelpSheet } from "./help-sheet";
+import { HelpTip } from "./help-tip";
 import { MapLegendButton, MapLegendSheet } from "./map-legend";
 import { MyReportActions, MyReportPhotos, MyReportsSheet } from "./my-report";
 import { ReportDetails } from "./report-details";
@@ -408,6 +409,8 @@ function PhoneApp() {
             ) : null}
           </div>
         ) : null}
+
+        <HelpTip hidden={screen !== "map" || Boolean(selected) || helpOpen || myOpen || legendOpen} onShowMe={() => setHelpOpen(true)} />
       </div>
 
       <ControlBar className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" inert={screen !== "map"}>
