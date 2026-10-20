@@ -12,7 +12,7 @@ import { reportColor } from "./flood-map";
 /** Where one of the sender's reports stands, in a few words. */
 export function myReportState(r: PublicFloodReport): { label: string; tone: string } {
   if (r.status === "rejected" || r.status === "ignored") return { label: "Removed by OKB", tone: "bg-slate-200 text-slate-700" };
-  if (r.receded) return { label: "Receded", tone: "bg-teal-100 text-teal-800" };
+  if (r.receded) return { label: "Receded", tone: "bg-violet-100 text-violet-800" };
   if (r.expired) return { label: "Cleared from the map", tone: "bg-slate-100 text-slate-600" };
   return { label: r.verified ? "On the map · verified" : "On the map", tone: "bg-red-100 text-red-700" };
 }
@@ -75,7 +75,7 @@ export function MyReportActions({
                 type="button"
                 disabled={busy}
                 onClick={() => onReceded("now")}
-                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-teal-600 font-bold text-white active:bg-teal-700 disabled:opacity-60"
+                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-violet-600 font-bold text-white active:bg-violet-700 disabled:opacity-60"
               >
                 {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
                 Just now
@@ -97,7 +97,7 @@ export function MyReportActions({
           <button
             type="button"
             onClick={() => setConfirm("receded")}
-            className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-base font-bold text-white shadow active:bg-teal-700"
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-violet-600 text-base font-bold text-white shadow active:bg-violet-700"
           >
             <CheckCircle2 className="size-5" aria-hidden />
             The flood has receded

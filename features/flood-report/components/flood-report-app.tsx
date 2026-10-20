@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleHelp, Copy, Home, Loader2, LocateFixed, Monitor, RefreshCw, Smartphone, UserRound } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
-import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import { useFloodReports } from "../hooks/use-flood-reports";
 import { useGeolocation } from "../hooks/use-geolocation";
@@ -16,8 +15,9 @@ import type { CapturedPhoto, FloodReportFormValues, MyFloodReport, PublicFloodRe
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
-import { CLEARED_COLOR, FloodMap, RECEDED_COLOR } from "./flood-map";
+import { FloodMap } from "./flood-map";
 import { HelpSheet } from "./help-sheet";
+import { MapLegendButton, MapLegendSheet } from "./map-legend";
 import { MyReportActions, MyReportPhotos, MyReportsSheet } from "./my-report";
 import { ReportDetails } from "./report-details";
 import { ReportForm, SendProgress, type ReportFormValues } from "./report-form";
@@ -29,16 +29,6 @@ const RANGES: { id: Range; label: string }[] = [
   { id: 24, label: "24h" },
   { id: 72, label: "3d" },
   { id: 168, label: "7d" },
-];
-
-const LEGEND = [
-  { label: "Low", color: FLOOD_SEVERITY.low.color },
-  { label: "Medium", color: FLOOD_SEVERITY.medium.color },
-  { label: "High", color: FLOOD_SEVERITY.high.color },
-];
-const HISTORY_LEGEND = [
-  { label: "Receded", color: RECEDED_COLOR },
-  { label: "Cleared", color: CLEARED_COLOR },
 ];
 
 /** Still flooded now (re-checked here so a report leaves the map on time between refreshes). */
@@ -71,6 +61,7 @@ function PhoneApp() {
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [locating, setLocating] = useState(false);
   const [focus, setFocus] = useState<{ latitude: number; longitude: number; zoom?: number; key: string } | null>(null);
   const [send, setSend] = useState<SendState>(null);
@@ -154,6 +145,7 @@ function PhoneApp() {
 
   const selectReport = useCallback(
     (id: string) => {
+      setLegendOpen(false);
       setSelectedId(id);
       const r = list.find((x) => x.id === id);
       if (r) setFocus({ latitude: r.latitude, longitude: r.longitude, key: `sel-${id}-${Date.now()}` });
@@ -388,14 +380,13 @@ function PhoneApp() {
 
         {/* Legend + locate */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
-          <div className="pointer-events-auto flex flex-wrap gap-x-2.5 gap-y-1 rounded-xl bg-white/95 px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-md">
-            {(range === "now" ? LEGEND : [...LEGEND, ...HISTORY_LEGEND]).map((l) => (
-              <span key={l.label} className="flex items-center gap-1">
-                <span className="size-2.5 rounded-full" style={{ background: l.color }} />
-                {l.label}
-              </span>
-            ))}
-          </div>
+          <MapLegendButton
+            history={range !== "now"}
+            onOpen={() => {
+              setSelectedId(null);
+              setLegendOpen(true);
+            }}
+          />
           <button
             type="button"
             onClick={() => (geo.fix ? setFocus({ latitude: geo.fix.latitude, longitude: geo.fix.longitude, zoom: 15, key: `me-${Date.now()}` }) : setLocating(true))}
@@ -471,6 +462,7 @@ function PhoneApp() {
       </BottomSheet>
       <MyReportsSheet open={myOpen} onClose={() => setMyOpen(false)} reports={myReports} loading={myQuery.isFetching} onOpen={openOwn} />
       <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <MapLegendSheet open={legendOpen && screen === "map"} onClose={() => setLegendOpen(false)} reports={list} history={range !== "now"} />
 
       {screen === "camera" ? (
         <CameraScreen

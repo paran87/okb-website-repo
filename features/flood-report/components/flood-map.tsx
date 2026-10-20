@@ -10,7 +10,8 @@ import type { PublicFloodReport } from "../types";
 
 /** Metro Manila, where most reports come from. */
 const DEFAULT_CENTER: [number, number] = [121.02, 14.6];
-export const RECEDED_COLOR = "#0d9488";
+/** Violet: clearly apart from the green, orange and red flood levels. */
+export const RECEDED_COLOR = "#7c3aed";
 /** No receded time came and its weather time ran out (shown in the history views only). */
 export const CLEARED_COLOR = "#94a3b8";
 /** Reports closer than this (degrees, ~30 m) count as the same spot on the map. */
