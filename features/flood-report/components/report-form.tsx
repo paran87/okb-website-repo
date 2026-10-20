@@ -435,13 +435,14 @@ export function ReportForm({
             </Section>
           </div>
 
-          <Section title="Other details" hint="Optional: stranded vehicles, clogged drainage, rising water…">
+          <Section title="Remarks" hint="Optional: stranded vehicles, clogged drainage, rising water… Written in the OKB flood report (PDF).">
             <textarea
               className={cn(input, "h-24 resize-none py-3")}
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               maxLength={1000}
-              placeholder="Anything operators should know"
+              placeholder="Remarks (optional)"
+              aria-label="Remarks"
             />
           </Section>
 
