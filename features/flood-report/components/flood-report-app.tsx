@@ -367,17 +367,17 @@ function PhoneApp() {
                 </button>
               ))}
             </div>
-            {keys.length ? (
-              <button
-                type="button"
-                onClick={() => setMyOpen(true)}
-                className="pointer-events-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-blue-600 px-3.5 text-sm font-semibold text-white shadow-md active:bg-blue-700"
-              >
-                <UserRound className="size-4" aria-hidden />
-                Mine
-                <span className="rounded-full bg-white/25 px-1.5 text-xs tabular-nums">{keys.length}</span>
-              </button>
-            ) : null}
+            {/* Always shown, so senders know where to change their reports. */}
+            <button
+              type="button"
+              onClick={() => setMyOpen(true)}
+              aria-label={`My reports (${keys.length})`}
+              className="pointer-events-auto flex h-11 shrink-0 items-center gap-1.5 rounded-full bg-blue-600 px-3.5 text-sm font-semibold text-white shadow-md active:bg-blue-700"
+            >
+              <UserRound className="size-4" aria-hidden />
+              Mine
+              {keys.length ? <span className="rounded-full bg-white/25 px-1.5 text-xs tabular-nums">{keys.length}</span> : null}
+            </button>
           </div>
           {reports.isError ? (
             <p className="pointer-events-auto w-fit rounded-full bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow">

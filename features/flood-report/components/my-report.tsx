@@ -274,7 +274,14 @@ export function MyReportsSheet({
           <Loader2 className="size-4 animate-spin" aria-hidden /> Loading your reports…
         </p>
       ) : !reports.length ? (
-        <p className="py-4 text-sm text-slate-600">No reports from this phone yet. Reports you send can be edited or deleted here.</p>
+        <div className="space-y-2 py-3 text-sm text-slate-600">
+          <p className="font-semibold text-slate-900">No reports from this phone yet</p>
+          <p>Reports you send from this phone appear here. You can mark them receded, edit them, change their photos or delete them.</p>
+          <p className="text-xs text-slate-500">
+            Reports sent before October 20, 2026, 10:30 AM, from another phone or browser, or before this browser&apos;s data was cleared
+            cannot be changed here. OKB operators can still remove them.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-2 pb-2">
           {reports.map((r) => {

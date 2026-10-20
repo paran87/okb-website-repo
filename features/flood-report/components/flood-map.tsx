@@ -13,6 +13,8 @@ const DEFAULT_CENTER: [number, number] = [121.02, 14.6];
 export const RECEDED_COLOR = "#0d9488";
 /** No receded time came and its weather time ran out (shown in the history views only). */
 export const CLEARED_COLOR = "#94a3b8";
+/** Reports closer than this (degrees, ~30 m) count as the same spot on the map. */
+const SPOT_DEG = 0.0003;
 
 const loadMapLibre = () => import("maplibre-gl").then((mod) => mod.default);
 type MapLibre = Awaited<ReturnType<typeof loadMapLibre>>;
@@ -131,14 +133,34 @@ export function FloodMap({
     const maplibre = lib.current;
     if (!ready || !m || !maplibre) return;
     const seen = new Set<string>();
+    // Reports from about the same spot (~30 m) are spread in a small ring so each pin can be tapped.
+    const spots: { latitude: number; longitude: number; ids: string[] }[] = [];
+    const groupOf = new Map<string, string[]>();
+    for (const r of reports) {
+      let spot = spots.find((g) => Math.abs(g.latitude - r.latitude) < SPOT_DEG && Math.abs(g.longitude - r.longitude) < SPOT_DEG);
+      if (!spot) {
+        spot = { latitude: r.latitude, longitude: r.longitude, ids: [] };
+        spots.push(spot);
+      }
+      spot.ids.push(r.id);
+      groupOf.set(r.id, spot.ids);
+    }
+    const offsetOf = (r: PublicFloodReport): [number, number] => {
+      const group = groupOf.get(r.id) ?? [];
+      if (group.length < 2) return [0, 0];
+      const angle = -Math.PI / 2 + (2 * Math.PI * group.indexOf(r.id)) / group.length;
+      const radius = 22 + 4 * group.length;
+      return [Math.round(Math.cos(angle) * radius), Math.round(Math.sin(angle) * radius)];
+    };
     // Oldest first, so the newest reports are drawn on top.
     for (const r of [...reports].reverse()) {
       seen.add(r.id);
-      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.latitude},${r.longitude}`;
+      const offset = offsetOf(r);
+      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.latitude},${r.longitude}|${offset.join(",")}`;
       const existing = markers.current.get(r.id);
       if (existing?.signature === signature) continue;
       existing?.marker.remove();
-      const marker = new maplibre.Marker({ element: markerElement(r, (id) => select.current(id)), anchor: "bottom" })
+      const marker = new maplibre.Marker({ element: markerElement(r, (id) => select.current(id)), anchor: "bottom", offset })
         .setLngLat([r.longitude, r.latitude])
         .addTo(m);
       markers.current.set(r.id, { marker, signature });

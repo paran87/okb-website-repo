@@ -403,9 +403,8 @@ export async function updateMyReport(id: string, body: unknown): Promise<MyFlood
   return view;
 }
 
-/** Deletes the sender's report and its photos, unless OKB operators already made it part of an incident. */
-export async function deleteMyReport(id: string, body: unknown): Promise<void> {
-  const row = await ownRow(id, (body as { token?: unknown } | null)?.token);
+/** Deletes a mobile report and its photos, unless OKB operators already made it part of an incident. */
+async function removeReport(row: Row, by: string): Promise<void> {
   const linked = await rest(`okb_command_incidents?select=id&report_id=eq.${row.id}&limit=1`);
   if (linked.ok && ((await linked.json()) as unknown[]).length) {
     throw new ConflictError("OKB operators already made this report part of an incident, so it can no longer be deleted.");
@@ -425,7 +424,23 @@ export async function deleteMyReport(id: string, body: unknown): Promise<void> {
   if (cfg) await Promise.all(photos.map((k) => deleteObject(cfg, k).catch((err) => log.warn({ err, key: k }, "Photo of deleted report not removed from R2"))));
   invalidateAggregates();
   memo = null;
-  log.info({ id: row.id, photos: photos.length }, "Mobile flood report deleted by sender");
+  log.info({ id: row.id, photos: photos.length, by }, "Mobile flood report deleted");
+}
+
+/** The sender deletes their report (checked with its edit key). */
+export async function deleteMyReport(id: string, body: unknown): Promise<void> {
+  await removeReport(await ownRow(id, (body as { token?: unknown } | null)?.token), "sender");
+}
+
+/**
+ * An OKB operator deletes a mobile report (spam, a duplicate, a test, or one sent before senders had edit keys).
+ * WhatsApp/Viber reports are never deleted here: the bridge owns them.
+ */
+export async function deleteReportAsOperator(id: string, operator: string): Promise<void> {
+  if (!UUID.test(id)) throw new NotFoundError("Report not found.");
+  const row = (await rows([id.toLowerCase()]))[0];
+  if (!row) throw new NotFoundError("Only reports sent from the OKB mobile page can be deleted here.");
+  await removeReport(row, `operator ${operator}`.slice(0, 120));
 }
 
 // ---------------------------------------------------------------------------

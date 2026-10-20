@@ -2,6 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -17,6 +19,7 @@ import {
   ScrollText,
   ShieldCheck,
   Siren,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -140,6 +143,50 @@ function LocationFields({ loc }: { loc: ExtractedLocation }) {
 // ---------------------------------------------------------------------------
 // Review actions
 // ---------------------------------------------------------------------------
+
+/** Operators delete a report sent from the OKB mobile page (spam, a duplicate, a test), with its photos. */
+function DeleteMobileReport({ report, onDeleted }: { report: ReportDetail; onDeleted?: () => void }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const remove = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/reports/${encodeURIComponent(report.id)}`, { method: "DELETE" });
+      const body = (await res.json().catch(() => null)) as { success?: boolean; error?: { message?: string } } | null;
+      if (!res.ok || !body?.success) throw new Error(body?.error?.message ?? "The report could not be deleted.");
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+      void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
+      if (onDeleted) onDeleted();
+      else router.push(ROUTES.reportsIncoming);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "The report could not be deleted.");
+      setBusy(false);
+    }
+  };
+  if (!confirming) {
+    return (
+      <Button size="sm" variant="ghost" onClick={() => setConfirming(true)} leftIcon={<Trash2 className="size-4" aria-hidden />}>
+        Delete
+      </Button>
+    );
+  }
+  return (
+    <div className="flex w-full flex-wrap items-center gap-2 rounded-lg border border-danger/40 bg-danger/10 p-2 text-caption">
+      <span className="min-w-0 flex-1 text-foreground">Delete this mobile report and its photos for good? It also leaves the public map.</span>
+      <Button size="sm" variant="ghost" onClick={() => setConfirming(false)} disabled={busy}>
+        Keep
+      </Button>
+      <Button size="sm" variant="danger" onClick={() => void remove()} isLoading={busy} leftIcon={<Trash2 className="size-4" aria-hidden />}>
+        Delete
+      </Button>
+      {error ? <p className="w-full text-danger">{error}</p> : null}
+    </div>
+  );
+}
 
 function ReviewBar({ report }: { report: ReportDetail }) {
   const review = useReviewReport(report.id);
@@ -295,6 +342,7 @@ export function ReportDetailView({
           >
             Create Incident
           </Button>
+          {fromForm ? <DeleteMobileReport report={r} /> : null}
           {variant === "drawer" ? (
             <Link
               href={`${ROUTES.reports}/${r.id}`}
