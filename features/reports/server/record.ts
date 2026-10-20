@@ -2,6 +2,7 @@ import "server-only";
 import type {
   BridgeReportRecord,
   ReportPhoto,
+  ReportVideo,
   BridgeReportStatus,
   BridgeReportType,
   BridgeSourceMessage,
@@ -210,6 +211,26 @@ function photos(mobile: Obj): ReportPhoto[] {
   });
 }
 
+const VIDEO_KEY = /^flood-reports\/[\w\-/]+\.(mp4|webm|mov)$/;
+
+/** The video a mobile report was sent with (`record.mobile.videos`), streamed with its first frame. */
+function mobileVideos(mobile: Obj): ReportVideo[] {
+  if (!Array.isArray(mobile.videos)) return [];
+  return mobile.videos.flatMap((v): ReportVideo[] => {
+    const o = obj(v);
+    const key = str(o.key);
+    const poster = str(o.posterKey);
+    if (!key || !VIDEO_KEY.test(key) || key.includes("..")) return [];
+    return [
+      {
+        key,
+        url: `/api/flood-reports/media?key=${encodeURIComponent(key)}`,
+        posterUrl: poster && PHOTO_KEY.test(poster) ? reportPhotoUrl(poster) : null,
+      },
+    ];
+  });
+}
+
 /** Row columns override the JSON where both exist (the backend writes them together). */
 export interface ReportRow {
   id: string;
@@ -288,6 +309,7 @@ export function parseRecord(row: ReportRow): BridgeReportRecord {
     contactNumber: str(obj(r.mobile).contactNumber),
     mobileWeather: str(obj(r.mobile).weather),
     mobileStretch: readStretch(obj(r.mobile).stretch, 2).stretch,
+    mobileVideos: mobileVideos(obj(r.mobile)),
     inConsolidated: r.mobile ? obj(r.mobile).inConsolidated === true : null,
     createdAt: row.created_at ?? str(r.createdAt) ?? new Date(0).toISOString(),
     updatedAt: row.updated_at ?? str(r.updatedAt) ?? row.created_at ?? new Date(0).toISOString(),

@@ -70,11 +70,17 @@ export function ShutterButton({
   onClick,
   disabled,
   busy,
+  video,
+  recording,
 }: {
   label: string;
   onClick: () => void;
   disabled?: boolean;
   busy?: boolean;
+  /** Video mode: a red record button. */
+  video?: boolean;
+  /** Recording: a red square (tap to stop). */
+  recording?: boolean;
 }) {
   return (
     <button
@@ -85,7 +91,14 @@ export function ShutterButton({
       className="flex flex-col items-center justify-self-center disabled:opacity-40"
     >
       <span className="flex size-[72px] items-center justify-center rounded-full border-[5px] border-white transition-transform active:scale-90">
-        <span className={cn("size-[52px] rounded-full bg-white transition-all", busy && "size-10 bg-white/60")} />
+        <span
+          className={cn(
+            "size-[52px] rounded-full bg-white transition-all",
+            video && "bg-red-600",
+            recording && "size-7 rounded-md bg-red-600",
+            busy && "size-10 bg-white/60",
+          )}
+        />
       </span>
     </button>
   );

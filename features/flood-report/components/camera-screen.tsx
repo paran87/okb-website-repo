@@ -1,18 +1,33 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
-import { ArrowLeft, Camera, Flashlight, FlashlightOff, Home, ImagePlus, LocateFixed, RefreshCw, SendHorizontal, Trash2, X } from "lucide-react";
+import { ArrowLeft, Camera, Flashlight, FlashlightOff, Home, ImagePlus, LocateFixed, Play, RefreshCw, SendHorizontal, Trash2, Video, X } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { capturePhoto, decodeImage, stampLines, type StampInfo } from "../lib/capture";
-import { MAX_PHOTOS } from "../lib/options";
+import { MAX_PHOTOS, MAX_VIDEO_BYTES, MAX_VIDEO_SECONDS } from "../lib/options";
 import type { GeoState } from "../hooks/use-geolocation";
-import type { CapturedPhoto, PlaceName } from "../types";
+import type { CapturedPhoto, CapturedVideo, PlaceName } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 
 type CameraState = "starting" | "live" | "blocked" | "unsupported";
 
 const RELOAD_KEY = "okb-camera-policy-reload";
+
+/** MP4 plays everywhere (iPhone too); some Android browsers can only record WebM. */
+const VIDEO_TYPES = ["video/mp4;codecs=avc1.42E01E", "video/mp4", "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"];
+/** About 2.5 Mbit/s: clear 720p–1080p street video, ~2.5 minutes in 50 MB. */
+const VIDEO_BITRATE = 2_500_000;
+/** Stop this far below the limit (the last second of data arrives after stop). */
+const VIDEO_MARGIN = 1.5 * 1024 * 1024;
+
+function recorderType(): string | null {
+  if (typeof MediaRecorder === "undefined") return null;
+  return VIDEO_TYPES.find((t) => MediaRecorder.isTypeSupported(t)) ?? null;
+}
+
+const mb = (bytes: number) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 /** The browser's name for the Android settings hint. */
 function browserName(): string {
@@ -46,8 +61,13 @@ export function CameraScreen({
   onBack,
   onCameraSettled,
   max = MAX_PHOTOS,
+  video: recorded = null,
+  onVideo,
 }: {
   photos: CapturedPhoto[];
+  /** The report's video (one per report); with onVideo, the camera can record one. */
+  video?: CapturedVideo | null;
+  onVideo?: (video: CapturedVideo | null) => void;
   geo: GeoState;
   place: PlaceName | null;
   onAdd: (photo: CapturedPhoto) => void;
@@ -74,6 +94,11 @@ export function CameraScreen({
   const [notice, setNotice] = useState<string | null>(null);
   const [preview, setPreview] = useState<CapturedPhoto | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [mode, setMode] = useState<"photo" | "video">("photo");
+  const [recording, setRecording] = useState<{ startedAt: number; bytes: number } | null>(null);
+  const [videoPreview, setVideoPreview] = useState(false);
+  const recorder = useRef<MediaRecorder | null>(null);
+  const canRecord = Boolean(onVideo) && recorderType() !== null;
   const full = photos.length >= max;
   const fix = geo.fix;
 
@@ -87,6 +112,19 @@ export function CameraScreen({
     const t = setTimeout(() => setNotice(null), 3500);
     return () => clearTimeout(t);
   }, [notice]);
+
+  // Leaving the camera stops a recording without keeping it.
+  useEffect(
+    () => () => {
+      const r = recorder.current;
+      if (r && r.state !== "inactive") {
+        r.ondataavailable = null;
+        r.onstop = null;
+        r.stop();
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -203,6 +241,80 @@ export function CameraScreen({
     }
   };
 
+  /** Starts a video: its first frame (with the GPS stamp) is kept as the thumbnail, its place is where it starts. */
+  const startRecording = async () => {
+    if (recorded) return setNotice("One video per report. Delete it to record another.");
+    if (camera === "blocked" || camera === "unsupported") return setAttempt((n) => n + 1);
+    const v = video.current;
+    const s = stream.current;
+    const type = recorderType();
+    if (!v || !s || camera !== "live" || !v.videoWidth) return setNotice("Starting the camera…");
+    if (!type) return setNotice("This browser cannot record video. Take photos instead.");
+    const info = stampInfo(new Date());
+    if (!info) return setNotice(geo.error ?? "Waiting for your GPS location…");
+    let poster: Blob;
+    try {
+      poster = await capturePhoto(v, v.videoWidth, v.videoHeight, info);
+    } catch {
+      return setNotice("The video could not start. Please try again.");
+    }
+    const chunks: Blob[] = [];
+    let bytes = 0;
+    const startedAt = Date.now();
+    let rec: MediaRecorder;
+    try {
+      rec = new MediaRecorder(s, { mimeType: type, videoBitsPerSecond: VIDEO_BITRATE });
+    } catch {
+      return setNotice("This browser cannot record video. Take photos instead.");
+    }
+    rec.ondataavailable = (e) => {
+      if (!e.data.size) return;
+      chunks.push(e.data);
+      bytes += e.data.size;
+      setRecording((r) => (r ? { ...r, bytes } : r));
+      // Stop before the size limit, or at the longest length.
+      if ((bytes >= MAX_VIDEO_BYTES - VIDEO_MARGIN || Date.now() - startedAt >= MAX_VIDEO_SECONDS * 1000) && rec.state === "recording") rec.stop();
+    };
+    rec.onstop = () => {
+      recorder.current = null;
+      setRecording(null);
+      const blob = new Blob(chunks, { type: type.split(";")[0] });
+      if (!blob.size) return setNotice("Nothing was recorded. Please try again.");
+      if (blob.size > MAX_VIDEO_BYTES) return setNotice("The video is over 50 MB. Please record a shorter one.");
+      onVideo?.({
+        id: crypto.randomUUID(),
+        blob,
+        url: URL.createObjectURL(blob),
+        poster,
+        posterUrl: URL.createObjectURL(poster),
+        latitude: info.latitude,
+        longitude: info.longitude,
+        accuracyM: info.accuracyM,
+        takenAt: info.takenAt.toISOString(),
+        durationS: Math.round((Date.now() - startedAt) / 1000),
+      });
+      navigator.vibrate?.(30);
+    };
+    recorder.current = rec;
+    rec.start(1000);
+    setRecording({ startedAt, bytes: 0 });
+    navigator.vibrate?.(30);
+  };
+
+  const stopRecording = () => {
+    const r = recorder.current;
+    if (r && r.state === "recording") r.stop();
+  };
+
+  const removeVideo = () => {
+    if (recorded) {
+      URL.revokeObjectURL(recorded.url);
+      URL.revokeObjectURL(recorded.posterUrl);
+    }
+    onVideo?.(null);
+    setVideoPreview(false);
+  };
+
   const picked = async (file: File | undefined) => {
     if (!file) return;
     const info = stampInfo(new Date());
@@ -232,7 +344,7 @@ export function CameraScreen({
   };
 
   const leaveHome = (e: MouseEvent) => {
-    if (photos.length && !window.confirm("Leave without sending? Your photos will be discarded.")) e.preventDefault();
+    if ((photos.length || recorded) && !window.confirm("Leave without sending? Your photos and video will be discarded.")) e.preventDefault();
   };
 
   const gpsLabel =
@@ -349,12 +461,23 @@ export function CameraScreen({
               type="button"
               onClick={() => setFacing((f) => (f === "environment" ? "user" : "environment"))}
               aria-label="Switch camera"
-              className="flex size-11 items-center justify-center rounded-full bg-black/45 backdrop-blur"
+              disabled={Boolean(recording)}
+              className="flex size-11 items-center justify-center rounded-full bg-black/45 backdrop-blur disabled:opacity-40"
             >
               <RefreshCw className="size-5" aria-hidden />
             </button>
           </div>
         </div>
+
+        {recording ? (
+          <div
+            role="status"
+            className="pointer-events-none absolute left-1/2 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] flex -translate-x-1/2 items-center gap-2 rounded-full bg-red-600/90 px-3 py-1.5 text-sm font-bold tabular-nums"
+          >
+            <span className="size-2.5 animate-pulse rounded-full bg-white" aria-hidden />
+            REC {clock((now.getTime() - recording.startedAt) / 1000)} · {mb(recording.bytes)} / 50 MB
+          </div>
+        ) : null}
 
         {/* Live GPS stamp (burned into each photo) */}
         {stamp && camera === "live" ? (
@@ -377,18 +500,71 @@ export function CameraScreen({
         ) : null}
       </div>
 
+      {canRecord && !recording ? (
+        <div className="flex shrink-0 justify-center bg-black pt-2">
+          <div role="radiogroup" aria-label="Camera mode" className="flex rounded-full bg-white/10 p-1">
+            {(["photo", "video"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={mode === m}
+                onClick={() => setMode(m)}
+                className={cn("h-10 min-w-24 rounded-full px-4 text-sm font-bold", mode === m ? "bg-white text-black" : "text-white/80")}
+              >
+                {m === "photo" ? "Photo" : "Video"}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <ControlBar className="pb-3">
         <BarTile label="Home" href={PUBLIC_ROUTES.commandCenter} align="start" onClick={leaveHome}>
           <Home className="size-8" aria-hidden />
         </BarTile>
-        <ShutterButton label="Take photo" onClick={() => void shoot()} busy={busy} disabled={full} />
-        <BarTile label="Send" onClick={onSend} disabled={!photos.length} badge={photos.length || undefined} align="end">
+        {mode === "video" && canRecord ? (
+          <ShutterButton
+            label={recording ? "Stop recording" : "Record video"}
+            onClick={() => (recording ? stopRecording() : void startRecording())}
+            video
+            recording={Boolean(recording)}
+            disabled={!recording && Boolean(recorded)}
+          />
+        ) : (
+          <ShutterButton label="Take photo" onClick={() => void shoot()} busy={busy} disabled={full} />
+        )}
+        <BarTile
+          label="Send"
+          onClick={onSend}
+          disabled={(!photos.length && !recorded) || Boolean(recording)}
+          badge={photos.length + (recorded ? 1 : 0) || undefined}
+          align="end"
+        >
           <SendHorizontal className="size-8" aria-hidden />
         </BarTile>
       </ControlBar>
 
-      {/* Captures (max 5) */}
+      {/* Captures (max 5 photos, 1 video) */}
       <div className="shrink-0 bg-black px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
+        {recorded ? (
+          <button
+            type="button"
+            onClick={() => setVideoPreview(true)}
+            className="mx-auto mb-1.5 flex w-full max-w-md items-center gap-2 rounded-md bg-white/10 p-1 pr-3 text-left"
+            aria-label="Your video: view or delete"
+          >
+            <span className="relative h-10 w-14 shrink-0 overflow-hidden rounded ring-1 ring-white/30">
+              {/* eslint-disable-next-line @next/next/no-img-element -- local object URL */}
+              <img src={recorded.posterUrl} alt="" className="size-full object-cover" />
+              <Play className="absolute inset-0 m-auto size-4 fill-white" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1 text-xs">
+              <span className="block font-semibold">Video · {clock(recorded.durationS)}</span>
+              <span className="text-white/60">{mb(recorded.blob.size)} · tap to view or delete</span>
+            </span>
+            <Video className="size-5 text-white/60" aria-hidden />
+          </button>
+        ) : null}
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1.5">
           {Array.from({ length: max }, (_, i) => {
             const p = photos[i];
@@ -411,7 +587,7 @@ export function CameraScreen({
           })}
         </div>
         <p className="mt-1 text-center text-[11px] text-white/50">
-          {photos.length}/{max} photos · tap a photo to view or delete
+          {photos.length}/{max} photos{canRecord ? ` · ${recorded ? 1 : 0}/1 video (up to 50 MB)` : ""} · tap to view or delete
         </p>
       </div>
 
@@ -423,6 +599,28 @@ export function CameraScreen({
         className="hidden"
         onChange={(e) => void picked(e.target.files?.[0])}
       />
+
+      {videoPreview && recorded ? (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black" role="dialog" aria-modal="true" aria-label="Video preview">
+          <div className="flex justify-end px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+            <button type="button" onClick={() => setVideoPreview(false)} aria-label="Close" className="flex size-11 items-center justify-center rounded-full bg-white/15">
+              <X className="size-6" aria-hidden />
+            </button>
+          </div>
+          <div className="flex min-h-0 flex-1 items-center justify-center p-2">
+            <video src={recorded.url} poster={recorded.posterUrl} controls playsInline className="max-h-full max-w-full" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+            <button type="button" onClick={removeVideo} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-red-600 font-semibold">
+              <Trash2 className="size-5" aria-hidden />
+              Delete
+            </button>
+            <button type="button" onClick={() => setVideoPreview(false)} className="h-12 rounded-xl bg-white font-semibold text-black">
+              Keep
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {preview ? (
         <div className="fixed inset-0 z-50 flex flex-col bg-black" role="dialog" aria-modal="true" aria-label="Photo preview">

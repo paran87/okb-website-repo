@@ -83,6 +83,12 @@ export const MAX_PHOTOS = 5;
 /** Largest photo the server accepts (the page sends ~0.3–0.8 MB JPEGs; Vercel caps a request at 4.5 MB). */
 export const MAX_PHOTO_BYTES = 3_500_000;
 
+/** One video per report, recorded on the page (no sound), up to this size; it goes straight to storage. */
+export const MAX_VIDEOS = 1;
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+/** Videos stop on their own at this length too (the size limit usually comes first). */
+export const MAX_VIDEO_SECONDS = 5 * 60;
+
 export function floodLevel(id: string | null | undefined): FloodLevel | null {
   return FLOOD_LEVELS.find((l) => l.id === id) ?? null;
 }

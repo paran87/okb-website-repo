@@ -725,14 +725,16 @@ export function MobileReportsAdmin() {
                   <MediaTile
                     key={v.key}
                     url={v.url}
+                    poster={v.posterUrl}
                     video
-                    label={`Video ${i + 1}`}
+                    label={v.key.startsWith("report-media/") ? `Video ${i + 1}` : "Sender's video"}
                     confirming={confirm === v.key}
                     disabled={busy !== null}
                     title="Delete video"
                     onAsk={() => setConfirm(v.key)}
                     onKeep={() => setConfirm(null)}
-                    onDelete={() => void removeMedia(open, v.key)}
+                    // The sender's own video goes with the report (delete the report to remove it).
+                    onDelete={v.key.startsWith("report-media/") ? () => void removeMedia(open, v.key) : undefined}
                   />
                 ))}
                 {mediaTile}
@@ -975,6 +977,7 @@ function BridgeFacts({ r }: { r: AdminBridgeReport }) {
 /** One photo or video with its delete button (asks first). */
 function MediaTile({
   url,
+  poster,
   label,
   video = false,
   confirming,
@@ -985,6 +988,8 @@ function MediaTile({
   onDelete,
 }: {
   url: string;
+  /** A video's first frame (OKB Mobile videos). */
+  poster?: string | null;
   label: string;
   video?: boolean;
   confirming: boolean;
@@ -992,14 +997,15 @@ function MediaTile({
   title: string;
   onAsk: () => void;
   onKeep: () => void;
-  onDelete: () => void;
+  /** Left out: the file cannot be removed on its own. */
+  onDelete?: () => void;
 }) {
   return (
     <div className="relative overflow-hidden rounded-xl bg-muted ring-1 ring-border">
       <a href={url} target="_blank" rel="noreferrer" aria-label={`Open ${label.toLowerCase()}`} className="relative block">
         {video ? (
           <>
-            <video src={`${url}#t=0.1`} preload="metadata" muted playsInline className="aspect-[4/3] w-full bg-black object-cover" />
+            <video src={`${url}#t=0.1`} poster={poster ?? undefined} preload="metadata" muted playsInline className="aspect-[4/3] w-full bg-black object-cover" />
             <span className="absolute inset-0 grid place-items-center">
               <span className="grid size-11 place-items-center rounded-full bg-black/60 text-white">
                 <Play className="size-5 translate-x-0.5" aria-hidden />
@@ -1011,7 +1017,7 @@ function MediaTile({
           <img src={url} alt={label} className="aspect-[4/3] w-full object-cover" />
         )}
       </a>
-      {confirming ? (
+      {!onDelete ? null : confirming ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 p-2">
           <p className="text-caption font-semibold text-white">Delete this {video ? "video" : "photo"}?</p>
           <div className="flex gap-2">

@@ -29,6 +29,13 @@ export interface UploadedPhoto extends PhotoGeotag {
   key: string;
 }
 
+/** A video recorded on the page and uploaded to R2: where recording started, and its first frame as a JPEG. */
+export interface UploadedVideo extends PhotoGeotag {
+  key: string;
+  posterKey: string;
+  durationS: number | null;
+}
+
 /** Place names for a point (OpenStreetMap reverse geocoding). */
 export interface PlaceName {
   /** Short label, e.g. "Rizal Avenue, Santa Cruz, Manila". */
@@ -47,6 +54,8 @@ export interface FloodReportInput {
   /** Client-made UUID; photo keys are filed under it. */
   id: string;
   photos: UploadedPhoto[];
+  /** At most one video (older pages send none). */
+  videos?: UploadedVideo[];
   latitude: number;
   longitude: number;
   accuracyM: number | null;
@@ -130,7 +139,7 @@ export interface SubmittedReport {
 }
 
 /** The form answers of a report, as the edit form starts from them. */
-export type FloodReportFormValues = Omit<FloodReportInput, "id" | "photos" | "website">;
+export type FloodReportFormValues = Omit<FloodReportInput, "id" | "photos" | "videos" | "website">;
 
 /** A report sent from this phone (checked with its edit key): the map view plus what the edit form needs. */
 export interface MyFloodReport extends PublicFloodReport {
@@ -184,6 +193,19 @@ export interface PublicFloodReportList {
   reports: PublicFloodReport[];
   /** False when report storage is not configured on the server. */
   configured: boolean;
+}
+
+/** A video recorded on the page and not sent yet (browser only). */
+export interface CapturedVideo extends PhotoGeotag {
+  id: string;
+  blob: Blob;
+  url: string;
+  /** First frame with the GPS stamp (JPEG). */
+  poster: Blob;
+  posterUrl: string;
+  durationS: number;
+  key?: string;
+  posterKey?: string;
 }
 
 /** A photo taken on the page and not sent yet (browser only). */

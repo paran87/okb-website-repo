@@ -9,9 +9,9 @@ import { useFloodReports } from "../hooks/use-flood-reports";
 import { useGeolocation } from "../hooks/use-geolocation";
 import { useIsPhone } from "../hooks/use-is-phone";
 import { usePlace } from "../hooks/use-place";
-import { deleteReport, fetchMyReports, FloodReportApiError, sendReport, updateReport, uploadPhoto } from "../lib/api";
+import { deleteReport, fetchMyReports, FloodReportApiError, sendReport, updateReport, uploadPhoto, uploadVideo } from "../lib/api";
 import { addMyReportKey, forgetMyReportKeys, readMyReportKeys, removeMyReportKey, type MyReportKey } from "../lib/my-reports";
-import type { CapturedPhoto, FloodReportFormValues, MyFloodReport, PublicFloodReport, UploadedPhoto } from "../types";
+import type { CapturedPhoto, CapturedVideo, FloodReportFormValues, MyFloodReport, PublicFloodReport, UploadedPhoto, UploadedVideo } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
 import { CameraScreen } from "./camera-screen";
@@ -60,6 +60,8 @@ function PhoneApp() {
   }, []);
   const [screen, setScreen] = useState<Screen>("map");
   const [photos, setPhotos] = useState<CapturedPhoto[]>([]);
+  // One video per report, recorded on the camera screen.
+  const [video, setVideo] = useState<CapturedVideo | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
@@ -175,6 +177,11 @@ function PhoneApp() {
   const reset = () => {
     photos.forEach((p) => URL.revokeObjectURL(p.url));
     setPhotos([]);
+    if (video) {
+      URL.revokeObjectURL(video.url);
+      URL.revokeObjectURL(video.posterUrl);
+    }
+    setVideo(null);
     setFormError(null);
     reportId.current = crypto.randomUUID();
   };
@@ -184,21 +191,46 @@ function PhoneApp() {
     setSend({ stage: "uploading", progress: 0 });
     const id = reportId.current;
     const current = [...photos];
+    // Progress by bytes: a video is far larger than the photos.
+    const sizes = [...current.map((p) => (p.key ? 0 : p.blob.size)), video && !video.key ? video.blob.size + video.poster.size : 0];
+    const total = Math.max(1, sizes.reduce((a, b) => a + b, 0));
+    let done = 0;
+    const step = (size: number) => (f: number) => setSend({ stage: "uploading", progress: (done + f * size) / total });
     try {
       const uploaded: UploadedPhoto[] = [];
       for (let i = 0; i < current.length; i++) {
         const p = current[i]!;
         let key = p.key;
         if (!key) {
-          key = await uploadPhoto(id, p.blob, (f) => setSend({ stage: "uploading", progress: (i + f) / current.length }));
+          key = await uploadPhoto(id, p.blob, step(p.blob.size));
+          done += p.blob.size;
           current[i] = { ...p, key };
           // Remember the key so a retry does not upload this photo again.
           setPhotos((all) => all.map((x) => (x.id === p.id ? { ...x, key } : x)));
         }
         uploaded.push({ key, latitude: p.latitude, longitude: p.longitude, accuracyM: p.accuracyM, takenAt: p.takenAt });
       }
+      const videos: UploadedVideo[] = [];
+      if (video) {
+        let { key, posterKey } = video;
+        if (!posterKey) posterKey = await uploadPhoto(id, video.poster, step(video.poster.size));
+        done += video.poster.size;
+        if (!key) key = await uploadVideo(id, video.blob, step(video.blob.size));
+        done += video.blob.size;
+        // Remember the keys so a retry does not upload the video again.
+        setVideo((v) => (v ? { ...v, key, posterKey } : v));
+        videos.push({
+          key,
+          posterKey,
+          latitude: video.latitude,
+          longitude: video.longitude,
+          accuracyM: video.accuracyM,
+          takenAt: video.takenAt,
+          durationS: video.durationS,
+        });
+      }
       setSend({ stage: "saving", progress: 1 });
-      const { report, editToken, inConsolidated } = await sendReport({ ...values, id, photos: uploaded });
+      const { report, editToken, inConsolidated } = await sendReport({ ...values, id, photos: uploaded, videos });
       addMyReportKey(report.id, editToken);
       setMine((all) => [report, ...all]);
       void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
@@ -420,7 +452,7 @@ function PhoneApp() {
             <p className="font-bold text-slate-900">
               {range === "now" ? "No flooding reported right now" : `No flood reports in the ${rangeLabel(range)}`}
             </p>
-            <p className="mt-1 text-sm text-slate-600">See a flooded street? Tap the round button below to send photos.</p>
+            <p className="mt-1 text-sm text-slate-600">See a flooded street? Tap the round button below to send photos or a video.</p>
             {range === "now" ? (
               <p className="mt-1 text-xs text-slate-500">Reports leave the map when the flood recedes, or after 2–6 hours depending on the weather.</p>
             ) : null}
@@ -487,6 +519,8 @@ function PhoneApp() {
       {screen === "camera" ? (
         <CameraScreen
           photos={photos}
+          video={video}
+          onVideo={setVideo}
           geo={geo}
           place={place}
           onAdd={addPhoto}
@@ -552,13 +586,21 @@ function PhoneApp() {
         </div>
       ) : null}
       {screen === "form" ? (
-        <ReportForm photos={photos} place={place} error={formError} onBack={() => setScreen("camera")} onSubmit={(v) => void submit(v)} />
+        <ReportForm
+          // The video's first frame stands for it in the form (and gives its place and time).
+          photos={video ? [...photos, { id: video.id, url: video.posterUrl, latitude: video.latitude, longitude: video.longitude, accuracyM: video.accuracyM, takenAt: video.takenAt }] : photos}
+          videoCount={video ? 1 : 0}
+          place={place}
+          error={formError}
+          onBack={() => setScreen("camera")}
+          onSubmit={(v) => void submit(v)}
+        />
       ) : null}
       {send ? (
         <SendProgress
           stage={send.stage}
           progress={send.stage === "done" ? 1 : send.progress}
-          total={photos.length}
+          total={photos.length + (video ? 1 : 0)}
           reference={send.stage === "done" ? send.report.reference : null}
           inConsolidated={send.stage === "done" && send.inConsolidated}
           onViewMap={() => finish("map")}

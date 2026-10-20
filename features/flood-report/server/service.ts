@@ -3,11 +3,21 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import { ApiError, BadRequestError, ConflictError, ForbiddenError, NotFoundError, ValidationError } from "@/lib/api/errors";
 import { logger } from "@/lib/logger";
-import { deleteObject, getOperationsR2Config, objectExists, putObject, R2Error } from "@/features/operations/server/r2";
+import { deleteObject, getOperationsR2Config, objectExists, presign, putObject, R2Error, r2Fetch } from "@/features/operations/server/r2";
 import { invalidateAggregates } from "@/features/reports/server/service";
 import { getReportsConfig } from "@/features/reports/server/config";
 import { MOBILE_REPORT_PLATFORM } from "@/features/reports/types";
-import { FLOOD_LEVELS, inPhilippines, MAX_PHOTO_BYTES, MAX_PHOTOS, ROAD_STATUSES, WEATHER } from "@/features/flood-report/lib/options";
+import {
+  FLOOD_LEVELS,
+  inPhilippines,
+  MAX_PHOTO_BYTES,
+  MAX_PHOTOS,
+  MAX_VIDEO_BYTES,
+  MAX_VIDEO_SECONDS,
+  MAX_VIDEOS,
+  ROAD_STATUSES,
+  WEATHER,
+} from "@/features/flood-report/lib/options";
 import { floodMapWeather } from "@/features/incident/server/flood-map";
 import { bridgePins, bridgeReportsForAdmin } from "@/features/flood-report/server/bridge-reports";
 import { deleteAllMedia, NO_MEDIA, reportMediaIndex } from "@/features/flood-report/server/media";
@@ -19,6 +29,7 @@ import type {
   AdminReport,
   FloodReportInput,
   MyFloodReport,
+  UploadedVideo,
   PlaceName,
   PublicFloodReport,
   PublicFloodReportList,
@@ -39,6 +50,11 @@ const REPORTS = "okb_bridge_reports";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const PHOTO_PREFIX = "flood-reports/";
 export const PHOTO_KEY = /^flood-reports\/\d{4}\/\d{2}\/\d{2}\/[0-9a-f-]{36}\/[0-9a-f]{16}\.jpg$/;
+/** A video recorded on the page (mp4 on most phones, webm on some Android browsers). */
+export const VIDEO_KEY = /^flood-reports\/\d{4}\/\d{2}\/\d{2}\/[0-9a-f-]{36}\/[0-9a-f]{16}\.(mp4|webm|mov)$/;
+const VIDEO_TYPES: Record<string, string> = { mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime" };
+/** A small video can go through this site when the bucket refuses the browser (Vercel caps a request at 4.5 MB). */
+export const VIDEO_PROXY_LIMIT = 4 * 1024 * 1024;
 
 class StorageUnavailable extends ApiError {
   constructor(message: string) {
@@ -85,6 +101,69 @@ export async function uploadPhoto(reportId: string, bytes: ArrayBuffer): Promise
   return key;
 }
 
+/**
+ * A signed link the phone uploads its video to, straight to R2 (videos are too large to pass through this site).
+ * [origin] is allowed to upload to the bucket first (the same rule Admin uploads use).
+ */
+export async function createVideoTicket(
+  reportId: string,
+  size: number,
+  contentType: string,
+  ensureOrigin: () => Promise<unknown>,
+): Promise<{ key: string; uploadUrl: string; contentType: string; proxyLimit: number }> {
+  if (!UUID.test(reportId)) throw new BadRequestError("Invalid report id");
+  if (!Number.isFinite(size) || size <= 0) throw new BadRequestError("The video is empty.");
+  if (size > MAX_VIDEO_BYTES) throw new BadRequestError("The video is too large (50 MB at most).");
+  const base = contentType.split(";")[0]?.trim().toLowerCase() ?? "";
+  const ext = Object.entries(VIDEO_TYPES).find(([, t]) => t === base)?.[0];
+  if (!ext) throw new BadRequestError("Only MP4, WebM or MOV videos are accepted.");
+  const cfg = r2();
+  await ensureOrigin();
+  const key = `${PHOTO_PREFIX}${manilaDayPath()}/${reportId.toLowerCase()}/${randomBytes(8).toString("hex")}.${ext}`;
+  const type = VIDEO_TYPES[ext] as string;
+  return { key, uploadUrl: presign(cfg, "PUT", key, { headers: { "content-type": type }, expiresIn: 3600 }), contentType: type, proxyLimit: VIDEO_PROXY_LIMIT };
+}
+
+/** A small video through this site, when the phone cannot reach R2 directly. */
+export async function proxyVideoUpload(reportId: string, key: string, bytes: ArrayBuffer): Promise<void> {
+  if (!UUID.test(reportId) || !VIDEO_KEY.test(key) || !key.includes(`/${reportId.toLowerCase()}/`)) throw new BadRequestError("Invalid video.");
+  if (bytes.byteLength === 0 || bytes.byteLength > VIDEO_PROXY_LIMIT) throw new BadRequestError("The video is too large for this upload path.");
+  try {
+    await putObject(r2(), key, bytes, VIDEO_TYPES[key.split(".").pop() ?? ""] ?? "video/mp4");
+  } catch (err) {
+    log.error({ err: err instanceof R2Error ? { code: err.code, status: err.status } : err }, "Flood report video upload failed");
+    throw new StorageUnavailable("The video could not be saved. Please try again.");
+  }
+}
+
+/** The videos a stored report was sent with (malformed entries left out). */
+function storedVideos(mobile: Record<string, unknown>): UploadedVideo[] {
+  if (!Array.isArray(mobile.videos)) return [];
+  return mobile.videos.flatMap((v): UploadedVideo[] => {
+    const o = (v ?? {}) as Record<string, unknown>;
+    if (typeof o.key !== "string" || !VIDEO_KEY.test(o.key) || typeof o.posterKey !== "string" || !PHOTO_KEY.test(o.posterKey)) return [];
+    const num = (x: unknown) => (typeof x === "number" && Number.isFinite(x) ? x : null);
+    return [
+      {
+        key: o.key,
+        posterKey: o.posterKey,
+        latitude: num(o.latitude) ?? 0,
+        longitude: num(o.longitude) ?? 0,
+        accuracyM: num(o.accuracyM),
+        takenAt: typeof o.takenAt === "string" ? o.takenAt : new Date(0).toISOString(),
+        durationS: num(o.durationS),
+      },
+    ];
+  });
+}
+
+/** Size in bytes of an uploaded object, or null when it is not there. */
+async function storedSize(key: string): Promise<number | null> {
+  const res = await r2Fetch(r2(), "HEAD", key, { signal: AbortSignal.timeout(10_000) }).catch(() => null);
+  if (!res?.ok) return null;
+  return Number(res.headers.get("content-length") ?? 0);
+}
+
 // ---------------------------------------------------------------------------
 // Report submission
 // ---------------------------------------------------------------------------
@@ -113,8 +192,21 @@ const inputSchema = z.object({
         takenAt: isoTime,
       }),
     )
-    .min(1, "Add at least one photo")
     .max(MAX_PHOTOS),
+  videos: z
+    .array(
+      z.object({
+        key: z.string().regex(VIDEO_KEY, "Invalid video"),
+        posterKey: z.string().regex(PHOTO_KEY, "Invalid video"),
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        accuracyM: z.number().min(0).max(100_000).nullable(),
+        takenAt: isoTime,
+        durationS: z.number().min(0).max(MAX_VIDEO_SECONDS + 60).nullable(),
+      }),
+    )
+    .max(MAX_VIDEOS)
+    .default([]),
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   accuracyM: z.number().min(0).max(100_000).nullable(),
@@ -164,8 +256,12 @@ function checkReport(input: Omit<FloodReportInput, "id">, id: string, reportedAt
     if (receded > now + 10 * 60_000) throw new ValidationError("The time the flood receded is in the future.");
     if (receded < started) throw new ValidationError("The flood cannot recede before it started.");
   }
+  if (!input.photos.length && !input.videos?.length) throw new ValidationError("Add at least one photo or video.");
   for (const photo of input.photos) {
     if (!photo.key.includes(`/${id}/`)) throw new ValidationError("A photo does not belong to this report.");
+  }
+  for (const video of input.videos ?? []) {
+    if (!video.key.includes(`/${id}/`) || !video.posterKey.includes(`/${id}/`)) throw new ValidationError("A video does not belong to this report.");
   }
   if (new Set(input.photos.map((p) => p.key)).size !== input.photos.length) throw new ValidationError("A photo was sent twice.");
 }
@@ -222,6 +318,11 @@ export async function submitReport(body: unknown, ip = ""): Promise<SubmittedRep
   const cfg = r2();
   const present = await Promise.all(input.photos.map((p) => objectExists(cfg, p.key).catch(() => false)));
   if (present.some((ok) => !ok)) throw new ValidationError("A photo did not finish uploading. Please send again.");
+  for (const video of input.videos ?? []) {
+    const [size, poster] = await Promise.all([storedSize(video.key), objectExists(cfg, video.posterKey).catch(() => false)]);
+    if (size === null || !poster) throw new ValidationError("The video did not finish uploading. Please send again.");
+    if (size > MAX_VIDEO_BYTES) throw new ValidationError("The video is too large (50 MB at most).");
+  }
 
   const editToken = randomBytes(32).toString("base64url");
   const built = buildMobileRecord({ ...input, id });
@@ -370,11 +471,13 @@ export async function updateReportAsOperator(id: string, operator: string, body:
   return applyEdit(row, input, { kind: "operator", name: operator });
 }
 
-async function applyEdit(row: Row, input: Omit<FloodReportInput, "id">, editor: Editor): Promise<MyFloodReport> {
+async function applyEdit(row: Row, edited: Omit<FloodReportInput, "id">, editor: Editor): Promise<MyFloodReport> {
   const reportId = row.id;
   const status = row.status ?? "needs_review";
-  checkReport(input, reportId, Date.parse(row.created_at));
   const old = (row.record.mobile ?? {}) as Record<string, unknown>;
+  // Edits change the details and photos; the report's video stays as it was sent.
+  const input = { ...edited, videos: storedVideos(old) };
+  checkReport(input, reportId, Date.parse(row.created_at));
   const oldKeys = new Set(Array.isArray(old.photos) ? old.photos.map((p) => (p as { key?: string }).key).filter(Boolean) : []);
   const added = input.photos.filter((p) => !oldKeys.has(p.key));
   const cfg = r2();
@@ -482,8 +585,8 @@ async function listMobileReportsForAdmin(days: number | null): Promise<AdminMobi
       {
         ...view,
         kind: "mobile",
-        // Photos stay the report's own (the edit form saves that list); videos are the operators'.
-        videos: (media.get(row.id) ?? NO_MEDIA).videos,
+        // Photos stay the report's own (the edit form saves that list); videos: the sender's own, then the operators'.
+        videos: [...view.videos, ...(media.get(row.id) ?? NO_MEDIA).videos],
         contactNumber: typeof m.contactNumber === "string" ? m.contactNumber : null,
         inConsolidated: m.inConsolidated === true,
         hasEditKey: typeof m.ownerTokenHash === "string",
@@ -513,6 +616,8 @@ async function removeReport(row: Row, by: string): Promise<void> {
   const photos = Array.isArray((row.record.mobile as { photos?: unknown } | undefined)?.photos)
     ? ((row.record.mobile as { photos: { key?: unknown }[] }).photos.map((p) => p.key).filter((k): k is string => typeof k === "string" && PHOTO_KEY.test(k)))
     : [];
+  // The video and its first frame go too.
+  photos.push(...storedVideos((row.record.mobile ?? {}) as Record<string, unknown>).flatMap((v) => [v.key, v.posterKey]));
   const cfg = getOperationsR2Config();
   if (cfg) await Promise.all(photos.map((k) => deleteObject(cfg, k).catch((err) => log.warn({ err, key: k }, "Photo of deleted report not removed from R2"))));
   await deleteAllMedia(row.id);
@@ -650,7 +755,7 @@ export async function listPublicReports(hours: number): Promise<PublicFloodRepor
     .filter((r): r is PublicFloodReport => r !== null)
     .map((r) => {
       const added = media.get(r.id);
-      return added ? { ...r, photos: [...r.photos, ...added.photos], videos: added.videos } : r;
+      return added ? { ...r, photos: [...r.photos, ...added.photos], videos: [...r.videos, ...added.videos] } : r;
     });
   const data = {
     generatedAt,

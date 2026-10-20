@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getOperationsR2Config, r2Fetch } from "@/features/operations/server/r2";
 import { MEDIA_KEY } from "@/features/flood-report/server/media";
+import { VIDEO_KEY } from "@/features/flood-report/server/service";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -15,13 +16,14 @@ function plain(status: number, message: string): Response {
 }
 
 /**
- * Streams a photo or video OKB operators added to a flood report (?key=report-media/...), with Range support
+ * Streams a photo or video OKB operators added to a flood report (?key=report-media/...), or a video a sender
+ * recorded on the OKB Mobile page (?key=flood-reports/....mp4), with Range support
  * so videos can seek. Public, like the maps that show it; keys are random. Operators can delete files, so the
  * CDN keeps a copy for 5 minutes only.
  */
 export async function GET(request: NextRequest): Promise<Response> {
   const key = request.nextUrl.searchParams.get("key") ?? "";
-  if (!MEDIA_KEY.test(key)) return plain(404, "File not found");
+  if (!MEDIA_KEY.test(key) && !VIDEO_KEY.test(key)) return plain(404, "File not found");
   const cfg = getOperationsR2Config();
   if (!cfg) return plain(503, "Media storage is not configured");
   const range = request.headers.get("range");

@@ -6,6 +6,7 @@ import { MOBILE_REPORT_PLATFORM, type BridgeReportStatus } from "@/features/repo
 import { expiryReason, mobileExpiryHours } from "@/features/flood-report/lib/expiry";
 import { floodLevel, formatDepth, roadStatus, weather } from "@/features/flood-report/lib/options";
 import { readStretch } from "@/features/flood-report/lib/stretch";
+import { mediaUrl } from "@/features/flood-report/server/media";
 import type { FloodReportFormValues, FloodReportInput, MyFloodReport, PlaceName, PublicFloodReport } from "@/features/flood-report/types";
 
 /**
@@ -94,6 +95,13 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
   const coords = `${input.latitude.toFixed(6)}, ${input.longitude.toFixed(6)}`;
   const rainy = input.weather !== "clear" && input.weather !== "cloudy";
   const photoCount = input.photos.length;
+  const videos = input.videos ?? [];
+  const media = [
+    photoCount ? `${photoCount} geotagged photo${photoCount === 1 ? "" : "s"}` : null,
+    videos.length ? `${videos.length} video${videos.length === 1 ? "" : "s"}` : null,
+  ]
+    .filter(Boolean)
+    .join(" and ");
 
   // Laid out like the DEO field reports, so the "Weather condition:" line is read the same way.
   const messageText = [
@@ -109,6 +117,7 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
     input.remarks ? `Remarks: ${input.remarks}` : null,
     `Reported by: ${input.senderName ?? "Anonymous"}`,
     `Photos: ${photoCount} geotagged`,
+    videos.length ? `Video: ${videos.length} (recorded on the page)` : null,
   ]
     .filter(Boolean)
     .join("\n");
@@ -120,7 +129,7 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
     road ? `${road.label}.` : null,
     sky ? `Weather: ${sky.label.toLowerCase()}.` : null,
     `Started ${manilaLabel(input.startedAt)}.`,
-    `${photoCount} geotagged photo${photoCount === 1 ? "" : "s"} from a member of the public; not yet verified.`,
+    `${media.charAt(0).toUpperCase()}${media.slice(1)} from a member of the public; not yet verified.`,
   ]
     .filter(Boolean)
     .join(" ");
@@ -190,9 +199,9 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
       messageText,
       messageTimestamp: at,
       receivedAt: at,
-      capturedAt: input.photos[0]?.takenAt ?? at,
+      capturedAt: input.photos[0]?.takenAt ?? videos[0]?.takenAt ?? at,
       sourcePackage: null,
-      mediaIndicator: { mediaType: "IMAGE", mediaStatus: `${photoCount} geotagged photo${photoCount === 1 ? "" : "s"}` },
+      mediaIndicator: { mediaType: photoCount ? "IMAGE" : "VIDEO", mediaStatus: media },
     },
     status: "needs_review" as BridgeReportStatus,
     reportType: "flood_monitoring",
@@ -252,6 +261,15 @@ export function buildMobileRecord(input: FloodReportInput, now: Date = new Date(
         longitude: p.longitude,
         accuracyM: p.accuracyM,
         takenAt: p.takenAt,
+      })),
+      videos: videos.map((v) => ({
+        key: v.key,
+        posterKey: v.posterKey,
+        latitude: v.latitude,
+        longitude: v.longitude,
+        accuracyM: v.accuracyM,
+        takenAt: v.takenAt,
+        durationS: v.durationS,
       })),
       latitude: input.latitude,
       longitude: input.longitude,
@@ -354,7 +372,16 @@ export function toPublicReport(
     senderName: str(m.senderName),
     reportedAt: row.created_at,
     photos,
-    videos: [],
+    // A video recorded on the page, with its first frame (operators' videos are added by the caller).
+    videos: Array.isArray(m.videos)
+      ? m.videos.flatMap((v) => {
+          const o = obj(v);
+          const key = str(o.key);
+          const poster = str(o.posterKey);
+          if (!key || !key.startsWith("flood-reports/") || key.includes("..")) return [];
+          return [{ key, url: mediaUrl(key), posterUrl: poster && poster.startsWith("flood-reports/") ? reportPhotoUrl(poster) : null }];
+        })
+      : [],
   };
 }
 

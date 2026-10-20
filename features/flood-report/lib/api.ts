@@ -125,3 +125,54 @@ export function uploadPhoto(reportId: string, photo: Blob, onProgress: (fraction
     xhr.send(form);
   });
 }
+
+function putBlob(url: string, blob: Blob, contentType: string, onProgress: (fraction: number) => void): Promise<number> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", contentType);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = () => resolve(xhr.status);
+    xhr.onerror = () => resolve(0);
+    xhr.send(blob);
+  });
+}
+
+/**
+ * Uploads the report's video with progress (0–1) and resolves to its storage key. The video goes straight to
+ * storage with a signed link (it is too large for this site); a small one goes through the site when the
+ * phone cannot reach storage directly. Retried once after a few seconds when the upload is cut off.
+ */
+export async function uploadVideo(reportId: string, video: Blob, onProgress: (fraction: number) => void): Promise<string> {
+  const ticket = await call<{ key: string; uploadUrl: string; contentType: string; proxyLimit: number }>("/api/flood-reports/videos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ reportId, size: video.size, contentType: video.type || "video/mp4" }),
+  });
+  let status = await putBlob(ticket.uploadUrl, video, ticket.contentType, onProgress);
+  if (status === 0 || status >= 500) {
+    onProgress(0);
+    await new Promise((r) => setTimeout(r, 3000));
+    status = await putBlob(ticket.uploadUrl, video, ticket.contentType, onProgress);
+  }
+  if (status >= 200 && status < 300) {
+    onProgress(1);
+    return ticket.key;
+  }
+  if (status === 0 && video.size <= ticket.proxyLimit) {
+    onProgress(0);
+    const proxied = await putBlob(
+      `/api/flood-reports/videos?reportId=${encodeURIComponent(reportId)}&key=${encodeURIComponent(ticket.key)}`,
+      video,
+      ticket.contentType,
+      onProgress,
+    );
+    if (proxied >= 200 && proxied < 300) return ticket.key;
+  }
+  throw new FloodReportApiError(
+    status === 0 ? "The video could not be uploaded. Check your signal and try again, or send the report with photos only." : `The video upload failed (${status}). Please try again.`,
+    status,
+  );
+}

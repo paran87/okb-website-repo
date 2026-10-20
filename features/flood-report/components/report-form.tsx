@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ArrowLeft, Check, MapPin, SendHorizontal } from "lucide-react";
+import { ArrowLeft, Check, MapPin, Play, SendHorizontal } from "lucide-react";
 import { FLOOD_SEVERITY, floodSeverity } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import {
@@ -17,7 +17,7 @@ import {
 } from "../lib/options";
 import type { FloodReportFormValues, FloodReportInput, PlaceName } from "../types";
 
-export type ReportFormValues = Omit<FloodReportInput, "id" | "photos">;
+export type ReportFormValues = Omit<FloodReportInput, "id" | "photos" | "videos">;
 
 /** A photo shown at the top of the form (a new capture, or a photo already sent). */
 export interface FormPhoto {
@@ -83,8 +83,11 @@ export function ReportForm({
   onSubmit,
   initial,
   editHeading,
+  videoCount = 0,
 }: {
   photos: FormPhoto[];
+  /** The last `videoCount` of `photos` are video thumbnails (counted as videos on the send button). */
+  videoCount?: number;
   place: PlaceName | null;
   error: string | null;
   onBack: () => void;
@@ -228,10 +231,20 @@ export function ReportForm({
         <div className="mx-auto max-w-md space-y-6 px-4 py-4">
           {/* Photos */}
           <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
-            {photos.map((p, i) => (
-              // eslint-disable-next-line @next/next/no-img-element -- local object URL or our photo route
-              <img key={p.id} src={p.url} alt={`Photo ${i + 1}`} className="h-20 w-28 shrink-0 rounded-lg object-cover ring-1 ring-slate-300" />
-            ))}
+            {photos.map((p, i) => {
+              const isVideo = i >= photos.length - videoCount;
+              return (
+                <span key={p.id} className="relative shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- local object URL or our photo route */}
+                  <img src={p.url} alt={isVideo ? "Video" : `Photo ${i + 1}`} className="h-20 w-28 rounded-lg object-cover ring-1 ring-slate-300" />
+                  {isVideo ? (
+                    <span className="absolute inset-0 m-auto grid size-8 place-items-center rounded-full bg-black/60 text-white" aria-hidden>
+                      <Play className="size-4 translate-x-px fill-white" />
+                    </span>
+                  ) : null}
+                </span>
+              );
+            })}
           </div>
 
           <div data-form-error={firstError === "location" ? "" : undefined}>
@@ -493,7 +506,14 @@ export function ReportForm({
           className="mx-auto flex h-14 w-full max-w-md items-center justify-center gap-2 rounded-2xl bg-black text-base font-bold text-white active:bg-slate-800"
         >
           <SendHorizontal className="size-5" aria-hidden />
-          {editing ? "Save changes" : `Send report · ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
+          {editing
+            ? "Save changes"
+            : `Send report · ${[
+                photos.length - videoCount ? `${photos.length - videoCount} photo${photos.length - videoCount === 1 ? "" : "s"}` : null,
+                videoCount ? `${videoCount} video` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}`}
         </button>
       </div>
     </div>
@@ -554,8 +574,10 @@ export function SendProgress({
     <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-black/90 px-8 text-center text-white" role="status">
       <SendHorizontal className="size-10 animate-pulse" aria-hidden />
       <div className="space-y-1">
-        <p className="text-lg font-bold">{stage === "uploading" ? `Uploading photos…` : "Saving your report…"}</p>
-        <p className="text-sm text-white/70">{stage === "uploading" ? `${Math.min(total, Math.floor(progress * total) + 1)} of ${total}` : "Almost done"}</p>
+        <p className="text-lg font-bold">{stage === "uploading" ? `Uploading…` : "Saving your report…"}</p>
+        <p className="text-sm text-white/70">
+          {stage === "uploading" ? `${Math.round(progress * 100)}% · ${total} file${total === 1 ? "" : "s"}` : "Almost done"}
+        </p>
       </div>
       <div className="h-2 w-full max-w-xs overflow-hidden rounded-full bg-white/20">
         <div className="h-full rounded-full bg-amber-400 transition-[width] duration-200" style={{ width: `${stage === "saving" ? 100 : pct}%` }} />

@@ -159,6 +159,7 @@ function record(s: Spec): BridgeReportRecord {
     contactNumber: null,
     mobileWeather: null,
     mobileStretch: null,
+    mobileVideos: [],
     inConsolidated: null,
     createdAt: new Date(Date.parse(s.at) + 40_000).toISOString(),
     updatedAt: new Date(Date.parse(s.at) + 90_000).toISOString(),

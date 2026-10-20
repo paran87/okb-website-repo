@@ -30,7 +30,7 @@ export function FloodPhotos({
   const [open, setOpen] = useState<number | null>(null);
   const viewer: ViewerItem[] = [
     ...photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${label}` })),
-    ...videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${label}`, video: true })),
+    ...videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${label}`, video: true, poster: v.posterUrl ?? undefined })),
   ];
   if (!viewer.length) return null;
   const shown = max ? viewer.slice(0, max) : viewer;
@@ -54,7 +54,7 @@ export function FloodPhotos({
           >
             {p.video ? (
               <>
-                <video src={`${p.url}#t=0.1`} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
+                <video src={`${p.url}#t=0.1`} poster={p.poster} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
                 <span className="absolute inset-0 grid place-items-center">
                   <Play className="size-5 rounded-full bg-black/60 p-1 text-white" aria-hidden />
                 </span>

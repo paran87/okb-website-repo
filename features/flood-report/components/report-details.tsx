@@ -22,7 +22,7 @@ export const SOURCE_COLOR = { okb_mobile: "#0f172a", whatsapp: "#1fa855", viber:
 export function mediaOf(report: Pick<PublicFloodReport, "photos" | "videos" | "locationText">): ViewerItem[] {
   return [
     ...report.photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${report.locationText}` })),
-    ...report.videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${report.locationText}`, video: true })),
+    ...report.videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${report.locationText}`, video: true, poster: v.posterUrl ?? undefined })),
   ];
 }
 
@@ -31,6 +31,8 @@ export interface ViewerItem {
   alt: string;
   /** A video (played with controls) instead of a photo. */
   video?: boolean;
+  /** A video's first frame, shown before it plays. */
+  poster?: string;
 }
 
 /** Full-screen swipeable photo (and video) viewer. */
@@ -84,7 +86,7 @@ export function PhotoViewer({
       </div>
       <div className="relative flex min-h-0 flex-1 items-center justify-center">
         {photo.video ? (
-          <video key={photo.url} src={photo.url} controls autoPlay playsInline aria-label={photo.alt} className="max-h-full max-w-full" />
+          <video key={photo.url} src={photo.url} poster={photo.poster} controls autoPlay playsInline aria-label={photo.alt} className="max-h-full max-w-full" />
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route
           <img src={photo.url} alt={photo.alt} className="max-h-full max-w-full object-contain" />
@@ -174,7 +176,7 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
               >
                 {p.video ? (
                   <>
-                    <video src={`${p.url}#t=0.1`} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
+                    <video src={`${p.url}#t=0.1`} poster={p.poster} preload="metadata" muted playsInline className="pointer-events-none size-full object-cover" />
                     <span className="absolute inset-0 grid place-items-center">
                       <span className="grid size-14 place-items-center rounded-full bg-black/60 text-white">
                         <Play className="size-7 translate-x-0.5" aria-hidden />

@@ -44,6 +44,8 @@ export interface ReportVideo {
   key: string;
   /** Same-origin URL that streams the video (with seeking). */
   url: string;
+  /** OKB Mobile videos: their first frame (with the GPS stamp), shown before it plays and as the map pin. */
+  posterUrl?: string | null;
 }
 
 /** Processing / review states written by the bridge backend. */
@@ -221,6 +223,8 @@ export interface BridgeReportRecord {
   mobileWeather: string | null;
   /** Mobile reports: the flooded road between photos taken far apart (features/flood-report/lib/stretch.ts). */
   mobileStretch: FloodStretch | null;
+  /** Mobile reports: the video recorded on the page, with its first frame. */
+  mobileVideos: ReportVideo[];
   /** Mobile reports: included in the bridge's automated WhatsApp report (null for other reports). */
   inConsolidated: boolean | null;
   createdAt: string;

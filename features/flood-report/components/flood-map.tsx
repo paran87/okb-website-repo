@@ -90,6 +90,7 @@ export function reportColor(r: Pick<PublicFloodReport, "receded" | "expired" | "
 
 const MESSAGE_ICON =
   '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;inset:0;margin:auto" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>';
+const PLAY_ICON = '<svg viewBox="0 0 24 24" width="10" height="10" fill="#fff" aria-hidden="true"><path d="M7 4v16l13-8z"/></svg>';
 const SMALL_MESSAGE_ICON =
   '<svg viewBox="0 0 24 24" width="11" height="11" fill="#fff" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 
@@ -104,7 +105,10 @@ function markerElement(report: PublicFloodReport, onSelect: (id: string) => void
   const ring = document.createElement("span");
   ring.style.cssText = `position:relative;display:block;width:46px;height:46px;border-radius:9999px;border:4px solid ${color};background:#e2e8f0 center/cover no-repeat;box-shadow:0 4px 10px rgba(0,0,0,.35);`;
   const photo = report.photos[0];
+  // A report with only a video shows the video's first frame, with a play badge.
+  const poster = photo ? null : (report.videos.find((v) => v.posterUrl)?.posterUrl ?? null);
   if (photo) ring.style.backgroundImage = `url("${photo.url}")`;
+  else if (poster) ring.style.backgroundImage = `url("${poster}")`;
   else if (report.source !== "okb_mobile") {
     // A WhatsApp / Viber report without photos: a message icon instead of a photo.
     ring.style.background = "#f8fafc";
@@ -116,6 +120,13 @@ function markerElement(report: PublicFloodReport, onSelect: (id: string) => void
     badge.style.cssText = `position:absolute;left:-6px;bottom:-4px;width:18px;height:18px;border-radius:9999px;background:${report.source === "viber" ? "#7360f2" : "#1fa855"};box-shadow:0 0 0 2px #fff;display:grid;place-items:center;`;
     badge.innerHTML = SMALL_MESSAGE_ICON;
     ring.append(badge);
+  }
+  if (report.videos.length) {
+    const play = document.createElement("span");
+    play.title = "Has a video";
+    play.style.cssText = `position:absolute;right:-6px;bottom:-4px;width:18px;height:18px;border-radius:9999px;background:#0f172a;box-shadow:0 0 0 2px #fff;display:grid;place-items:center;`;
+    play.innerHTML = PLAY_ICON;
+    ring.append(play);
   }
   if (report.verified) {
     const check = document.createElement("span");
@@ -240,7 +251,7 @@ export function FloodMap({
       seen.add(r.id);
       const offset = offsetOf(r);
       const at = pinAt(r);
-      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.source}|${at.latitude},${at.longitude}|${offset.join(",")}`;
+      const signature = `${r.status}|${r.receded}|${r.expired}|${r.depthM}|${r.photos[0]?.key ?? ""}|${r.videos.length}|${r.source}|${at.latitude},${at.longitude}|${offset.join(",")}`;
       const existing = markers.current.get(r.id);
       if (existing?.signature === signature) continue;
       existing?.marker.remove();

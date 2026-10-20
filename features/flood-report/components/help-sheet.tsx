@@ -9,8 +9,12 @@ import { BottomSheet } from "./bottom-sheet";
 import { CLEARED_COLOR, RECEDED_COLOR } from "./flood-map";
 
 const STEPS = [
-  { icon: Camera, title: "Take photos of the flood", text: `Tap the round button. Take up to ${MAX_PHOTOS} photos; each one is stamped with the time and GPS location.` },
-  { icon: Send, title: "Tap send", text: "The arrow button opens a short form once you have at least one photo." },
+  {
+    icon: Camera,
+    title: "Take photos or a video of the flood",
+    text: `Tap the round button. Take up to ${MAX_PHOTOS} photos, each stamped with the time and GPS location, and if you like switch to Video and record one clip (up to 50 MB, no sound). Its first frame is its picture on the map.`,
+  },
+  { icon: Send, title: "Tap send", text: "The arrow button opens a short form once you have at least one photo or a video." },
   { icon: ClipboardList, title: "Fill in the details", text: "Flood height, road condition, weather and when it started. Your name is optional." },
   { icon: MapPin, title: "See it on the map", text: "Your report appears on the map right away. OKB operators verify it from your photos." },
 ];
@@ -130,7 +134,7 @@ export function HelpSheet({ open, onClose }: { open: boolean; onClose: () => voi
         </section>
 
         <p className="text-xs text-slate-500">
-          Your photos, the place and the flood details are shown on the public map. Your mobile number (if you give it) is seen only by
+          Your photos, video, the place and the flood details are shown on the public map. Your mobile number (if you give it) is seen only by
           OKB operators. The page needs your camera and location; nothing is recorded until you tap send.
         </p>
 

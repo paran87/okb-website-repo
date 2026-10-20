@@ -180,7 +180,7 @@ export function reportObservations(record: BridgeReportRecord, activeHours: numb
             groupName: record.source?.groupName ?? null,
             clearsAt: Number.isFinite(clearsAt) ? new Date(clearsAt).toISOString() : reportedAt,
             photos: record.photos,
-            videos: [],
+            videos: record.mobileVideos,
             fromMobile,
             stretch: record.mobileStretch,
             clearRule: fromMobile ? expiryReason(record.mobileWeather, liveRain) : null,
@@ -269,7 +269,7 @@ export async function getFloodMap(store: ReportStore): Promise<FloodMapData> {
     ...built,
     locations: built.locations.map((l) => {
       const added = media.get(l.reportId);
-      return added ? { ...l, photos: [...l.photos, ...added.photos], videos: added.videos } : l;
+      return added ? { ...l, photos: [...l.photos, ...added.photos], videos: [...l.videos, ...added.videos] } : l;
     }),
   };
   memo = { at: Date.now(), kind: store.kind, data };
