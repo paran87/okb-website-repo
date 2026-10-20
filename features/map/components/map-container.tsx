@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { useMapContext } from "@/features/map/context/map-context";
 import { makeRemovedMapInert, useMapStore } from "@/features/map/store/map.store";
 import { isTouchScreen, mapService } from "@/features/map/services/map.service";
+import { keepMapDrawn } from "@/features/map/services/map-recovery";
 import { layerService } from "@/features/map/services/layer.service";
 import { MapLayerRenderer } from "@/features/map/components/map-layer-renderer";
 import { MapEventBridge } from "@/features/map/components/map-event-bridge";
@@ -53,6 +54,8 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
   const isReadyRef = useRef(false);
   const appliedThemeRef = useRef<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  /** The view to rebuild at after the map lost its drawing context in the background. */
+  const resumeViewRef = useRef<typeof initialView | null>(null);
   const { initialView, initialStyleId, options } = useMapContext();
   const maxBounds = options.maxBounds;
   const lockBasemap = options.lockBasemap ?? false;
@@ -67,6 +70,7 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
   useEffect(() => {
     let cancelled = false;
     let resizeObserver: ResizeObserver | undefined;
+    let stopWatching: (() => void) | undefined;
 
     async function init() {
       if (!containerRef.current || mapRef.current) return;
@@ -80,17 +84,36 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
         // guard a second map is built on the same container and leaked.
         if (cancelled || !containerRef.current || mapRef.current) return;
 
+        // A rebuild keeps the basemap shown before (one the user picked included).
         const styleId =
-          initialStyleId ?? mapService.resolveStyleForTheme(resolvedTheme);
+          (resumeViewRef.current ? useMapStore.getState().styleId : null) ??
+          initialStyleId ??
+          mapService.resolveStyleForTheme(resolvedTheme);
 
         appliedThemeRef.current = resolvedTheme ?? null;
         useMapStore.getState().setStyleId(styleId);
 
         const map = new maplibregl.Map({
-          ...mapService.createOptions(initialView, styleId, maxBounds),
+          ...mapService.createOptions(resumeViewRef.current ?? initialView, styleId, maxBounds),
           container: containerRef.current,
         });
         mapRef.current = map;
+        resumeViewRef.current = null;
+
+        // Back from the background with a blank map (the phone took its GPU memory): rebuild it where it was.
+        stopWatching = keepMapDrawn(map, () => {
+          if (cancelled || mapRef.current !== map) return;
+          const center = map.getCenter();
+          resumeViewRef.current = {
+            ...initialView,
+            longitude: center.lng,
+            latitude: center.lat,
+            zoom: map.getZoom(),
+            bearing: map.getBearing(),
+            pitch: map.getPitch(),
+          };
+          setReloadToken((n) => n + 1);
+        });
 
         // Phones and tablets: a two-finger pinch only zooms. With rotation on, a pinch whose fingers turn a
         // little also starts turning the map, and the zoom stutters and lands on a tilted bearing.
@@ -207,6 +230,7 @@ export function MapContainer({ className, onMapReady }: MapContainerProps) {
       cancelled = true;
       isReadyRef.current = false;
       resizeObserver?.disconnect();
+      stopWatching?.();
       const removed = mapRef.current;
       if (removed) {
         removed.remove();

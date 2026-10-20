@@ -6,6 +6,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { getMapStyle } from "@/features/map/config/map-styles";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { isStyleReady } from "@/features/map/services/map.service";
+import { keepMapDrawn } from "@/features/map/services/map-recovery";
 import { formatDepth } from "../lib/options";
 import type { PublicFloodReport } from "../types";
 
@@ -181,7 +182,12 @@ export function FloodMap({
   const lib = useRef<MapLibre | null>(null);
   const fitted = useRef(false);
   const select = useRef(onSelect);
-  const [ready, setReady] = useState(false);
+  /** 0 until the map is up; a new number for each map instance (a rebuilt map redraws its markers and layers). */
+  const [ready, setReady] = useState(0);
+  /** Bumped to rebuild the map after the phone took its drawing context in the background. */
+  const [generation, setGeneration] = useState(0);
+  const resumeView = useRef<{ center: [number, number]; zoom: number } | null>(null);
+  const lastFocus = useRef<string | null>(null);
 
   useEffect(() => {
     select.current = onSelect;
@@ -194,14 +200,18 @@ export function FloodMap({
   useEffect(() => {
     if (!container.current || map.current) return;
     let cancelled = false;
+    let stopWatching: (() => void) | undefined;
+    const placed = markers.current;
     void loadMapLibre().then((maplibre) => {
       if (cancelled || !container.current) return;
       lib.current = maplibre;
+      const view = resumeView.current;
+      resumeView.current = null;
       const m = new maplibre.Map({
         container: container.current,
         style: getMapStyle("light"),
-        center: DEFAULT_CENTER,
-        zoom: 11,
+        center: view?.center ?? DEFAULT_CENTER,
+        zoom: view?.zoom ?? 11,
         attributionControl: { compact: true },
         dragRotate: false,
         pitchWithRotate: false,
@@ -211,14 +221,27 @@ export function FloodMap({
         container.current?.querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show"),
       );
       map.current = m;
-      setReady(true);
+      // Back from the background with a blank map: rebuild it where it was, with its pins and stretches.
+      stopWatching = keepMapDrawn(m, () => {
+        if (cancelled || map.current !== m) return;
+        const c = m.getCenter();
+        resumeView.current = { center: [c.lng, c.lat], zoom: m.getZoom() };
+        setGeneration((g) => g + 1);
+      });
+      setReady(generation + 1);
     });
     return () => {
       cancelled = true;
+      stopWatching?.();
       map.current?.remove();
       map.current = null;
+      // The markers went with the map; the next one gets new ones.
+      placed.clear();
+      userMarker.current = null;
+      setReady(0);
     };
-  }, []);
+    // A new generation (the drawing context was lost) rebuilds the map.
+  }, [generation]);
 
   // Keep one marker per report; rebuild a marker only when what it shows changes.
   useEffect(() => {
@@ -346,6 +369,9 @@ export function FloodMap({
   useEffect(() => {
     const m = map.current;
     if (!ready || !m || !focus) return;
+    // A rebuilt map keeps its view: only a new focus moves it.
+    if (lastFocus.current === focus.key) return;
+    lastFocus.current = focus.key;
     fitted.current = true;
     m.flyTo({
       center: [focus.longitude, focus.latitude],
