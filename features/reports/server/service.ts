@@ -323,6 +323,13 @@ function buckets(rows: LightRow[], keyOf: (r: LightRow) => string | null, labelO
 }
 
 const PROCESSED = new Set(["extracted", "needs_review", "approved", "rejected"]);
+
+/**
+ * Messages the counts include: not ignored, and not classified as "not a flood report" (chat in the flood
+ * monitoring groups). Admin → Reports lists only flood reports, so anything else would stay in the counts
+ * with no way to delete it there.
+ */
+const counted = (r: LightRow) => r.status !== "ignored" && r.reportType !== "not_flood_report";
 const LIGHT_CAP = 5000;
 
 /** Last [hours], or one monitoring period ([from, to) of a monitoring day). */
@@ -343,7 +350,7 @@ export async function getSituationSummary(store: ReportStore, window: SummaryWin
       ended ? store.countIncidentsSince(to) : Promise.resolve(0),
     ]);
     const incidents = incidentsSince === null || incidentsAfter === null ? incidentsSince : incidentsSince - incidentsAfter;
-    const rows = light.filter((r) => r.status !== "ignored" && Date.parse(r.createdAt) < to.getTime());
+    const rows = light.filter((r) => counted(r) && Date.parse(r.createdAt) < to.getTime());
     const series = clusterSeries(floodReports).slice(0, 12);
     const latestAiSummaries = floodReports
       .filter((r) => r.summary)
@@ -392,7 +399,7 @@ export async function getAnalytics(store: ReportStore): Promise<ReportAnalytics>
       store.listFloodReports({ from: new Date(now.getTime() - 14 * DAY), to: now, limit: 400 }),
       store.countIncidentsSince(from),
     ]);
-    const rows = light.filter((r) => r.status !== "ignored");
+    const rows = light.filter(counted);
     const today = startOfManilaDay(now).getTime();
     const since = (ms: number) => rows.filter((r) => Date.parse(r.createdAt) >= ms).length;
 
