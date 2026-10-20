@@ -194,7 +194,7 @@ export function presign(
  */
 export function signRequest(
   cfg: R2Config,
-  method: "GET" | "PUT" | "DELETE" | "HEAD",
+  method: "GET" | "PUT" | "DELETE" | "HEAD" | "POST",
   key: string | null,
   opts: { query?: Record<string, string>; headers?: Record<string, string>; at?: Date } = {},
 ): { url: string; headers: Record<string, string> } {
@@ -290,7 +290,7 @@ export class R2Error extends Error {
 /** Signs (Authorization header) and sends one request; throws R2Error on failure. */
 async function request(
   cfg: R2Config,
-  method: "GET" | "PUT" | "DELETE" | "HEAD",
+  method: "GET" | "PUT" | "DELETE" | "HEAD" | "POST",
   key: string | null,
   opts: {
     query?: Record<string, string>;
@@ -420,6 +420,56 @@ export async function putObject(
   contentType: string,
 ): Promise<void> {
   await request(cfg, "PUT", key, { headers: { "content-type": contentType }, body });
+}
+
+// ---- multipart uploads (large files straight from the browser, in parts sent side by side) ----------
+
+/** Starts a multipart upload; returns its upload id. */
+export async function createMultipartUpload(cfg: R2Config, key: string, contentType: string): Promise<string> {
+  const res = await request(cfg, "POST", key, { query: { uploads: "" }, headers: { "content-type": contentType } });
+  const id = xmlValue(await res.text(), "UploadId");
+  if (!id) throw new R2Error("R2 did not start the upload", 502, "NoUploadId");
+  return id;
+}
+
+/** A signed link the browser sends one part (1-based) of a multipart upload to. */
+export function presignPart(cfg: R2Config, key: string, uploadId: string, partNumber: number, expiresIn = 3 * 3600): string {
+  return presign(cfg, "PUT", key, { query: { partNumber: String(partNumber), uploadId }, expiresIn });
+}
+
+/** The parts R2 has received (number and ETag), in order. */
+export async function listParts(cfg: R2Config, key: string, uploadId: string): Promise<{ partNumber: number; etag: string }[]> {
+  const parts: { partNumber: number; etag: string }[] = [];
+  let marker = "";
+  for (;;) {
+    const res = await request(cfg, "GET", key, {
+      query: { uploadId, "max-parts": "1000", ...(marker ? { "part-number-marker": marker } : {}) },
+    });
+    const xml = await res.text();
+    for (const [, block = ""] of xml.matchAll(/<Part>([\s\S]*?)<\/Part>/g)) {
+      parts.push({ partNumber: Number(xmlValue(block, "PartNumber")), etag: xmlValue(block, "ETag") });
+    }
+    if (xmlValue(xml, "IsTruncated") !== "true") break;
+    marker = xmlValue(xml, "NextPartNumberMarker");
+    if (!marker) break;
+  }
+  return parts.sort((a, b) => a.partNumber - b.partNumber);
+}
+
+/** Joins the uploaded parts into the object. */
+export async function completeMultipartUpload(cfg: R2Config, key: string, uploadId: string, parts: { partNumber: number; etag: string }[]): Promise<void> {
+  const body = `<CompleteMultipartUpload>${parts
+    .map((p) => `<Part><PartNumber>${p.partNumber}</PartNumber><ETag>${p.etag.replace(/[<>&]/g, "")}</ETag></Part>`)
+    .join("")}</CompleteMultipartUpload>`;
+  const res = await request(cfg, "POST", key, { query: { uploadId }, headers: { "content-type": "application/xml" }, body });
+  // S3-style stores can answer 200 with an <Error> body when joining the parts fails.
+  const text = await res.text();
+  if (text.includes("<Error>")) throw new R2Error("R2 could not join the upload parts", 502, xmlValue(text, "Code") || "CompleteFailed");
+}
+
+/** Drops an unfinished multipart upload and the parts already sent. */
+export async function abortMultipartUpload(cfg: R2Config, key: string, uploadId: string): Promise<void> {
+  await request(cfg, "DELETE", key, { query: { uploadId } });
 }
 
 /** Permanently deletes an object. */

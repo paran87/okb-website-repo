@@ -12,7 +12,7 @@ import type { UploadTicket } from "@/features/admin/types";
 
 export function put(
   url: string,
-  file: File,
+  file: Blob,
   contentType: string,
   onProgress: (fraction: number) => void,
   signal: AbortSignal,
@@ -20,7 +20,8 @@ export function put(
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", contentType);
+    // Parts of a multipart upload carry no content type (the upload has it).
+    if (contentType) xhr.setRequestHeader("Content-Type", contentType);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(e.loaded / e.total);
     };
@@ -77,9 +78,48 @@ export async function uploadFile(
   return ticket.key;
 }
 
+/** Parts sent at the same time, and tries per part. */
+const PARALLEL_PARTS = 4;
+const PART_TRIES = 3;
+
 /**
- * Adds one photo or video to a flood report (Admin → Reports), the same way: straight to R2, or through this
- * site for small files when the bucket does not allow direct uploads yet.
+ * Sends a file's parts to their signed links, PARALLEL_PARTS at a time; a part that fails is sent again (up to
+ * PART_TRIES). Throws with the last status when a part cannot be sent (0: blocked before reaching R2).
+ */
+async function putParts(
+  file: Blob,
+  multipart: NonNullable<UploadTicket["multipart"]>,
+  onProgress: (fraction: number) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const loaded = new Array<number>(multipart.partUrls.length).fill(0);
+  const report = () => onProgress(Math.min(1, loaded.reduce((a, b) => a + b, 0) / file.size));
+  let next = 0;
+  const worker = async () => {
+    while (next < multipart.partUrls.length) {
+      const i = next++;
+      const slice = file.slice(i * multipart.partSize, Math.min(file.size, (i + 1) * multipart.partSize));
+      let status = 0;
+      for (let attempt = 1; attempt <= PART_TRIES; attempt++) {
+        status = await put(multipart.partUrls[i] as string, slice, "", (f) => {
+          loaded[i] = f * slice.size;
+          report();
+        }, signal);
+        if (status >= 200 && status < 300) break;
+        loaded[i] = 0;
+        if (attempt < PART_TRIES) await new Promise((r) => setTimeout(r, 1000 * attempt));
+      }
+      if (status < 200 || status >= 300) throw new AdminApiError(status ? `Storage rejected part ${i + 1} (${status}).` : "blocked", status, status ? "storage_error" : "cors_blocked");
+      loaded[i] = slice.size;
+      report();
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PARALLEL_PARTS, multipart.partUrls.length) }, worker));
+}
+
+/**
+ * Adds one photo or video to a flood report (Admin → Reports), the same way: straight to R2 (large files in
+ * parts sent side by side), or through this site for small files when the bucket does not allow direct uploads yet.
  */
 export async function uploadReportMedia(
   reportId: string,
@@ -94,7 +134,22 @@ export async function uploadReportMedia(
     body: jsonBody({ fileName, contentType: file.type, size: file.size }),
     signal,
   });
-  const direct = await put(ticket.uploadUrl, file as File, ticket.contentType, onProgress, signal);
+  if (ticket.multipart) {
+    const { uploadId, partUrls } = ticket.multipart;
+    try {
+      await putParts(file, ticket.multipart, onProgress, signal);
+    } catch (err) {
+      // Drop the parts already sent (also when the operator cancelled).
+      void adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key, uploadId, abort: true }) }).catch(() => undefined);
+      if (err instanceof AdminApiError && err.reason === "cors_blocked") {
+        throw new AdminApiError("Large videos need direct uploads. Turn them on under Media → Direct uploads, then retry.", 0, "cors_blocked");
+      }
+      throw err;
+    }
+    await adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key, uploadId, partCount: partUrls.length }), signal });
+    return ticket.key;
+  }
+  const direct = await put(ticket.uploadUrl, file, ticket.contentType, onProgress, signal);
   if (direct >= 200 && direct < 300) {
     await adminApi(`${base}/complete`, { method: "POST", body: jsonBody({ key: ticket.key }), signal });
     return ticket.key;
@@ -108,7 +163,7 @@ export async function uploadReportMedia(
     );
   }
   onProgress(0);
-  const proxied = await put(`${base}?key=${encodeURIComponent(ticket.key)}`, file as File, ticket.contentType, onProgress, signal);
+  const proxied = await put(`${base}?key=${encodeURIComponent(ticket.key)}`, file, ticket.contentType, onProgress, signal);
   if (proxied < 200 || proxied >= 300) {
     throw new AdminApiError(proxied === 0 ? "Upload failed. Check your connection." : `Upload failed (${proxied}).`, proxied, null);
   }

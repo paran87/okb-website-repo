@@ -3,11 +3,16 @@ import { randomBytes } from "node:crypto";
 import { ApiError, BadRequestError, NotFoundError } from "@/lib/api/errors";
 import { logger } from "@/lib/logger";
 import {
+  abortMultipartUpload,
+  completeMultipartUpload,
+  createMultipartUpload,
   deleteObject,
   getOperationsR2Config,
   listObjects,
+  listParts,
   objectExists,
   presign,
+  presignPart,
   putObject,
   R2Error,
   type R2Config,
@@ -30,7 +35,13 @@ export const MEDIA_KEY = /^report-media\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0
 const VIDEO = /\.(mp4|m4v|mov|webm|3gp)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** Largest photo or video an operator can add. */
-export const MAX_MEDIA_BYTES = 500 * 1024 * 1024;
+export const MAX_MEDIA_BYTES = 1024 * 1024 * 1024;
+/**
+ * Files above this go up in parts of PART_BYTES, several at a time (much faster than one stream on mobile and
+ * high-latency links, and a dropped connection only resends one part).
+ */
+const MULTIPART_FROM = 20 * 1024 * 1024;
+const PART_BYTES = 10 * 1024 * 1024;
 /** Requests through this site are capped by Vercel (4.5 MB). */
 export const MEDIA_PROXY_LIMIT = 4 * 1024 * 1024;
 
@@ -126,9 +137,21 @@ export async function createMediaTicket(reportId: string, fileName: string, cont
   let ext = extOf(fileName);
   if (ext === "jpeg") ext = "jpg";
   if (!CONTENT_TYPES[ext]) throw new BadRequestError("Only photos (JPG, PNG, WebP) and videos (MP4, MOV, WebM, 3GP) can be added.");
-  if (size <= 0 || size > MAX_MEDIA_BYTES) throw new BadRequestError("Files can be up to 500 MB.");
+  if (size <= 0 || size > MAX_MEDIA_BYTES) throw new BadRequestError("Files can be up to 1 GB.");
   const type = /^(image|video)\/[\w.+-]+$/.test(contentType) ? contentType : CONTENT_TYPES[ext]!;
   const key = `${MEDIA_PREFIX}${reportId}/${randomBytes(8).toString("hex")}.${ext}`;
+  if (size > MULTIPART_FROM) {
+    const cfg = r2();
+    const uploadId = await createMultipartUpload(cfg, key, type).catch((err) => storageFailed(err, "Report media upload not started"));
+    const count = Math.ceil(size / PART_BYTES);
+    return {
+      key,
+      uploadUrl: "",
+      contentType: type,
+      proxyLimit: MEDIA_PROXY_LIMIT,
+      multipart: { uploadId, partSize: PART_BYTES, partUrls: Array.from({ length: count }, (_, i) => presignPart(cfg, key, uploadId, i + 1)) },
+    };
+  }
   return {
     key,
     uploadUrl: presign(r2(), "PUT", key, { headers: { "content-type": type }, expiresIn: 3600 }),
@@ -147,13 +170,28 @@ export async function proxyMediaUpload(reportId: string, key: string, body: Arra
   invalidateReportMedia();
 }
 
-/** After a direct browser upload: checks the file arrived. */
-export async function confirmMedia(reportId: string, key: string): Promise<void> {
+/** After a direct browser upload: joins the parts of a multipart upload, then checks the file arrived. */
+export async function confirmMedia(reportId: string, key: string, uploadId?: string, partCount?: number): Promise<void> {
   assertKey(reportId, key);
+  if (uploadId) {
+    const cfg = r2();
+    // The part ETags come from R2 itself, so the bucket does not need to expose them to the browser.
+    const parts = await listParts(cfg, key, uploadId).catch((err) => storageFailed(err, "Report media parts not listed"));
+    if (partCount !== undefined && parts.length !== partCount) {
+      throw new BadRequestError(`Only ${parts.length} of ${partCount} parts reached storage. Please try again.`);
+    }
+    await completeMultipartUpload(cfg, key, uploadId, parts).catch((err) => storageFailed(err, "Report media parts not joined"));
+  }
   const there = await objectExists(r2(), key).catch((err) => storageFailed(err, "Report media check failed"));
   if (!there) throw new NotFoundError("The upload did not reach storage. Please try again.");
   invalidateReportMedia();
   log.info({ reportId, key }, "Report media added");
+}
+
+/** Drops an unfinished multipart upload (cancelled or failed in the browser). */
+export async function abortMedia(reportId: string, key: string, uploadId: string): Promise<void> {
+  assertKey(reportId, key);
+  await abortMultipartUpload(r2(), key, uploadId).catch((err) => log.warn({ err, key }, "Unfinished upload not aborted"));
 }
 
 export async function deleteMedia(reportId: string, key: string): Promise<void> {

@@ -739,7 +739,7 @@ export function MobileReportsAdmin() {
               </div>
               <p className="text-caption text-muted-foreground">
                 {open.kind === "bridge" ? "Photos and videos" : "Videos"} show on the public OKB Mobile map and in the Incidents tab. Videos up to
-                500 MB (MP4, MOV, WebM, 3GP).
+                1 GB (MP4, MOV, WebM, 3GP).
               </p>
             </section>
 

@@ -124,6 +124,11 @@ export interface UploadTicket {
   contentType: string;
   /** Largest file the server-side fallback accepts when direct upload is blocked. */
   proxyLimit: number;
+  /**
+   * Large files: a multipart upload instead of `uploadUrl`. The browser sends `partSize` slices of the file to
+   * `partUrls` (part 1 first), several at a time, then asks the server to join them.
+   */
+  multipart?: { uploadId: string; partSize: number; partUrls: string[] };
 }
 
 export interface StorageCheckStep {
