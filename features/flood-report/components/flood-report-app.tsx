@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleHelp, Copy, Home, Loader2, LocateFixed, Monitor, RefreshCw, Smartphone, UserRound } from "lucide-react";
+import { CircleHelp, Copy, Home, Loader2, LocateFixed, Monitor, RefreshCw, Smartphone, UserRound, X } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { useFloodReports } from "../hooks/use-flood-reports";
@@ -63,6 +63,8 @@ function PhoneApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
+  // The time range whose "no reports" card was closed (it shows again for another range).
+  const [emptyClosed, setEmptyClosed] = useState<Range | null>(null);
   const [locating, setLocating] = useState(false);
   const [focus, setFocus] = useState<{ latitude: number; longitude: number; zoom?: number; key: string } | null>(null);
   const [send, setSend] = useState<SendState>(null);
@@ -398,8 +400,16 @@ function PhoneApp() {
           </button>
         </div>
 
-        {reports.isSuccess && !list.length ? (
-          <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-2xl bg-white/95 p-4 text-center shadow-lg">
+        {reports.isSuccess && !list.length && emptyClosed !== range ? (
+          <div className="pointer-events-none absolute inset-x-6 top-1/2 -translate-y-1/2 rounded-2xl bg-white/95 px-10 py-4 text-center shadow-lg">
+            <button
+              type="button"
+              onClick={() => setEmptyClosed(range)}
+              aria-label="Close this message"
+              className="pointer-events-auto absolute right-1 top-1 flex size-10 items-center justify-center rounded-full text-slate-500 active:bg-slate-100"
+            >
+              <X className="size-5" aria-hidden />
+            </button>
             <p className="font-bold text-slate-900">
               {range === "now" ? "No flooding reported right now" : `No flood reports in the ${rangeLabel(range)}`}
             </p>
