@@ -10,7 +10,8 @@ import type { GeoState } from "../hooks/use-geolocation";
 import type { CapturedPhoto, CapturedVideo, PlaceName, TrackPoint } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 
-type CameraState = "starting" | "live" | "blocked" | "unsupported";
+/** "ask": the browser will ask for the camera; the page explains first and asks on a tap. */
+type CameraState = "ask" | "starting" | "live" | "blocked" | "unsupported";
 
 const RELOAD_KEY = "okb-camera-policy-reload";
 
@@ -38,13 +39,24 @@ function browserName(): string {
   if (/Firefox/i.test(ua)) return "Firefox";
   if (/EdgA/i.test(ua)) return "Edge";
   if (/OPR|Opera/i.test(ua)) return "Opera";
-  if (/Chrome/i.test(ua)) return "Chrome";
+  if (/Chrome|CriOS/i.test(ua)) return "Chrome";
+  if (/Safari/i.test(ua) && !/Android/i.test(ua)) return "Safari";
   return "your browser";
 }
 
+/** How to make the browser remember "Allow", so it neither asks every visit nor blocks the site later. */
+function rememberTip(): string {
+  const name = browserName();
+  if (name === "Brave") return "If Brave asks how long to remember it, choose Forever.";
+  if (name === "Chrome") return "Choose “Allow while visiting the site”, not “Allow this time”, so it does not ask again.";
+  if (name === "Safari") return "So Safari stops asking every visit: tap aA in the address bar → Website Settings → Camera → Allow.";
+  return "If your browser offers to remember the choice, choose to remember it.";
+}
+
 /**
- * Opens the camera, asking for less each time it is refused: some phones refuse the full-HD request or the
- * camera facing, or report that as "not allowed"; a refusal that is really the user's or the phone's stays one.
+ * Opens the camera, asking for less when the phone cannot give the full-HD request or the camera facing. A refusal
+ * (the user, the browser or the phone said no) is never asked again: browsers block a site for days after a few
+ * unanswered or refused camera questions.
  */
 async function openCamera(facing: "environment" | "user"): Promise<MediaStream> {
   const tries: MediaStreamConstraints[] = [
@@ -58,11 +70,24 @@ async function openCamera(facing: "environment" | "user"): Promise<MediaStream> 
       return await navigator.mediaDevices.getUserMedia(constraints);
     } catch (err) {
       first ??= err;
-      // The prompt was dismissed or the site is blocked: asking again with less would only ask again.
-      if (err instanceof DOMException && err.name === "NotAllowedError" && /dismiss/i.test(err.message)) break;
+      const name = err instanceof DOMException || err instanceof Error ? err.name : "";
+      if (!["OverconstrainedError", "NotReadableError", "AbortError", "NotFoundError"].includes(name)) break;
     }
   }
   throw first;
+}
+
+/** The browser's camera permission for this site, when it says (null when it cannot tell, e.g. older Safari). */
+async function cameraPermission(): Promise<PermissionState | null> {
+  try {
+    const status = await Promise.race([
+      navigator.permissions?.query({ name: "camera" as PermissionName }),
+      new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 1500)),
+    ]);
+    return status?.state ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** The stamped first and last frames and the length of a video file. */
@@ -139,6 +164,8 @@ export function CameraScreen({
   const [camera, setCamera] = useState<CameraState>("starting");
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [attempt, setAttempt] = useState(0);
+  /** The visitor tapped "Turn on the camera": the browser's question comes right after their tap. */
+  const consent = useRef(false);
   /** "denied" when the browser remembers a refusal: only its site settings can undo it. */
   const [permission, setPermission] = useState<PermissionState | null>(null);
   const [reason, setReason] = useState<"system" | "dismissed" | "site" | "policy" | null>(null);
@@ -223,6 +250,22 @@ export function CameraScreen({
           window.location.reload();
           return;
         }
+      }
+      // Ask only after a tap on our own explanation, never by surprise, and never again once the browser has said
+      // no: browsers block the camera for a site for days after a few closed or refused camera questions.
+      const known = await cameraPermission();
+      if (cancelled) return;
+      if (known === "denied") {
+        setCamera("blocked");
+        setReason("site");
+        setPermission("denied");
+        setDetail(`Blocked before asking · site permission: denied · ${window.location.host}`);
+        onCameraSettled();
+        return;
+      }
+      if (known === "prompt" && !consent.current) {
+        setCamera("ask");
+        return;
       }
       setCamera("starting");
       try {
@@ -345,8 +388,15 @@ export function CameraScreen({
     [onAdd],
   );
 
+  /** The visitor's tap that lets the browser ask for the camera. */
+  const askCamera = () => {
+    consent.current = true;
+    setAttempt((n) => n + 1);
+  };
+
   const shoot = async () => {
     if (full) return setNotice(`Maximum of ${max} photo${max === 1 ? "" : "s"}. Delete one to take another.`);
+    if (camera === "ask") return askCamera();
     // Any browser: when it does not let the page use the camera, the phone's camera app takes the photo.
     if (phoneCamera) return fileInput.current?.click();
     const v = video.current;
@@ -369,6 +419,7 @@ export function CameraScreen({
   /** Starts a video: its first frame (with the GPS stamp) is kept as the thumbnail, its place is where it starts. */
   const startRecording = async () => {
     if (recorded) return setNotice("One video per report. Delete it to record another.");
+    if (camera === "ask") return askCamera();
     if (phoneCamera) return videoInput.current?.click();
     const v = video.current;
     const s = stream.current;
@@ -556,6 +607,26 @@ export function CameraScreen({
             <Camera className="size-10 shrink-0 text-white/60" aria-hidden />
             {camera === "starting" ? (
               <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
+            ) : camera === "ask" ? (
+              <>
+                <p className="text-lg font-bold">Turn on the camera</p>
+                <p className="max-w-xs text-sm text-white/80">
+                  {browserName() === "your browser" ? "Your browser" : browserName()} will ask to use the camera for this site. Tap <b>Allow</b>.
+                </p>
+                <button type="button" onClick={askCamera} className="flex h-12 items-center gap-2 rounded-xl bg-white px-6 font-semibold text-black">
+                  <Camera className="size-5" aria-hidden />
+                  Turn on the camera
+                </button>
+                <p className="max-w-xs text-xs text-white/60">{rememberTip()}</p>
+                <button
+                  type="button"
+                  onClick={() => (mode === "video" && canRecord ? videoInput : fileInput).current?.click()}
+                  className="flex min-h-11 items-center gap-2 px-3 text-sm font-medium text-white/70 underline underline-offset-4"
+                >
+                  <ImagePlus className="size-4" aria-hidden />
+                  Use the phone&apos;s camera app instead
+                </button>
+              </>
             ) : (
               <>
                 <p className="text-lg font-bold">{mode === "video" && canRecord ? "Record with your phone's camera" : "Take photos with your phone's camera"}</p>
@@ -614,7 +685,7 @@ export function CameraScreen({
                   {fixOpen ? (
                     <button
                       type="button"
-                      onClick={() => setAttempt((n) => n + 1)}
+                      onClick={askCamera}
                       className="flex h-11 items-center gap-2 rounded-xl border border-white/40 px-5 text-sm font-semibold text-white"
                     >
                       <RefreshCw className="size-4" aria-hidden />
