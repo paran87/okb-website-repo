@@ -88,6 +88,8 @@ export function CameraScreen({
   /** "denied" when the browser remembers a refusal: only its site settings can undo it. */
   const [permission, setPermission] = useState<PermissionState | null>(null);
   const [reason, setReason] = useState<"system" | "dismissed" | "site" | "policy" | null>(null);
+  /** The browser's own words for the refusal, shown small so a screenshot says what went wrong. */
+  const [detail, setDetail] = useState<string | null>(null);
   const [torch, setTorch] = useState<{ supported: boolean; on: boolean }>({ supported: false, on: false });
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -199,7 +201,11 @@ export function CameraScreen({
           ?.query({ name: "camera" as PermissionName })
           .then((p) => p.state)
           .catch(() => null);
-        if (!cancelled) setPermission(state ?? null);
+        if (cancelled) return;
+        setPermission(state ?? null);
+        setDetail(`${name || "Error"}${message ? `: ${(err as Error).message}` : ""} · site permission: ${state ?? "unknown"} · ${window.location.host}`);
+        // The site is allowed yet the camera is refused: the phone does not let the browser app use it.
+        if (name === "NotAllowedError" && state === "granted" && allowed !== false) setReason("system");
       } finally {
         if (!cancelled) onCameraSettled();
       }
@@ -468,8 +474,8 @@ export function CameraScreen({
                 </button>
                 {camera === "blocked" && reason === "system" ? (
                   <p className="max-w-xs text-sm text-white/80">
-                    Your phone does not let {browserName()} use the camera. Open phone <b>Settings → Apps → {browserName()} → Permissions →
-                    Camera → Allow</b>, then come back and tap Try again.
+                    {permission === "granted" ? <>This site is allowed in {browserName()}, but your phone does not let {browserName()} use the camera. </> : <>Your phone does not let {browserName()} use the camera. </>}
+                    Open phone <b>Settings → Apps → {browserName()} → Permissions → Camera → Allow</b>, then come back here: the camera starts by itself.
                   </p>
                 ) : camera === "blocked" && reason === "dismissed" && permission !== "denied" ? (
                   <p className="max-w-xs text-sm text-white/80">Tap Try again, then choose <b>Allow</b> when your phone asks.</p>
@@ -503,6 +509,7 @@ export function CameraScreen({
                   <ImagePlus className="size-4" aria-hidden />
                   Use the phone&apos;s camera app instead
                 </button>
+                {camera === "blocked" && detail ? <p className="max-w-xs break-words text-[11px] text-white/40">{detail}</p> : null}
               </>
             )}
           </div>

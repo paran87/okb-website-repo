@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { Camera, ChevronLeft, X } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants";
@@ -147,7 +146,8 @@ export function ReportFloodFab({ round = false }: { round?: boolean }) {
             <X className="size-4" aria-hidden />
           </button>
         ) : null}
-        <Link
+        {/* A full page load, so the camera page never runs in a document kept from another page. */}
+        <a
           href={PUBLIC_ROUTES.reportFlood}
           onClick={closeTip}
           aria-label={`Report a flood${flooded ? ` (${flooded} flooded now)` : ""}`}
@@ -173,7 +173,7 @@ export function ReportFloodFab({ round = false }: { round?: boolean }) {
               </span>
             </span>
           ) : null}
-        </Link>
+        </a>
       </div>
     </div>
   );
