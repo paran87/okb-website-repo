@@ -7,7 +7,11 @@ import driveGallery from "@/lib/config/gallery-drive.json";
 import { GALLERY_DRIVE_VIDEOS } from "@/lib/config/gallery-drive-videos";
 import { GALLERY_YOUTUBE_VIDEOS } from "@/lib/config/gallery-youtube";
 
-/** Reactions, likes and anonymous comments on Gallery items (okb_gallery_reactions / okb_gallery_comments). */
+/**
+ * Reactions, likes and anonymous comments on Gallery items and on the photos and videos of flood reports on the
+ * OKB Mobile map (okb_gallery_reactions / okb_gallery_comments). A flood report's media is keyed
+ * `flood:<storage key>`; its reactions and comments are removed with the report.
+ */
 
 export const REACTIONS = ["like", "love", "clap", "wow"] as const;
 export type Reaction = (typeof REACTIONS)[number];
@@ -35,7 +39,42 @@ const HOURLY_LIMIT = 5;
 
 export const isVisitorId = (v: unknown): v is string => typeof v === "string" && UUID.test(v);
 
-/** Only keys of items that are on the Gallery may collect reactions or comments. */
+/** The report a flood photo or video belongs to: its id is part of the storage key. */
+const FLOOD_MEDIA = [
+  /^flood-reports\/\d{4}\/\d{2}\/\d{2}\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/[0-9a-f]{16}\.(jpg|mp4|webm|mov)$/,
+  /^report-media\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/[0-9a-f]{16}\.(jpg|jpeg|png|webp|mp4|m4v|mov|webm|3gp)$/,
+];
+/** Reports already found (report id → when), so reading comments does not look the report up every time. */
+const knownReports = new Map<string, number>();
+
+async function assertFloodMedia(storageKey: string): Promise<boolean> {
+  const id = FLOOD_MEDIA.map((re) => re.exec(storageKey)?.[1]).find(Boolean);
+  if (!id) return false;
+  const seen = knownReports.get(id);
+  if (seen && Date.now() - seen < 10 * 60_000) return true;
+  const { assertReportExists } = await import("@/features/flood-report/server/service");
+  try {
+    await assertReportExists(id);
+  } catch (e) {
+    if (e instanceof ApiError && e.statusCode === 404) return false;
+    throw e;
+  }
+  knownReports.set(id, Date.now());
+  return true;
+}
+
+/** Removes the reactions and comments of a deleted flood report's photos and videos. */
+export async function forgetFloodReport(reportId: string): Promise<void> {
+  if (!UUID.test(reportId) || !siteDbConfigured()) return;
+  knownReports.delete(reportId.toLowerCase());
+  const match = `item_key=like.${q(`flood:*${reportId.toLowerCase()}*`)}`;
+  await Promise.all([
+    siteRest(`okb_gallery_reactions?${match}`, { method: "DELETE" }),
+    siteRest(`okb_gallery_comments?${match}`, { method: "DELETE" }),
+  ]).catch(() => undefined);
+}
+
+/** Only keys of items that are on the Gallery (or of flood report photos on the map) may collect reactions or comments. */
 async function assertKnownKey(key: string): Promise<void> {
   if (!key || key.length > 300) throw new ApiError(400, "VALIDATION_ERROR", "Unknown gallery item.");
   const [kind, ...rest] = key.split(":");
@@ -50,6 +89,8 @@ async function assertKnownKey(key: string): Promise<void> {
     if (NCR_BOARDS.some((b) => b.id === board) && /^\d{1,4}$/.test(page ?? "") && Number(page) >= 1) return;
   } else if (kind === "youtube") {
     if (GALLERY_YOUTUBE_VIDEOS.some((v) => v.id === id)) return;
+  } else if (kind === "flood") {
+    if (await assertFloodMedia(id)) return;
   } else {
     const [main, extra] = await Promise.all([listGallery(), listGallerySections()]);
     if ([...main, ...extra.inspections, ...extra.summit].some((i) => i.key === key)) return;

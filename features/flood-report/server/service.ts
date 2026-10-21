@@ -653,6 +653,7 @@ async function removeReport(row: Row, by: string): Promise<void> {
   const cfg = getOperationsR2Config();
   if (cfg) await Promise.all(photos.map((k) => deleteObject(cfg, k).catch((err) => log.warn({ err, key: k }, "Photo of deleted report not removed from R2"))));
   await deleteAllMedia(row.id);
+  await forgetEngagement(row.id);
   invalidateAggregates();
   memo = null;
   log.info({ id: row.id, photos: photos.length, by }, "Mobile flood report deleted");
@@ -720,9 +721,16 @@ async function deleteBridgeReport(id: string, by: string): Promise<void> {
     throw new StorageUnavailable("The OKB Bridge backend rejected the delete. The report was not deleted.");
   }
   await deleteAllMedia(id);
+  await forgetEngagement(id);
   invalidateAggregates();
   memo = null;
   log.info({ id, by }, "WhatsApp / Viber report deleted");
+}
+
+/** Visitors' reactions and comments on a deleted report's photos go with it (best effort). */
+async function forgetEngagement(id: string): Promise<void> {
+  const { forgetFloodReport } = await import("@/features/gallery/server/engagement");
+  await forgetFloodReport(id).catch((err) => log.warn({ err, id }, "Reactions and comments of a deleted report not removed"));
 }
 
 // ---------------------------------------------------------------------------

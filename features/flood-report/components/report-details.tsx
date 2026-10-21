@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDistanceToNowStrict } from "date-fns";
-import { BadgeCheck, Building2, CameraOff, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, MessageSquareText, Navigation, Play, Route, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
+import { BadgeCheck, Building2, CameraOff, ChevronDown, ChevronLeft, ChevronRight, CloudRain, Clock, Hourglass, MessageSquareText, Navigation, Play, Route, Ruler, Share2, TrafficCone, User, X } from "lucide-react";
+import { EngagementBar, GalleryEngagement, useEngagementSummary, type EngagementSummary } from "@/components/public/gallery/gallery-engagement";
 import { FLOOD_SEVERITY } from "@/features/incident/lib/flood-severity";
 import { cn } from "@/utils/cn";
 import { formatDepth } from "../lib/options";
@@ -21,10 +23,19 @@ export const SOURCE_COLOR = { okb_mobile: "#0f172a", whatsapp: "#1fa855", viber:
 /** A report's photos then videos, as the viewer shows them. */
 export function mediaOf(report: Pick<PublicFloodReport, "photos" | "videos" | "locationText">): ViewerItem[] {
   return [
-    ...report.photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${report.locationText}` })),
-    ...report.videos.map((v, i) => ({ url: v.url, alt: `Flood video ${i + 1} at ${report.locationText}`, video: true, poster: v.posterUrl ?? undefined })),
+    ...report.photos.map((p, i) => ({ url: p.url, alt: `Flood photo ${i + 1} at ${report.locationText}`, engageKey: floodEngageKey(p.key) })),
+    ...report.videos.map((v, i) => ({
+      url: v.url,
+      alt: `Flood video ${i + 1} at ${report.locationText}`,
+      video: true,
+      poster: v.posterUrl ?? undefined,
+      engageKey: floodEngageKey(v.key),
+    })),
   ];
 }
+
+/** Visitors react to and comment on each photo and video of a report on the map (stored like Gallery items). */
+const floodEngageKey = (key: string) => `flood:${key}`;
 
 export interface ViewerItem {
   url: string;
@@ -33,6 +44,8 @@ export interface ViewerItem {
   video?: boolean;
   /** A video's first frame, shown before it plays. */
   poster?: string;
+  /** Visitors can react and comment on it (the item's engagement key). */
+  engageKey?: string;
 }
 
 /** Full-screen swipeable photo (and video) viewer. */
@@ -41,16 +54,26 @@ export function PhotoViewer({
   index,
   onClose,
   onIndex,
+  summary,
 }: {
   photos: ViewerItem[];
   index: number | null;
   onClose: () => void;
   onIndex: (i: number) => void;
+  /** Reaction and comment counts of the items (for the bar under each one). */
+  summary?: EngagementSummary | null;
 }) {
   const [touchX, setTouchX] = useState<number | null>(null);
+  /** The reactions and comments panel under the picture. */
+  const [talk, setTalk] = useState(false);
+  useEffect(() => {
+    if (index === null) setTalk(false);
+  }, [index]);
   useEffect(() => {
     if (index === null) return;
     const onKey = (e: KeyboardEvent) => {
+      // Arrow keys move the cursor while writing a comment.
+      if ((e.target as Element | null)?.closest?.("textarea, input")) return;
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") onIndex(Math.min(photos.length - 1, index + 1));
       if (e.key === "ArrowLeft") onIndex(Math.max(0, index - 1));
@@ -60,60 +83,87 @@ export function PhotoViewer({
   }, [index, photos.length, onClose, onIndex]);
   if (index === null || !photos[index]) return null;
   const photo = photos[index];
-  return (
-    <div
-      className="fixed inset-0 z-[60] flex flex-col bg-black"
-      role="dialog"
-      aria-modal="true"
-      aria-label={photo.video ? "Video" : "Photo"}
-      // A drag on the video (its seek bar) is not a swipe to the next item.
-      onTouchStart={(e) => setTouchX((e.target as Element).closest("video") ? null : (e.touches[0]?.clientX ?? null))}
-      onTouchEnd={(e) => {
-        const end = e.changedTouches[0]?.clientX;
-        if (touchX === null || end === undefined) return;
-        if (end - touchX < -50) onIndex(Math.min(photos.length - 1, index + 1));
-        if (end - touchX > 50) onIndex(Math.max(0, index - 1));
-        setTouchX(null);
-      }}
-    >
-      <div className="flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
-        <span className="text-sm font-semibold">
-          {index + 1} / {photos.length}
-        </span>
-        <button type="button" onClick={onClose} aria-label={photo.video ? "Close video" : "Close photo"} className="flex size-11 items-center justify-center rounded-full bg-white/15">
-          <X className="size-6" aria-hidden />
-        </button>
-      </div>
-      <div className="relative flex min-h-0 flex-1 items-center justify-center">
-        {photo.video ? (
-          <video key={photo.url} src={photo.url} poster={photo.poster} controls autoPlay playsInline aria-label={photo.alt} className="max-h-full max-w-full" />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route
-          <img src={photo.url} alt={photo.alt} className="max-h-full max-w-full object-contain" />
-        )}
-        {index > 0 ? (
-          <button
-            type="button"
-            onClick={() => onIndex(index - 1)}
-            aria-label="Previous photo"
-            className="absolute left-2 flex size-11 items-center justify-center rounded-full bg-black/50 text-white"
-          >
-            <ChevronLeft className="size-6" aria-hidden />
+  // On the page itself: inside the details sheet (moved with a transform) "fixed" would only cover the sheet.
+  return createPortal(
+      <div
+        className="fixed inset-0 z-[60] flex flex-col bg-black"
+        role="dialog"
+        aria-modal="true"
+        aria-label={photo.video ? "Video" : "Photo"}
+        // A drag on the video (its seek bar) or in the comments is not a swipe to the next item.
+        onTouchStart={(e) => setTouchX((e.target as Element).closest("video, [data-no-swipe]") ? null : (e.touches[0]?.clientX ?? null))}
+        onTouchEnd={(e) => {
+          const end = e.changedTouches[0]?.clientX;
+          if (touchX === null || end === undefined) return;
+          if (end - touchX < -50) onIndex(Math.min(photos.length - 1, index + 1));
+          if (end - touchX > 50) onIndex(Math.max(0, index - 1));
+          setTouchX(null);
+        }}
+      >
+        <div className="flex items-center justify-between px-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+          <span className="text-sm font-semibold">
+            {index + 1} / {photos.length}
+          </span>
+          <button type="button" onClick={onClose} aria-label={photo.video ? "Close video" : "Close photo"} className="flex size-11 items-center justify-center rounded-full bg-white/15">
+            <X className="size-6" aria-hidden />
           </button>
+        </div>
+        <div className="relative flex min-h-0 flex-1 items-center justify-center">
+          {photo.video ? (
+            <video key={photo.url} src={photo.url} poster={photo.poster} controls autoPlay playsInline aria-label={photo.alt} className="max-h-full max-w-full" />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route
+            <img src={photo.url} alt={photo.alt} className="max-h-full max-w-full object-contain" />
+          )}
+          {index > 0 ? (
+            <button
+              type="button"
+              onClick={() => onIndex(index - 1)}
+              aria-label="Previous photo"
+              className="absolute left-2 flex size-11 items-center justify-center rounded-full bg-black/50 text-white"
+            >
+              <ChevronLeft className="size-6" aria-hidden />
+            </button>
+          ) : null}
+          {index < photos.length - 1 ? (
+            <button
+              type="button"
+              onClick={() => onIndex(index + 1)}
+              aria-label="Next photo"
+              className="absolute right-2 flex size-11 items-center justify-center rounded-full bg-black/50 text-white"
+            >
+              <ChevronRight className="size-6" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+        {photo.engageKey ? (
+          <div data-no-swipe className={cn("shrink-0 border-t border-white/10 bg-black px-3 text-white", talk && "flex h-[55dvh] flex-col")}>
+            <button
+              type="button"
+              onClick={() => setTalk((t) => !t)}
+              aria-expanded={talk}
+              className="flex min-h-12 w-full shrink-0 items-center justify-between gap-2 py-1.5"
+            >
+              {talk ? (
+                <span className="text-sm font-bold">Reactions &amp; comments</span>
+              ) : (
+                <EngagementBar stats={summary?.items[photo.engageKey]} variant="grid" />
+              )}
+              <span className="flex items-center gap-1 text-sm font-semibold text-white/85">
+                {talk ? "Hide" : "React & comment"}
+                <ChevronDown className={cn("size-4 transition-transform", !talk && "rotate-180")} aria-hidden />
+              </span>
+            </button>
+            {talk ? (
+              <div className="flex min-h-0 flex-1 flex-col pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+                <GalleryEngagement itemKey={photo.engageKey} />
+              </div>
+            ) : null}
+          </div>
         ) : null}
-        {index < photos.length - 1 ? (
-          <button
-            type="button"
-            onClick={() => onIndex(index + 1)}
-            aria-label="Next photo"
-            className="absolute right-2 flex size-11 items-center justify-center rounded-full bg-black/50 text-white"
-          >
-            <ChevronRight className="size-6" aria-hidden />
-          </button>
-        ) : null}
-      </div>
-      <div className="h-[max(1rem,env(safe-area-inset-bottom))]" />
-    </div>
+        {photo.engageKey && talk ? null : <div className="h-[max(1rem,env(safe-area-inset-bottom))]" />}
+      </div>,
+    document.body,
   );
 }
 
@@ -140,6 +190,8 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
   const color = reportColor(report);
   const severity = FLOOD_SEVERITY[report.severity];
   const photos = mediaOf(report);
+  const engageKeys = useMemo(() => photos.flatMap((p) => (p.engageKey ? [p.engageKey] : [])), [photos]);
+  const { summary, refresh } = useEngagementSummary(engageKeys);
   const fromGroup = report.source !== "okb_mobile";
   const videos = report.videos.length;
   const shots = report.photos.length;
@@ -187,6 +239,11 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
                   // eslint-disable-next-line @next/next/no-img-element -- photos stream from R2 through our own route
                   <img src={p.url} alt={p.alt} loading="lazy" className="size-full object-cover" />
                 )}
+                {p.engageKey && summary?.enabled ? (
+                  <span className="pointer-events-none absolute bottom-7 left-3">
+                    <EngagementBar stats={summary.items[p.engageKey]} variant="grid" />
+                  </span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -315,7 +372,16 @@ export function ReportDetails({ report }: { report: PublicFloodReport }) {
       </div>
       <p className="text-center text-xs text-slate-400">Avoid this area if you can. Never walk or drive through floodwater.</p>
 
-      <PhotoViewer photos={photos} index={viewer} onClose={() => setViewer(null)} onIndex={setViewer} />
+      <PhotoViewer
+        photos={photos}
+        index={viewer}
+        onClose={() => {
+          setViewer(null);
+          refresh();
+        }}
+        onIndex={setViewer}
+        summary={summary}
+      />
     </div>
   );
 }
