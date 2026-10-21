@@ -83,7 +83,15 @@ function PhoneApp() {
   const [cameraSettled, setCameraSettled] = useState(false);
   const onCameraSettled = useCallback(() => setCameraSettled(true), []);
   const capturing = screen === "camera" || screen === "add-photos";
-  const geo = useGeolocation(screen === "form" || (capturing && cameraSettled) || locating);
+  // Location already allowed: no prompt can compete with the camera's, so the GPS starts at once.
+  const [geoAllowed, setGeoAllowed] = useState(false);
+  useEffect(() => {
+    void navigator.permissions
+      ?.query({ name: "geolocation" })
+      .then((p) => setGeoAllowed(p.state === "granted"))
+      .catch(() => undefined);
+  }, []);
+  const geo = useGeolocation(screen === "form" || (capturing && (cameraSettled || geoAllowed)) || locating);
   const place = usePlace(capturing || screen === "form" ? geo.fix : null);
 
   // Reports sent from this phone (their edit keys are kept in this browser).

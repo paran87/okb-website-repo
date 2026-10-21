@@ -268,6 +268,8 @@ export function CameraScreen({
       }
       if (known === "prompt" && !consent.current) {
         setCamera("ask");
+        // No browser question is open while the page explains: the location may be asked now.
+        onCameraSettled();
         return;
       }
       setCamera("starting");
