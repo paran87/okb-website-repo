@@ -12,6 +12,8 @@ import { BarTile, ControlBar, ShutterButton } from "./bar";
 
 /** "ask": the browser will ask for the camera; the page explains first and asks on a tap. */
 type CameraState = "ask" | "starting" | "live" | "blocked" | "unsupported";
+/** Some browsers (UC Browser) never answer a camera request: after this long the phone's camera app is offered. */
+const CAMERA_WAIT_MS = 8000;
 
 const RELOAD_KEY = "okb-camera-policy-reload";
 
@@ -36,6 +38,7 @@ function browserName(): string {
   if ("brave" in navigator) return "Brave";
   const ua = navigator.userAgent;
   if (/SamsungBrowser/i.test(ua)) return "Samsung Internet";
+  if (/UCBrowser|UCWEB/i.test(ua)) return "UC Browser";
   if (/Firefox/i.test(ua)) return "Firefox";
   if (/EdgA/i.test(ua)) return "Edge";
   if (/OPR|Opera/i.test(ua)) return "Opera";
@@ -168,7 +171,7 @@ export function CameraScreen({
   const consent = useRef(false);
   /** "denied" when the browser remembers a refusal: only its site settings can undo it. */
   const [permission, setPermission] = useState<PermissionState | null>(null);
-  const [reason, setReason] = useState<"system" | "dismissed" | "site" | "policy" | null>(null);
+  const [reason, setReason] = useState<"system" | "dismissed" | "site" | "policy" | "slow" | null>(null);
   /** The browser's own words for the refusal, shown small so a screenshot says what went wrong. */
   const [detail, setDetail] = useState<string | null>(null);
   /** The steps to let this page use the camera, folded under the phone-camera button. */
@@ -268,6 +271,14 @@ export function CameraScreen({
         return;
       }
       setCamera("starting");
+      // A browser that never answers: offer the phone's camera app, and still take the camera if it comes later.
+      const slow = window.setTimeout(() => {
+        if (cancelled) return;
+        setCamera((c) => (c === "starting" ? "unsupported" : c));
+        setReason("slow");
+        setDetail(`No answer from the browser to the camera request · ${window.location.host}`);
+        onCameraSettled();
+      }, CAMERA_WAIT_MS);
       try {
         const s = await openCamera(facing);
         if (cancelled) {
@@ -305,6 +316,7 @@ export function CameraScreen({
         // The site is allowed yet the camera is refused: the phone does not let the browser app use it.
         if (name === "NotAllowedError" && state === "granted" && allowed !== false) setReason("system");
       } finally {
+        window.clearTimeout(slow);
         if (!cancelled) onCameraSettled();
       }
     }
@@ -606,7 +618,17 @@ export function CameraScreen({
           <div className="absolute inset-x-0 bottom-0 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] flex flex-col items-center gap-4 overflow-y-auto px-8 py-4 text-center [justify-content:safe_center] [&>*]:shrink-0">
             <Camera className="size-10 shrink-0 text-white/60" aria-hidden />
             {camera === "starting" ? (
-              <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
+              <>
+                <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
+                <button
+                  type="button"
+                  onClick={() => (mode === "video" && canRecord ? videoInput : fileInput).current?.click()}
+                  className="flex min-h-11 items-center gap-2 px-3 text-sm font-medium text-white/70 underline underline-offset-4"
+                >
+                  <ImagePlus className="size-4" aria-hidden />
+                  Use the phone&apos;s camera app instead
+                </button>
+              </>
             ) : camera === "ask" ? (
               <>
                 <p className="text-lg font-bold">Turn on the camera</p>
@@ -680,7 +702,11 @@ export function CameraScreen({
                       </ol>
                     </>
                   ) : (
-                    <p className="text-sm text-white/70">Close other apps that use the camera, then try again.</p>
+                    <p className="text-sm text-white/70">
+                      {reason === "slow"
+                        ? `${browserName() === "your browser" ? "This browser" : browserName()} did not start the camera. Try again, or open this page in Chrome, Safari or Brave.`
+                        : "Close other apps that use the camera, then try again."}
+                    </p>
                   )}
                   {fixOpen ? (
                     <button
@@ -693,7 +719,7 @@ export function CameraScreen({
                     </button>
                   ) : null}
                 </div>
-                {camera === "blocked" && detail ? <p className="max-w-xs break-words text-[11px] text-white/40">{detail}</p> : null}
+                {(camera === "blocked" || camera === "unsupported") && detail ? <p className="max-w-xs break-words text-[11px] text-white/40">{detail}</p> : null}
               </>
             )}
           </div>
