@@ -42,6 +42,29 @@ function browserName(): string {
   return "your browser";
 }
 
+/**
+ * Opens the camera, asking for less each time it is refused: some phones refuse the full-HD request or the
+ * camera facing, or report that as "not allowed"; a refusal that is really the user's or the phone's stays one.
+ */
+async function openCamera(facing: "environment" | "user"): Promise<MediaStream> {
+  const tries: MediaStreamConstraints[] = [
+    { video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false },
+    { video: { facingMode: { ideal: facing } }, audio: false },
+    { video: true, audio: false },
+  ];
+  let first: unknown = null;
+  for (const constraints of tries) {
+    try {
+      return await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      first ??= err;
+      // The prompt was dismissed or the site is blocked: asking again with less would only ask again.
+      if (err instanceof DOMException && err.name === "NotAllowedError" && /dismiss/i.test(err.message)) break;
+    }
+  }
+  throw first;
+}
+
 function placeLines(place: PlaceName | null): string[] {
   if (!place) return [];
   const first = [place.road, place.barangay].filter(Boolean).join(", ");
@@ -168,10 +191,7 @@ export function CameraScreen({
       }
       setCamera("starting");
       try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-          audio: false,
-        });
+        const s = await openCamera(facing);
         if (cancelled) {
           s.getTracks().forEach((t) => t.stop());
           return;
