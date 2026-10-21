@@ -551,8 +551,8 @@ export function CameraScreen({
           className={cn("absolute inset-0 size-full object-cover", facing === "user" && "-scale-x-100", camera !== "live" && "opacity-0")}
         />
         {camera !== "live" ? (
-          // Scrolls on short screens, and starts below the top buttons so nothing hides under them.
-          <div className="absolute inset-0 flex flex-col items-center gap-4 overflow-y-auto px-8 pb-4 pt-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] text-center [justify-content:safe_center] [&>*]:shrink-0">
+          // Scrolls on short screens inside the area below the top buttons, so nothing slides under them.
+          <div className="absolute inset-x-0 bottom-0 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.5rem)] flex flex-col items-center gap-4 overflow-y-auto px-8 py-4 text-center [justify-content:safe_center] [&>*]:shrink-0">
             <Camera className="size-10 shrink-0 text-white/60" aria-hidden />
             {camera === "starting" ? (
               <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
@@ -593,14 +593,21 @@ export function CameraScreen({
                       Reload this page, then tap the round button again.
                     </button>
                   ) : camera === "blocked" ? (
-                    <ol className="list-decimal space-y-1 pl-5 text-left text-sm text-white/70">
+                    <>
+                      {permission === "denied" ? (
+                        <p className="text-sm text-white/80">
+                          {browserName()} has the camera set to <b>Block</b> for <b>{window.location.host}</b>. Change it to Allow:
+                        </p>
+                      ) : null}
+                      <ol className="list-decimal space-y-1 pl-5 text-left text-sm text-white/70">
                       <li>Tap the icon at the left of the web address.</li>
                       <li>
                         Open <b>Permissions</b> (or <b>Site settings</b>) → <b>Camera</b> → <b>Allow</b>.
                       </li>
                       <li>Come back here: the camera starts by itself (or tap Try again).</li>
                       <li className="text-white/55">Still blocked? Phone Settings → Apps → {browserName()} → Permissions → Camera → Allow.</li>
-                    </ol>
+                      </ol>
+                    </>
                   ) : (
                     <p className="text-sm text-white/70">Close other apps that use the camera, then try again.</p>
                   )}
