@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent } from "react";
-import { ArrowLeft, Camera, Flashlight, FlashlightOff, Home, ImagePlus, LocateFixed, Play, RefreshCw, SendHorizontal, Trash2, Video, X } from "lucide-react";
+import { ArrowLeft, Camera, ChevronDown, Flashlight, FlashlightOff, Home, ImagePlus, LocateFixed, Play, RefreshCw, SendHorizontal, Trash2, Video, X } from "lucide-react";
 import { ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import { capturePhoto, decodeImage, stampLines, type StampInfo } from "../lib/capture";
@@ -65,6 +65,36 @@ async function openCamera(facing: "environment" | "user"): Promise<MediaStream> 
   throw first;
 }
 
+/** The stamped first and last frames and the length of a video file. */
+async function videoFrames(url: string, info: StampInfo): Promise<{ poster: Blob; endPoster: Blob | null; durationS: number }> {
+  const v = document.createElement("video");
+  v.muted = true;
+  v.playsInline = true;
+  v.preload = "auto";
+  const once = (event: string) =>
+    new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("timeout")), 15_000);
+      v.addEventListener(event, () => (clearTimeout(timer), resolve()), { once: true });
+      v.addEventListener("error", () => (clearTimeout(timer), reject(new Error("unreadable"))), { once: true });
+    });
+  const loaded = once("loadeddata");
+  v.src = url;
+  await loaded;
+  const duration = Number.isFinite(v.duration) ? v.duration : 0;
+  const frameAt = async (t: number) => {
+    const seeked = once("seeked");
+    v.currentTime = t;
+    await seeked;
+    return capturePhoto(v, v.videoWidth, v.videoHeight, info);
+  };
+  if (!v.videoWidth) throw new Error("no picture");
+  const poster = await frameAt(Math.min(0.1, duration / 2));
+  const endPoster = duration > 1 ? await frameAt(Math.max(0, duration - 0.3)).catch(() => null) : null;
+  v.removeAttribute("src");
+  v.load();
+  return { poster, endPoster, durationS: Math.max(1, Math.round(duration)) };
+}
+
 function placeLines(place: PlaceName | null): string[] {
   if (!place) return [];
   const first = [place.road, place.barangay].filter(Boolean).join(", ");
@@ -105,6 +135,7 @@ export function CameraScreen({
   const video = useRef<HTMLVideoElement>(null);
   const stream = useRef<MediaStream | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
   const [camera, setCamera] = useState<CameraState>("starting");
   const [facing, setFacing] = useState<"environment" | "user">("environment");
   const [attempt, setAttempt] = useState(0);
@@ -113,6 +144,8 @@ export function CameraScreen({
   const [reason, setReason] = useState<"system" | "dismissed" | "site" | "policy" | null>(null);
   /** The browser's own words for the refusal, shown small so a screenshot says what went wrong. */
   const [detail, setDetail] = useState<string | null>(null);
+  /** The steps to let this page use the camera, folded under the phone-camera button. */
+  const [fixOpen, setFixOpen] = useState(false);
   const [torch, setTorch] = useState<{ supported: boolean; on: boolean }>({ supported: false, on: false });
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -126,7 +159,9 @@ export function CameraScreen({
   /** Where the phone is while a video is filmed (one fix a second or so), and the video's last frame. */
   const track = useRef<{ startedAt: number; points: TrackPoint[]; lastAt: number | null }>({ startedAt: 0, points: [], lastAt: null });
   const endFrame = useRef<Blob | null>(null);
-  const canRecord = Boolean(onVideo) && recorderType() !== null;
+  /** The browser does not let the page use the camera: the round button opens the phone's own camera app instead. */
+  const phoneCamera = camera === "blocked" || camera === "unsupported";
+  const canRecord = Boolean(onVideo) && (phoneCamera || recorderType() !== null);
   const full = photos.length >= max;
   const fix = geo.fix;
 
@@ -312,8 +347,8 @@ export function CameraScreen({
 
   const shoot = async () => {
     if (full) return setNotice(`Maximum of ${max} photo${max === 1 ? "" : "s"}. Delete one to take another.`);
-    // Without the in-page camera the shutter asks for it again (never jumps to another app).
-    if (camera === "blocked" || camera === "unsupported") return setAttempt((n) => n + 1);
+    // Any browser: when it does not let the page use the camera, the phone's camera app takes the photo.
+    if (phoneCamera) return fileInput.current?.click();
     const v = video.current;
     if (!v || camera !== "live" || !v.videoWidth) return setNotice("Starting the camera…");
     const info = stampInfo(new Date());
@@ -334,7 +369,7 @@ export function CameraScreen({
   /** Starts a video: its first frame (with the GPS stamp) is kept as the thumbnail, its place is where it starts. */
   const startRecording = async () => {
     if (recorded) return setNotice("One video per report. Delete it to record another.");
-    if (camera === "blocked" || camera === "unsupported") return setAttempt((n) => n + 1);
+    if (phoneCamera) return videoInput.current?.click();
     const v = video.current;
     const s = stream.current;
     const type = recorderType();
@@ -438,6 +473,48 @@ export function CameraScreen({
     }
   };
 
+  /** A video from the phone's camera app: its first and last frames get the GPS stamp, its place is where it was sent from. */
+  const pickedVideo = async (file: File | undefined) => {
+    if (videoInput.current) videoInput.current.value = "";
+    if (!file || !onVideo) return;
+    if (recorded) return setNotice("One video per report. Delete it to add another.");
+    if (file.size > MAX_VIDEO_BYTES) return setNotice("The video is over 50 MB. Please record a shorter one (about 20 seconds).");
+    const type = (file.type || "video/mp4").split(";")[0]?.toLowerCase() ?? "";
+    if (!["video/mp4", "video/webm", "video/quicktime"].includes(type)) return setNotice("This video format cannot be sent. Please record an MP4 video.");
+    const info = stampInfo(new Date());
+    if (!info) return setNotice(geo.error ?? "Waiting for your GPS location…");
+    setBusy(true);
+    const url = URL.createObjectURL(file);
+    try {
+      const { poster, endPoster, durationS } = await videoFrames(url, info);
+      if (durationS > MAX_VIDEO_SECONDS) {
+        URL.revokeObjectURL(url);
+        return setNotice(`The video is longer than ${MAX_VIDEO_SECONDS / 60} minutes. Please record a shorter one.`);
+      }
+      onVideo({
+        id: crypto.randomUUID(),
+        blob: file,
+        url,
+        poster,
+        posterUrl: URL.createObjectURL(poster),
+        endPoster,
+        // Filmed outside the page: no GPS track, so the video shows one spot.
+        track: [],
+        latitude: info.latitude,
+        longitude: info.longitude,
+        accuracyM: info.accuracyM,
+        takenAt: info.takenAt.toISOString(),
+        durationS,
+      });
+      navigator.vibrate?.(30);
+    } catch {
+      URL.revokeObjectURL(url);
+      setNotice("That video could not be read. Please record it again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const toggleTorch = async () => {
     const track = stream.current?.getVideoTracks()[0];
     if (!track) return;
@@ -475,60 +552,69 @@ export function CameraScreen({
         />
         {camera !== "live" ? (
           // Scrolls on short screens, and starts below the top buttons so nothing hides under them.
-          <div className="absolute inset-0 flex flex-col items-center gap-4 overflow-y-auto px-8 pb-4 pt-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] text-center [justify-content:safe_center]">
+          <div className="absolute inset-0 flex flex-col items-center gap-4 overflow-y-auto px-8 pb-4 pt-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] text-center [justify-content:safe_center] [&>*]:shrink-0">
             <Camera className="size-10 shrink-0 text-white/60" aria-hidden />
             {camera === "starting" ? (
               <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
             ) : (
               <>
-                <p className="text-lg font-bold">
-                  {camera === "blocked" ? "Allow the camera to take photos here" : "The camera could not start"}
+                <p className="text-lg font-bold">{mode === "video" && canRecord ? "Record with your phone's camera" : "Take photos with your phone's camera"}</p>
+                <p className="max-w-xs text-sm text-white/80">
+                  {camera === "blocked" ? `${browserName()} did not let this page use the camera` : "The camera could not start on this page"}, so the round
+                  button opens your phone&apos;s camera app. The {mode === "video" && canRecord ? "video" : "photo"} comes back here with your GPS location.
                 </p>
                 <button
                   type="button"
-                  onClick={() => setAttempt((n) => n + 1)}
+                  onClick={() => (mode === "video" && canRecord ? videoInput : fileInput).current?.click()}
                   className="flex h-12 items-center gap-2 rounded-xl bg-white px-6 font-semibold text-black"
                 >
-                  <RefreshCw className="size-5" aria-hidden />
-                  Try again
+                  {mode === "video" && canRecord ? <Video className="size-5" aria-hidden /> : <ImagePlus className="size-5" aria-hidden />}
+                  Open the phone&apos;s camera
                 </button>
-                {camera === "blocked" && reason === "system" ? (
-                  <p className="max-w-xs text-sm text-white/80">
-                    {permission === "granted" ? <>This site is allowed in {browserName()}, but your phone does not let {browserName()} use the camera. </> : <>Your phone does not let {browserName()} use the camera. </>}
-                    Open phone <b>Settings → Apps → {browserName()} → Permissions → Camera → Allow</b>, then come back here: the camera starts by itself.
-                  </p>
-                ) : camera === "blocked" && reason === "dismissed" && permission !== "denied" ? (
-                  <p className="max-w-xs text-sm text-white/80">Tap Try again, then choose <b>Allow</b> when your phone asks.</p>
-                ) : camera === "blocked" && reason === "policy" ? (
+                <div className="mt-2 flex w-full max-w-xs flex-col items-center gap-3 border-t border-white/15 pt-4 [&>*]:shrink-0">
                   <button
                     type="button"
-                    onClick={() => window.location.reload()}
-                    className="max-w-xs text-sm text-white/80 underline underline-offset-4"
+                    onClick={() => setFixOpen((o) => !o)}
+                    aria-expanded={fixOpen}
+                    className="flex min-h-11 items-center gap-1 text-sm font-semibold text-white/80"
                   >
-                    Reload this page, then tap the round button again.
+                    Or use the camera right on this page
+                    <ChevronDown className={cn("size-4 transition-transform", fixOpen && "rotate-180")} aria-hidden />
                   </button>
-                ) : camera === "blocked" && (permission === "denied" || attempt > 0) ? (
-                  <ol className="max-w-xs list-decimal space-y-1 pl-5 text-left text-sm text-white/80">
-                    <li>Tap the icon at the left of the web address.</li>
-                    <li>
-                      Open <b>Permissions</b> (or <b>Site settings</b>) → <b>Camera</b> → <b>Allow</b>.
-                    </li>
-                    <li>Come back here: the camera starts by itself (or tap Try again).</li>
-                    <li className="text-white/60">
-                      Still blocked? Phone Settings → Apps → {browserName()} → Permissions → Camera → Allow.
-                    </li>
-                  </ol>
-                ) : camera === "unsupported" ? (
-                  <p className="max-w-xs text-sm text-white/70">Close other apps that use the camera, then try again.</p>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => fileInput.current?.click()}
-                  className="flex min-h-11 items-center gap-2 px-3 text-sm font-medium text-white/70 underline underline-offset-4"
-                >
-                  <ImagePlus className="size-4" aria-hidden />
-                  Use the phone&apos;s camera app instead
-                </button>
+                  {!fixOpen ? null : camera === "blocked" && reason === "system" ? (
+                    <p className="text-sm text-white/70">
+                      {permission === "granted" ? <>This site is allowed in {browserName()}, but your phone does not let {browserName()} use the camera. </> : <>Your phone does not let {browserName()} use the camera. </>}
+                      Open phone <b>Settings → Apps → {browserName()} → Permissions → Camera → Allow</b>, then come back here: the camera starts by itself.
+                    </p>
+                  ) : camera === "blocked" && reason === "dismissed" && permission !== "denied" ? (
+                    <p className="text-sm text-white/70">Tap Try again, then choose <b>Allow</b> when your phone asks.</p>
+                  ) : camera === "blocked" && reason === "policy" ? (
+                    <button type="button" onClick={() => window.location.reload()} className="text-sm text-white/70 underline underline-offset-4">
+                      Reload this page, then tap the round button again.
+                    </button>
+                  ) : camera === "blocked" ? (
+                    <ol className="list-decimal space-y-1 pl-5 text-left text-sm text-white/70">
+                      <li>Tap the icon at the left of the web address.</li>
+                      <li>
+                        Open <b>Permissions</b> (or <b>Site settings</b>) → <b>Camera</b> → <b>Allow</b>.
+                      </li>
+                      <li>Come back here: the camera starts by itself (or tap Try again).</li>
+                      <li className="text-white/55">Still blocked? Phone Settings → Apps → {browserName()} → Permissions → Camera → Allow.</li>
+                    </ol>
+                  ) : (
+                    <p className="text-sm text-white/70">Close other apps that use the camera, then try again.</p>
+                  )}
+                  {fixOpen ? (
+                    <button
+                      type="button"
+                      onClick={() => setAttempt((n) => n + 1)}
+                      className="flex h-11 items-center gap-2 rounded-xl border border-white/40 px-5 text-sm font-semibold text-white"
+                    >
+                      <RefreshCw className="size-4" aria-hidden />
+                      Try again
+                    </button>
+                  ) : null}
+                </div>
                 {camera === "blocked" && detail ? <p className="max-w-xs break-words text-[11px] text-white/40">{detail}</p> : null}
               </>
             )}
@@ -609,7 +695,7 @@ export function CameraScreen({
         ) : null}
       </div>
 
-      {canRecord && !recording && camera !== "blocked" && camera !== "unsupported" ? (
+      {canRecord && !recording ? (
         <div className="flex shrink-0 justify-center bg-black pt-2">
           <div role="radiogroup" aria-label="Camera mode" className="flex rounded-full bg-white/10 p-1">
             {(["photo", "video"] as const).map((m) => (
@@ -707,6 +793,14 @@ export function CameraScreen({
         capture="environment"
         className="hidden"
         onChange={(e) => void picked(e.target.files?.[0])}
+      />
+      <input
+        ref={videoInput}
+        type="file"
+        accept="video/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => void pickedVideo(e.target.files?.[0])}
       />
 
       {videoPreview && recorded ? (
