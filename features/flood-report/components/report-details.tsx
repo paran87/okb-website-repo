@@ -64,10 +64,10 @@ export function PhotoViewer({
   summary?: EngagementSummary | null;
 }) {
   const [touchX, setTouchX] = useState<number | null>(null);
-  /** The reactions and comments panel under the picture. */
-  const [talk, setTalk] = useState(false);
+  /** The reactions and comments panel under the picture: open whenever the viewer opens, "Hide" folds it away. */
+  const [talk, setTalk] = useState(true);
   useEffect(() => {
-    if (index === null) setTalk(false);
+    if (index === null) setTalk(true);
   }, [index]);
   useEffect(() => {
     if (index === null) return;
@@ -137,7 +137,7 @@ export function PhotoViewer({
           ) : null}
         </div>
         {photo.engageKey ? (
-          <div data-no-swipe className={cn("shrink-0 border-t border-white/10 bg-black px-3 text-white", talk && "flex h-[55dvh] flex-col")}>
+          <div data-no-swipe className={cn("shrink-0 border-t border-white/10 bg-black px-3 text-white", talk && "flex h-[50dvh] flex-col")}>
             <button
               type="button"
               onClick={() => setTalk((t) => !t)}
