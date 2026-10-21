@@ -10,7 +10,7 @@ import { useGeolocation } from "../hooks/use-geolocation";
 import { useIsPhone } from "../hooks/use-is-phone";
 import { usePlace } from "../hooks/use-place";
 import { deleteReport, fetchMyReports, FloodReportApiError, sendReport, updateReport, uploadPhoto, uploadVideo } from "../lib/api";
-import { addMyReportKey, forgetMyReportKeys, readMyReportKeys, removeMyReportKey, type MyReportKey } from "../lib/my-reports";
+import { addMyReportKey, forgetMyReportKeys, readEditLink, readMyReportKeys, removeMyReportKey, type MyReportKey } from "../lib/my-reports";
 import type { CapturedPhoto, CapturedVideo, FloodReportFormValues, MyFloodReport, PublicFloodReport, UploadedPhoto, UploadedVideo } from "../types";
 import { BarTile, ControlBar, ShutterButton } from "./bar";
 import { BottomSheet } from "./bottom-sheet";
@@ -42,7 +42,10 @@ function isActive(r: PublicFloodReport, now: number): boolean {
 type Screen = "map" | "camera" | "form" | "edit" | "photos" | "add-photos";
 
 const errorText = (err: unknown) => (err instanceof FloodReportApiError ? err.message : "Something went wrong. Please try again.");
-type SendState = { stage: "uploading" | "saving"; progress: number } | { stage: "done"; report: PublicFloodReport; inConsolidated: boolean } | null;
+type SendState =
+  | { stage: "uploading" | "saving"; progress: number }
+  | { stage: "done"; report: PublicFloodReport; inConsolidated: boolean; token: string }
+  | null;
 
 function rangeLabel(range: Exclude<Range, "now">): string {
   return range < 48 ? `last ${range} h` : `last ${range / 24} days`;
@@ -252,7 +255,7 @@ function PhoneApp() {
       addMyReportKey(report.id, editToken);
       setMine((all) => [report, ...all]);
       void queryClient.invalidateQueries({ queryKey: ["flood-reports"] });
-      setSend({ stage: "done", report, inConsolidated });
+      setSend({ stage: "done", report, inConsolidated, token: editToken });
     } catch (err) {
       setSend(null);
       setFormError(err instanceof FloodReportApiError ? err.message : "Something went wrong. Please try again.");
@@ -362,6 +365,28 @@ function PhoneApp() {
     const r = list.find((x) => x.id === id) ?? myReports.find((x) => x.id === id);
     if (r) setFocus({ ...pinAt(r), key: `mine-${id}-${Date.now()}` });
   };
+
+  // Opened with a report's edit link ("#edit=<id>.<key>", e.g. in another browser): check it and add the report
+  // to this browser's "Mine", then open it. The key leaves the address bar at once.
+  const [linkNote, setLinkNote] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    const link = readEditLink(window.location.hash);
+    if (!link) return;
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    fetchMyReports([link])
+      .then((found) => {
+        const r = found.find((x) => x.id === link.id);
+        if (!r) {
+          setLinkNote({ ok: false, text: "This edit link does not open a report: the report was deleted, or the link is incomplete." });
+          return;
+        }
+        addMyReportKey(link.id, link.token);
+        setLinkNote({ ok: true, text: "Your report is now in Mine on this browser. You can edit it here." });
+        setSelectedId(r.id);
+        setFocus({ ...pinAt(r), key: `link-${r.id}` });
+      })
+      .catch(() => setLinkNote({ ok: false, text: "Your report could not be opened. Check your connection and open the edit link again." }));
+  }, []);
 
   const active = list.filter((r) => isActive(r, now)).length;
 
@@ -536,6 +561,21 @@ function PhoneApp() {
         ) : null}
 
         <HelpTip hidden={screen !== "map" || listOpen || Boolean(selected) || helpOpen || myOpen || legendOpen} onShowMe={() => setHelpOpen(true)} />
+
+        {linkNote && screen === "map" ? (
+          <div
+            role="status"
+            className={cn(
+              "absolute inset-x-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+8.5rem)] z-20 flex items-start gap-2 rounded-2xl p-3 text-sm font-medium shadow-lg",
+              linkNote.ok ? "bg-emerald-600 text-white" : "bg-red-600 text-white",
+            )}
+          >
+            <p className="flex-1 self-center">{linkNote.text}</p>
+            <button type="button" onClick={() => setLinkNote(null)} aria-label="Close this message" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/20">
+              <X className="size-5" aria-hidden />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <ControlBar className="pb-[max(0.75rem,env(safe-area-inset-bottom))]" inert={screen !== "map"}>
@@ -564,6 +604,7 @@ function PhoneApp() {
               <>
                 <MyReportActions
                   report={selectedMine}
+                  token={tokenOf(selectedMine.id)}
                   busy={ownBusy}
                   onReceded={(when) => void markReceded(selectedMine, when)}
                   onEdit={() => {
@@ -691,6 +732,7 @@ function PhoneApp() {
           total={photos.length + (video ? 1 : 0)}
           reference={send.stage === "done" ? send.report.reference : null}
           inConsolidated={send.stage === "done" && send.inConsolidated}
+          edit={send.stage === "done" ? { id: send.report.id, token: send.token } : null}
           onViewMap={() => finish("map")}
           onAnother={() => finish("camera")}
         />

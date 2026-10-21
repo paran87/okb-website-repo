@@ -2,12 +2,71 @@
 
 import { useState } from "react";
 import { formatDistanceToNowStrict } from "date-fns";
-import { ArrowLeft, Camera, CheckCircle2, ChevronRight, ImagePlus, Loader2, Pencil, Trash2, UserRound, X } from "lucide-react";
+import { ArrowLeft, Camera, Check, CheckCircle2, ChevronRight, Copy, ImagePlus, Link2, Loader2, Pencil, Share2, Trash2, UserRound, X } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { editLink } from "../lib/my-reports";
 import { MAX_PHOTOS } from "../lib/options";
 import type { MyFloodReport, PublicFloodReport } from "../types";
 import { BottomSheet } from "./bottom-sheet";
 import { reportColor } from "./flood-map";
+
+/**
+ * The report's private edit link, to keep (send it to yourself, save it in notes): it opens the report for editing in
+ * any browser or phone, e.g. after this browser's data is cleared.
+ */
+export function EditLink({ id, token, dark = false }: { id: string; token: string; dark?: boolean }) {
+  const [done, setDone] = useState<"copied" | "shared" | null>(null);
+  const url = () => editLink(id, token);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url());
+      setDone("copied");
+    } catch {
+      window.prompt("Copy your edit link:", url());
+    }
+  };
+  const share = async () => {
+    if (!navigator.share) return copy();
+    try {
+      await navigator.share({ title: "Edit my OKB flood report", text: "Private link to edit my OKB flood report", url: url() });
+      setDone("shared");
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === "AbortError")) await copy();
+    }
+  };
+  return (
+    <div className={cn("space-y-2 rounded-xl p-3 text-left", dark ? "bg-white/10" : "bg-white ring-1 ring-slate-200")}>
+      <p className={cn("flex items-center gap-1.5 text-sm font-bold", dark ? "text-white" : "text-slate-900")}>
+        <Link2 className="size-4" aria-hidden /> Keep your edit link
+      </p>
+      <p className={cn("text-xs", dark ? "text-white/70" : "text-slate-600")}>
+        Opens this report for editing in any browser or phone, even if this browser&apos;s data is cleared. Send it to yourself or save it;
+        anyone with the link can change the report.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => void share()}
+          className={cn("flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-bold", dark ? "bg-white text-black" : "bg-blue-600 text-white active:bg-blue-700")}
+        >
+          {done === "shared" ? <Check className="size-4" aria-hidden /> : <Share2 className="size-4" aria-hidden />}
+          {done === "shared" ? "Sent" : "Send to myself"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void copy()}
+          className={cn(
+            "flex h-11 items-center justify-center gap-2 rounded-xl text-sm font-semibold",
+            dark ? "border border-white/30 text-white" : "text-slate-900 ring-1 ring-slate-300 active:bg-slate-100",
+          )}
+        >
+          {done === "copied" ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
+          {done === "copied" ? "Copied" : "Copy link"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Where one of the sender's reports stands, in a few words. */
 export function myReportState(r: PublicFloodReport): { label: string; tone: string } {
@@ -23,6 +82,7 @@ export function myReportState(r: PublicFloodReport): { label: string; tone: stri
  */
 export function MyReportActions({
   report,
+  token,
   busy,
   onReceded,
   onEdit,
@@ -30,6 +90,8 @@ export function MyReportActions({
   onDelete,
 }: {
   report: MyFloodReport;
+  /** This browser's edit key of the report (for its edit link). */
+  token: string | null;
   busy: boolean;
   /** "now", or "pick" to choose the time in the edit form. */
   onReceded: (when: "now" | "pick") => void;
@@ -49,7 +111,7 @@ export function MyReportActions({
         <div className="min-w-0 flex-1">
           <p className="font-bold text-slate-900">Your report</p>
           <p className="text-xs text-slate-600">
-            Only this phone can change it
+            Only this browser (or your edit link) can change it
             {report.editedAt
               ? ` · edited ${
                   Date.now() - Date.parse(report.editedAt) < 60_000
@@ -125,6 +187,8 @@ export function MyReportActions({
           </button>
         </div>
       ) : null}
+
+      {token ? <EditLink id={report.id} token={token} /> : null}
 
       {confirm === "delete" ? (
         <div className="space-y-2 rounded-xl bg-white p-3">
@@ -278,8 +342,9 @@ export function MyReportsSheet({
           <p className="font-semibold text-slate-900">No reports from this phone yet</p>
           <p>Reports you send from this phone appear here. You can mark them receded, edit them, change their photos or delete them.</p>
           <p className="text-xs text-slate-500">
-            Reports sent before October 20, 2026, 10:30 AM, from another phone or browser, or before this browser&apos;s data was cleared
-            cannot be changed here. OKB operators can still remove them.
+            Sent from another browser or phone, or before this browser&apos;s data was cleared? Open that report&apos;s edit link (shown after
+            sending, and in each report under &ldquo;Keep your edit link&rdquo;) and it is added here. Reports sent before October 20, 2026,
+            10:30 AM have no edit key; OKB operators can still remove them.
           </p>
         </div>
       ) : (
@@ -314,8 +379,8 @@ export function MyReportsSheet({
         </ul>
       )}
       <p className="pb-2 text-xs text-slate-500">
-        Your reports are linked to this phone&apos;s browser. Clearing the browser&apos;s data or using another phone removes this list
-        (the reports stay on the map).
+        Your reports are linked to this browser. Another browser or phone, or clearing this browser&apos;s data, starts an empty list (the
+        reports stay on the map); each report&apos;s edit link brings it back.
       </p>
     </BottomSheet>
   );

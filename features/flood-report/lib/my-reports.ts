@@ -50,3 +50,17 @@ export function forgetMyReportKeys(ids: string[]) {
 export function myReportToken(id: string): string | null {
   return readMyReportKeys().find((k) => k.id === id)?.token ?? null;
 }
+
+/**
+ * A private link that opens a report for editing in any browser or phone (when this browser's data is cleared,
+ * or the report was sent from another browser). The key is after "#", so it never reaches a server in the URL.
+ */
+export function editLink(id: string, token: string): string {
+  return `${window.location.origin}/report-flood#edit=${id}.${token}`;
+}
+
+/** The report id and edit key of an edit link ("#edit=<id>.<key>"), when the page was opened with one. */
+export function readEditLink(hash: string): { id: string; token: string } | null {
+  const m = /^#edit=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.([A-Za-z0-9_-]{32,128})$/i.exec(hash);
+  return m ? { id: (m[1] as string).toLowerCase(), token: m[2] as string } : null;
+}

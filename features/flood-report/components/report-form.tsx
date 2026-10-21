@@ -16,6 +16,7 @@ import {
   type WeatherId,
 } from "../lib/options";
 import type { FloodReportFormValues, FloodReportInput, PlaceName } from "../types";
+import { EditLink } from "./my-report";
 
 export type ReportFormValues = Omit<FloodReportInput, "id" | "photos" | "videos">;
 
@@ -527,10 +528,13 @@ export function SendProgress({
   total,
   reference,
   inConsolidated = false,
+  edit = null,
   onViewMap,
   onAnother,
 }: {
   stage: "uploading" | "saving" | "done";
+  /** The sent report's id and edit key, for its edit link. */
+  edit?: { id: string; token: string } | null;
   progress: number;
   total: number;
   reference: string | null;
@@ -541,7 +545,7 @@ export function SendProgress({
 }) {
   if (stage === "done") {
     return (
-      <div className="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-black px-8 text-center text-white">
+      <div className="fixed inset-0 z-40 flex flex-col items-center gap-5 overflow-y-auto bg-black px-8 py-8 text-center text-white [justify-content:safe_center] [&>*]:shrink-0">
         <span className="flex size-20 items-center justify-center rounded-full bg-emerald-500">
           <Check className="size-11" strokeWidth={3} aria-hidden />
         </span>
@@ -549,7 +553,8 @@ export function SendProgress({
           <h2 className="text-2xl font-bold">Report sent. Salamat!</h2>
           <p className="text-white/75">Your report is now on the flood map. OKB operators will verify it from your photos.</p>
           <p className="text-sm text-white/60">
-            Tap <b className="text-white">Mine</b> on the map to mark it receded, edit it or delete it. Only this phone can change it.
+            Tap <b className="text-white">Mine</b> on the map to mark it receded, edit it or delete it. Only this browser, or your edit link,
+            can change it.
           </p>
           {reference ? <p className="font-mono text-sm text-amber-300">{reference}</p> : null}
           {inConsolidated ? (
@@ -558,6 +563,11 @@ export function SendProgress({
             </p>
           ) : null}
         </div>
+        {edit ? (
+          <div className="w-full max-w-xs">
+            <EditLink id={edit.id} token={edit.token} dark />
+          </div>
+        ) : null}
         <div className="grid w-full max-w-xs gap-3">
           <button type="button" onClick={onViewMap} className="h-14 rounded-2xl bg-white text-base font-bold text-black">
             View on map
