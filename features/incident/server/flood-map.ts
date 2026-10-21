@@ -27,6 +27,10 @@ const HOUR = 3_600_000;
  * Reports from the OKB mobile page clear by the weather their sender chose instead (2–3 h dry, 4–6 h rain;
  * features/flood-report/lib/expiry.ts). A report past its own time no longer decides its place, so an older
  * report that is still within its time can show.
+ *
+ * An OKB mobile report stands on its own, as on the OKB Mobile map: it marks its own GPS spot, shows until it
+ * receded or its own time is up, and neither hides nor is hidden by other reports of the same road (one sender
+ * marking their spot receded does not clear someone else's flood further along the road).
  */
 export const FLOOD_MAP_RULE = { wetHours: 6, normalHours: 3 } as const;
 
@@ -146,7 +150,12 @@ export function reportObservations(record: BridgeReportRecord, activeHours: numb
     const loc: ExtractedLocation | undefined = record.extraction?.locations?.[o.index];
     if (!loc) continue;
     const place = placeOf(loc, o.label);
-    const key = place ? `${place.road}${place.cross ? ` cor ${place.cross}` : ""}` : (o.key ?? `${record.id}:${o.index}`);
+    // A mobile report is its own place (its GPS spot), so two reports of one road stay two locations.
+    const key = fromMobile
+      ? `mobile:${record.id}:${o.index}`
+      : place
+        ? `${place.road}${place.cross ? ` cor ${place.cross}` : ""}`
+        : (o.key ?? `${record.id}:${o.index}`);
     const flooded = isFlooded(o.condition);
     const receded = flooded ? recededAt(loc, at) : null;
     const clearsAt = Math.min(at + hours * HOUR, receded ?? Infinity);
@@ -212,13 +221,24 @@ export function buildFloodMap(
   const ordered = [...reports].sort((a, b) => Date.parse(messageTime(b)) - Date.parse(messageTime(a)));
   for (const record of ordered) {
     const at = Date.parse(messageTime(record));
-    const hours = record.platform === MOBILE_REPORT_PLATFORM ? mobileExpiryHours(record.mobileWeather, liveRain) : activeHours;
+    if (record.platform === MOBILE_REPORT_PLATFORM) {
+      if (record.status === "rejected") continue;
+      const hours = mobileExpiryHours(record.mobileWeather, liveRain);
+      for (const o of reportObservations(record, activeHours, liveRain)) {
+        if (o.clear) clearedByReport++;
+        if (!o.flooded || !o.location) continue;
+        if (!Number.isFinite(at) || at < now.getTime() - hours * HOUR) clearedByWeather++;
+        else if (o.recededAt !== null && o.recededAt <= now.getTime()) clearedByReport++;
+        else locations.push(o.location);
+      }
+      continue;
+    }
     for (const o of reportObservations(record, activeHours, liveRain)) {
       const { key, place } = o;
       // A newer report of this place already decided.
       if (seen.has(key) || (place && decided.some((d) => samePlace(d, place)))) continue;
       // Past its own time: cleared by the weather rule, and it no longer speaks for the place.
-      if (o.flooded && (!Number.isFinite(at) || at < now.getTime() - hours * HOUR)) {
+      if (o.flooded && (!Number.isFinite(at) || at < now.getTime() - activeHours * HOUR)) {
         clearedByWeather++;
         continue;
       }
