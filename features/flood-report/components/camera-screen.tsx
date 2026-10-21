@@ -214,6 +214,55 @@ export function CameraScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [facing, attempt]);
 
+  // Start the camera again without waiting for Try again: when the browser lets the site use it (changed in the
+  // site or phone settings) and when the page comes back from another app that took the camera.
+  useEffect(() => {
+    if (camera === "starting" || recording) return;
+    let gone = false;
+    let status: PermissionStatus | null = null;
+    const retry = () => {
+      if (!gone) setAttempt((n) => n + 1);
+    };
+    const check = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (camera === "live") {
+        const t = stream.current?.getVideoTracks()[0];
+        if (!t || t.readyState === "ended") return retry();
+        if (video.current?.paused) await video.current.play().catch(() => undefined);
+        return;
+      }
+      const state = await navigator.permissions
+        ?.query({ name: "camera" as PermissionName })
+        .then((p) => p.state)
+        .catch(() => null);
+      if (state === "granted") retry();
+    };
+    const onCheck = () => void check();
+    const t = camera === "live" ? stream.current?.getVideoTracks()[0] : undefined;
+    t?.addEventListener("ended", onCheck);
+    document.addEventListener("visibilitychange", onCheck);
+    window.addEventListener("pageshow", onCheck);
+    window.addEventListener("focus", onCheck);
+    if (camera !== "live") {
+      void navigator.permissions
+        ?.query({ name: "camera" as PermissionName })
+        .then((p) => {
+          if (gone) return;
+          status = p;
+          p.addEventListener("change", onCheck);
+        })
+        .catch(() => undefined);
+    }
+    return () => {
+      gone = true;
+      t?.removeEventListener("ended", onCheck);
+      document.removeEventListener("visibilitychange", onCheck);
+      window.removeEventListener("pageshow", onCheck);
+      window.removeEventListener("focus", onCheck);
+      status?.removeEventListener("change", onCheck);
+    };
+  }, [camera, recording]);
+
   const stampInfo = useCallback(
     (takenAt: Date): StampInfo | null =>
       fix ? { latitude: fix.latitude, longitude: fix.longitude, accuracyM: fix.accuracyM, takenAt, place: placeLines(place) } : null,
@@ -399,8 +448,9 @@ export function CameraScreen({
           className={cn("absolute inset-0 size-full object-cover", facing === "user" && "-scale-x-100", camera !== "live" && "opacity-0")}
         />
         {camera !== "live" ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 px-8 text-center">
-            <Camera className="size-12 text-white/60" aria-hidden />
+          // Scrolls on short screens, and starts below the top buttons so nothing hides under them.
+          <div className="absolute inset-0 flex flex-col items-center gap-4 overflow-y-auto px-8 pb-4 pt-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] text-center [justify-content:safe_center]">
+            <Camera className="size-10 shrink-0 text-white/60" aria-hidden />
             {camera === "starting" ? (
               <p className="text-white/80">Starting the camera… If your phone asks, tap Allow.</p>
             ) : (
@@ -437,7 +487,7 @@ export function CameraScreen({
                     <li>
                       Open <b>Permissions</b> (or <b>Site settings</b>) → <b>Camera</b> → <b>Allow</b>.
                     </li>
-                    <li>Come back and tap Try again.</li>
+                    <li>Come back here: the camera starts by itself (or tap Try again).</li>
                     <li className="text-white/60">
                       Still blocked? Phone Settings → Apps → {browserName()} → Permissions → Camera → Allow.
                     </li>
@@ -532,7 +582,7 @@ export function CameraScreen({
         ) : null}
       </div>
 
-      {canRecord && !recording ? (
+      {canRecord && !recording && camera !== "blocked" && camera !== "unsupported" ? (
         <div className="flex shrink-0 justify-center bg-black pt-2">
           <div role="radiogroup" aria-label="Camera mode" className="flex rounded-full bg-white/10 p-1">
             {(["photo", "video"] as const).map((m) => (
