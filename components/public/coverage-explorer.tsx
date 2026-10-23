@@ -3,13 +3,11 @@
 import { useMemo, useState } from "react";
 import { Droplets, MapPin, Search, Waves, X } from "lucide-react";
 import {
-  COVERAGE,
-  COVERAGE_AS_OF,
-  COVERAGE_TOTALS,
   areaDrainage,
   areaWaterways,
   regionDrainage,
   regionWaterways,
+  type Coverage,
   type CoverageArea,
 } from "@/lib/config/okb-coverage";
 import { CoverageSheet, type CoverageItem } from "@/components/public/accomplishment-live/coverage-sheet";
@@ -70,7 +68,7 @@ function AreaBlock({ area, kind, q, onOpen }: { area: CoverageArea; kind: Kind; 
  * live progress, details and photos (CoverageSheet). Search, a waterway / drainage filter and a region picker keep it
  * short on a phone.
  */
-export function CoverageExplorer() {
+export function CoverageExplorer({ coverage }: { coverage: Coverage }) {
   const [region, setRegion] = useState<string>("all");
   const [kind, setKind] = useState<Kind>("all");
   const [query, setQuery] = useState("");
@@ -79,7 +77,7 @@ export function CoverageExplorer() {
 
   const regions = useMemo(
     () =>
-      COVERAGE.filter((r) => region === "all" || r.id === region).filter((r) => {
+      coverage.regions.filter((r) => region === "all" || r.id === region).filter((r) => {
         if (kind === "waterways" && !regionWaterways(r)) return false;
         if (kind === "drainage" && !regionDrainage(r)) return false;
         if (!q) return true;
@@ -88,7 +86,7 @@ export function CoverageExplorer() {
           r.areas.some((a) => norm(a.name).includes(q) || [...(a.waterways ?? []), ...(a.drainage ?? [])].some((s) => norm(s).includes(q)))
         );
       }),
-    [region, kind, q],
+    [coverage, region, kind, q],
   );
 
   return (
@@ -113,8 +111,8 @@ export function CoverageExplorer() {
           {(
             [
               ["all", "All"],
-              ["waterways", `Waterways · ${COVERAGE_TOTALS.waterways}`],
-              ["drainage", `Drainage · ${COVERAGE_TOTALS.drainage}`],
+              ["waterways", `Waterways · ${coverage.totals.waterways}`],
+              ["drainage", `Drainage · ${coverage.totals.drainage}`],
             ] as const
           ).map(([k, label]) => (
             <button
@@ -141,7 +139,7 @@ export function CoverageExplorer() {
         >
           All regions
         </button>
-        {COVERAGE.map((r) => (
+        {coverage.regions.map((r) => (
           <button
             key={r.id}
             type="button"
@@ -200,8 +198,10 @@ export function CoverageExplorer() {
       )}
 
       <p className="okb-cov-note">
-        Tap a waterway or drainage line for its location, progress and photos. From the OKB accomplishment reports as
-        of {COVERAGE_AS_OF}; volumes and progress are live.
+        Tap a waterway or drainage line for its location, progress and photos.{" "}
+        {coverage.live
+          ? `Live from the OKB Single Source of Truth, as of ${coverage.asOf}.`
+          : `From the OKB accomplishment reports as of ${coverage.asOf}; volumes and progress are live.`}
       </p>
       <CoverageSheet item={opened} onClose={() => setOpened(null)} />
     </div>

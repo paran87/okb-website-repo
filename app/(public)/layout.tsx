@@ -1,8 +1,13 @@
 import { GovTopBar, SiteFooter, SiteHeader } from "@/components/public";
+import { getCoverage } from "@/features/accomplishment/server/coverage";
 
-export default function PublicLayout({
+/** The footer figures come live from the OKB SSOT sheet (read at most every 10 minutes). */
+export const revalidate = 600;
+
+export default async function PublicLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const coverage = await getCoverage();
   return (
     <div className="okb-public flex min-h-screen flex-col">
       {/* Field photos on the Accomplishment page are served by Google (OKB SSOT photo links). */}
@@ -11,7 +16,7 @@ export default function PublicLayout({
       <GovTopBar />
       <SiteHeader />
       <main className="okb-public-main flex-1">{children}</main>
-      <SiteFooter />
+      <SiteFooter coverage={coverage.totals} />
     </div>
   );
 }

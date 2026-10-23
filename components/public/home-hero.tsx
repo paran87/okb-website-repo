@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { ArrowRight, Radio } from "lucide-react";
-import { COVERAGE, COVERAGE_AS_OF, COVERAGE_TOTALS, regionDrainage, regionWaterways } from "@/lib/config/okb-coverage";
+import { regionDrainage, regionWaterways, type Coverage } from "@/lib/config/okb-coverage";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 
 const HOME_HERO_BANNER = {
@@ -22,22 +22,21 @@ const item: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 };
 
-/** Program coverage from the accomplishment reports (counts of places, never progress figures). */
-const FACTS = [
-  { value: COVERAGE_TOTALS.regions, label: "Regions" },
-  { value: COVERAGE_TOTALS.areas, label: "Provinces & cities" },
-  { value: COVERAGE_TOTALS.waterways, label: "Waterways" },
-  { value: COVERAGE_TOTALS.drainage, label: "Drainage lines" },
-] as const;
-
-/** The regions with the most work sites, for the desktop "Where we work" card. */
-const TOP_REGIONS = [...COVERAGE]
-  .sort((a, b) => regionWaterways(b) + regionDrainage(b) - (regionWaterways(a) + regionDrainage(a)))
-  .slice(0, 6);
-
 /** Home intro: the Metro Manila flood-mitigation illustration under a poster headline, with the program in brief. */
-export function HomeHero() {
+export function HomeHero({ coverage }: { coverage: Coverage }) {
   const reduce = useReducedMotion();
+  const totals = coverage.totals;
+  // Program coverage from the OKB SSOT (counts of places, never progress figures).
+  const facts = [
+    { value: totals.regions, label: "Regions" },
+    { value: totals.areas, label: "Provinces & cities" },
+    { value: totals.waterways, label: "Waterways" },
+    { value: totals.drainage, label: "Drainage lines" },
+  ];
+  // The regions with the most work sites, for the desktop "Where we work" card.
+  const topRegions = [...coverage.regions]
+    .sort((a, b) => regionWaterways(b) + regionDrainage(b) - (regionWaterways(a) + regionDrainage(a)))
+    .slice(0, 6);
 
   return (
     <section className="okb-home-hero relative isolate overflow-hidden">
@@ -75,7 +74,7 @@ export function HomeHero() {
           </motion.div>
 
           <motion.ul className="okb-home-facts" variants={item} aria-label="The program in figures">
-            {FACTS.map((f) => (
+            {facts.map((f) => (
               <li key={f.label}>
                 <Link href={COVERAGE_HREF} className="okb-home-fact">
                   <span className="okb-home-fact__value">{f.value}</span>
@@ -96,7 +95,7 @@ export function HomeHero() {
         >
           <p className="okb-home-zones__kicker">Where we work</p>
           <ol className="mt-2 space-y-1">
-            {TOP_REGIONS.map((r) => (
+            {topRegions.map((r) => (
               <li key={r.id}>
                 <Link href={`${PUBLIC_ROUTES.accomplishment}#coverage-${r.id}`} className="okb-home-zone">
                   <span className="okb-home-zone__num okb-home-zone__num--code">{r.code.replace("Region ", "")}</span>
@@ -113,7 +112,7 @@ export function HomeHero() {
             ))}
           </ol>
           <Link href={COVERAGE_HREF} className="okb-home-zones__foot okb-home-zones__foot--link">
-            All {COVERAGE_TOTALS.regions} regions · as of {COVERAGE_AS_OF} →
+            All {totals.regions} regions · as of {coverage.asOf} →
           </Link>
         </motion.aside>
       </div>

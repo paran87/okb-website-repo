@@ -10,16 +10,17 @@ const UA = "okb-website-build/1.0 (coverage geometry)";
 const LIMIT = 40; // Nominatim's maximum results per request
 
 /**
- * Coverage name (as in lib/config/okb-coverage.ts) -> its OSM geometry.
+ * Coverage name (as the website shows it from the OKB SSOT sheet, readableName in
+ * features/accomplishment/lib/coverage.ts) -> its OSM geometry.
  * osm: every way with exactly that name and category inside bbox [w, s, e, n].
  * place: an OSM place to pin when the line itself is not mapped anywhere.
  */
 const SOURCES = {
-  "Meycauayan River": { osm: "Meycauayan River", category: "waterway", bbox: [120.85, 14.65, 121.1, 14.85] },
-  "Kalaw Avenue": { osm: "Kalaw Avenue", category: "highway", bbox: [120.97, 14.57, 120.995, 14.59] },
-  "España Boulevard": { osm: "España Boulevard", category: "highway", bbox: [120.98, 14.6, 121.01, 14.625] },
-  "Tayuman Street": { osm: "Tayuman Street", category: "highway", bbox: [120.96, 14.61, 120.995, 14.625] },
-  "Mt. Samat Road": { osm: "Mount Samat Road", category: "highway", bbox: [120.45, 14.55, 120.6, 14.65] },
+  "Meycuayan River": { osm: "Meycauayan River", category: "waterway", bbox: [120.85, 14.65, 121.1, 14.85] },
+  "Kalaw Ave.": { osm: "Kalaw Avenue", category: "highway", bbox: [120.97, 14.57, 120.995, 14.59] },
+  "Espana Blvd": { osm: "España Boulevard", category: "highway", bbox: [120.98, 14.6, 121.01, 14.625] },
+  "Tayuman St.": { osm: "Tayuman Street", category: "highway", bbox: [120.96, 14.61, 120.995, 14.625] },
+  "Mt. Samat Rd (S04820LZ)": { osm: "Mount Samat Road", category: "highway", bbox: [120.45, 14.55, 120.6, 14.65] },
   "Digal Creek": {
     place: "Digal, Buluan, Maguindanao del Sur",
     note: "The creek itself is not mapped yet; the pin marks Barangay Digal, Buluan.",

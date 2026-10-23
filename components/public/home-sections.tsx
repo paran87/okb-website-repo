@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowUpRight, BarChart3, Droplets, FileText, Images, Radio, Shield, Siren, Waves, type LucideIcon } from "lucide-react";
-import { COVERAGE, COVERAGE_AS_OF, COVERAGE_TOTALS, regionDrainage, regionWaterways } from "@/lib/config/okb-coverage";
+import { regionDrainage, regionWaterways, type Coverage } from "@/lib/config/okb-coverage";
 import { APP, PUBLIC_ROUTES } from "@/lib/constants";
 
 function Reveal({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -249,7 +249,8 @@ export function HomeExplore() {
 }
 
 /** Where the program works: every region with its waterways and drainage lines, over a dredging photo. */
-export function HomeCoverage() {
+export function HomeCoverage({ coverage }: { coverage: Coverage }) {
+  const totals = coverage.totals;
   return (
     <section className="okb-home-coverage relative isolate overflow-hidden">
       <div
@@ -262,15 +263,15 @@ export function HomeCoverage() {
         <Reveal>
           <p className="okb-home-kicker okb-home-kicker--light">Where we work</p>
           <h2 className="okb-home-h2 okb-home-h2--light">
-            {COVERAGE_TOTALS.waterways} waterways · {COVERAGE_TOTALS.drainage} drainage lines
+            {totals.waterways} waterways · {totals.drainage} drainage lines
           </h2>
           <p className="okb-home-body okb-home-body--light mt-1.5">
             Dredging and desilting of rivers, creeks and esteros, and declogging of drainage lines, in{" "}
-            {COVERAGE_TOTALS.regions} regions and {COVERAGE_TOTALS.areas} provinces and cities.
+            {totals.regions} regions and {totals.areas} provinces and cities.
           </p>
         </Reveal>
         <ul className="okb-home-regions mt-4">
-          {COVERAGE.map((r, i) => (
+          {coverage.regions.map((r, i) => (
             <li key={r.id}>
               <Reveal delay={Math.min(i, 8) * 0.03} className="h-full">
                 <Link href={`${PUBLIC_ROUTES.accomplishment}#coverage-${r.id}`} className="okb-home-region">
@@ -297,7 +298,7 @@ export function HomeCoverage() {
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] text-white/60">
             <Waves className="inline size-3" aria-hidden /> waterways · <Droplets className="inline size-3" aria-hidden />{" "}
-            drainage lines · as of {COVERAGE_AS_OF}
+            drainage lines · as of {coverage.asOf}
           </p>
           <Link href={`${PUBLIC_ROUTES.accomplishment}#coverage`} className="okb-home-link okb-home-link--light">
             See every waterway and drainage line

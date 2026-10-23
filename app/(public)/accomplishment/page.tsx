@@ -3,7 +3,7 @@ import { PublicPageHero } from "@/components/public";
 import { AccomplishmentPanels } from "@/components/public/accomplishment-panels";
 import { CoverageExplorer } from "@/components/public/coverage-explorer";
 import { AccomplishmentHeroArt } from "@/components/public/accomplishment-hero-art";
-import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
+import { getCoverage } from "@/features/accomplishment/server/coverage";
 import { APP } from "@/lib/constants";
 
 export const metadata = {
@@ -23,9 +23,13 @@ const HERO_CHIPS = [
   { icon: Camera, label: "Field photos" },
 ] as const;
 
-const coverageLine = `${COVERAGE_TOTALS.waterways} waterways and ${COVERAGE_TOTALS.drainage} drainage lines in ${COVERAGE_TOTALS.regions} regions`;
+/** Program coverage comes live from the OKB SSOT sheet (read at most every 10 minutes). */
+export const revalidate = 600;
 
-export default function AccomplishmentPage() {
+export default async function AccomplishmentPage() {
+  const coverage = await getCoverage();
+  const { waterways, drainage, regions } = coverage.totals;
+  const coverageLine = `${waterways} waterways and ${drainage} drainage lines in ${regions} regions`;
   return (
     <>
       <PublicPageHero
@@ -61,7 +65,7 @@ export default function AccomplishmentPage() {
             national and local roads. Search by name or pick a region.
           </p>
           <div className="mt-4">
-            <CoverageExplorer />
+            <CoverageExplorer coverage={coverage} />
           </div>
         </div>
       </section>

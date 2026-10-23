@@ -1,12 +1,9 @@
 /**
- * Where Oplan Kontra Baha works: the waterways (dredging and desilting) and drainage lines (declogging) in the
- * OKB accomplishment reports of October 8, 2026, by region and province / city.
- *
- * Only the coverage is kept here: names and places. Volumes, statuses and percentages change daily and are shown
- * live on the Accomplishment dashboard, never copied into the website.
+ * Where Oplan Kontra Baha works: the waterways (dredging and desilting) and drainage lines (declogging) by region and
+ * province / city. The website reads it live from the OKB SSOT sheet (getCoverage in
+ * features/accomplishment/server/coverage.ts); the list below is the October 8, 2026 snapshot of the accomplishment
+ * reports, shown only while the sheet cannot be read.
  */
-
-export const COVERAGE_AS_OF = "October 8, 2026";
 
 export interface CoverageArea {
   /** Province, city or metro area as the reports group it. */
@@ -25,7 +22,8 @@ export interface CoverageRegion {
   areas: readonly CoverageArea[];
 }
 
-export const COVERAGE: readonly CoverageRegion[] = [
+/** The October 8, 2026 snapshot (fallback when the SSOT sheet cannot be read). */
+const COVERAGE_SNAPSHOT: readonly CoverageRegion[] = [
   {
     id: "ncr",
     code: "NCR",
@@ -293,10 +291,35 @@ export const areaDrainage = (a: CoverageArea) => a.drainage?.length ?? 0;
 export const regionWaterways = (r: CoverageRegion) => r.areas.reduce((n, a) => n + areaWaterways(a), 0);
 export const regionDrainage = (r: CoverageRegion) => r.areas.reduce((n, a) => n + areaDrainage(a), 0);
 
+export interface CoverageTotals {
+  regions: number;
+  areas: number;
+  waterways: number;
+  drainage: number;
+}
+
+export interface Coverage {
+  regions: readonly CoverageRegion[];
+  totals: CoverageTotals;
+  /** "October 23, 2026": the day the list was read from the SSOT sheet (or the snapshot's day). */
+  asOf: string;
+  /** Read from the SSOT sheet (false: the snapshot). */
+  live: boolean;
+}
+
 /** Totals for the figures on the home page and the footer. */
-export const COVERAGE_TOTALS = {
-  regions: COVERAGE.length,
-  areas: COVERAGE.reduce((n, r) => n + r.areas.length, 0),
-  waterways: COVERAGE.reduce((n, r) => n + regionWaterways(r), 0),
-  drainage: COVERAGE.reduce((n, r) => n + regionDrainage(r), 0),
-} as const;
+export function coverageTotals(regions: readonly CoverageRegion[]): CoverageTotals {
+  return {
+    regions: regions.length,
+    areas: regions.reduce((n, r) => n + r.areas.length, 0),
+    waterways: regions.reduce((n, r) => n + regionWaterways(r), 0),
+    drainage: regions.reduce((n, r) => n + regionDrainage(r), 0),
+  };
+}
+
+export const COVERAGE_FALLBACK: Coverage = {
+  regions: COVERAGE_SNAPSHOT,
+  totals: coverageTotals(COVERAGE_SNAPSHOT),
+  asOf: "October 8, 2026",
+  live: false,
+};

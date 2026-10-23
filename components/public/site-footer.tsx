@@ -21,7 +21,7 @@ import { SiteFooterAccent } from "@/components/public/site-footer-accent";
 import {
   FRAMEWORK_META,
 } from "@/lib/config/okb-framework";
-import { COVERAGE_TOTALS } from "@/lib/config/okb-coverage";
+import type { CoverageTotals } from "@/lib/config/okb-coverage";
 import { APP, CONTACT, PUBLIC_ROUTES } from "@/lib/constants";
 import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 
@@ -50,16 +50,15 @@ const EXPLORE_LINKS: readonly {
 
 const COVERAGE_HREF = `${PUBLIC_ROUTES.accomplishment}#coverage`;
 
-/** Program coverage from the accomplishment reports (places, not progress). */
-const FOOTER_FACTS = [
-  { value: String(COVERAGE_TOTALS.regions), label: "Regions", href: COVERAGE_HREF },
-  { value: String(COVERAGE_TOTALS.areas), label: "Provinces & cities", href: COVERAGE_HREF },
-  { value: String(COVERAGE_TOTALS.waterways), label: "Waterways", href: COVERAGE_HREF },
-  { value: String(COVERAGE_TOTALS.drainage), label: "Drainage lines", href: COVERAGE_HREF },
-] as const;
-
-export function SiteFooter() {
+/** Program coverage from the OKB SSOT (places, not progress). */
+export function SiteFooter({ coverage }: { coverage: CoverageTotals }) {
   const year = new Date().getFullYear();
+  const footerFacts = [
+    { value: String(coverage.regions), label: "Regions", href: COVERAGE_HREF },
+    { value: String(coverage.areas), label: "Provinces & cities", href: COVERAGE_HREF },
+    { value: String(coverage.waterways), label: "Waterways", href: COVERAGE_HREF },
+    { value: String(coverage.drainage), label: "Drainage lines", href: COVERAGE_HREF },
+  ];
 
   return (
     <footer className="okb-public-footer">
@@ -167,7 +166,7 @@ export function SiteFooter() {
         </div>
 
         <ul className="okb-foot-facts">
-          {FOOTER_FACTS.map((fact) => (
+          {footerFacts.map((fact) => (
             <li key={fact.label}>
               <Link href={fact.href} className="okb-foot-fact">
                 <span className="okb-foot-fact__value">{fact.value}</span>
