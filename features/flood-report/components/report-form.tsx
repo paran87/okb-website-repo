@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ArrowLeft, Check, MapPin, Play, SendHorizontal } from "lucide-react";
 import { FLOOD_SEVERITY, floodSeverity } from "@/features/incident/lib/flood-severity";
+import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import {
   FLOOD_LEVELS,
@@ -495,7 +496,14 @@ export function ReportForm({
           <p className="text-xs text-slate-500">
             {editing
               ? "To add or remove photos, use Manage photos on your report."
-              : "By sending, you agree that your photos and these details are shown on the public flood map and used by the OKB Command Center."}
+              : (
+                <>
+                  By sending, you agree that your photos and these details are shown on the public flood map and used by the OKB Command Center.{" "}
+                  <a href={PUBLIC_ROUTES.privacyPolicy} target="_blank" rel="noopener" className="font-semibold text-blue-700 underline">
+                    Privacy Policy
+                  </a>
+                </>
+              )}
           </p>
         </div>
       </div>

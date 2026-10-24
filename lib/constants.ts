@@ -29,6 +29,7 @@ export const PUBLIC_ROUTES = {
   profile: "/profile",
   gallery: "/gallery",
   contact: "/contact",
+  privacyPolicy: "/privacy-policy",
   commandCenter: "/command",
   /** Mobile-only page where the public sends geotagged flood reports. */
   reportFlood: "/report-flood",

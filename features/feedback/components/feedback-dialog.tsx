@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
 import { CheckCircle2, ImagePlus, Loader2, X } from "lucide-react";
+import { PUBLIC_ROUTES } from "@/lib/constants";
 import { cn } from "@/utils/cn";
 import {
   areaOfPath,
@@ -266,6 +267,12 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
             <input ref={honeypot} name="website" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] size-px opacity-0" />
 
             <p className="break-all text-xs text-slate-500">Sent with the page you are on: {pathname}</p>
+            <p className="text-xs text-slate-500">
+              How we handle what you send:{" "}
+              <a href={PUBLIC_ROUTES.privacyPolicy} target="_blank" rel="noopener" className="font-semibold text-blue-700 underline">
+                Privacy Policy
+              </a>
+            </p>
 
             {error ? (
               <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">

@@ -182,7 +182,13 @@ export function SiteFooter({ coverage }: { coverage: CoverageTotals }) {
           <p>
             © {year} {APP.program}. All rights reserved.
           </p>
-          <p>Flood control · Public works · National resilience</p>
+          <p>
+            <Link href={PUBLIC_ROUTES.privacyPolicy} className="inline-flex min-h-10 items-center underline-offset-2 hover:underline">
+              Privacy Policy
+            </Link>
+            <span aria-hidden> · </span>
+            Flood control · Public works · National resilience
+          </p>
         </div>
       </div>
     </footer>
