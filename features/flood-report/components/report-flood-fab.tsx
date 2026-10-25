@@ -28,13 +28,14 @@ function write(key: string, value: string | null) {
 }
 
 /**
- * Phones: the floating "Report a flood" button over every Command Center page (the mobile report page is a
+ * Phones: the floating "Report a flood" button over every Command Center page and the public website (the mobile report page is a
  * highlight of the site). It shows how many places are flooded now, shrinks to a round camera button while
  * a page scrolls down, and can be tucked into a small tab at the screen edge (remembered on this phone).
  * The first visit shows a one-time tip. Hidden from md up, where the sidebar links to the page.
- * On full-screen map pages it stays round, so it does not cover the map's own panels.
+ * On full-screen map pages it stays round, so it does not cover the map's own panels. `site` places it for the
+ * public website, which has no Command Center bottom bar to clear.
  */
-export function ReportFloodFab({ round = false }: { round?: boolean }) {
+export function ReportFloodFab({ round = false, site = false }: { round?: boolean; site?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [scrolledDown, setScrolledDown] = useState(false);
@@ -93,7 +94,7 @@ export function ReportFloodFab({ round = false }: { round?: boolean }) {
   if (!mounted) return null;
   const compact = round || scrolledDown;
 
-  const bottom = "calc(2.75rem + env(safe-area-inset-bottom))";
+  const bottom = site ? "calc(1rem + env(safe-area-inset-bottom))" : "calc(2.75rem + env(safe-area-inset-bottom))";
 
   if (hidden) {
     return (
