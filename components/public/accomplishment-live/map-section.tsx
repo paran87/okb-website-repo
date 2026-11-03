@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FeatureCollection, LineString, Point } from "geojson";
 import type { GeoJSONSource, Map as MapLibreMap, MapLayerMouseEvent } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { ChevronRight, Layers, Map as MapIcon, X } from "lucide-react";
+import { ChevronRight, Droplets, Layers, Map as MapIcon, Waves, X } from "lucide-react";
 import { getMapStyle } from "@/features/map/config/map-styles";
+import type { RecordType } from "@/features/accomplishment/lib/rollup";
 import type { MapLine, PublicAccomplishment } from "@/features/accomplishment/public-types";
 import { useMapLines } from "@/components/public/accomplishment-live/data";
 import type { Selection } from "@/components/public/accomplishment-live/regions";
@@ -14,6 +15,9 @@ import { dayText, Empty, int, km, Meter, Panel, pctText, recordProgress, StatusP
 /** Validated pair (dataviz validator, light basemap); white casing gives the orange its contrast. */
 const CLEANED = "#1d4ed8";
 const REMAINING = "#ea7317";
+/** Zoomed-out pins: navy with a gold ring for waterways, teal with a white ring for drainage lines. */
+const WATERWAY_PIN = "#002855";
+const DRAINAGE_PIN = "#0d9488";
 const PH_BOUNDS: [[number, number], [number, number]] = [
   [116.8, 4.5],
   [126.8, 21.2],
@@ -32,11 +36,11 @@ function toGeoJson(lines: MapLine[]) {
       for (let i = 0; i + 1 < flat.length; i += 2) coordinates.push([flat[i]!, flat[i + 1]!]);
       if (!coordinates.length) continue;
       if (!pinned) {
-        pins.features.push({ type: "Feature", properties: { w: line.w, g: line.g ?? -1 }, geometry: { type: "Point", coordinates: coordinates[Math.floor(coordinates.length / 2)]! } });
+        pins.features.push({ type: "Feature", properties: { w: line.w, g: line.g ?? -1, d: line.d ?? 0 }, geometry: { type: "Point", coordinates: coordinates[Math.floor(coordinates.length / 2)]! } });
         pinned = true;
       }
       if (coordinates.length < 2) continue;
-      runs.features.push({ type: "Feature", properties: { w: line.w, c: cleaned }, geometry: { type: "LineString", coordinates } });
+      runs.features.push({ type: "Feature", properties: { w: line.w, c: cleaned, d: line.d ?? 0 }, geometry: { type: "LineString", coordinates } });
     }
   }
   return { runs, pins };
@@ -55,9 +59,11 @@ function boundsOf(lines: MapLine[]): [[number, number], [number, number]] | null
   return Number.isFinite(w) ? [[w, s], [e, n]] : null;
 }
 
-/** Every traced waterway: cleaned and remaining stretches (WaterwayVsCoordinates). */
+/** Every traced waterway and drainage line of the selected types: cleaned and remaining stretches (WaterwayVsCoordinates). */
 export function MapSection({
   data,
+  types,
+  drainageTotal,
   focus,
   onOpenWaterway,
   onUntraced,
@@ -65,6 +71,10 @@ export function MapSection({
   length,
 }: {
   data: PublicAccomplishment;
+  /** Record types on (the type chips): drainage lines show with drainage, the other lines with waterways or ISF. */
+  types: RecordType[];
+  /** Drainage records in the program (traced or not). */
+  drainageTotal?: number;
   focus: { name: string; id: number } | null;
   onOpenWaterway: (name: string) => void;
   onUntraced?: (name: string) => void;
@@ -74,7 +84,14 @@ export function MapSection({
   length?: { done: number; plan: number };
 }) {
   const query = useMapLines(true);
-  const lines = useMemo(() => query.data ?? [], [query.data]);
+  const allLines = useMemo(() => query.data ?? [], [query.data]);
+  const showDrainage = types.includes("drainage");
+  const showWaterways = types.includes("waterway") || types.includes("isf");
+  // A line asked for with "Show on map" stays visible even when its type chip is off.
+  const lines = useMemo(
+    () => allLines.filter((l) => (l.d ? showDrainage : showWaterways) || l.w === focus?.name),
+    [allLines, showDrainage, showWaterways, focus?.name],
+  );
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const [ready, setReady] = useState(false);
@@ -86,12 +103,19 @@ export function MapSection({
   const geo = useMemo(() => toGeoJson(lines), [lines]);
   const byName = useMemo(() => new Map(lines.map((l) => [l.w, l])), [lines]);
   const regions = useMemo(() => [...new Set(lines.map((l) => l.r).filter(Boolean))].sort(), [lines]);
+  // A region left without lines by the type chips falls back to the whole country.
+  const regionValue = region !== "all" && regions.includes(region) ? region : "all";
+  // The map's handlers outlive renders: they read the current lines through refs.
+  const geoRef = useRef(geo);
+  geoRef.current = geo;
+  const byNameRef = useRef(byName);
+  byNameRef.current = byName;
 
   const addLayers = useCallback(
     (m: MapLibreMap) => {
       if (m.getSource("okb-runs")) return;
-      m.addSource("okb-runs", { type: "geojson", data: geo.runs });
-      m.addSource("okb-pins", { type: "geojson", data: geo.pins });
+      m.addSource("okb-runs", { type: "geojson", data: geoRef.current.runs });
+      m.addSource("okb-pins", { type: "geojson", data: geoRef.current.pins });
       m.addLayer({
         id: "okb-selected-glow",
         type: "line",
@@ -115,27 +139,27 @@ export function MapSection({
         maxzoom: 11,
         paint: {
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 5, 3.5, 10, 6],
-          "circle-color": "#002855",
-          "circle-stroke-color": "#fcd116",
+          "circle-color": ["case", ["==", ["get", "d"], 1], DRAINAGE_PIN, WATERWAY_PIN],
+          "circle-stroke-color": ["case", ["==", ["get", "d"], 1], "#ffffff", "#fcd116"],
           "circle-stroke-width": 1.5,
           "circle-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0],
           "circle-stroke-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0],
         },
       });
     },
-    [geo],
+    [],
   );
 
   // Create the map once the lines are in.
   useEffect(() => {
-    if (!lines.length || !container.current || mapRef.current) return;
+    if (!allLines.length || !container.current || mapRef.current) return;
     let cancelled = false;
     void import("maplibre-gl").then(({ default: maplibregl }) => {
       if (cancelled || !container.current) return;
       const m = new maplibregl.Map({
         container: container.current,
         style: getMapStyle("light"),
-        bounds: boundsOf(lines) ?? PH_BOUNDS,
+        bounds: boundsOf(lines) ?? boundsOf(allLines) ?? PH_BOUNDS,
         fitBoundsOptions: { padding: 32 },
         attributionControl: { compact: true },
         cooperativeGestures: true,
@@ -148,7 +172,7 @@ export function MapSection({
       });
       const pick = (e: MapLayerMouseEvent) => {
         const name = e.features?.[0]?.properties?.w as string | undefined;
-        const line = name ? byName.get(name) : undefined;
+        const line = name ? byNameRef.current.get(name) : undefined;
         if (!line) return;
         setPicked(line);
         // Zoom to the whole waterway, leaving room for the information panel.
@@ -166,7 +190,9 @@ export function MapSection({
     return () => {
       cancelled = true;
     };
-  }, [lines, addLayers, byName]);
+    // The map is made once (the filtered lines only set its first view); later changes go through setData.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allLines, addLayers]);
 
   useEffect(
     () => () => {
@@ -192,6 +218,11 @@ export function MapSection({
     (m.getSource("okb-pins") as GeoJSONSource | undefined)?.setData(geo.pins);
   }, [ready, geo]);
 
+  // A picked line whose type was switched off closes.
+  useEffect(() => {
+    if (picked && !byName.has(picked.w)) setPicked(null);
+  }, [picked, byName]);
+
   useEffect(() => {
     const m = mapRef.current;
     if (!ready || !m || !m.getLayer("okb-selected-glow")) return;
@@ -208,9 +239,9 @@ export function MapSection({
 
   useEffect(() => {
     if (!ready) return;
-    if (region === "all") fit(lines, 7);
-    else fit(lines.filter((l) => l.r === region), 13);
-  }, [ready, region, lines, fit]);
+    if (regionValue === "all") fit(lines, 7);
+    else fit(lines.filter((l) => l.r === regionValue), 13);
+  }, [ready, regionValue, lines, fit]);
 
   useEffect(() => {
     if (!ready || !focus) return;
@@ -225,16 +256,30 @@ export function MapSection({
   }, [ready, focus, byName, fit]);
 
   const c = data.coordinates;
-  const cleanedPct = c.points ? (100 * c.cleaned) / c.points : null;
+  const drain = c.drainage ?? { lines: 0, points: 0, cleaned: 0 };
+  const shown = {
+    waterways: showWaterways ? c.waterways - drain.lines : 0,
+    drainage: showDrainage ? drain.lines : 0,
+    points: (showWaterways ? c.points - drain.points : 0) + (showDrainage ? drain.points : 0),
+    cleaned: (showWaterways ? c.cleaned - drain.cleaned : 0) + (showDrainage ? drain.cleaned : 0),
+  };
+  const cleanedPct = shown.points ? (100 * shown.cleaned) / shown.points : null;
+  const title = showDrainage && !showWaterways ? "Traced drainage lines" : showDrainage ? "Traced waterways and drainage" : "Traced waterways";
+  const traced = [
+    showWaterways ? `${int(shown.waterways)} waterways` : null,
+    showDrainage ? `${int(shown.drainage)}${drainageTotal ? ` of ${int(drainageTotal)}` : ""} drainage lines` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Panel
-      title="Traced waterways"
+      title={title}
       icon={MapIcon}
       bodyClassName="p-0"
       action={
         regions.length ? (
-          <select value={region} onChange={(e) => setRegion(e.target.value)} aria-label="Zoom to a region" className="h-9 max-w-[9.5rem] rounded-lg border border-[var(--dpwh-border)] bg-white px-2 text-xs font-semibold text-[var(--dpwh-text)]">
+          <select value={regionValue} onChange={(e) => setRegion(e.target.value)} aria-label="Zoom to a region" className="h-9 max-w-[9.5rem] rounded-lg border border-[var(--dpwh-border)] bg-white px-2 text-xs font-semibold text-[var(--dpwh-text)]">
             <option value="all">Whole country</option>
             {regions.map((r) => (
               <option key={r} value={r}>
@@ -262,11 +307,18 @@ export function MapSection({
         <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
           <span className="h-1.5 w-5 rounded-full" style={{ backgroundColor: REMAINING }} aria-hidden /> Not yet cleaned
         </span>
-        <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
-          <span className="size-2.5 rounded-full border border-[#fcd116] bg-[#002855]" aria-hidden /> Waterway (zoomed out)
-        </span>
+        {showWaterways ? (
+          <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
+            <span className="size-2.5 rounded-full border border-[#fcd116]" style={{ backgroundColor: WATERWAY_PIN }} aria-hidden /> Waterway (zoomed out)
+          </span>
+        ) : null}
+        {showDrainage ? (
+          <span className="flex items-center gap-1.5 font-semibold text-[var(--dpwh-text)]">
+            <span className="size-2.5 rounded-full border border-white ring-1 ring-[#0d9488]/40" style={{ backgroundColor: DRAINAGE_PIN }} aria-hidden /> Drainage (zoomed out)
+          </span>
+        ) : null}
         <span className="sm:ml-auto">
-          {int(c.waterways)} waterways traced · {int(c.cleaned)} of {int(c.points)} points cleaned ({pctText(cleanedPct, 0)})
+          {traced} traced · {int(shown.cleaned)} of {int(shown.points)} points cleaned ({pctText(cleanedPct, 0)})
         </span>
       </div>
       <div className="relative h-[68vh] min-h-[420px] sm:h-[620px]">
@@ -276,7 +328,13 @@ export function MapSection({
           </div>
         ) : query.error || !lines.length ? (
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <Empty>{query.error ? "The map could not be loaded. Try again in a moment." : "No traced waterways yet."}</Empty>
+            <Empty>
+              {query.error
+                ? "The map could not be loaded. Try again in a moment."
+                : allLines.length
+                  ? "No traced lines for the selected record types."
+                  : "No traced waterways yet."}
+            </Empty>
           </div>
         ) : null}
         <div className="absolute inset-0">
@@ -298,6 +356,10 @@ export function MapSection({
           <div className="absolute inset-x-2 bottom-2 z-10 rounded-xl border-t-4 border-[var(--dpwh-orange)] bg-white p-3 shadow-xl sm:left-auto sm:right-3 sm:w-80">
             <div className="flex items-start gap-2">
               <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.12em]" style={{ color: picked.d ? DRAINAGE_PIN : "var(--dpwh-orange-dark)" }}>
+                  {picked.d ? <Droplets className="size-3" aria-hidden /> : <Waves className="size-3" aria-hidden />}
+                  {picked.d ? "Drainage line" : "Waterway"}
+                </p>
                 <p className="truncate font-display text-lg font-bold uppercase leading-tight tracking-wide text-[var(--dpwh-blue-dark)]">{picked.w}</p>
                 <p className="truncate text-xs text-[var(--dpwh-muted)]">{[picked.r, picked.s].filter(Boolean).join(" · ")}</p>
               </div>
@@ -319,7 +381,7 @@ export function MapSection({
                   {w ? (
                     <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                       <div>
-                        <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">Silt removed</dt>
+                        <dt className="text-[10px] font-bold uppercase tracking-wide text-[var(--dpwh-muted)]">{picked.d ? "Declogged" : "Silt removed"}</dt>
                         <dd className="font-semibold text-[var(--dpwh-text)]">{w.v !== null ? `${int(w.v)} m³` : "—"}</dd>
                       </div>
                       <div>

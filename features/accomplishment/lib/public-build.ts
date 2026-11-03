@@ -165,7 +165,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
   }
 
   // Traced points per waterway.
-  const coordinates = { waterways: 0, points: 0, cleaned: 0 };
+  const coordinates = { waterways: 0, points: 0, cleaned: 0, drainage: { lines: 0, points: 0, cleaned: 0 } };
   if (tabs.coordinates?.length) {
     const t = table(tabs.coordinates);
     const name = pick(t.head, ["name of waterway", "waterway"]);
@@ -187,6 +187,11 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
       coordinates.waterways++;
       coordinates.points += entry.t;
       coordinates.cleaned += entry.c;
+      if (entry.located?.record.d && !entry.located.record.i) {
+        coordinates.drainage.lines++;
+        coordinates.drainage.points += entry.t;
+        coordinates.drainage.cleaned += entry.c;
+      }
       if (entry.located) {
         extra(entry.located.record).cp = entry.c;
         extra(entry.located.record).tp = entry.t;
@@ -454,6 +459,7 @@ export function buildMapLines(tabs: PublicTabs): MapLine[] {
         r: located?.region ?? "",
         s: located?.site ?? "",
         g: located ? recordPct(located.record, data.scale) : null,
+        ...(located?.record.d && !located.record.i ? { d: 1 as const } : {}),
         runs,
       });
     }

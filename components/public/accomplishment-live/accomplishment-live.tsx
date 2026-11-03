@@ -297,7 +297,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
             <Tile open={figuresOpen} icon={Ruler} label="Length cleaned" onOpen={() => go("map")} cue="Opens the map of cleaned and not yet cleaned stretches" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
             <Tile open={figuresOpen} icon={BarChart3} label="Completed" onOpen={() => openInsight("status")} cue="Lists records by status" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
             <Tile open={figuresOpen} icon={Waves} label="Records" onOpen={() => openInsight("records")} cue="Lists every record" value={int(typeCounts.waterway)} unit="waterways" hint={`${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
-            <Tile open={figuresOpen} icon={MapIcon} label="Points cleaned" onOpen={() => go("map")} cue="Opens the map" extra value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways)} waterways traced`} />
+            <Tile open={figuresOpen} icon={MapIcon} label="Points cleaned" onOpen={() => go("map")} cue="Opens the map" extra value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways - (data.coordinates.drainage?.lines ?? 0))} waterways · ${int(data.coordinates.drainage?.lines ?? 0)} drainage traced`} />
             <Tile open={figuresOpen} icon={Camera} label="Field photos" onOpen={() => go("photos")} cue="Opens the field photos" extra value={int(data.photos.total)} hint={`${int(data.photos.waterways)} waterways documented`} />
             <Tile open={figuresOpen} icon={Truck} label="Equipment" onOpen={() => go("resources")} cue="Opens equipment and crews" extra value={int(data.resources.equipment)} unit="units" hint={`${data.resources.sites.length} sites reporting`} />
             <Tile open={figuresOpen} icon={HardHat} label="Manpower" onOpen={() => go("resources")} cue="Opens equipment and crews" extra value={int(data.resources.manpower)} unit="crew" hint="RO/DEO, LGU and private" />
@@ -410,7 +410,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
           <Empty>No records with these settings.</Empty>
         )
       ) : section === "map" ? (
-        <MapSection data={data} focus={mapFocus} onOpenWaterway={openWaterway} onUntraced={openWaterway} recordFor={findByName} length={length} />
+        <MapSection data={data} types={prefs.types} drainageTotal={typeCounts.drainage} focus={mapFocus} onOpenWaterway={openWaterway} onUntraced={openWaterway} recordFor={findByName} length={length} />
       ) : section === "photos" ? (
         <PhotosSection />
       ) : section === "updates" ? (

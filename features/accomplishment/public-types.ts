@@ -71,7 +71,8 @@ export interface PublicAccomplishment extends AccomplishmentData {
   updates: FieldUpdate[];
   extensions: LineExtension[];
   photos: { total: number; waterways: number; first: string | null; last: string | null; latest: FieldPhoto[] };
-  coordinates: { waterways: number; points: number; cleaned: number };
+  /** Traced lines and points (all types); [drainage] is the drainage lines' share of them. */
+  coordinates: { waterways: number; points: number; cleaned: number; drainage: { lines: number; points: number; cleaned: number } };
 }
 
 /** A waterway's traced line for the map: runs of cleaned (1) and remaining (0) stretches. */
@@ -81,6 +82,8 @@ export interface MapLine {
   r: string;
   s: string;
   g: number | null;
+  /** 1 on a drainage line. */
+  d?: 1;
   /** [cleaned, lng, lat, lng, lat, …] per run. */
   runs: number[][];
 }
