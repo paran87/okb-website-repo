@@ -28,8 +28,9 @@ export const revalidate = 600;
 
 export default async function AccomplishmentPage() {
   const coverage = await getCoverage();
-  const { waterways, drainage, regions } = coverage.totals;
-  const coverageLine = `${waterways} waterways and ${drainage} drainage lines in ${regions} regions`;
+  const { waterways, drainage, regions, registeredRegions } = coverage.totals;
+  const ofRegistered = registeredRegions && registeredRegions > regions ? ` (of ${registeredRegions} in the program)` : "";
+  const coverageLine = `${waterways} waterways and ${drainage} drainage lines in ${regions} regions${ofRegistered}`;
   return (
     <>
       <PublicPageHero

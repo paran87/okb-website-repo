@@ -21,7 +21,7 @@ import { SiteFooterAccent } from "@/components/public/site-footer-accent";
 import {
   FRAMEWORK_META,
 } from "@/lib/config/okb-framework";
-import type { CoverageTotals } from "@/lib/config/okb-coverage";
+import { registeredFigure, type CoverageTotals } from "@/lib/config/okb-coverage";
 import { APP, CONTACT, PUBLIC_ROUTES } from "@/lib/constants";
 import { FeedbackButton } from "@/features/feedback/components/feedback-dialog";
 
@@ -53,9 +53,11 @@ const COVERAGE_HREF = `${PUBLIC_ROUTES.accomplishment}#coverage`;
 /** Program coverage from the OKB SSOT (places, not progress). */
 export function SiteFooter({ coverage }: { coverage: CoverageTotals }) {
   const year = new Date().getFullYear();
-  const footerFacts = [
-    { value: String(coverage.regions), label: "Regions", href: COVERAGE_HREF },
-    { value: String(coverage.areas), label: "Provinces & cities", href: COVERAGE_HREF },
+  const regions = registeredFigure(coverage.registeredRegions, coverage.regions);
+  const areas = registeredFigure(coverage.registeredSites, coverage.areas);
+  const footerFacts: { value: string; note?: string; label: string; href: string }[] = [
+    { value: String(regions.value), note: regions.note, label: "Regions", href: COVERAGE_HREF },
+    { value: String(areas.value), note: areas.note, label: "Provinces & cities", href: COVERAGE_HREF },
     { value: String(coverage.waterways), label: "Waterways", href: COVERAGE_HREF },
     { value: String(coverage.drainage), label: "Drainage lines", href: COVERAGE_HREF },
   ];
@@ -171,6 +173,7 @@ export function SiteFooter({ coverage }: { coverage: CoverageTotals }) {
               <Link href={fact.href} className="okb-foot-fact">
                 <span className="okb-foot-fact__value">{fact.value}</span>
                 <span className="okb-foot-fact__label">{fact.label}</span>
+                {fact.note ? <span className="okb-foot-fact__note">{fact.note}</span> : null}
               </Link>
             </li>
           ))}

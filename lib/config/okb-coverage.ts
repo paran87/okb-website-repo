@@ -292,10 +292,21 @@ export const regionWaterways = (r: CoverageRegion) => r.areas.reduce((n, a) => n
 export const regionDrainage = (r: CoverageRegion) => r.areas.reduce((n, a) => n + areaDrainage(a), 0);
 
 export interface CoverageTotals {
+  /** Regions and provinces / cities with waterways or drainage lines listed. */
   regions: number;
   areas: number;
   waterways: number;
   drainage: number;
+  /** Regions and sites registered in the program (SiteVsRegion), with or without work listed yet; live data only. */
+  registeredRegions?: number;
+  registeredSites?: number;
+  /** Informal settler family (ISF) records; live data only. */
+  isf?: number;
+}
+
+/** "18" with "14 with work listed" under it, when more are registered than have work listed. */
+export function registeredFigure(registered: number | undefined, listed: number): { value: number; note?: string } {
+  return registered && registered > listed ? { value: registered, note: `${listed} with work listed` } : { value: listed };
 }
 
 export interface Coverage {

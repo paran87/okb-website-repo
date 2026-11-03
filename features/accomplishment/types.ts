@@ -89,6 +89,9 @@ export interface AccomplishmentData {
     drainages: number;
     isf: number;
     noAccomplishmentRow: number;
+    /** Regions and sites registered in SiteVsRegion, including those with no waterway or drainage rows yet. */
+    registeredRegions: number;
+    registeredSites: number;
   };
   /** The Accomplishment Log replay: its total wins over WaterwayVsAccomplishment where it has entries. */
   log?: { present: boolean; rows: number; waterways: number; applied: number; logOnly: number };

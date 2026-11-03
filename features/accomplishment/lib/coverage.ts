@@ -80,5 +80,15 @@ export function buildCoverage(data: AccomplishmentData): Coverage {
     day: "numeric",
     year: "numeric",
   });
-  return { regions, totals: coverageTotals(regions), asOf, live: true };
+  return {
+    regions,
+    totals: {
+      ...coverageTotals(regions),
+      registeredRegions: data.stats.registeredRegions,
+      registeredSites: data.stats.registeredSites,
+      isf: data.stats.isf,
+    },
+    asOf,
+    live: true,
+  };
 }

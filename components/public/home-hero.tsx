@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { ArrowRight, Radio } from "lucide-react";
-import { regionDrainage, regionWaterways, type Coverage } from "@/lib/config/okb-coverage";
+import { regionDrainage, registeredFigure, regionWaterways, type Coverage } from "@/lib/config/okb-coverage";
 import { PUBLIC_ROUTES } from "@/lib/constants";
 
 const HOME_HERO_BANNER = {
@@ -27,9 +27,9 @@ export function HomeHero({ coverage }: { coverage: Coverage }) {
   const reduce = useReducedMotion();
   const totals = coverage.totals;
   // Program coverage from the OKB SSOT (counts of places, never progress figures).
-  const facts = [
-    { value: totals.regions, label: "Regions" },
-    { value: totals.areas, label: "Provinces & cities" },
+  const facts: { value: number; note?: string; label: string }[] = [
+    { ...registeredFigure(totals.registeredRegions, totals.regions), label: "Regions" },
+    { ...registeredFigure(totals.registeredSites, totals.areas), label: "Provinces & cities" },
     { value: totals.waterways, label: "Waterways" },
     { value: totals.drainage, label: "Drainage lines" },
   ];
@@ -79,6 +79,7 @@ export function HomeHero({ coverage }: { coverage: Coverage }) {
                 <Link href={COVERAGE_HREF} className="okb-home-fact">
                   <span className="okb-home-fact__value">{f.value}</span>
                   <span className="okb-home-fact__label">{f.label}</span>
+                  {f.note ? <span className="okb-home-fact__note">{f.note}</span> : null}
                 </Link>
               </li>
             ))}
@@ -112,7 +113,7 @@ export function HomeHero({ coverage }: { coverage: Coverage }) {
             ))}
           </ol>
           <Link href={COVERAGE_HREF} className="okb-home-zones__foot okb-home-zones__foot--link">
-            All {totals.regions} regions · as of {coverage.asOf} →
+            All {totals.regions} regions with work listed · as of {coverage.asOf} →
           </Link>
         </motion.aside>
       </div>

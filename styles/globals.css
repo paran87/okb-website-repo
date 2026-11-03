@@ -3318,6 +3318,11 @@
   color: rgba(220, 230, 244, 0.7);
 }
 
+.okb-foot-fact__note {
+  font-size: 0.6875rem;
+  color: rgba(220, 230, 244, 0.55);
+}
+
 .okb-foot-bar {
   position: relative;
   z-index: 2;

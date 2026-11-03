@@ -319,7 +319,16 @@ export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new 
     site.w.push({ n: recordName, t: type, o: val(row, wwOffice).trim(), ...acc, d: isDrainage, i: isISF });
   }
 
-  const stats = { regions: 0, sites: 0, waterways: 0, drainages: 0, isf: 0, noAccomplishmentRow: missing };
+  const stats = {
+    regions: 0,
+    sites: 0,
+    waterways: 0,
+    drainages: 0,
+    isf: 0,
+    noAccomplishmentRow: missing,
+    registeredRegions: new Set([...siteRegions.values()].map((r) => r.abbr).filter(Boolean)).size,
+    registeredSites: siteRegions.size,
+  };
   const output: AccomplishmentRegion[] = [...regions.values()]
     .map((r) => {
       const sites = [...r.sites.values()]

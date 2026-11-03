@@ -267,7 +267,11 @@ export function HomeCoverage({ coverage }: { coverage: Coverage }) {
           </h2>
           <p className="okb-home-body okb-home-body--light mt-1.5">
             Dredging and desilting of rivers, creeks and esteros, and declogging of drainage lines, in{" "}
-            {totals.regions} regions and {totals.areas} provinces and cities.
+            {totals.regions} regions and {totals.areas} provinces and cities
+            {totals.registeredRegions && totals.registeredSites && (totals.registeredRegions > totals.regions || totals.registeredSites > totals.areas)
+              ? ` so far, of the ${totals.registeredRegions} regions and ${totals.registeredSites} provinces and cities in the program`
+              : ""}
+            .
           </p>
         </Reveal>
         <ul className="okb-home-regions mt-4">

@@ -177,6 +177,13 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
+.okb-home-fact__note {
+  margin-top: 0.1rem;
+  font-size: 0.625rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.62);
+}
+
 /* Ridge-to-reef card (desktop hero). */
 .okb-home-zones {
   border: 1px solid rgba(255, 255, 255, 0.18);

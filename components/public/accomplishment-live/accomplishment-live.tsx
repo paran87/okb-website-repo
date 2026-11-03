@@ -202,6 +202,14 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
   const counts = useMemo(() => statusCounts(ways, data.scale), [ways, data.scale]);
   const length = useMemo(() => ways.reduce((a, w) => ({ done: a.done + Math.max(0, w.al ?? 0), plan: a.plan + Math.max(0, w.pl ?? 0) }), { done: 0, plan: 0 }), [ways]);
   const sites = tree.reduce((n, r) => n + r.sites.length, 0);
+  // Registered regions and sites (SiteVsRegion) next to those with work listed for the selected types.
+  const { registeredRegions = 0, registeredSites = 0 } = data.stats;
+  const regionsLine =
+    registeredRegions > tree.length
+      ? `${int(registeredRegions)} regions · ${int(tree.length)} with work listed · ${int(Math.max(registeredSites, sites))} sites`
+      : `${int(tree.length)} regions · ${int(sites)} sites`;
+  // What the record count counts: the one selected type, else "records".
+  const recordsWord = prefs.types.length === 1 ? { waterway: "waterways", drainage: "drainage lines", isf: "ISF records" }[prefs.types[0]!] : "records";
 
   /** Every record with its place, for search and lookups by name (all types, not just the filter). */
   const allTree = useMemo(() => visibleTree(data, { ...prefs, types: ["waterway", "drainage", "isf"], filter: "all" }, ""), [data, prefs]);
@@ -262,7 +270,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
             <div className="min-w-0 lg:w-48">
               <p className="font-display text-lg font-bold uppercase leading-tight tracking-wide sm:text-xl">Oplan Kontra Baha</p>
               <p className="mt-1 text-xs text-white/75">
-                Dredging, desilting and declogging · {tree.length} regions · {sites} sites · {int(ways.length)} records
+                Dredging, desilting and declogging · {regionsLine} · {int(ways.length)} {recordsWord}
               </p>
               <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/80">
                 <span className="okb-live-dot shrink-0" aria-hidden />
@@ -296,7 +304,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
             <Tile open={figuresOpen} icon={Shovel} label="Silt removed" onOpen={() => openInsight("volume")} cue="Shows silt removed by region and waterway" value={compact(volume.acc)} unit="m³" pct={volume.plan ? (100 * volume.acc) / volume.plan : null} hint={volume.plan ? `of ${compact(volume.plan)} m³ planned` : undefined} />
             <Tile open={figuresOpen} icon={Ruler} label="Length cleaned" onOpen={() => go("map")} cue="Opens the map of cleaned and not yet cleaned stretches" value={km(length.done).replace(/ (k?m)$/, "")} unit={km(length.done).endsWith("km") ? "km" : "m"} pct={length.plan ? (100 * length.done) / length.plan : null} hint={length.plan ? `of ${km(length.plan)} planned` : undefined} />
             <Tile open={figuresOpen} icon={BarChart3} label="Completed" onOpen={() => openInsight("status")} cue="Lists records by status" value={int(counts.done)} unit={`/ ${int(ways.length)}`} pct={ways.length ? (100 * counts.done) / ways.length : null} hint={`${int(counts.ongoing)} ongoing`} />
-            <Tile open={figuresOpen} icon={Waves} label="Records" onOpen={() => openInsight("records")} cue="Lists every record" value={int(typeCounts.waterway)} unit="waterways" hint={`${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
+            <Tile open={figuresOpen} icon={Waves} label="Records" onOpen={() => openInsight("records")} cue="Lists every record" value={int(typeCounts.waterway + typeCounts.drainage + typeCounts.isf)} unit="records" hint={`${int(typeCounts.waterway)} waterways · ${int(typeCounts.drainage)} drainage · ${int(typeCounts.isf)} ISF`} />
             <Tile open={figuresOpen} icon={MapIcon} label="Points cleaned" onOpen={() => go("map")} cue="Opens the map" extra value={compact(data.coordinates.cleaned)} unit={`/ ${compact(data.coordinates.points)}`} pct={data.coordinates.points ? (100 * data.coordinates.cleaned) / data.coordinates.points : null} hint={`${int(data.coordinates.waterways - (data.coordinates.drainage?.lines ?? 0))} waterways · ${int(data.coordinates.drainage?.lines ?? 0)} drainage traced`} />
             <Tile open={figuresOpen} icon={Camera} label="Field photos" onOpen={() => go("photos")} cue="Opens the field photos" extra value={int(data.photos.total)} hint={`${int(data.photos.waterways)} waterways documented`} />
             <Tile open={figuresOpen} icon={Truck} label="Equipment" onOpen={() => go("resources")} cue="Opens equipment and crews" extra value={int(data.resources.equipment)} unit="units" hint={`${data.resources.sites.length} sites reporting`} />
