@@ -414,7 +414,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
       ) : section === "photos" ? (
         <PhotosSection />
       ) : section === "updates" ? (
-        <UpdatesSection data={data} onOpenWaterway={openWaterway} />
+        <UpdatesSection data={data} types={prefs.types} records={located} onOpenWaterway={openWaterway} onOpenRecord={setSelection} />
       ) : (
         <ResourcesSection data={data} />
       )}

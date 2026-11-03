@@ -161,6 +161,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
     const x = extra(located.record);
     x.ph = (x.ph ?? 0) + 1;
     x.cv ??= p.id; // newest first, so the first one seen is the cover
+    if (p.d && !x.pd) x.pd = p.d;
   }
 
   // Traced points per waterway.

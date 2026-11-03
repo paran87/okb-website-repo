@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, ChevronDown, ChevronsDown, ChevronsUp, FileDown, FileSpreadsheet, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
 import { regionLabel, statusCounts, toCsv, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
-import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
+import type { FieldUpdate, PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
+import { drainageFeed, logKind, type DrainageEntry } from "@/components/public/accomplishment-live/field-feed";
 import { RegionDropdown } from "@/components/public/accomplishment-live/region-dropdown";
 import { printRegionsPdf } from "@/components/public/accomplishment-live/region-pdf";
 import { RegionSortToggle, type RegionSort } from "@/components/public/accomplishment-live/picker";
@@ -17,6 +18,8 @@ export type SectionId = "overview" | "regions" | "map" | "photos" | "updates" | 
 interface Located extends Selection {
   regionKey: string;
 }
+
+type FeedItem = { kind: "log"; at: string; u: FieldUpdate } | { kind: "drainage"; at: string; e: DrainageEntry };
 
 const QUADRANTS = ["NORTH", "SOUTH", "EAST", "WEST", "CENTRAL"] as const;
 
@@ -98,6 +101,20 @@ export function Overview({
     }
     return QUADRANTS.filter((q) => groups.has(q)).map((q) => ({ q, ways: groups.get(q)!, pct: rollup(groups.get(q)!, prefs, data.scale) }));
   }, [located, prefs, data.scale]);
+
+  /** The newest field updates of the selected types: Accomplishment Log entries and dated drainage declogging. */
+  const feed = useMemo((): FeedItem[] => {
+    const all = new Map<string, Selection>();
+    for (const r of data.regions) for (const s of r.s) for (const w of s.w) if (!all.has(w.n)) all.set(w.n, { record: w, region: "", site: s.n });
+    const find = (name: string) => all.get(name) ?? null;
+    const items: FeedItem[] = [];
+    for (const u of data.updates) {
+      const kind = logKind(u, find);
+      if (kind !== "drainage" && prefs.types.includes(kind)) items.push({ kind: "log", at: u.at ?? "", u });
+    }
+    if (prefs.types.includes("drainage")) for (const e of drainageFeed(located)) if (e.at) items.push({ kind: "drainage", at: e.at, e });
+    return items.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 3);
+  }, [data.regions, data.updates, located, prefs.types]);
 
   const RowLink = ({ l, right, sub }: { l: Located; right: React.ReactNode; sub: string }) => (
     <button type="button" onClick={() => onOpenRecord(l)} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-[#f3f6fa]">
@@ -301,19 +318,32 @@ export function Overview({
           </button>
         }
       >
-        {data.updates.length || data.siteReports.length ? (
+        {feed.length || data.siteReports.length ? (
           <ul className="space-y-1">
-            {data.updates.slice(0, 3).map((u, i) => (
-              <li key={`${u.at}-${i}`} className="rounded-lg px-2 py-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-[var(--dpwh-orange-dark)]">{stampDay(u.at)}</p>
-                <p className="truncate text-sm font-semibold text-[var(--dpwh-text)]">{u.waterway}</p>
-                <p className="truncate text-xs text-[var(--dpwh-muted)]">
-                  {[u.region, u.site].filter(Boolean).join(" · ")}
-                  {u.total !== null ? ` · now ${int(u.total)} m³` : ""}
-                </p>
-              </li>
-            ))}
-            {data.siteReports.slice(0, Math.max(0, 4 - Math.min(3, data.updates.length))).map((s) => (
+            {feed.map((item, i) =>
+              item.kind === "log" ? (
+                <li key={`log-${item.u.at}-${i}`} className="rounded-lg px-2 py-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[var(--dpwh-orange-dark)]">{stampDay(item.u.at)}</p>
+                  <p className="truncate text-sm font-semibold text-[var(--dpwh-text)]">{item.u.waterway}</p>
+                  <p className="truncate text-xs text-[var(--dpwh-muted)]">
+                    {[item.u.region, item.u.site].filter(Boolean).join(" · ")}
+                    {item.u.total !== null ? ` · now ${int(item.u.total)} m³` : ""}
+                  </p>
+                </li>
+              ) : (
+                <li key={`drain-${item.e.record.n}-${i}`}>
+                  <button type="button" onClick={() => onOpenRecord(item.e)} className="block min-h-12 w-full rounded-lg px-2 py-2 text-left hover:bg-[#f3f6fa]">
+                    <span className="block text-xs font-bold uppercase tracking-wide text-[var(--dpwh-orange-dark)]">{dayText(item.e.at)}</span>
+                    <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{item.e.record.n}</span>
+                    <span className="block truncate text-xs text-[var(--dpwh-muted)]">
+                      Drainage · {[item.e.region, item.e.site].filter(Boolean).join(" · ")}
+                      {item.e.record.v !== null ? ` · ${int(item.e.record.v)} m³ declogged` : ""}
+                    </span>
+                  </button>
+                </li>
+              ),
+            )}
+            {data.siteReports.slice(0, Math.max(0, 4 - feed.length)).map((s) => (
               <li key={s.site} className="flex items-center justify-between gap-2 rounded-lg px-2 py-2">
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{s.site}</span>

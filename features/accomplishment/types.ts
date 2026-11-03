@@ -53,6 +53,8 @@ export interface RecordExtra {
   /** Field photos (WaterwayvsPicture) and the newest one's Drive file id. */
   ph?: number;
   cv?: string;
+  /** Day of the newest dated field photo, "2026-07-08". */
+  pd?: string;
   /** Traced points cleaned / total (WaterwayVsCoordinates). */
   cp?: number;
   tp?: number;
