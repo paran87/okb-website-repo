@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { CheckCircle2, CircleAlert, Copy, Database, ExternalLink, HardDrive, KeyRound, Loader2, LogOut, RefreshCw, Stethoscope, XCircle } from "lucide-react";
 import { AdminCard } from "@/features/admin/components/admin-ui";
+import { ArchiveCard } from "@/features/admin/components/archive-card";
 import { useAdminState, useDirectUploads, useSetupSql, useSignOut, useStorageCheck } from "@/features/admin/hooks/use-admin";
 import type { AdminState } from "@/features/admin/types";
 import { cn } from "@/utils/cn";
@@ -315,6 +316,7 @@ export function AdminSetup({ state }: { state: AdminState }) {
           </p>
         </AdminCard>
       </div>
+      <div className="min-w-0 space-y-4">
       {state.supabase.configured && !state.supabase.ready ? <SqlStep /> : null}
       {state.supabase.ready ? (
         <AdminCard title="Visitor tracking is on" icon={<Database className="size-4" aria-hidden />}>
@@ -323,6 +325,8 @@ export function AdminSetup({ state }: { state: AdminState }) {
           </p>
         </AdminCard>
       ) : null}
+      <ArchiveCard />
+      </div>
     </div>
   );
 }

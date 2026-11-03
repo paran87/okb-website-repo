@@ -13,6 +13,7 @@ const SETUP_SQL_FILES = [
   "supabase/migrations/20261014000000_okb_site_admin.sql",
   "supabase/migrations/20261016000000_okb_gallery_engagement.sql",
   "supabase/migrations/20261020000000_okb_site_feedback.sql",
+  "supabase/migrations/20261103000000_okb_accomplishment_archive.sql",
 ];
 
 /** The one-time SQL that creates the Admin tables, and the Supabase SQL editor link. */

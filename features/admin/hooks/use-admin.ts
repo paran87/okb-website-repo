@@ -23,6 +23,7 @@ export const adminKeys = {
   media: (collection: string, view: "files" | "trash") => ["admin", "media", collection, view] as const,
   setup: ["admin", "setup"] as const,
   cors: ["admin", "cors"] as const,
+  archive: ["admin", "accomplishment-archive"] as const,
 };
 
 function query(params: Record<string, string | number | null | undefined>): string {
@@ -155,5 +156,33 @@ export function useDirectUploads(enabled: boolean) {
 export function useStorageCheck() {
   return useMutation({
     mutationFn: () => adminApi<StorageCheck>("/api/admin/storage-check", { method: "POST" }),
+  });
+}
+
+export interface ArchiveAdminStatus {
+  configured: boolean;
+  ready: boolean;
+  days: number;
+  lastDay: string | null;
+  lastTakenAt: string | null;
+  sql: string | null;
+  sqlEditorUrl: string | null;
+}
+
+/** The accomplishment archive's state (Admin → Setup). */
+export function useArchiveStatus(enabled: boolean) {
+  return useQuery({
+    queryKey: adminKeys.archive,
+    queryFn: () => adminApi<ArchiveAdminStatus>("/api/admin/accomplishment-archive"),
+    enabled,
+  });
+}
+
+/** Take an accomplishment snapshot now. */
+export function useTakeArchiveSnapshot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminApi<{ day: string; baseline: boolean; records: number; changes: number }>("/api/admin/accomplishment-archive", { method: "POST" }),
+    onSettled: () => void qc.invalidateQueries({ queryKey: adminKeys.archive }),
   });
 }

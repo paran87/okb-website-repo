@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { AccomplishmentArchive } from "@/features/accomplishment/archive-types";
 import type { FieldPhoto, MapLine, PublicAccomplishment } from "@/features/accomplishment/public-types";
 
 async function get<T>(path: string): Promise<T> {
@@ -37,5 +38,16 @@ export function useMapLines(enabled: boolean) {
     queryFn: () => get<MapLine[]>("/api/accomplishment/public/map"),
     staleTime: TEN_MINUTES,
     enabled,
+  });
+}
+
+export type ArchiveDays = 7 | 30 | 90 | "all";
+
+/** The accomplishment archive: daily totals and the changes of the last [days]. */
+export function useArchive(days: ArchiveDays) {
+  return useQuery({
+    queryKey: ["okb-accomplishment-archive", days],
+    queryFn: () => get<AccomplishmentArchive>(`/api/accomplishment/archive?days=${days}`),
+    staleTime: TEN_MINUTES,
   });
 }

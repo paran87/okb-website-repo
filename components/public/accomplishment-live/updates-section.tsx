@@ -1,15 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarCheck, Droplets, GitBranchPlus, ImageOff, Radio, Waves } from "lucide-react";
+import { Archive, CalendarCheck, Droplets, GitBranchPlus, ImageOff, Radio, Waves } from "lucide-react";
 import type { RecordType } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
+import { ArchiveView } from "@/components/public/accomplishment-live/archive-section";
 import { drainageFeed, logKind, type DrainageEntry } from "@/components/public/accomplishment-live/field-feed";
 import type { Selection } from "@/components/public/accomplishment-live/regions";
 import { dayText, Empty, int, Meter, Panel, pctText, photoUrl, recordProgress, stampDay, StatusPill } from "@/components/public/accomplishment-live/shared";
 import { cn } from "@/utils/cn";
 
 type View = "waterway" | "drainage";
+type Mode = "latest" | "archive";
+const MODES: { value: Mode; label: string; icon: typeof Radio }[] = [
+  { value: "latest", label: "Latest", icon: Radio },
+  { value: "archive", label: "Archive", icon: Archive },
+];
 const DRAINAGE_PAGE = 30;
 
 /**
@@ -44,13 +50,48 @@ export function UpdatesSection({
   const [choice, setChoice] = useState<{ key: string; view: View } | null>(null);
   const view = choice?.key === typesKey ? choice.view : fallback;
   const [shown, setShown] = useState(DRAINAGE_PAGE);
+  const [mode, setMode] = useState<Mode>("latest");
 
   const tabs: { value: View; label: string; icon: typeof Waves; count: number }[] = [
     { value: "waterway", label: "Waterways", icon: Waves, count: waterwayLog.length },
     { value: "drainage", label: "Drainage", icon: Droplets, count: drainage.length },
   ];
 
+  const modeSwitch = (
+    <div className="grid grid-cols-2 gap-1 rounded-xl border border-[var(--dpwh-border)] bg-white p-1 sm:inline-grid sm:w-80" role="group" aria-label="Updates">
+      {MODES.map(({ value, label, icon: Icon }) => {
+        const on = mode === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={on}
+            onClick={() => setMode(value)}
+            className={cn(
+              "inline-flex h-10 items-center justify-center gap-1.5 rounded-lg text-[13px] font-bold transition-colors",
+              on ? "bg-[var(--dpwh-blue-dark)] text-white shadow-[inset_0_-3px_0_var(--dpwh-orange)]" : "text-[var(--dpwh-blue-dark)] hover:bg-[var(--dpwh-blue-light)]",
+            )}
+          >
+            <Icon className={cn("size-4", on ? "text-[var(--dpwh-gold)]" : "text-[var(--dpwh-orange)]")} aria-hidden />
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  if (mode === "archive") {
+    return (
+      <div className="space-y-3">
+        {modeSwitch}
+        <ArchiveView types={types} records={records} onOpenRecord={onOpenRecord} />
+      </div>
+    );
+  }
+
   return (
+    <div className="space-y-3">
+    {modeSwitch}
     <div className="grid gap-4 lg:grid-cols-12">
       <Panel title={view === "drainage" ? "Drainage declogging" : "Accomplishment log"} icon={view === "drainage" ? Droplets : Radio} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
         <div className="mb-2 grid grid-cols-2 gap-1 rounded-lg bg-[#eef2f7] p-1" role="group" aria-label="Show updates of">
@@ -193,6 +234,7 @@ export function UpdatesSection({
           )}
         </Panel>
       </div>
+    </div>
     </div>
   );
 }
