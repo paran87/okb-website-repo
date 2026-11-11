@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Archive, Copy, ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { Copy, ExternalLink, History, Loader2, RefreshCw } from "lucide-react";
 import { AdminCard } from "@/features/admin/components/admin-ui";
 import { useArchiveStatus, useTakeArchiveSnapshot } from "@/features/admin/hooks/use-admin";
 import { cn } from "@/utils/cn";
@@ -10,7 +10,7 @@ const STAMP = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric",
 const BUTTON = "inline-flex h-10 items-center gap-1.5 rounded-lg border border-border px-4 text-caption font-semibold text-foreground hover:bg-muted disabled:opacity-60";
 const PRIMARY = "inline-flex h-10 items-center gap-1.5 rounded-lg bg-primary px-4 text-caption font-semibold text-primary-foreground disabled:opacity-60";
 
-/** The accomplishment archive: its SQL until the tables exist, then its last snapshot and a "take one now" button. */
+/** The accomplishment history: its SQL until the tables exist, then its last snapshot and a "take one now" button. */
 export function ArchiveCard() {
   const status = useArchiveStatus(true);
   const take = useTakeArchiveSnapshot();
@@ -27,10 +27,10 @@ export function ArchiveCard() {
     }
   };
   return (
-    <AdminCard title="Accomplishment archive" icon={<Archive className="size-4" aria-hidden />}>
+    <AdminCard title="Accomplishment history" icon={<History className="size-4" aria-hidden />}>
       <p className="text-caption text-muted-foreground">
         Once a day (around 11 PM Manila) the website saves every waterway and drainage line&apos;s figures from the OKB SSOT sheet and
-        records what changed. The public Accomplishment page shows it under Updates → Archive.
+        records what changed. The public Accomplishment page shows it under Updates → History.
       </p>
       {status.isLoading ? (
         <p className="mt-3 text-caption text-muted-foreground">Checking…</p>
@@ -65,7 +65,7 @@ export function ArchiveCard() {
           <p className="text-caption text-foreground">
             {s.lastDay ? (
               <>
-                <span className="font-semibold">{s.days}</span> day{s.days === 1 ? "" : "s"} archived · last snapshot{" "}
+                <span className="font-semibold">{s.days}</span> day{s.days === 1 ? "" : "s"} saved · last snapshot{" "}
                 <span className="font-semibold">{s.lastTakenAt ? STAMP.format(new Date(s.lastTakenAt)) : s.lastDay}</span>
               </>
             ) : (
@@ -73,7 +73,7 @@ export function ArchiveCard() {
             )}
           </p>
           <button type="button" onClick={() => take.mutate()} disabled={take.isPending} className={PRIMARY}>
-            {take.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Archive className="size-4" aria-hidden />}
+            {take.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <History className="size-4" aria-hidden />}
             {s.lastDay ? "Take a snapshot now" : "Take first snapshot"}
           </button>
           {take.data ? (
