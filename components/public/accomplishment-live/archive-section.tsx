@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Archive, ArrowRight, Download, Droplets, Home, Search, TrendingUp, Waves, type LucideIcon } from "lucide-react";
+import { ArrowRight, Download, Droplets, History, Home, Search, TrendingUp, Waves, type LucideIcon } from "lucide-react";
 import type { RecordType, WorkStatus } from "@/features/accomplishment/lib/rollup";
 import type { ArchiveChange, ArchivedState, ArchiveSnapshot } from "@/features/accomplishment/archive-types";
 import { useArchive, type ArchiveDays } from "@/components/public/accomplishment-live/data";
@@ -208,15 +208,15 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
   if (query.isLoading) {
     return (
       <div className="flex h-40 items-center justify-center rounded-xl border border-[var(--dpwh-border)] bg-white" role="status">
-        <span className="size-8 animate-spin rounded-full border-2 border-[#c3cedb] border-t-[var(--dpwh-orange)]" aria-label="Loading the archive" />
+        <span className="size-8 animate-spin rounded-full border-2 border-[#c3cedb] border-t-[var(--dpwh-orange)]" aria-label="Loading the history" />
       </div>
     );
   }
-  if (query.error) return <Empty>The archive could not be loaded. Try again in a moment.</Empty>;
+  if (query.error) return <Empty>The history could not be loaded. Try again in a moment.</Empty>;
   if (!archive?.ready || !snapshots.length) {
     return (
-      <Panel title="Archive" icon={Archive}>
-        <p className="text-sm text-[var(--dpwh-text)]">The archive starts with its first nightly snapshot.</p>
+      <Panel title="History" icon={History}>
+        <p className="text-sm text-[var(--dpwh-text)]">The history starts with its first nightly snapshot.</p>
         <p className="mt-1 text-sm text-[var(--dpwh-muted)]">
           Every night the figures of every waterway and drainage line are saved from the OKB Single Source of Truth, and each change (volume,
           progress, status, points cleaned) is listed here by day, so progress can be followed over weeks and months.
@@ -227,7 +227,7 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
 
   return (
     <div className="space-y-3">
-      <Panel title="Archive" icon={Archive} bodyClassName="p-3 sm:p-4">
+      <Panel title="History" icon={History} bodyClassName="p-3 sm:p-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-[var(--dpwh-muted)]">
             Nightly snapshots since <span className="font-semibold text-[var(--dpwh-text)]">{dayText(archive.since)}</span> · {int(snapshots.length)} day
@@ -315,7 +315,7 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
               setShown(PAGE);
             }}
             placeholder="Find a waterway, drainage line or site"
-            aria-label="Find in the archive"
+            aria-label="Find in the history"
             className="h-11 w-full rounded-lg border border-[var(--dpwh-border)] bg-white pl-9 pr-3 text-sm text-[var(--dpwh-text)] placeholder:text-[var(--dpwh-muted)]"
           />
         </label>
@@ -357,7 +357,7 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
         {archive.truncated ? <p className="mt-2 px-1 text-[11px] text-[var(--dpwh-muted)]">Only the newest 3,000 changes of this period are listed; choose a shorter period to see them all.</p> : null}
         {baseline && (!archive.from || baseline.day >= archive.from) && !q ? (
           <p className="mt-3 rounded-lg bg-[#f6f8fb] px-3 py-2 text-xs text-[var(--dpwh-muted)]">
-            <span className="font-semibold text-[var(--dpwh-text)]">{dayText(baseline.day)}:</span> archive started with {int(baseline.records)} records saved as the starting point.
+            <span className="font-semibold text-[var(--dpwh-text)]">{dayText(baseline.day)}:</span> history started with {int(baseline.records)} records saved as the starting point.
           </p>
         ) : null}
       </Panel>

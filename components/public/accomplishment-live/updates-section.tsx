@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Archive, CalendarCheck, Droplets, GitBranchPlus, ImageOff, Radio, Waves } from "lucide-react";
+import { CalendarCheck, Droplets, GitBranchPlus, History, ImageOff, Radio, Waves } from "lucide-react";
 import type { RecordType } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import { ArchiveView } from "@/components/public/accomplishment-live/archive-section";
@@ -14,7 +14,7 @@ type View = "waterway" | "drainage";
 type Mode = "latest" | "archive";
 const MODES: { value: Mode; label: string; icon: typeof Radio }[] = [
   { value: "latest", label: "Latest", icon: Radio },
-  { value: "archive", label: "Archive", icon: Archive },
+  { value: "archive", label: "History", icon: History },
 ];
 const DRAINAGE_PAGE = 30;
 
