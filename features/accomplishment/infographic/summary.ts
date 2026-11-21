@@ -61,7 +61,6 @@ export interface InfographicSummary {
   map: { token: string; code: string; pct: number | null; records: number; inScope: boolean }[];
   top: { name: string; place: string; volume: number; pct: number | null }[];
   photos: { id: string; name: string; place: string; day: string | null }[];
-  resources: { equipment: number; manpower: number };
   /** Accomplishment Log entries of these records in the 7 days before the sheet was read. */
   updates7d: number;
 }
@@ -141,13 +140,6 @@ export function buildInfographic(source: PublicAccomplishment, filter: Infograph
     if (photos.length === 3) break;
   }
 
-  const regionCodes = new Set(tree.map((r) => regionLabel(r).code));
-  const sitesInScope = new Set(tree.flatMap((r) => r.sites.map((s) => s.n.trim().toUpperCase())));
-  const resourceSites = filter.regions.length ? data.resources.sites.filter((s) => regionCodes.has(s.region) || sitesInScope.has(s.site.trim().toUpperCase())) : null;
-  const resources = resourceSites
-    ? { equipment: resourceSites.reduce((n, s) => n + s.equipment, 0), manpower: resourceSites.reduce((n, s) => n + s.manpower, 0) }
-    : { equipment: data.resources.equipment, manpower: data.resources.manpower };
-
   const read = Date.parse(data.generatedAt);
   const updates7d = data.updates.filter((u) => {
     const at = u.at ? Date.parse(u.at) : NaN;
@@ -181,7 +173,6 @@ export function buildInfographic(source: PublicAccomplishment, filter: Infograph
     map,
     top,
     photos,
-    resources,
     updates7d,
   };
 }

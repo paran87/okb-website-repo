@@ -285,7 +285,8 @@ function highlightsCard(s: InfographicSummary, hl: Highlights) {
 }
 
 function tiles(s: InfographicSummary) {
-  const W = (INNER - 2 * 22) / 3;
+  // Four figures, two by two.
+  const W = (INNER - 22) / 2;
   const H = 232;
   const drainageOnly = s.scope.types.length === 1 && s.scope.types[0] === "drainage";
   const list: { icon: IconName; color: string; label: string; value: string; unit?: string; sub: string; bar?: number | null }[] = [
@@ -327,8 +328,6 @@ function tiles(s: InfographicSummary) {
           bar: s.points.total > 0 ? (100 * s.points.cleaned) / s.points.total : null,
         },
     { icon: "pin", color: "#7c3aed", label: "Sites", value: int(s.sites), sub: `${int(s.regions)} ${s.regions === 1 ? "region" : "regions"} · ${int(s.records)} ${s.scope.recordsWord}` },
-    { icon: "truck", color: "#0891b2", label: "Equipment", value: int(s.resources.equipment), unit: "units", sub: "deployed at reporting sites" },
-    { icon: "hardHat", color: "#be123c", label: "Manpower", value: int(s.resources.manpower), unit: "crew", sub: "RO/DEO, LGU and private" },
   ];
   return {
     h: H * 2 + 22,
