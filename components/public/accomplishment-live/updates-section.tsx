@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarCheck, Droplets, GitBranchPlus, History, ImageOff, Radio, Waves } from "lucide-react";
+import { CalendarCheck, Droplets, GitBranchPlus, History, ImageOff, MapPin, Radio, Waves, X } from "lucide-react";
 import type { RecordType } from "@/features/accomplishment/lib/rollup";
 import type { PublicAccomplishment } from "@/features/accomplishment/public-types";
 import { ArchiveView } from "@/components/public/accomplishment-live/archive-section";
 import { drainageFeed, logKind, type DrainageEntry } from "@/components/public/accomplishment-live/field-feed";
+import { inPlace, norm, sameRegion, type Place } from "@/components/public/accomplishment-live/places";
 import type { Selection } from "@/components/public/accomplishment-live/regions";
 import { dayText, Empty, int, Meter, Panel, pctText, photoUrl, recordProgress, stampDay, StatusPill } from "@/components/public/accomplishment-live/shared";
 import { cn } from "@/utils/cn";
@@ -28,6 +29,8 @@ export function UpdatesSection({
   records,
   onOpenWaterway,
   onOpenRecord,
+  place = null,
+  onClearPlace,
 }: {
   data: PublicAccomplishment;
   types: RecordType[];
@@ -35,15 +38,50 @@ export function UpdatesSection({
   records: Selection[];
   onOpenWaterway: (name: string) => void;
   onOpenRecord: (sel: Selection) => void;
+  /** Only the updates of this place (picked in the search box). */
+  place?: Place | null;
+  onClearPlace?: () => void;
 }) {
   const find = useMemo(() => {
     const byName = new Map<string, Selection>();
     for (const r of records) if (!byName.has(r.record.n)) byName.set(r.record.n, r);
     return (name: string) => byName.get(name) ?? null;
   }, [records]);
+
+  // The place filter: an entry is in the place by its record's region, site and city, else by what the entry says.
+  const here = useMemo(() => {
+    if (!place) return null;
+    return (name: string, region?: string | null, site?: string | null) => {
+      const sel = find(name);
+      return (
+        (sel !== null && inPlace(place, { region: sel.region, site: sel.site, city: sel.record.x?.city, name })) ||
+        inPlace(place, { region, site, name })
+      );
+    };
+  }, [place, find]);
+  // Sites with records in the place, for the site reports of a city that is not a site itself.
+  const placeSites = useMemo(() => {
+    if (!place) return null;
+    const out: { region: string; site: string }[] = [];
+    for (const r of records) if (inPlace(place, { region: r.region, site: r.site, city: r.record.x?.city, name: r.record.n })) out.push({ region: r.region, site: norm(r.site) });
+    return out;
+  }, [place, records]);
+
   // Drainage lines with log entries are dated by them in the drainage view.
-  const waterwayLog = useMemo(() => data.updates.filter((u) => logKind(u, find) !== "drainage"), [data.updates, find]);
-  const drainage = useMemo(() => drainageFeed(records), [records]);
+  const waterwayLog = useMemo(
+    () => data.updates.filter((u) => logKind(u, find) !== "drainage" && (!here || here(u.waterway, u.region, u.site))),
+    [data.updates, find, here],
+  );
+  const drainage = useMemo(() => drainageFeed(records).filter((e) => !here || here(e.record.n, e.region, e.site)), [records, here]);
+  const siteReports = useMemo(
+    () =>
+      data.siteReports.filter(
+        (s) => !place || inPlace(place, { region: s.region, site: s.site }) || (placeSites ?? []).some((p) => p.site === norm(s.site) && (!s.region || sameRegion(p.region, s.region))),
+      ),
+    [data.siteReports, place, placeSites],
+  );
+  const extensions = useMemo(() => data.extensions.filter((e) => !here || here(e.waterway, e.region, e.site)), [data.extensions, here]);
+  const where = place ? (place.kind === "text" ? `mentioning “${place.label}”` : `in ${place.label}`) : "";
 
   const typesKey = types.join(",");
   const fallback: View = types.includes("waterway") || !types.includes("drainage") ? "waterway" : "drainage";
@@ -80,17 +118,36 @@ export function UpdatesSection({
     </div>
   );
 
+  const placeChip = place ? (
+    <div className="flex items-center gap-2 rounded-xl border border-[#fed7aa] bg-[var(--dpwh-orange-light)] py-1 pl-3 pr-1" role="status">
+      <MapPin className="size-4 shrink-0 text-[var(--dpwh-orange-dark)]" aria-hidden />
+      <p className="min-w-0 flex-1 text-sm leading-snug text-[var(--dpwh-text)]">
+        Updates <span className="font-bold text-[var(--dpwh-blue-dark)]">{where}</span>
+        {place.kind !== "region" && place.kind !== "text" && place.region ? <span className="text-[var(--dpwh-muted)]"> · {place.region}</span> : null}
+      </p>
+      <button
+        type="button"
+        onClick={onClearPlace}
+        className="inline-flex h-10 shrink-0 items-center gap-1 rounded-lg px-2.5 text-xs font-bold text-[var(--dpwh-blue-dark)] hover:bg-white"
+      >
+        <X className="size-4" aria-hidden /> All places
+      </button>
+    </div>
+  ) : null;
+
   if (mode === "archive") {
     return (
       <div className="space-y-3">
+        {placeChip}
         {modeSwitch}
-        <ArchiveView types={types} records={records} onOpenRecord={onOpenRecord} />
+        <ArchiveView types={types} records={records} onOpenRecord={onOpenRecord} place={place} />
       </div>
     );
   }
 
   return (
     <div className="space-y-3">
+    {placeChip}
     {modeSwitch}
     <div className="grid gap-4 lg:grid-cols-12">
       <Panel title={view === "drainage" ? "Drainage declogging" : "Accomplishment log"} icon={view === "drainage" ? Droplets : Radio} className="lg:col-span-7" bodyClassName="p-2 sm:p-3">
@@ -140,7 +197,7 @@ export function UpdatesSection({
               ) : null}
             </>
           ) : (
-            <Empty>No drainage declogging reported yet.</Empty>
+            <Empty>{place ? `No drainage declogging reported ${where}.` : "No drainage declogging reported yet."}</Empty>
           )
         ) : waterwayLog.length ? (
           <ol className="space-y-2">
@@ -182,15 +239,15 @@ export function UpdatesSection({
             })}
           </ol>
         ) : (
-          <Empty>No entries in the accomplishment log yet.</Empty>
+          <Empty>{place ? `No accomplishment log entries ${where}.` : "No entries in the accomplishment log yet."}</Empty>
         )}
       </Panel>
 
       <div className="space-y-4 lg:col-span-5">
         <Panel title="Latest site reports" icon={CalendarCheck} bodyClassName="p-0">
-          {data.siteReports.length ? (
+          {siteReports.length ? (
             <ul className="divide-y divide-[#eef1f5]">
-              {data.siteReports.map((s) => (
+              {siteReports.map((s) => (
                 <li key={s.site} className="flex min-h-12 items-center justify-between gap-3 px-4 py-2">
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{s.site}</span>
@@ -202,15 +259,15 @@ export function UpdatesSection({
             </ul>
           ) : (
             <div className="p-4">
-              <Empty>No site reports yet.</Empty>
+              <Empty>{place ? `No site reports ${where}.` : "No site reports yet."}</Empty>
             </div>
           )}
         </Panel>
 
         <Panel title="Traced lines extended" icon={GitBranchPlus} bodyClassName="p-0">
-          {data.extensions.length ? (
+          {extensions.length ? (
             <ul className="divide-y divide-[#eef1f5]">
-              {data.extensions.slice(0, 20).map((e, i) => (
+              {extensions.slice(0, 20).map((e, i) => (
                 <li key={`${e.at}-${i}`}>
                   <button type="button" onClick={() => onOpenWaterway(e.waterway)} className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-2 text-left hover:bg-[#f3f6fa]">
                     <span className="min-w-0">
@@ -229,7 +286,7 @@ export function UpdatesSection({
             </ul>
           ) : (
             <div className="p-4">
-              <Empty>No line extensions yet.</Empty>
+              <Empty>{place ? `No line extensions ${where}.` : "No line extensions yet."}</Empty>
             </div>
           )}
         </Panel>

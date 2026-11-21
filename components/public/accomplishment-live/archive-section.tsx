@@ -6,6 +6,7 @@ import { ArrowRight, Download, Droplets, History, Home, Search, TrendingUp, Wave
 import type { RecordType, WorkStatus } from "@/features/accomplishment/lib/rollup";
 import type { ArchiveChange, ArchivedState, ArchiveSnapshot } from "@/features/accomplishment/archive-types";
 import { useArchive, type ArchiveDays } from "@/components/public/accomplishment-live/data";
+import { inPlace, type Place } from "@/components/public/accomplishment-live/places";
 import type { Selection } from "@/components/public/accomplishment-live/regions";
 import { compact, dayText, Empty, int, km, Panel, pctText, STATUS } from "@/components/public/accomplishment-live/shared";
 import { cn } from "@/utils/cn";
@@ -36,6 +37,10 @@ function tickFormat(span: number) {
 }
 
 const delta = (a: number | null | undefined, b: number | null | undefined) => (a ?? 0) - (b ?? 0);
+/** Volume a change adds to the total: the difference, a new record's volume, minus a removed record's. */
+const volumeChange = (c: ArchiveChange) =>
+  c.change === "update" ? delta(c.after?.v, c.before?.v) : c.change === "added" ? Math.max(0, c.after?.v ?? 0) : -Math.max(0, c.before?.v ?? 0);
+const recordKind = (w: Selection["record"]): RecordType => (w.i ? "isf" : w.d ? "drainage" : "waterway");
 const signed = (n: number, unit = "") => `${n > 0 ? "+" : n < 0 ? "−" : ""}${int(Math.abs(n))}${unit}`;
 
 /** Sum of the selected types' totals on one snapshot. */
@@ -149,7 +154,18 @@ function ChangeCard({ c, onOpen }: { c: ArchiveChange; onOpen?: () => void }) {
  * The accomplishment archive: what changed on each waterway and drainage line, day by day, from the nightly
  * snapshots of the OKB SSOT sheet (features/accomplishment/server/archive.ts). Follows the type chips.
  */
-export function ArchiveView({ types, records, onOpenRecord }: { types: RecordType[]; records: Selection[]; onOpenRecord: (sel: Selection) => void }) {
+export function ArchiveView({
+  types,
+  records,
+  onOpenRecord,
+  place = null,
+}: {
+  types: RecordType[];
+  records: Selection[];
+  onOpenRecord: (sel: Selection) => void;
+  /** Only the changes of this place (picked in the search box); the figures and chart then come from them. */
+  place?: Place | null;
+}) {
   const [days, setDays] = useState<ArchiveDays>(30);
   const [q, setQ] = useState("");
   const [shown, setShown] = useState(PAGE);
@@ -164,14 +180,45 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
 
   const kinds = types;
   const snapshots = useMemo(() => archive?.snapshots ?? [], [archive]);
+  // The period's changes of the selected types and place (before the text search below).
+  const placeChanges = useMemo(
+    () =>
+      (archive?.changes ?? []).filter(
+        (c) => kinds.includes(c.kind) && (!place || inPlace(place, { region: c.region, site: c.site, city: find(c.name)?.record.x?.city, name: c.name })),
+      ),
+    [archive?.changes, kinds, place, find],
+  );
   const series = useMemo(() => {
     const inPeriod = archive?.from ? snapshots.filter((s) => s.day >= archive.from!) : snapshots;
-    return inPeriod.map((s) => ({ day: s.day, v: Math.round(sumTotals(s, kinds).accomplished) }));
-  }, [snapshots, archive?.from, kinds]);
+    if (!place) return inPeriod.map((s) => ({ day: s.day, v: Math.round(sumTotals(s, kinds).accomplished) }));
+    // For a place: the volume its changes added, night by night (the nightly totals are not kept per site or city).
+    const byDay = new Map<string, number>();
+    for (const c of placeChanges) byDay.set(c.day, (byDay.get(c.day) ?? 0) + volumeChange(c));
+    let sum = 0;
+    return inPeriod.map((s) => {
+      sum += byDay.get(s.day) ?? 0;
+      return { day: s.day, v: Math.round(sum) };
+    });
+  }, [snapshots, archive?.from, kinds, place, placeChanges]);
 
   const span = series.length ? Math.max(...series.map((p) => p.v)) - Math.min(...series.map((p) => p.v)) : 0;
+  const placeRecords = useMemo(
+    () => (place ? records.filter((r) => kinds.includes(recordKind(r.record)) && inPlace(place, { region: r.region, site: r.site, city: r.record.x?.city, name: r.record.n })) : []),
+    [place, records, kinds],
+  );
   const period = useMemo(() => {
     if (!snapshots.length) return null;
+    if (place) {
+      const done = placeChanges.reduce((n, c) => n + (c.after?.st === "done" && c.before?.st !== "done" ? 1 : c.before?.st === "done" && c.after?.st !== "done" ? -1 : 0), 0);
+      return {
+        start: undefined,
+        end: undefined,
+        volume: placeChanges.reduce((n, c) => n + volumeChange(c), 0),
+        done,
+        points: placeChanges.reduce((n, c) => n + (c.change === "update" ? delta(c.after?.pc, c.before?.pc) : 0), 0),
+        records: placeRecords.length,
+      };
+    }
     const from = archive?.from;
     const before = from ? [...snapshots].reverse().find((s) => s.day < from) : undefined;
     const start = before ?? (from ? snapshots.find((s) => s.day >= from) : snapshots[0]);
@@ -179,12 +226,12 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
     const a = sumTotals(start, kinds);
     const b = sumTotals(end, kinds);
     return { start, end, volume: b.accomplished - a.accomplished, done: b.done - a.done, points: b.pointsCleaned - a.pointsCleaned, records: b.records };
-  }, [snapshots, archive?.from, kinds]);
+  }, [snapshots, archive?.from, kinds, place, placeChanges, placeRecords]);
 
   const changes = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return (archive?.changes ?? []).filter((c) => kinds.includes(c.kind) && (!needle || `${c.name} ${c.site} ${c.region}`.toLowerCase().includes(needle)));
-  }, [archive?.changes, kinds, q]);
+    return placeChanges.filter((c) => !needle || `${c.name} ${c.site} ${c.region}`.toLowerCase().includes(needle));
+  }, [placeChanges, q]);
   const updated = useMemo(() => new Set(changes.filter((c) => c.change === "update").map((c) => c.key)).size, [changes]);
   const groups = useMemo(() => {
     const out: { day: string; items: ArchiveChange[] }[] = [];
@@ -253,17 +300,30 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
 
         {period ? (
           <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
-            <Figure label={volumeWord} value={`${signed(period.volume)} m³`} hint={`now ${compact(sumTotals(period.end, kinds).accomplished)} m³ in all`} />
-            <Figure label="Newly completed" value={signed(period.done)} hint={`${int(sumTotals(period.end, kinds).done)} of ${int(period.records)} completed`} />
+            <Figure
+              label={volumeWord}
+              value={`${signed(period.volume)} m³`}
+              hint={place ? `now ${compact(placeRecords.reduce((n, r) => n + Math.max(0, r.record.v ?? 0), 0))} m³ in all` : `now ${compact(sumTotals(period.end, kinds).accomplished)} m³ in all`}
+            />
+            <Figure
+              label="Newly completed"
+              value={signed(period.done)}
+              hint={place ? `of ${int(period.records)} record${period.records === 1 ? "" : "s"} here` : `${int(sumTotals(period.end, kinds).done)} of ${int(period.records)} completed`}
+            />
             <Figure label="Records updated" value={int(updated)} hint={`${int(changes.length)} change${changes.length === 1 ? "" : "s"} recorded`} />
-            <Figure label="Points cleaned" value={signed(period.points)} hint={period.start && period.start.day !== period.end?.day ? `since ${dayText(period.start.day, true)}` : "since the first snapshot"} />
+            <Figure
+              label="Points cleaned"
+              value={signed(period.points)}
+              hint={place ? "in this period" : period.start && period.start.day !== period.end?.day ? `since ${dayText(period.start.day, true)}` : "since the first snapshot"}
+            />
           </div>
         ) : null}
 
         {series.length >= 2 ? (
           <figure className="mt-4">
             <figcaption className="flex items-center gap-1.5 text-xs font-bold text-[var(--dpwh-blue-dark)]">
-              <TrendingUp className="size-3.5 text-[var(--dpwh-orange)]" aria-hidden /> {volumeWord} to date (m³), by night
+              <TrendingUp className="size-3.5 text-[var(--dpwh-orange)]" aria-hidden />{" "}
+              {place ? `${volumeWord} in this period${place.kind === "text" ? "" : ` in ${place.label}`} (m³), by night` : `${volumeWord} to date (m³), by night`}
             </figcaption>
             <div className="mt-2 h-44 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -352,10 +412,10 @@ export function ArchiveView({ types, records, onOpenRecord }: { types: RecordTyp
             ) : null}
           </div>
         ) : (
-          <Empty>{q ? "No changes match this search." : "No changes recorded in this period."}</Empty>
+          <Empty>{q ? "No changes match this search." : place ? "No changes recorded for this place in this period." : "No changes recorded in this period."}</Empty>
         )}
         {archive.truncated ? <p className="mt-2 px-1 text-[11px] text-[var(--dpwh-muted)]">Only the newest 3,000 changes of this period are listed; choose a shorter period to see them all.</p> : null}
-        {baseline && (!archive.from || baseline.day >= archive.from) && !q ? (
+        {baseline && (!archive.from || baseline.day >= archive.from) && !q && !place ? (
           <p className="mt-3 rounded-lg bg-[#f6f8fb] px-3 py-2 text-xs text-[var(--dpwh-muted)]">
             <span className="font-semibold text-[var(--dpwh-text)]">{dayText(baseline.day)}:</span> history started with {int(baseline.records)} records saved as the starting point.
           </p>

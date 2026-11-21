@@ -40,6 +40,7 @@ import { Overview, type SectionId } from "@/components/public/accomplishment-liv
 import { PhotoViewer } from "@/components/public/accomplishment-live/photo-viewer";
 import { WaterwayPicker, RegionSortToggle, type RegionSort } from "@/components/public/accomplishment-live/picker";
 import { PhotosSection } from "@/components/public/accomplishment-live/photos-section";
+import { listPlaces, type Place } from "@/components/public/accomplishment-live/places";
 import { RegionCard, RegionSheet, WaterwaySheet, type Selection } from "@/components/public/accomplishment-live/regions";
 import { ResourcesSection } from "@/components/public/accomplishment-live/resources-section";
 import { compact, Empty, int, km, Meter, ProgressRing, stampText } from "@/components/public/accomplishment-live/shared";
@@ -140,6 +141,8 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
   const [selection, setSelection] = useState<Selection | null>(null);
   const [mapFocus, setMapFocus] = useState<{ name: string; id: number } | null>(null);
   const [photoIndex, setPhotoIndex] = useState<number | null>(null);
+  /** A place picked in the search box: the Updates section (latest and history) shows only its updates. */
+  const [place, setPlace] = useState<Place | null>(null);
   const [regionSort, setRegionSortState] = useState<RegionSort>("progress");
   const navRef = useRef<HTMLDivElement>(null);
   // On phones the section bar is pinned to the bottom: it slips away while scrolling down and returns on scrolling up.
@@ -218,6 +221,7 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
     [allTree],
   );
   const findByName = (name: string): Selection | null => located.find((l) => l.record.n === name) ?? null;
+  const places = useMemo(() => listPlaces(located, new Map(data.regions.map((r) => [regionLabel(r).code, regionLabel(r).name]))), [located, data.regions]);
 
 
   const typeCounts = useMemo(() => {
@@ -364,6 +368,13 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
             setOpenRegion(null);
             setSelection(it);
           }}
+          places={places}
+          onPlace={(pl) => {
+            setOpenRegion(null);
+            setSelection(null);
+            setPlace(pl);
+            go("updates");
+          }}
         />
         <div className="grid grid-cols-3 gap-1.5 md:flex" role="group" aria-label="Record types">
             {TYPES.map(({ value, label, icon: Icon }) => {
@@ -422,7 +433,15 @@ function Dashboard({ data }: { data: PublicAccomplishment }) {
       ) : section === "photos" ? (
         <PhotosSection />
       ) : section === "updates" ? (
-        <UpdatesSection data={data} types={prefs.types} records={located} onOpenWaterway={openWaterway} onOpenRecord={setSelection} />
+        <UpdatesSection
+          data={data}
+          types={prefs.types}
+          records={located}
+          onOpenWaterway={openWaterway}
+          onOpenRecord={setSelection}
+          place={place}
+          onClearPlace={() => setPlace(null)}
+        />
       ) : (
         <ResourcesSection data={data} />
       )}

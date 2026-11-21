@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Search, X } from "lucide-react";
+import { ChevronDown, ChevronRight, MapPin, Radio, Search, TextSearch, X } from "lucide-react";
 import { recordType, type RecordType } from "@/features/accomplishment/lib/rollup";
 import type { AccomplishmentData, AccomplishmentRecord } from "@/features/accomplishment/types";
 import { RowIcon } from "@/components/public/accomplishment-live/region-dropdown";
+import { namesPlace, searchPlaces, placeWord, type Place } from "@/components/public/accomplishment-live/places";
 import { Meter, pctText, recordProgress } from "@/components/public/accomplishment-live/shared";
 import { cn } from "@/utils/cn";
 
@@ -44,18 +45,23 @@ const TYPE_WORD: Record<RecordType, string> = { waterway: "Waterway", drainage: 
 
 /**
  * Search box with a dropdown of every waterway / drainage the type chips allow, grouped by region from CAR to XIII.
- * Tapping a row opens its details (map, progress and photos).
+ * Tapping a row opens its details (map, progress and photos). With [onPlace], typing also lists the matching
+ * regions, sites and cities (and "Updates mentioning …"), which open the field updates of that place.
  */
 export function WaterwayPicker({
   items,
   types,
   scale,
   onInfo,
+  places = [],
+  onPlace,
 }: {
   items: PickerItem[];
   types: RecordType[];
   scale: AccomplishmentData["scale"];
   onInfo: (item: PickerItem) => void;
+  places?: Place[];
+  onPlace?: (place: Place) => void;
 }) {
   const [text, setText] = useState("");
   const [open, setOpen] = useState(false);
@@ -92,6 +98,10 @@ export function WaterwayPicker({
     return out;
   }, [items, types, q]);
   const count = groups.reduce((n, g) => n + g.rows.length, 0);
+  const placeHits = useMemo(() => (onPlace ? searchPlaces(places, text) : []), [onPlace, places, text]);
+  const showPlaces = Boolean(onPlace) && q.length >= 2;
+  const textPlace: Place | null = showPlaces && !namesPlace(places, text) ? { kind: "text", label: text.trim(), region: "", records: 0 } : null;
+  const placeRows = showPlaces ? [...placeHits, ...(textPlace ? [textPlace] : [])] : [];
   const what = types.length === 1 && types[0] ? `${TYPE_WORD[types[0]].toLowerCase()}s` : "waterways and drainages";
 
   const pick = (fn: () => void) => {
@@ -113,7 +123,7 @@ export function WaterwayPicker({
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
-        placeholder="Find a waterway or drainage"
+        placeholder={onPlace ? "Find a waterway, drainage or place" : "Find a waterway or drainage"}
         aria-label="Find a waterway, site, city or region"
         className="h-11 w-full rounded-lg border border-[var(--dpwh-border)] bg-white pl-9 pr-20 text-sm text-[var(--dpwh-text)] outline-none focus:border-[var(--dpwh-blue)] focus:ring-2 focus:ring-[var(--dpwh-blue)]/20"
       />
@@ -131,10 +141,44 @@ export function WaterwayPicker({
       {open ? (
         <div id="okb-picker-list" className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-[var(--dpwh-border)] bg-white shadow-xl">
           <p className="border-b border-[#e3e8ef] bg-[#f6f8fb] px-3 py-2 text-[11px] font-semibold text-[var(--dpwh-muted)]">
+            {placeHits.length ? `${placeHits.length} place${placeHits.length === 1 ? "" : "s"} and ` : ""}
             {count} {what}
-            {q ? ` matching “${text.trim()}”` : ""} · tap one for its details, map and photos
+            {q ? ` matching “${text.trim()}”` : ""} · {placeRows.length ? "a place shows its updates, a name its details" : "tap one for its details, map and photos"}
           </p>
           <div className="max-h-[min(60vh,28rem)] overflow-y-auto overscroll-contain">
+            {placeRows.length ? (
+              <section>
+                <h3 className="sticky top-0 z-10 border-b border-[#fed7aa] bg-[#fff4eb] px-3 py-1.5 font-display text-sm font-bold uppercase tracking-wide text-[var(--dpwh-orange-dark)]">
+                  Places <span className="font-sans text-[11px] font-semibold normal-case tracking-normal text-[var(--dpwh-muted)]">· latest updates and history</span>
+                </h3>
+                <ul className="divide-y divide-[#eef1f5]">
+                  {placeRows.map((pl) => (
+                    <li key={`${pl.kind}|${pl.region}|${pl.label}`}>
+                      <button
+                        type="button"
+                        onClick={() => pick(() => onPlace?.(pl))}
+                        className="flex min-h-12 w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#fff8f1]"
+                      >
+                        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[var(--dpwh-orange-light)] text-[var(--dpwh-orange-dark)]">
+                          {pl.kind === "text" ? <TextSearch className="size-4" aria-hidden /> : <MapPin className="size-4" aria-hidden />}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-semibold text-[var(--dpwh-text)]">{pl.kind === "text" ? `Updates mentioning “${pl.label}”` : pl.label}</span>
+                          <span className="block truncate text-[11px] text-[var(--dpwh-muted)]">
+                            {pl.kind === "text"
+                              ? "Any region, site, city or name with these words"
+                              : [placeWord(pl), pl.kind !== "region" ? pl.region : (pl.alias ?? ""), `${pl.records} record${pl.records === 1 ? "" : "s"}`].filter(Boolean).join(" · ")}
+                          </span>
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[var(--dpwh-blue-light)] px-2 py-1 text-[11px] font-bold text-[var(--dpwh-blue-dark)]">
+                          <Radio className="size-3.5 text-[var(--dpwh-orange)]" aria-hidden /> Updates
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
             {groups.length ? (
               groups.map((g) => (
                 <section key={g.key}>
@@ -163,7 +207,9 @@ export function WaterwayPicker({
                 </section>
               ))
             ) : (
-              <p className="px-3 py-6 text-center text-sm text-[var(--dpwh-muted)]">Nothing found. Try another name or turn on more chips.</p>
+              <p className="px-3 py-6 text-center text-sm text-[var(--dpwh-muted)]">
+                {placeRows.length ? "No waterway or drainage with this name." : "Nothing found. Try another name or turn on more chips."}
+              </p>
             )}
           </div>
         </div>
