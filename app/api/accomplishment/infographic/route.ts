@@ -3,6 +3,7 @@ import { drivePhoto, infographicAssets } from "@/features/accomplishment/infogra
 import { getHighlights, highlightsConfigured } from "@/features/accomplishment/infographic/highlights";
 import { renderInfographic, type InfographicPhoto } from "@/features/accomplishment/infographic/render";
 import { buildInfographic, parseInfographicFilter } from "@/features/accomplishment/infographic/summary";
+import { getInfographicHistory } from "@/features/accomplishment/server/archive";
 import { getFieldPhotos, getPublicAccomplishment } from "@/features/accomplishment/server/public-dashboard";
 import { clientIp } from "@/features/flood-report/server/rate-limit";
 import { logger } from "@/lib/logger";
@@ -33,8 +34,13 @@ export async function GET(request: NextRequest): Promise<Response> {
   const params = request.nextUrl.searchParams;
   const filter = parseInfographicFilter(params);
   try {
-    const [data, allPhotos, assets] = await Promise.all([getPublicAccomplishment(), getFieldPhotos().catch(() => []), infographicAssets()]);
-    const summary = buildInfographic(data, filter, allPhotos);
+    const [data, allPhotos, history, assets] = await Promise.all([
+      getPublicAccomplishment(),
+      getFieldPhotos().catch(() => []),
+      getInfographicHistory().catch(() => null),
+      infographicAssets(),
+    ]);
+    const summary = buildInfographic(data, filter, { allPhotos, history });
     if (!summary.records) return new Response("No records with these settings.", { status: 404 });
 
     const useAi = params.get("ai") !== "0" && aiAllowed(clientIp(request));

@@ -48,6 +48,16 @@ export function infographicFacts(s: InfographicSummary): Record<string, unknown>
     length_cleaned: s.length.done > 0 ? km(s.length.done) : "none reported",
     length_planned: s.length.plan > 0 ? km(s.length.plan) : "not set",
     field_updates_last_7_days: int(s.updates7d),
+    field_photos: `${int(s.field.photos)} photos of ${int(s.field.documented)} ${s.scope.recordsWord}`,
+    ...(s.byType.length > 1 ? { progress_by_record_type: s.byType.map((t) => `${t.label}: ${pct(t.pct)} (${int(t.done)} of ${int(t.records)} done)`) } : {}),
+    ...(s.history
+      ? {
+          [`more_silt_reported_since_${manilaDate(`${s.history.since}T12:00:00+08:00`).replace(/[ ,]+/g, "_")}`]: `${compact(Math.max(0, s.history.gain.volume))} m³`,
+          records_with_new_figures_last_7_days: int(s.history.week.updated),
+          silt_removed_last_7_days: `${compact(Math.max(0, s.history.week.volume))} m³`,
+          completed_last_7_days: s.history.week.completed.map((c) => c.name),
+        }
+      : {}),
     [`${s.rowsKind === "city" ? "cities" : `${s.rowsKind}s`}_by_progress`]: s.rows.slice(0, 6).map((r) => `${r.label}: ${pct(r.pct)} (${int(r.done)} of ${int(r.records)} done)`),
     most_silt_removed: s.top.slice(0, 3).map((t) => `${t.name} (${t.place}): ${compact(t.volume)} m³`),
   };

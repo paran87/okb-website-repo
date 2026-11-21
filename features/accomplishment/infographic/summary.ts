@@ -15,6 +15,7 @@ import {
   type RollupMode,
   type WorkStatus,
 } from "@/features/accomplishment/lib/rollup";
+import type { ArchiveChange, ArchiveTotals, ArchiveTotalsByKind } from "@/features/accomplishment/archive-types";
 import type { FieldPhoto, PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
 
@@ -63,6 +64,34 @@ export interface InfographicSummary {
   photos: { id: string; name: string; place: string; day: string | null }[];
   /** Accomplishment Log entries of these records in the 7 days before the sheet was read. */
   updates7d: number;
+  /** Each selected record type on its own (shown when more than one is selected). */
+  byType: { type: RecordType; label: string; pct: number | null; records: number; done: number; volume: number }[];
+  /** Field photos of these records, and how many records have one. */
+  field: { photos: number; documented: number };
+  /** Progress over time from the nightly History snapshots; null without them. */
+  history: InfographicHistory | null;
+}
+
+/** The nightly snapshots (okb_accomplishment_snapshots) and the last 7 days of changes, as read on the server. */
+export interface InfographicHistoryInput {
+  snapshots: { day: string; totals: ArchiveTotalsByKind; regions: Record<string, ArchiveTotalsByKind> }[];
+  changes: ArchiveChange[];
+}
+
+export interface InfographicHistory {
+  /** First day of the series ("2026-11-03"). */
+  since: string;
+  /** Silt removed, records completed and length cleaned per day (the last point is today's live figures). */
+  series: { day: string; acc: number; done: number; length: number }[];
+  gain: { volume: number; done: number; length: number };
+  week: {
+    /** Records whose figures changed in the last 7 days. */
+    updated: number;
+    /** Silt removed in the last 7 days (net, m³). */
+    volume: number;
+    gains: { name: string; place: string; volume: number }[];
+    completed: { name: string; place: string }[];
+  };
 }
 
 export const MAX_ROWS = 18;
@@ -83,7 +112,76 @@ function capProgress(data: PublicAccomplishment): PublicAccomplishment {
   };
 }
 
-export function buildInfographic(source: PublicAccomplishment, filter: InfographicFilter, allPhotos: FieldPhoto[] = source.photos.latest): InfographicSummary {
+/** Silt removed, records done and length cleaned in one snapshot, for the chosen types and region codes (null = all). */
+function snapshotTotals(snap: InfographicHistoryInput["snapshots"][number], types: RecordType[], codes: Set<string> | null) {
+  const out = { acc: 0, done: 0, length: 0, records: 0 };
+  const add = (t: ArchiveTotals | undefined) => {
+    if (!t) return;
+    out.records += t.records;
+    out.acc += t.accomplished;
+    out.done += t.done;
+    out.length += t.lengthDone;
+  };
+  for (const type of types) {
+    if (!codes) add(snap.totals[type]);
+    else for (const code of codes) add(snap.regions?.[code]?.[type]);
+  }
+  return out;
+}
+
+function buildHistory(
+  input: InfographicHistoryInput,
+  types: RecordType[],
+  codes: Set<string> | null,
+  today: string,
+  live: { acc: number; done: number; length: number },
+): InfographicHistory | null {
+  // Nights with no records for the selection (a region not yet in the archive) are left out, or the line would
+  // jump from nothing to the region's whole figures.
+  const series = input.snapshots
+    .filter((snap) => snap.day < today)
+    .map((snap) => ({ day: snap.day, ...snapshotTotals(snap, types, codes) }))
+    .filter((p) => p.records > 0)
+    .map(({ day, acc, done, length }) => ({ day, acc, done, length }));
+  series.push({ day: today, ...live });
+  if (series.length < 3) return null;
+  const first = series[0]!;
+  const last = series[series.length - 1]!;
+
+  // The last 7 days of changes to these records: net silt added per record, and records that became completed.
+  const per = new Map<string, { name: string; place: string; first: number; last: number; completed: boolean }>();
+  const typeSet = new Set(types);
+  for (const c of [...input.changes].reverse()) {
+    if (c.change !== "update" || !c.before || !c.after || !typeSet.has(c.kind) || (codes && !codes.has(c.region))) continue;
+    const entry = per.get(c.key) ?? { name: c.name, place: `${c.region} · ${c.site}`, first: c.before.v ?? 0, last: 0, completed: false };
+    entry.last = c.after.v ?? 0;
+    if (c.before.st !== "done" && c.after.st === "done") entry.completed = true;
+    if (c.before.st === "done" && c.after.st !== "done") entry.completed = false;
+    per.set(c.key, entry);
+  }
+  const entries = [...per.values()];
+  const gains = entries
+    .map((e) => ({ name: e.name, place: e.place, volume: e.last - e.first }))
+    .filter((g) => g.volume > 0.5)
+    .sort((a, b) => b.volume - a.volume);
+  return {
+    since: first.day,
+    series,
+    gain: { volume: last.acc - first.acc, done: last.done - first.done, length: last.length - first.length },
+    week: {
+      updated: entries.length,
+      volume: entries.reduce((n, e) => n + (e.last - e.first), 0),
+      gains: gains.slice(0, 3),
+      completed: entries.filter((e) => e.completed).slice(0, 3).map((e) => ({ name: e.name, place: e.place })),
+    },
+  };
+}
+
+export function buildInfographic(
+  source: PublicAccomplishment,
+  filter: InfographicFilter,
+  { allPhotos = source.photos.latest, history = null }: { allPhotos?: FieldPhoto[]; history?: InfographicHistoryInput | null } = {},
+): InfographicSummary {
   const data = capProgress(source);
   const types = (["waterway", "drainage", "isf"] as RecordType[]).filter((t) => filter.types.includes(t));
   const prefs = { mode: filter.mode, filter: "all" as const, types: types.length ? types : (["waterway"] as RecordType[]), regions: filter.regions };
@@ -130,6 +228,14 @@ export function buildInfographic(source: PublicAccomplishment, filter: Infograph
     .slice(0, 5)
     .map((p) => ({ name: p.record.n, place: `${p.region} · ${p.site}`, volume: p.record.v ?? 0, pct: recordPct(p.record, scale) }));
 
+  let photoCount = 0;
+  const documented = new Set<string>();
+  for (const p of allPhotos) {
+    if (!place.has(p.w)) continue;
+    photoCount++;
+    documented.add(p.w);
+  }
+
   const photos: InfographicSummary["photos"] = [];
   const seenWays = new Set<string>();
   for (const p of allPhotos) {
@@ -149,6 +255,18 @@ export function buildInfographic(source: PublicAccomplishment, filter: Infograph
   const codes = tree.map((r) => regionLabel(r).code).filter((c) => c !== "Other");
   const regionsLabel = !filter.regions.length ? "All regions" : codes.length <= 3 ? codes.join(" · ") : `${codes.length} regions`;
 
+  const byType = prefs.types.map((type) => {
+    const list = ways.filter((w) => (w.i ? "isf" : w.d ? "drainage" : "waterway") === type);
+    return { type, label: TYPE_LABEL[type], pct: rollup(list, prefs, scale), records: list.length, done: doneOf(list), volume: volumeTotals(list).acc };
+  });
+
+  const volume = volumeTotals(ways);
+  const status = statusCounts(ways, scale);
+  const today = new Date(read + 8 * 3600_000).toISOString().slice(0, 10);
+  const historyOut = history
+    ? buildHistory(history, prefs.types, filter.regions.length ? new Set(codes) : null, today, { acc: volume.acc, done: status.done, length: length.done })
+    : null;
+
   return {
     scope: {
       types: prefs.types,
@@ -163,10 +281,10 @@ export function buildInfographic(source: PublicAccomplishment, filter: Infograph
     records: ways.length,
     sites: tree.reduce((n, r) => n + r.sites.length, 0),
     regions: codes.length,
-    volume: volumeTotals(ways),
+    volume,
     length,
     points,
-    status: statusCounts(ways, scale),
+    status,
     rowsKind,
     rows: rowsAll.slice(0, MAX_ROWS),
     rowsMore: Math.max(0, rowsAll.length - MAX_ROWS),
@@ -174,6 +292,9 @@ export function buildInfographic(source: PublicAccomplishment, filter: Infograph
     top,
     photos,
     updates7d,
+    byType,
+    field: { photos: photoCount, documented: documented.size },
+    history: historyOut,
   };
 }
 

@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { SiteDbMissingError, siteDbConfigured, siteRest } from "@/features/admin/server/supabase";
 import { archiveRecords, diffRecords, manilaDay, summarize, type StoredRecord } from "@/features/accomplishment/lib/archive";
 import { getPublicAccomplishment } from "@/features/accomplishment/server/public-dashboard";
+import type { InfographicHistoryInput } from "@/features/accomplishment/infographic/summary";
 import type {
   AccomplishmentArchive,
   ArchiveChange,
@@ -169,6 +170,25 @@ export async function getArchive(period: ArchivePeriod, now = new Date()): Promi
   } catch (error) {
     if (error instanceof SiteDbMissingError) return notReady();
     throw error;
+  }
+}
+
+/**
+ * For the infographic: every nightly snapshot with its per-region totals, and the last 7 days of changes.
+ * Null when the archive is not set up or cannot be read (the infographic then leaves the section out).
+ */
+export async function getInfographicHistory(now = new Date()): Promise<InfographicHistoryInput | null> {
+  if (!siteDbConfigured()) return null;
+  const from = manilaDay(new Date(now.getTime() - 6 * 86_400_000));
+  try {
+    const [snapshots, changes] = await Promise.all([
+      readAll<InfographicHistoryInput["snapshots"][number]>(`${SNAPSHOTS}?select=day,totals,regions&order=day.asc`),
+      readAll<ArchiveChange>(`${CHANGES}?select=id,day,key,kind,region,site,name,change,before,after&day=gte.${from}&change=eq.update&order=day.desc,id.desc`),
+    ]);
+    return { snapshots: snapshots.map((s) => ({ day: s.day, totals: s.totals ?? {}, regions: s.regions ?? {} })), changes };
+  } catch (error) {
+    log.warn({ err: error }, "Accomplishment history could not be read for the infographic");
+    return null;
   }
 }
 

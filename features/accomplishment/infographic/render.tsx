@@ -615,6 +615,191 @@ function mapAndRows(s: InfographicSummary) {
   };
 }
 
+/** A ring with the percent in the middle. */
+function Ring({ value, size, stroke, children }: { value: number | null; size: number; stroke: number; children: ReactNode }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const done = clamp01((value ?? 0) / 100);
+  return (
+    <div style={{ display: "flex", position: "relative", width: size, height: size, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute", top: 0, left: 0 }}>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={C.track} strokeWidth={stroke} />
+        {done > 0 ? (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={progressColor(value)}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${Math.max(circ * done, 1)} ${circ}`}
+            transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          />
+        ) : null}
+      </svg>
+      {children}
+    </div>
+  );
+}
+
+const TYPE_ICON: Record<string, IconName> = { waterway: "waves", drainage: "droplets", isf: "home" };
+
+/** Each selected record type on its own (only when more than one is selected). */
+function byTypeCard(s: InfographicSummary) {
+  if (s.byType.length < 2) return null;
+  const GAP = 24;
+  const W = Math.floor((INNER - 72 - GAP * (s.byType.length - 1)) / s.byType.length);
+  const RING = 124;
+  const h = 72 + 68 + RING;
+  return {
+    h,
+    node: (
+      <Card style={{ height: h }}>
+        <SectionTitle icon="gauge" note={s.scope.mode === "wtd" ? "by planned volume" : "average progress"}>
+          Progress by record type
+        </SectionTitle>
+        <div style={{ display: "flex", gap: GAP }}>
+          {s.byType.map((t) => (
+            <div key={t.type} style={{ display: "flex", alignItems: "center", gap: 18, width: W }}>
+              <Ring value={t.pct} size={RING} stroke={16}>
+                <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 34, color: C.navy }}>{pct(t.pct)}</div>
+              </Ring>
+              <div style={{ display: "flex", flexDirection: "column", width: W - RING - 18 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Icon name={TYPE_ICON[t.type] ?? "waves"} size={24} color={C.blue} />
+                  <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 30, color: C.navy }}>{t.label}</div>
+                </div>
+                <div style={{ fontFamily: SANS, fontSize: 19, color: C.text, marginTop: 4 }}>{`${int(t.done)} of ${int(t.records)} completed`}</div>
+                <div style={{ fontFamily: SANS, fontSize: 17, color: C.muted }}>{t.volume > 0 ? `${compact(t.volume)} m³ removed` : "no volume reported"}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    ),
+  };
+}
+
+const signed = (n: number, f: (n: number) => string) => `${n < 0 ? "−" : "+"}${f(Math.abs(n))}`;
+
+/** Silt reported over time (nightly History snapshots) and the last 7 days' changes. */
+function trendCard(s: InfographicSummary) {
+  const hist = s.history;
+  if (!hist) return null;
+  const SIDE = 300;
+  const CW = INNER - 72 - SIDE - 40;
+  const CH = 250;
+  const base = hist.series[0]!.acc;
+  const vals = hist.series.map((p) => p.acc - base);
+  const lo = Math.min(0, ...vals);
+  const hi = Math.max(1, ...vals);
+  // 12 px inside the edges, so the end dot is not cut off.
+  const x = (i: number) => 12 + (i / (hist.series.length - 1)) * (CW - 24);
+  const y = (v: number) => 8 + (1 - (v - lo) / (hi - lo)) * (CH - 16);
+  const line = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join("");
+  const area = `${line}L${x(vals.length - 1).toFixed(1)} ${y(lo).toFixed(1)}L${x(0).toFixed(1)} ${y(lo).toFixed(1)}Z`;
+  const sinceText = shortDay(hist.since);
+  const week = hist.week;
+  const listRows = Math.max(week.gains.length, week.completed.length, 1);
+  const weekH = week.updated ? 70 + listRows * 58 + 28 : 92;
+  const h = 72 + 68 + CH + 34 + 28 + weekH;
+  const callouts: { icon: IconName; color: string; value: string; label: string }[] = [
+    { icon: "shovel", color: C.orange, value: `${signed(hist.gain.volume, compact)} m³`, label: `silt reported since ${sinceText}` },
+    { icon: "check", color: STATUS.done.color, value: signed(hist.gain.done, int), label: `completed since ${sinceText}` },
+    // Length rarely changes night to night; when it has not, the records with new figures this week say more.
+    Math.abs(hist.gain.length) >= 1
+      ? { icon: "ruler", color: C.blue, value: signed(hist.gain.length, km), label: `length cleaned since ${sinceText}` }
+      : { icon: "activity", color: C.blue, value: int(week.updated), label: `${week.updated === 1 ? "record" : "records"} updated, last 7 days` },
+  ];
+  const item = (name: string, place: string, right: string | null, key: string) => (
+    <div key={key} style={{ display: "flex", alignItems: "center", height: 58, gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, width: 10 }}>
+        <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 19, color: C.text }}>{cut(name, right ? 26 : 34)}</div>
+        <div style={{ fontFamily: SANS, fontSize: 15, color: C.muted }}>{cut(place, 36)}</div>
+      </div>
+      {right ? <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 26, color: C.orangeDark }}>{right}</div> : null}
+    </div>
+  );
+  const colW = (INNER - 72 - 48 - 32) / 2;
+  return {
+    h,
+    node: (
+      <Card style={{ height: h }}>
+        <SectionTitle icon="trend" note={`nightly figures since ${sinceText}`}>
+          Progress over time
+        </SectionTitle>
+        <div style={{ display: "flex", gap: 40 }}>
+          <div style={{ display: "flex", flexDirection: "column", width: CW }}>
+            <div style={{ display: "flex", position: "relative", width: CW, height: CH }}>
+              <svg width={CW} height={CH} viewBox={`0 0 ${CW} ${CH}`} style={{ position: "absolute", top: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={C.orange} stopOpacity={0.45} />
+                    <stop offset="100%" stopColor={C.orange} stopOpacity={0.03} />
+                  </linearGradient>
+                </defs>
+                {[0.25, 0.5, 0.75].map((f) => (
+                  <path key={f} d={`M0 ${(8 + f * (CH - 16)).toFixed(1)}L${CW} ${(8 + f * (CH - 16)).toFixed(1)}`} stroke={C.line} strokeWidth={1} strokeDasharray="4 6" />
+                ))}
+                <path d={area} fill="url(#trendFill)" />
+                <path d={line} fill="none" stroke={C.orange} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
+                <circle cx={x(vals.length - 1)} cy={y(vals[vals.length - 1]!)} r={8} fill="#fff" stroke={C.orange} strokeWidth={4} />
+              </svg>
+              <div style={{ display: "flex", position: "absolute", left: 8, top: 0, fontFamily: SANS, fontWeight: 700, fontSize: 16, color: C.muted }}>{`${signed(hi, compact)} m³`}</div>
+              <div style={{ display: "flex", position: "absolute", left: 8, top: y(lo) - 24, fontFamily: SANS, fontWeight: 700, fontSize: 16, color: C.muted }}>
+                {lo < 0 ? `${signed(lo, compact)} m³` : "0"}
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontFamily: SANS, fontSize: 16, color: C.muted }}>
+              <div>{sinceText}</div>
+              <div>Today</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, width: SIDE }}>
+            {callouts.map((c) => (
+              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 18, backgroundColor: "#f6f8fb", border: `1px solid ${C.line}` }}>
+                <div style={{ display: "flex", width: 44, height: 44, borderRadius: 22, backgroundColor: c.color, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon name={c.icon} size={22} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 34, lineHeight: 1, color: C.navy }}>{c.value}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, color: C.muted, marginTop: 2 }}>{cut(c.label, 36)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", marginTop: 28, padding: "20px 24px", borderRadius: 22, backgroundColor: "#fff7ed", border: "1px solid #fed7aa", height: weekH }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, height: 32 }}>
+            <Icon name="calendar" size={22} color={C.orangeDark} />
+            <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 18, letterSpacing: 2.5, color: C.orangeDark }}>LAST 7 DAYS</div>
+            <div style={{ fontFamily: SANS, fontSize: 18, color: C.text, marginLeft: 8 }}>
+              {week.updated
+                ? `${int(week.updated)} ${week.updated === 1 ? "record" : "records"} with new figures${week.volume > 0.5 ? ` · ${signed(week.volume, compact)} m³` : ""}`
+                : "No new figures this week"}
+            </div>
+          </div>
+          {week.updated ? (
+            <div style={{ display: "flex", gap: 32, marginTop: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", width: colW }}>
+                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, letterSpacing: 2, color: C.muted }}>BIGGEST GAINS</div>
+                {week.gains.length
+                  ? week.gains.map((g) => item(g.name, g.place, `${signed(g.volume, compact)} m³`, `g${g.name}`))
+                  : [item("No added volume", "figures other than volume changed", null, "g-none")]}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", width: colW }}>
+                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 15, letterSpacing: 2, color: C.muted }}>NEWLY COMPLETED</div>
+                {week.completed.length ? week.completed.map((c) => item(c.name, c.place, null, `c${c.name}`)) : [item("None this week", "work continues on ongoing records", null, "c-none")]}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </Card>
+    ),
+  };
+}
+
 function topCard(s: InfographicSummary) {
   if (!s.top.length) return null;
   const ROW = 74;
@@ -663,28 +848,49 @@ function topCard(s: InfographicSummary) {
   };
 }
 
-function photosCard(photos: InfographicPhoto[]) {
-  if (!photos.length) return null;
+function photosCard(s: InfographicSummary, photos: InfographicPhoto[]) {
   const GAP = 20;
-  const W = Math.floor((INNER - 72 - GAP * (photos.length - 1)) / photos.length);
+  const n = Math.max(photos.length, 1);
+  const W = Math.floor((INNER - 72 - GAP * (n - 1)) / n);
   const IMG_H = photos.length === 1 ? 420 : Math.round(W * 0.75);
-  const h = 72 + 68 + IMG_H + 104;
+  const STATS_H = 104;
+  const h = 72 + 68 + STATS_H + (photos.length ? 28 + IMG_H + 104 - 20 : 0);
+  const stats: { icon: IconName; value: string; label: string }[] = [
+    { icon: "image", value: int(s.field.photos), label: "field photos" },
+    { icon: "camera", value: int(s.field.documented), label: `${s.scope.recordsWord} documented` },
+    { icon: "map", value: s.points.total ? pct((100 * s.points.cleaned) / s.points.total) : "—", label: s.points.total ? `of ${compact(s.points.total)} traced points cleaned` : "no traced points yet" },
+    { icon: "activity", value: int(s.updates7d), label: "log entries, last 7 days" },
+  ];
+  const SW = (INNER - 72 - 3 * 16) / 4;
   return {
     h,
     node: (
       <Card style={{ height: h }}>
-        <SectionTitle icon="camera" note="latest field photos">
+        <SectionTitle icon="camera" note={photos.length ? "latest field photos" : undefined}>
           From the field
         </SectionTitle>
-        <div style={{ display: "flex", gap: GAP }}>
-          {photos.map((p) => (
-            <div key={p.src.slice(-40)} style={{ display: "flex", flexDirection: "column", width: W }}>
-              <img src={p.src} width={W} height={IMG_H} style={{ width: W, height: IMG_H, borderRadius: 20, objectFit: "cover" }} />
-              <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 20, lineHeight: 1.2, color: C.text, marginTop: 12 }}>{cut(p.name, photos.length === 1 ? 70 : 44)}</div>
-              <div style={{ fontFamily: SANS, fontSize: 16, color: C.muted }}>{cut([p.place, shortDay(p.day)].filter(Boolean).join(" · "), photos.length === 1 ? 90 : 36)}</div>
+        <div style={{ display: "flex", gap: 16 }}>
+          {stats.map((t) => (
+            <div key={t.label} style={{ display: "flex", flexDirection: "column", width: SW, height: STATS_H, padding: "14px 16px", borderRadius: 18, backgroundColor: "#f6f8fb", border: `1px solid ${C.line}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name={t.icon} size={22} color={C.blue} />
+                <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 36, lineHeight: 1, color: C.navy }}>{t.value}</div>
+              </div>
+              <div style={{ fontFamily: SANS, fontSize: 16, lineHeight: 1.2, color: C.muted, marginTop: 8 }}>{cut(t.label, 40)}</div>
             </div>
           ))}
         </div>
+        {photos.length ? (
+          <div style={{ display: "flex", gap: GAP, marginTop: 28 }}>
+            {photos.map((p) => (
+              <div key={p.src.slice(-40)} style={{ display: "flex", flexDirection: "column", width: W }}>
+                <img src={p.src} width={W} height={IMG_H} style={{ width: W, height: IMG_H, borderRadius: 20, objectFit: "cover" }} />
+                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 20, lineHeight: 1.2, color: C.text, marginTop: 12 }}>{cut(p.name, photos.length === 1 ? 70 : 44)}</div>
+                <div style={{ fontFamily: SANS, fontSize: 16, color: C.muted }}>{cut([p.place, shortDay(p.day)].filter(Boolean).join(" · "), photos.length === 1 ? 90 : 36)}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </Card>
     ),
   };
@@ -698,15 +904,16 @@ function footer(s: InfographicSummary, a: InfographicAssets, hl: Highlights, sit
       <div style={{ display: "flex", position: "relative", width: WIDTH, height: H, backgroundColor: C.navy, padding: `0 ${PAD}px`, alignItems: "center", gap: 28 }}>
         <div style={{ display: "flex", position: "absolute", left: 0, top: 0, width: WIDTH, height: 8, backgroundImage: `linear-gradient(90deg, ${C.gold}, ${C.orange})` }} />
         <img src={a.okbLogo} width={70} height={80} style={{ width: 70, height: 80 }} />
-        <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, width: 560 }}>
+        <div style={{ display: "flex", flexDirection: "column", width: INNER - 70 - 2 * 28 - 400 }}>
           <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 19, color: "#fff" }}>Source: OKB Single Source of Truth (SSOT v2)</div>
           <div style={{ fontFamily: SANS, fontSize: 17, lineHeight: 1.35, color: "rgba(255,255,255,0.75)" }}>
             {`Compiled from DPWH regional and district office reports. Figures as of ${manilaDate(s.asOf)}.${hl.by === "ai" ? " Highlights written with AI (Claude) from these figures." : ""}`}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", width: 400 }}>
           <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 16, letterSpacing: 2, color: C.gold }}>LIVE DASHBOARD</div>
-          <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 28, color: "#fff" }}>{cut(`${site}/accomplishment`, 40)}</div>
+          <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 26, lineHeight: 1.15, color: "#fff", textAlign: "right" }}>{cut(site, 34)}</div>
+          <div style={{ fontFamily: DISPLAY, fontWeight: 600, fontSize: 22, color: "rgba(255,255,255,0.8)" }}>/accomplishment</div>
         </div>
       </div>
     ),
@@ -717,7 +924,7 @@ function footer(s: InfographicSummary, a: InfographicAssets, hl: Highlights, sit
 export function renderInfographic(s: InfographicSummary, hl: Highlights, a: InfographicAssets, photos: InfographicPhoto[], site: string): ImageResponse {
   const GAP = 32;
   const head = header(s, a);
-  const body = [highlightsCard(s, hl), tiles(s), statusCard(s), mapAndRows(s), topCard(s), photosCard(photos)].filter((x): x is { h: number; node: React.JSX.Element } => x !== null);
+  const body = [highlightsCard(s, hl), tiles(s), byTypeCard(s), statusCard(s), trendCard(s), mapAndRows(s), topCard(s), photosCard(s, photos)].filter((x): x is { h: number; node: React.JSX.Element } => x !== null);
   const foot = footer(s, a, hl, site);
   const height = head.h + 40 + body.reduce((n, b) => n + b.h, 0) + GAP * (body.length - 1) + 56 + foot.h;
   return new ImageResponse(
