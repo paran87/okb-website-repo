@@ -59,6 +59,8 @@ const nextConfig: NextConfig = {
     // Sending or editing a mobile report traces its flooded stretch along the road network (features/flood-report/server/stretch.ts).
     "/api/flood-reports/*": ["./public/data/road-network/roads.geojson"],
     "/api/admin/mobile-reports/*": ["./public/data/road-network/roads.geojson"],
+    // The accomplishment infographic image: its fonts, header photo and logos (features/accomplishment/infographic/assets.ts).
+    "/api/accomplishment/infographic": ["./features/accomplishment/infographic/assets/**"],
     // The report form suggests the DEO of the nearest national road.
     "/api/flood-reports/geocode": ["./public/data/road-network/roads.geojson"],
   },

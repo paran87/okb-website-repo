@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowRight, ChevronDown, ChevronsDown, ChevronsUp, FileDown, FileSpreadsheet, CalendarClock, Camera, Compass, Gauge, ListChecks, Radio, Trophy } from "lucide-react";
-import { regionLabel, statusCounts, toCsv, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
+import { ArrowRight, ChevronDown, ChevronsDown, ChevronsUp, FileDown, FileSpreadsheet, CalendarClock, Camera, Compass, Gauge, ImageIcon, ListChecks, Radio, Trophy } from "lucide-react";
+import { regionKey, regionLabel, sortRegions, statusCounts, toCsv, workStatus, type Prefs, rollup, type VisibleRegion } from "@/features/accomplishment/lib/rollup";
 import type { FieldUpdate, PublicAccomplishment } from "@/features/accomplishment/public-types";
 import type { AccomplishmentRecord } from "@/features/accomplishment/types";
 import { drainageFeed, logKind, type DrainageEntry } from "@/components/public/accomplishment-live/field-feed";
+import { InfographicSheet } from "@/components/public/accomplishment-live/infographic-sheet";
 import { RegionDropdown } from "@/components/public/accomplishment-live/region-dropdown";
 import { printRegionsPdf } from "@/components/public/accomplishment-live/region-pdf";
 import { RegionSortToggle, type RegionSort } from "@/components/public/accomplishment-live/picker";
@@ -57,6 +58,11 @@ export function Overview({
   onRegionSort: (v: RegionSort) => void;
 }) {
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
+  const [infographic, setInfographic] = useState(false);
+  const allRegions = useMemo(
+    () => sortRegions(data.regions).filter((r) => regionLabel(r).code !== "Other").map((r) => ({ key: regionKey(r), code: regionLabel(r).code })),
+    [data.regions],
+  );
   const toggleRegion = (key: string) =>
     setOpenKeys((prev) => {
       const next = new Set(prev);
@@ -160,6 +166,13 @@ export function Overview({
             >
               <FileSpreadsheet className="size-4 shrink-0" aria-hidden /> CSV
             </button>
+            <button
+              type="button"
+              onClick={() => setInfographic(true)}
+              className="okb-ig-button inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold text-white sm:w-auto"
+            >
+              <ImageIcon className="size-4 shrink-0" aria-hidden /> {openKeys.size ? `Infographic · ${openKeys.size}` : "Infographic"}
+            </button>
           </div>
         ) : null}
         {byRegion.length ? (
@@ -189,6 +202,15 @@ export function Overview({
           <Empty>No records with these settings.</Empty>
         )}
       </Panel>
+
+      <InfographicSheet
+        open={infographic}
+        onClose={() => setInfographic(false)}
+        regions={allRegions}
+        initialRegions={byRegion.filter((r) => openKeys.has(r.key)).map((r) => r.key)}
+        initialTypes={prefs.types}
+        mode={prefs.mode}
+      />
 
       {/* Status */}
       <Panel title="Status of records" icon={ListChecks} className="lg:col-span-5">
