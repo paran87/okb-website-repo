@@ -79,6 +79,19 @@ export async function takeArchiveSnapshot(now = new Date()): Promise<ArchiveRun>
       reason: "sheet_incomplete",
     });
   }
+  // Records that keep their names but lose their figures mean a column heading was overwritten in the sheet,
+  // not hundreds of waterways dropping to zero overnight.
+  const withFigures = (states: ArchivedState[]) => states.filter((s) => s.p !== null || s.v !== null).length;
+  const hadFigures = withFigures(stored.filter((s) => !s.removed).map((s) => s.state));
+  const hasFigures = withFigures(current.map((c) => c.state));
+  if (hadFigures > 20 && hasFigures < hadFigures / 2) {
+    throw new ApiError(
+      502,
+      "INTERNAL_ERROR",
+      `Only ${hasFigures} records in the OKB SSOT sheet have figures (the archive has ${hadFigures}); check the column headings of WaterwayVsAccomplishment. No snapshot was taken.`,
+      { reason: "sheet_figures_missing" },
+    );
+  }
 
   const { data: today } = await siteRest<{ baseline: boolean }[]>(`${SNAPSHOTS}?select=baseline&day=eq.${day}`);
   const baseline = stored.length === 0 || Boolean(today?.[0]?.baseline);

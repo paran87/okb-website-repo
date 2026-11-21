@@ -38,6 +38,22 @@ export function pick(head: Map<string, number>, names: string[]): number {
 
 export const val = (row: string[], column: number) => (column < 0 ? "" : (row[column] ?? ""));
 
+const NAME_HEADINGS = ["name of waterway", "waterway"];
+const NUMBER_LIKE = /^[-+]?[\d.,%\s]+$/;
+
+/**
+ * The "name of waterway" column. When that heading has been overwritten in the sheet (a number typed into the
+ * header cell blanked the whole dashboard once), the tab's [usual] column is used instead, as long as it still
+ * holds names rather than numbers.
+ */
+export function nameColumn(t: Table, usual: number): number {
+  const column = pick(t.head, NAME_HEADINGS);
+  if (column >= 0) return column;
+  const values = t.rows.map((row) => val(row, usual).trim()).filter(Boolean);
+  const names = values.filter((v) => !NUMBER_LIKE.test(v)).length;
+  return values.length && names >= values.length / 2 ? usual : -1;
+}
+
 /** Comparable name: trimmed, upper case, single spaces, no zero-width or non-breaking spaces. */
 export function key(value: unknown): string {
   return String(value ?? "")
@@ -106,7 +122,7 @@ export function replayLog(rows: SheetRows | undefined): Map<string, LogTotal> & 
   const out = new Map<string, LogTotal>() as Map<string, LogTotal> & { rows?: number };
   if (!rows?.length) return out;
   const t = table(rows);
-  const name = pick(t.head, ["name of waterway", "waterway"]);
+  const name = nameColumn(t, 1);
   if (name < 0) return out;
   const when = pick(t.head, ["timestamp", "date", "logged"]);
   const mode = pick(t.head, ["entry_mode", "entry mode", "mode"]);
@@ -186,7 +202,7 @@ export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new 
   // Accomplishment per waterway, drainage or ISF record.
   type Acc = Pick<AccomplishmentRecord, "p" | "v" | "g" | "s" | "pl" | "al" | "lc" | "lu" | "pc" | "pt">;
   const accTable = table(tabs.accomplishment);
-  const accName = pick(accTable.head, ["name of waterway", "waterway"]);
+  const accName = nameColumn(accTable, 0);
   const plannedVolume = pick(accTable.head, ["planned_volume_office", "planned volume office", "planned_volume"]);
   const accomplishedVolume = pick(accTable.head, ["accomplished_volume", "accomplished volume"]);
   const progressColumn = pick(accTable.head, ["progress"]);
@@ -272,7 +288,7 @@ export function buildAccomplishment(tabs: AccomplishmentTabs, generatedAt = new 
   // Records grouped by site, sites by region.
   const wwTable = table(tabs.siteWaterway);
   const wwSite = pick(wwTable.head, ["site"]);
-  const wwName = pick(wwTable.head, ["name of waterway", "waterway"]);
+  const wwName = nameColumn(wwTable, 1);
   const wwType = pick(wwTable.head, ["type"]);
   const wwOffice = pick(wwTable.head, ["office"]);
 

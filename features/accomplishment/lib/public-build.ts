@@ -3,7 +3,7 @@
  * waterway details, field photos, traced lines, equipment and manpower, and the field update logs.
  * Only named columns are read; e-mail addresses and passwords in the sheet are never picked.
  */
-import { buildAccomplishment, key, looseKey, num, pick, table, val, type AccomplishmentTabs } from "@/features/accomplishment/lib/build";
+import { buildAccomplishment, key, looseKey, nameColumn, num, pick, table, val, type AccomplishmentTabs } from "@/features/accomplishment/lib/build";
 import { dayOrder, isoDay, parseSheetDate } from "@/features/accomplishment/lib/dates";
 import { recordPct, regionLabel } from "@/features/accomplishment/lib/rollup";
 import type {
@@ -57,11 +57,16 @@ function indexRecords(data: AccomplishmentData) {
   return (name: string): Located | null => exact.get(key(name)) ?? (loose.get(looseKey(name)) || null);
 }
 
-/** Calls [each] with the record named in each row of a "name of waterway" tab. */
-function eachByName(rows: SheetRows | undefined, find: (name: string) => Located | null, each: (located: Located, row: string[], t: ReturnType<typeof table>) => void) {
+/** Calls [each] with the record named in each row of a "name of waterway" tab (the name usually in column [usual]). */
+function eachByName(
+  rows: SheetRows | undefined,
+  find: (name: string) => Located | null,
+  each: (located: Located, row: string[], t: ReturnType<typeof table>) => void,
+  usual = 0,
+) {
   if (!rows?.length) return;
   const t = table(rows);
-  const name = pick(t.head, ["name of waterway", "waterway"]);
+  const name = nameColumn(t, usual);
   if (name < 0) return;
   for (const row of t.rows) {
     const raw = val(row, name).trim();
@@ -150,7 +155,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
       if (n) extra(record).ext = n;
       const fr = isoDay(parseSheetDate(val(row, first), order));
       if (fr) extra(record).fr = fr;
-    });
+    }, 1);
   }
 
   // Field photos, newest first.
@@ -168,7 +173,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
   const coordinates = { waterways: 0, points: 0, cleaned: 0, drainage: { lines: 0, points: 0, cleaned: 0 } };
   if (tabs.coordinates?.length) {
     const t = table(tabs.coordinates);
-    const name = pick(t.head, ["name of waterway", "waterway"]);
+    const name = nameColumn(t, 0);
     const cleaned = pick(t.head, ["cleaned"]);
     const counts = new Map<string, { located: Located | null; c: number; t: number }>();
     for (const row of t.rows) {
@@ -250,7 +255,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
     const c = (names: string[]) => pick(t.head, names);
     const col = {
       at: c(["timestamp", "date"]),
-      name: c(["name of waterway", "waterway"]),
+      name: nameColumn(t, 1),
       mode: c(["entry_mode", "entry mode"]),
       volume: c(["volume_entered_cu_m", "volume_entered"]),
       previous: c(["previous_total_cu_m", "previous_total"]),
@@ -299,7 +304,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
       at: c(["submitted", "exported"]),
       region: c(["submitting region", "region"]),
       site: c(["site"]),
-      name: c(["name of waterway"]),
+      name: nameColumn(t, 5),
       no: c(["extension no"]),
       points: c(["points added"]),
       segments: c(["segments added"]),
@@ -367,7 +372,7 @@ export function buildPublicAccomplishment(tabs: PublicTabs, generatedAt = new Da
 function readPhotos(rows: SheetRows | undefined, find: (name: string) => Located | null): FieldPhoto[] {
   if (!rows?.length) return [];
   const t = table(rows);
-  const name = pick(t.head, ["name of waterway", "waterway"]);
+  const name = nameColumn(t, 0);
   const link = pick(t.head, ["link"]);
   const date = pick(t.head, ["date"]);
   const seen = new Set<string>();
@@ -399,7 +404,7 @@ export function buildMapLines(tabs: PublicTabs): MapLine[] {
   const data = buildAccomplishment(tabs);
   const find = indexRecords(data);
   const t = table(tabs.coordinates);
-  const name = pick(t.head, ["name of waterway", "waterway"]);
+  const name = nameColumn(t, 0);
   const lat = pick(t.head, ["latitude", "lat"]);
   const lng = pick(t.head, ["longitude", "lng", "lon"]);
   const segment = pick(t.head, ["segment"]);
