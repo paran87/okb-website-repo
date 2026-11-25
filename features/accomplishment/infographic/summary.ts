@@ -11,6 +11,7 @@ import {
   statusCounts,
   visibleTree,
   volumeTotals,
+  workStatus,
   type RecordType,
   type RollupMode,
   type WorkStatus,
@@ -32,6 +33,13 @@ export interface InfographicRow {
   pct: number | null;
   records: number;
   done: number;
+  /** Records by status (done is above). */
+  ongoing: number;
+  pending: number;
+  none: number;
+  /** Silt removed and planned (m³), length cleaned and planned (m). */
+  volume: { acc: number; plan: number };
+  length: { done: number; plan: number };
 }
 
 export interface InfographicSummary {
@@ -60,7 +68,7 @@ export interface InfographicSummary {
   rowsMore: number;
   /** Every region with work listed for the selected types, for the map. */
   map: { token: string; code: string; pct: number | null; records: number; inScope: boolean }[];
-  top: { name: string; place: string; volume: number; pct: number | null }[];
+  top: { name: string; place: string; volume: number; plan: number | null; pct: number | null; status: WorkStatus }[];
   photos: { id: string; name: string; place: string; day: string | null }[];
   /** Accomplishment Log entries of these records in the 7 days before the sheet was read. */
   updates7d: number;
@@ -199,8 +207,23 @@ export function buildInfographic(
   const doneOf = (list: AccomplishmentRecord[]) => statusCounts(list, scale).done;
 
   // What the progress list shows: regions; for up to 3 regions their sites, else cities, else the records.
+  const rowOf = (label: string, sub: string, list: AccomplishmentRecord[], pctValue: number | null): InfographicRow => {
+    const st = statusCounts(list, scale);
+    return {
+      label,
+      sub,
+      pct: pctValue,
+      records: list.length,
+      done: st.done,
+      ongoing: st.ongoing,
+      pending: st.pending,
+      none: st.none,
+      volume: volumeTotals(list),
+      length: list.reduce((a, w) => ({ done: a.done + Math.max(0, w.al ?? 0), plan: a.plan + Math.max(0, w.pl ?? 0) }), { done: 0, plan: 0 }),
+    };
+  };
   const group = (list: { label: string; sub: string; ways: AccomplishmentRecord[] }[]): InfographicRow[] =>
-    list.map((g) => ({ label: g.label, sub: g.sub, pct: rollup(g.ways, prefs, scale), records: g.ways.length, done: doneOf(g.ways) }));
+    list.map((g) => rowOf(g.label, g.sub, g.ways, rollup(g.ways, prefs, scale)));
   const regionRows = group(tree.filter((r) => regionLabel(r).code !== "Other").map((r) => ({ label: regionLabel(r).code, sub: regionLabel(r).name, ways: r.ways })));
   const siteRows = group(tree.flatMap((r) => r.sites.map((s) => ({ label: s.n, sub: regionLabel(r).code, ways: s.w }))));
   const cities = new Map<string, { label: string; sub: string; ways: AccomplishmentRecord[] }>();
@@ -212,7 +235,7 @@ export function buildInfographic(
     cities.get(k)!.ways.push(p.record);
   }
   const cityRows = group([...cities.values()]);
-  const recordRows: InfographicRow[] = [...place.values()].map((p) => ({ label: p.record.n, sub: `${p.region} · ${p.site}`, pct: recordPct(p.record, scale), records: 1, done: doneOf([p.record]) }));
+  const recordRows: InfographicRow[] = [...place.values()].map((p) => rowOf(p.record.n, `${p.region} · ${p.site}`, [p.record], recordPct(p.record, scale)));
   const [rowsKind, rowsAll]: [InfographicSummary["rowsKind"], InfographicRow[]] =
     regionRows.length >= 4 ? ["region", regionRows] : siteRows.length >= 4 ? ["site", siteRows] : cityRows.length >= 3 ? ["city", cityRows] : ["record", recordRows];
   rowsAll.sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || b.records - a.records);
@@ -226,7 +249,14 @@ export function buildInfographic(
     .filter((p) => (p.record.v ?? 0) > 0)
     .sort((a, b) => (b.record.v ?? 0) - (a.record.v ?? 0))
     .slice(0, 5)
-    .map((p) => ({ name: p.record.n, place: `${p.region} · ${p.site}`, volume: p.record.v ?? 0, pct: recordPct(p.record, scale) }));
+    .map((p) => ({
+      name: p.record.n,
+      place: `${p.region} · ${p.site}`,
+      volume: p.record.v ?? 0,
+      plan: (p.record.p ?? 0) > 0 ? p.record.p : null,
+      pct: recordPct(p.record, scale),
+      status: workStatus(p.record, scale),
+    }));
 
   let photoCount = 0;
   const documented = new Set<string>();
@@ -243,7 +273,7 @@ export function buildInfographic(
     if (!at || seenWays.has(p.w)) continue; // one photo per waterway, newest first
     seenWays.add(p.w);
     photos.push({ id: p.id, name: at.record.n, place: `${at.region} · ${at.site}`, day: p.d });
-    if (photos.length === 3) break;
+    if (photos.length === 6) break;
   }
 
   const read = Date.parse(data.generatedAt);

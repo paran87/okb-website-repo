@@ -8,7 +8,7 @@ import type { Highlights } from "@/features/accomplishment/infographic/highlight
 import { ICONS, type IconName } from "@/features/accomplishment/infographic/icons";
 import { PH_MAP, PH_PATH, projectPh } from "@/features/accomplishment/infographic/ph-map";
 import { REGION_POINTS } from "@/features/accomplishment/infographic/region-points";
-import type { InfographicSummary } from "@/features/accomplishment/infographic/summary";
+import type { InfographicRow, InfographicSummary } from "@/features/accomplishment/infographic/summary";
 import type { WorkStatus } from "@/features/accomplishment/lib/rollup";
 
 /**
@@ -372,11 +372,28 @@ function tiles(s: InfographicSummary) {
   };
 }
 
+/** What each status means, under its count. */
+const STATUS_HINT: Record<WorkStatus, string> = {
+  done: "Reported complete, or 100% of the plan",
+  ongoing: "Work started, figures coming in",
+  pending: "Planned, work not started yet",
+  none: "No figures reported yet",
+};
+
 function statusCard(s: InfographicSummary) {
   const total = s.records || 1;
   const BAR_W = INNER - 72;
   const shown = STATUS_ORDER.filter((k) => s.status[k] > 0);
-  const h = 72 + 68 + 44 + 30 + 110;
+  const drainageOnly = s.scope.types.length === 1 && s.scope.types[0] === "drainage";
+  // What is left: silt and length still to go against the plan, and records without a start or a first report.
+  const left: { icon: IconName; value: string; label: string }[] = [];
+  if (s.volume.plan > s.volume.acc) left.push({ icon: "shovel", value: `${compact(s.volume.plan - s.volume.acc)} m³`, label: drainageOnly ? "silt still to declog" : "silt still to remove" });
+  if (s.length.plan > s.length.done) left.push({ icon: "ruler", value: km(s.length.plan - s.length.done), label: "length still to clean" });
+  if (s.status.pending + s.status.none > 0) left.push({ icon: "calendar", value: int(s.status.pending + s.status.none), label: "not started or not reported" });
+  const BOX_H = 156;
+  const LEFT_H = left.length ? 30 + 84 : 0;
+  const h = 72 + 68 + 44 + 30 + BOX_H + LEFT_H;
+  const LW = left.length ? (BAR_W - 18 * (left.length - 1)) / left.length : 0;
   return {
     h,
     node: (
@@ -411,7 +428,10 @@ function statusCard(s: InfographicSummary) {
         </div>
         <div style={{ display: "flex", gap: 18, marginTop: 30 }}>
           {STATUS_ORDER.map((k) => (
-            <div key={k} style={{ display: "flex", flexDirection: "column", width: (BAR_W - 3 * 18) / 4, padding: "14px 18px", borderRadius: 18, backgroundColor: "#f6f8fb", border: `1px solid ${C.line}` }}>
+            <div
+              key={k}
+              style={{ display: "flex", flexDirection: "column", width: (BAR_W - 3 * 18) / 4, height: BOX_H, padding: "14px 18px", borderRadius: 18, backgroundColor: "#f6f8fb", border: `1px solid ${C.line}` }}
+            >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ display: "flex", width: 14, height: 14, borderRadius: 7, backgroundColor: STATUS[k].color }} />
                 <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 18, color: STATUS[k].color }}>{STATUS[k].label}</div>
@@ -420,9 +440,29 @@ function statusCard(s: InfographicSummary) {
                 <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 46, lineHeight: 1.05, color: C.navy }}>{int(s.status[k])}</div>
                 <div style={{ fontFamily: SANS, fontSize: 18, color: C.muted }}>{pct((100 * s.status[k]) / total)}</div>
               </div>
+              <div style={{ fontFamily: SANS, fontSize: 15, lineHeight: 1.25, color: C.muted, marginTop: 6 }}>{STATUS_HINT[k]}</div>
             </div>
           ))}
         </div>
+        {left.length ? (
+          <div style={{ display: "flex", gap: 18, marginTop: 30 }}>
+            {left.map((l) => (
+              <div
+                key={l.label}
+                style={{ display: "flex", alignItems: "center", gap: 14, width: LW, height: 84, padding: "0 18px", borderRadius: 18, backgroundColor: "#fff7ed", border: "1px solid #fed7aa" }}
+              >
+                <div style={{ display: "flex", width: 42, height: 42, borderRadius: 21, backgroundColor: C.orangeDark, alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Icon name={l.icon} size={22} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 13, letterSpacing: 2, color: C.orangeDark }}>STILL TO DO</div>
+                  <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 30, lineHeight: 1.05, color: C.navy }}>{l.value}</div>
+                  <div style={{ fontFamily: SANS, fontSize: 15, color: C.muted }}>{cut(l.label, 30)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </Card>
     ),
   };
@@ -800,9 +840,103 @@ function trendCard(s: InfographicSummary) {
   };
 }
 
+/** Region by region (or site / city / record) figures: records, status, silt and length, progress. */
+function detailsCard(s: InfographicSummary) {
+  if (s.rows.length < 2) return null;
+  const COLS = { name: 220, records: 76, done: 100, ongoing: 92, silt: 168, length: 120, progress: 120 } as const;
+  const ROW = 52;
+  const HEAD = 40;
+  const TOTAL_ROW = 58;
+  const h = 72 + 68 + HEAD + s.rows.length * ROW + TOTAL_ROW + (s.rowsMore ? 30 : 0);
+  const nameHead = { region: "Region", site: "Site", city: "City / municipality", record: "Record" }[s.rowsKind];
+  // The line under each name, unless every row has the same one (all cities of one region).
+  const showSub = s.rowsKind === "region" || new Set(s.rows.map((r) => r.sub)).size > 1;
+  const head = (text: string, width: number, right = true) => (
+    <div style={{ display: "flex", width, justifyContent: right ? "flex-end" : "flex-start", fontFamily: SANS, fontWeight: 700, fontSize: 13, letterSpacing: 1.5, color: C.muted }}>
+      {text.toUpperCase()}
+    </div>
+  );
+  const num = (main: string, sub: string | null, width: number) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", width }}>
+      <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1.1, color: C.navy }}>{main}</div>
+      {sub ? <div style={{ fontFamily: SANS, fontSize: 13, color: C.muted }}>{sub}</div> : null}
+    </div>
+  );
+  // The record's statuses as one small stacked bar.
+  const mini = (r: InfographicRow, width: number) => (
+    <div style={{ display: "flex", width, height: 8, borderRadius: 4, overflow: "hidden", backgroundColor: C.track }}>
+      {STATUS_ORDER.map((k) => (r[k] > 0 ? <div key={k} style={{ display: "flex", width: Math.max(2, Math.round((width * r[k]) / Math.max(1, r.records))), height: 8, backgroundColor: STATUS[k].color }} /> : null))}
+    </div>
+  );
+  const row = (r: InfographicRow, i: number | null) => (
+    <div
+      key={i === null ? "total" : `${r.label}-${i}`}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        height: i === null ? TOTAL_ROW : ROW,
+        backgroundColor: i === null ? "#eef3f9" : i % 2 ? "#ffffff" : "#f8fafc",
+        borderTop: i === null ? `2px solid ${C.navy}` : "none",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", width: COLS.name, paddingLeft: 12 }}>
+        <div style={{ fontFamily: i === null ? DISPLAY : SANS, fontWeight: 700, fontSize: i === null ? 22 : 17, lineHeight: 1.15, color: C.text }}>{i === null ? "TOTAL" : cut(r.label, 24)}</div>
+        {r.sub && (i === null || showSub) ? <div style={{ fontFamily: SANS, fontSize: 13, color: C.muted }}>{cut(r.sub, 28)}</div> : null}
+      </div>
+      {num(int(r.records), null, COLS.records)}
+      {num(int(r.done), r.records ? pct((100 * r.done) / r.records) : null, COLS.done)}
+      {num(int(r.ongoing), null, COLS.ongoing)}
+      {num(r.volume.acc > 0 ? `${compact(r.volume.acc)} m³` : "—", r.volume.plan > 0 ? `of ${compact(r.volume.plan)} m³` : null, COLS.silt)}
+      {num(r.length.done > 0 ? km(r.length.done) : "—", r.length.plan > 0 ? `of ${km(r.length.plan)}` : null, COLS.length)}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", width: COLS.progress, paddingRight: 12 }}>
+        <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 22, lineHeight: 1.1, color: C.navy }}>{pct(r.pct)}</div>
+        {mini(r, COLS.progress - 24)}
+      </div>
+    </div>
+  );
+  const total: InfographicRow = {
+    label: "TOTAL",
+    sub: `${int(s.records)} ${s.scope.recordsWord}`,
+    pct: s.overall,
+    records: s.records,
+    done: s.status.done,
+    ongoing: s.status.ongoing,
+    pending: s.status.pending,
+    none: s.status.none,
+    volume: s.volume,
+    length: s.length,
+  };
+  return {
+    h,
+    node: (
+      <Card style={{ height: h }}>
+        <SectionTitle icon="list" note={s.rowsMore ? `top ${s.rows.length} by progress` : "best progress first"}>
+          {`Details by ${s.rowsKind}`}
+        </SectionTitle>
+        <div style={{ display: "flex", alignItems: "center", height: HEAD, borderBottom: `2px solid ${C.navy}` }}>
+          <div style={{ display: "flex", width: COLS.name, paddingLeft: 12 }}>{head(nameHead, COLS.name - 12, false)}</div>
+          {head("Records", COLS.records)}
+          {head("Completed", COLS.done)}
+          {head("Ongoing", COLS.ongoing)}
+          {head("Silt removed", COLS.silt)}
+          {head("Length", COLS.length)}
+          <div style={{ display: "flex", width: COLS.progress, paddingRight: 12, justifyContent: "flex-end" }}>{head("Progress", COLS.progress - 12)}</div>
+        </div>
+        {s.rows.map((r, i) => row(r, i))}
+        {s.rowsMore ? (
+          <div style={{ display: "flex", height: 30, alignItems: "center", paddingLeft: 12, fontFamily: SANS, fontSize: 15, color: C.muted }}>
+            {`+ ${int(s.rowsMore)} more ${s.rowsKind === "city" ? "cities" : `${s.rowsKind}s`}, counted in the total`}
+          </div>
+        ) : null}
+        {row(total, null)}
+      </Card>
+    ),
+  };
+}
+
 function topCard(s: InfographicSummary) {
   if (!s.top.length) return null;
-  const ROW = 74;
+  const ROW = 80;
   const h = 72 + 68 + s.top.length * ROW;
   const max = s.top[0]!.volume || 1;
   const drainageOnly = s.scope.types.length === 1 && s.scope.types[0] === "drainage";
@@ -834,12 +968,20 @@ function topCard(s: InfographicSummary) {
             </div>
             <div style={{ display: "flex", flexDirection: "column", width: nameW }}>
               <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 23, color: C.text }}>{cut(t.name, 30)}</div>
-              <div style={{ fontFamily: SANS, fontSize: 17, color: C.muted }}>{cut(`${t.place}${t.pct !== null ? ` · ${pct(t.pct)} done` : ""}`, 46)}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", height: 22, padding: "0 8px", alignItems: "center", borderRadius: 11, backgroundColor: STATUS[t.status].color, fontFamily: SANS, fontWeight: 700, fontSize: 13, color: "#fff" }}>
+                  {STATUS[t.status].label}
+                </div>
+                <div style={{ fontFamily: SANS, fontSize: 16, color: C.muted }}>{cut(`${t.place}${t.pct !== null ? ` · ${pct(t.pct)}` : ""}`, 34)}</div>
+              </div>
             </div>
             <Bar value={(100 * t.volume) / max} width={barW} height={16} color={C.orange} />
-            <div style={{ display: "flex", width: 150, justifyContent: "flex-end", alignItems: "baseline", gap: 6 }}>
-              <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 34, color: C.navy }}>{compact(t.volume)}</div>
-              <div style={{ fontFamily: SANS, fontSize: 18, color: C.muted }}>m³</div>
+            <div style={{ display: "flex", flexDirection: "column", width: 150, alignItems: "flex-end" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                <div style={{ fontFamily: DISPLAY, fontWeight: 700, fontSize: 34, lineHeight: 1.05, color: C.navy }}>{compact(t.volume)}</div>
+                <div style={{ fontFamily: SANS, fontSize: 18, color: C.muted }}>m³</div>
+              </div>
+              {t.plan ? <div style={{ fontFamily: SANS, fontSize: 14, color: C.muted }}>{`of ${compact(t.plan)} m³ planned`}</div> : null}
             </div>
           </div>
         ))}
@@ -850,11 +992,15 @@ function topCard(s: InfographicSummary) {
 
 function photosCard(s: InfographicSummary, photos: InfographicPhoto[]) {
   const GAP = 20;
-  const n = Math.max(photos.length, 1);
-  const W = Math.floor((INNER - 72 - GAP * (n - 1)) / n);
-  const IMG_H = photos.length === 1 ? 420 : Math.round(W * 0.75);
+  // Full rows of three (six when there are enough), else what there is.
+  const shown = photos.length >= 6 ? photos.slice(0, 6) : photos.length >= 3 ? photos.slice(0, 3) : photos;
+  const cols = Math.max(1, Math.min(3, shown.length));
+  const rowsN = Math.ceil(shown.length / 3);
+  const W = Math.floor((INNER - 72 - GAP * (cols - 1)) / cols);
+  const IMG_H = shown.length === 1 ? 420 : Math.round(W * 0.75);
+  const CAPTION = 84;
   const STATS_H = 104;
-  const h = 72 + 68 + STATS_H + (photos.length ? 28 + IMG_H + 104 - 20 : 0);
+  const h = 72 + 68 + STATS_H + (shown.length ? 28 + rowsN * (IMG_H + CAPTION) + (rowsN - 1) * 24 : 0);
   const stats: { icon: IconName; value: string; label: string }[] = [
     { icon: "image", value: int(s.field.photos), label: "field photos" },
     { icon: "camera", value: int(s.field.documented), label: `${s.scope.recordsWord} documented` },
@@ -866,7 +1012,7 @@ function photosCard(s: InfographicSummary, photos: InfographicPhoto[]) {
     h,
     node: (
       <Card style={{ height: h }}>
-        <SectionTitle icon="camera" note={photos.length ? "latest field photos" : undefined}>
+        <SectionTitle icon="camera" note={shown.length ? "latest field photos" : undefined}>
           From the field
         </SectionTitle>
         <div style={{ display: "flex", gap: 16 }}>
@@ -880,13 +1026,17 @@ function photosCard(s: InfographicSummary, photos: InfographicPhoto[]) {
             </div>
           ))}
         </div>
-        {photos.length ? (
-          <div style={{ display: "flex", gap: GAP, marginTop: 28 }}>
-            {photos.map((p) => (
-              <div key={p.src.slice(-40)} style={{ display: "flex", flexDirection: "column", width: W }}>
-                <img src={p.src} width={W} height={IMG_H} style={{ width: W, height: IMG_H, borderRadius: 20, objectFit: "cover" }} />
-                <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 20, lineHeight: 1.2, color: C.text, marginTop: 12 }}>{cut(p.name, photos.length === 1 ? 70 : 44)}</div>
-                <div style={{ fontFamily: SANS, fontSize: 16, color: C.muted }}>{cut([p.place, shortDay(p.day)].filter(Boolean).join(" · "), photos.length === 1 ? 90 : 36)}</div>
+        {shown.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 24, marginTop: 28 }}>
+            {Array.from({ length: rowsN }, (_, r) => shown.slice(r * 3, r * 3 + 3)).map((row, r) => (
+              <div key={r} style={{ display: "flex", gap: GAP }}>
+                {row.map((p) => (
+                  <div key={p.src.slice(-40)} style={{ display: "flex", flexDirection: "column", width: W, height: IMG_H + CAPTION }}>
+                    <img src={p.src} width={W} height={IMG_H} style={{ width: W, height: IMG_H, borderRadius: 20, objectFit: "cover" }} />
+                    <div style={{ fontFamily: SANS, fontWeight: 700, fontSize: 20, lineHeight: 1.2, color: C.text, marginTop: 12 }}>{cut(p.name, shown.length === 1 ? 70 : 44)}</div>
+                    <div style={{ fontFamily: SANS, fontSize: 16, color: C.muted }}>{cut([p.place, shortDay(p.day)].filter(Boolean).join(" · "), shown.length === 1 ? 90 : 36)}</div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -924,7 +1074,7 @@ function footer(s: InfographicSummary, a: InfographicAssets, hl: Highlights, sit
 export function renderInfographic(s: InfographicSummary, hl: Highlights, a: InfographicAssets, photos: InfographicPhoto[], site: string): ImageResponse {
   const GAP = 32;
   const head = header(s, a);
-  const body = [highlightsCard(s, hl), tiles(s), byTypeCard(s), statusCard(s), trendCard(s), mapAndRows(s), topCard(s), photosCard(s, photos)].filter((x): x is { h: number; node: React.JSX.Element } => x !== null);
+  const body = [highlightsCard(s, hl), tiles(s), byTypeCard(s), statusCard(s), trendCard(s), mapAndRows(s), detailsCard(s), topCard(s), photosCard(s, photos)].filter((x): x is { h: number; node: React.JSX.Element } => x !== null);
   const foot = footer(s, a, hl, site);
   const height = head.h + 40 + body.reduce((n, b) => n + b.h, 0) + GAP * (body.length - 1) + 56 + foot.h;
   return new ImageResponse(
